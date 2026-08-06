@@ -1,0 +1,2062 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0f766e">
+<meta name="description" content="ניהול תורמים, התחייבויות, תנועות ומשימות גיוס כספים.">
+<title>גיוס — ניהול גיוס כספים</title>
+
+<script>
+// Must run before any relative URL is parsed.
+// The service worker answers deep paths (/gius/anything/here) with this same
+// shell, and at that URL every relative href would resolve one or more levels
+// too deep — manifest.json, sw.js and the icons would all 404, and the worker
+// would register under the wrong scope. Pin a <base> at the app root instead.
+(function () {
+  var p = location.pathname;
+  var m = p.match(/^(.*?\/gius\/)/);
+  var b = document.createElement('base');
+  b.href = m ? m[1] : p.replace(/[^/]*$/, '');
+  document.head.appendChild(b);
+})();
+</script>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-64.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="גיוס">
+
+<style>
+/* ============================================================ design tokens */
+:root{
+  --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
+  --ink:#12202e; --ink-2:#3b4d61; --muted:#6b7c90;
+  --line:#e3e8ef; --line-2:#eef2f7;
+  --brand:#0f766e; --brand-ink:#ffffff; --brand-soft:#e6f4f2;
+  --ok:#15803d; --ok-soft:#e7f6ec;
+  --warn:#b45309; --warn-soft:#fdf1e3;
+  --bad:#b91c1c; --bad-soft:#fdeceb;
+  --gold:#a16207; --gold-soft:#fdf5e0;
+  --radius:16px; --radius-sm:10px;
+  --shadow:0 1px 2px rgba(16,32,48,.05), 0 8px 24px rgba(16,32,48,.06);
+  --shadow-lg:0 12px 40px rgba(16,32,48,.18);
+  --tab-h:62px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0d151d; --card:#131e29; --card-2:#18242f;
+    --ink:#e8eef5; --ink-2:#c2cfdc; --muted:#93a5b8;
+    --line:#24333f; --line-2:#1d2a35;
+    --brand:#14b8a6; --brand-ink:#04201d; --brand-soft:#0f2c2a;
+    --ok:#4ade80; --ok-soft:#122a1c;
+    --warn:#fbbf24; --warn-soft:#2c2213;
+    --bad:#f87171; --bad-soft:#2d1717;
+    --gold:#fcd34d; --gold-soft:#2b2413;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+    --shadow-lg:0 12px 40px rgba(0,0,0,.5);
+  }
+}
+
+/* =================================================================== base */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Hebrew","Rubik",Arial,sans-serif;
+  font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%;
+  overflow-wrap:anywhere;
+}
+body.locked{overflow:hidden}
+h1,h2,h3{margin:0; font-weight:700; line-height:1.3}
+button{font:inherit; color:inherit}
+input,select,textarea{font:inherit; color:inherit}
+table{border-collapse:collapse; width:100%}
+.hidden{display:none !important}
+.spin{width:20px;height:20px;border:2.5px solid var(--line);border-top-color:var(--brand);
+  border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-4px}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+/* ================================================================== login */
+.auth{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.auth-card{
+  width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);
+  border-radius:22px;padding:34px 26px;box-shadow:var(--shadow);text-align:center;
+}
+.auth-card .mark{width:66px;height:66px;margin:0 auto 14px;display:block}
+.auth-card h1{font-size:26px;letter-spacing:-.5px}
+.auth-card .sub{color:var(--muted);font-size:14px;margin:4px 0 24px}
+.auth-card .fld{text-align:start;margin-bottom:12px}
+.auth-err{
+  display:none;margin-top:14px;background:var(--bad-soft);color:var(--bad);
+  border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-weight:600
+}
+.auth-err.show{display:block}
+
+/* ================================================================== shell */
+.topbar{
+  position:sticky;top:0;z-index:40;background:var(--card);
+  border-bottom:1px solid var(--line);
+  padding:10px 14px; padding-top:calc(10px + env(safe-area-inset-top));
+  display:flex;align-items:center;gap:12px;
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.3px}
+.brand svg{width:26px;height:26px;flex:none}
+.brand small{font-weight:500;color:var(--muted);font-size:12px;display:none}
+.who{margin-inline-start:auto;display:flex;align-items:center;gap:8px;min-width:0}
+.who .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.who .role{font-size:11px;color:var(--muted);display:block;font-weight:500}
+
+.tabbar{
+  position:fixed;inset-inline:0;bottom:0;z-index:45;
+  display:grid;grid-template-columns:repeat(5,1fr);
+  background:var(--card);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar button{
+  background:none;border:0;cursor:pointer;padding:8px 2px 9px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:11px;font-weight:600;color:var(--muted);
+}
+.tabbar button .ic{font-size:19px;line-height:1}
+.tabbar button.on{color:var(--brand)}
+.tabbar button.on .ic{transform:translateY(-1px)}
+
+main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
+  max-width:1180px;margin:0 auto}
+
+@media (min-width:900px){
+  .brand small{display:inline}
+  .tabbar{
+    position:static;display:flex;gap:4px;border:0;background:none;padding:0;
+    margin-inline-start:18px;
+  }
+  .tabbar button{flex-direction:row;gap:6px;font-size:14px;padding:8px 13px;border-radius:10px}
+  .tabbar button .ic{font-size:16px}
+  .tabbar button.on{background:var(--brand-soft)}
+  main{padding:20px;padding-bottom:120px}
+}
+
+/* ================================================================== cards */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);margin-bottom:14px
+}
+.card > h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card > h2 .cnt{
+  font-size:11.5px;font-weight:700;background:var(--line-2);color:var(--muted);
+  border-radius:99px;padding:1px 8px
+}
+.card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:13px;color:var(--muted)}
+.grid2{display:grid;gap:14px}
+@media (min-width:820px){.grid2{grid-template-columns:1fr 1fr}}
+.empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:14px}
+.empty .big{font-size:26px;display:block;margin-bottom:6px;opacity:.65}
+
+/* ============================================================== home ring */
+/* Side by side from 520px up. Below that the ring stacks above the stats so
+   the tiles get the full width — otherwise "100,000 ₪" breaks across lines. */
+.hero{display:flex;flex-direction:column;gap:16px;align-items:center}
+@media (min-width:520px){.hero{flex-direction:row;gap:18px}}
+.ring{width:132px;height:132px;flex:none}
+.ring circle{fill:none;stroke-width:11;stroke-linecap:round}
+.ring .bg{stroke:var(--line)}
+.ring .fg{stroke:var(--brand);transform:rotate(-90deg);transform-origin:50% 50%;
+  transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1)}
+.ring-wrap{position:relative;flex:none}
+.ring-val{
+  position:absolute;inset:0;display:grid;place-content:center;text-align:center
+}
+.ring-val b{font-size:25px;letter-spacing:-1px;display:block;line-height:1.1}
+.ring-val span{font-size:11px;color:var(--muted);font-weight:600}
+.hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:1000px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--radius-sm);padding:9px 11px}
+.stat span{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:1px}
+.stat b{font-size:16.5px;letter-spacing:-.4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)}
+.momentum{
+  margin-top:14px;background:var(--brand-soft);color:var(--brand);
+  border-radius:var(--radius-sm);padding:11px 14px;font-weight:700;text-align:center;font-size:15px
+}
+.monthnav{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.monthnav b{font-size:15px;min-width:130px;text-align:center}
+.monthnav .grow{margin-inline-start:auto}
+
+/* ================================================================ tables */
+.tw{overflow-x:auto;margin:0 -16px;padding:0 16px}
+th,td{padding:9px 10px;text-align:start;font-size:13.5px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+th{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.2px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card)}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--card-2)}
+tfoot td{font-weight:700;border-top:1px solid var(--line);border-bottom:0;background:var(--card-2)}
+.bar{height:5px;border-radius:99px;background:var(--line);overflow:hidden;min-width:52px}
+.bar i{display:block;height:100%;background:var(--brand);border-radius:99px}
+
+/* ================================================================== lists */
+.row{
+  display:flex;align-items:center;gap:11px;padding:11px 4px;
+  border-bottom:1px solid var(--line-2);cursor:pointer
+}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--card-2)}
+.row .av{
+  width:37px;height:37px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:var(--brand-soft);color:var(--brand);font-weight:800;font-size:14px
+}
+.row .av.vip{background:var(--gold-soft);color:var(--gold)}
+.row .main{flex:1;min-width:0}
+.row .main b{display:block;font-size:14.5px;font-weight:650;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .main small{color:var(--muted);font-size:12.5px}
+.row .end{text-align:end;flex:none;font-size:13.5px;font-variant-numeric:tabular-nums}
+.row .end small{display:block;color:var(--muted);font-size:11.5px}
+
+/* ================================================================ badges */
+.badge{
+  display:inline-block;font-size:11.5px;font-weight:700;border-radius:99px;
+  padding:2px 9px;white-space:nowrap;background:var(--line-2);color:var(--muted)
+}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.bad{background:var(--bad-soft);color:var(--bad)}
+.badge.brand{background:var(--brand-soft);color:var(--brand)}
+.badge.gold{background:var(--gold-soft);color:var(--gold)}
+
+/* ============================================================== controls */
+.inp,select.inp,textarea.inp{
+  width:100%;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:10px 12px;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s
+}
+.inp:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+textarea.inp{resize:vertical;min-height:78px;line-height:1.55}
+select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+  linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:12px calc(50% - 2px),17px calc(50% - 2px);
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  /* the chevron is painted at the left edge, so the extra room must be on the
+     left too — padding-inline-start would put it on the right under RTL */
+  padding-left:32px}
+.fld{display:block;margin-bottom:12px}
+.fld > span{display:block;font-size:12.5px;font-weight:650;color:var(--ink-2);margin-bottom:5px}
+.fld.chk{display:flex;align-items:center;gap:9px;cursor:pointer}
+.fld.chk input{width:19px;height:19px;accent-color:var(--brand);flex:none;margin:0}
+.fld.chk > span{margin:0;font-size:14px}
+.f2{display:grid;gap:0 12px}
+@media (min-width:520px){.f2{grid-template-columns:1fr 1fr}}
+
+.btn{
+  background:var(--brand);color:var(--brand-ink);border:1px solid transparent;
+  border-radius:var(--radius-sm);padding:10px 16px;font-weight:700;font-size:14.5px;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  white-space:nowrap
+}
+/* input + button on one line; the button keeps its width, the input gives way */
+.addrow{display:flex;gap:6px;margin-top:10px}
+.addrow .inp{min-width:0}
+.addrow .btn{flex:none}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink-2);border-color:var(--line)}
+.btn.ghost:hover{background:var(--card-2)}
+.btn.soft{background:var(--brand-soft);color:var(--brand)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn.xs{padding:3px 9px;font-size:12px;border-radius:7px;font-weight:650}
+.btn.block{width:100%}
+.btn.icon{padding:8px 11px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ==================================================================== fab */
+.fab{
+  position:fixed;inset-inline-end:18px;
+  bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom));
+  z-index:44;width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--brand);color:var(--brand-ink);font-size:31px;line-height:1;
+  box-shadow:0 6px 22px rgba(15,118,110,.42);display:grid;place-items:center;
+  transition:transform .18s
+}
+.fab:active{transform:scale(.93)}
+@media (min-width:900px){.fab{bottom:26px}}
+
+/* ================================================================= sheets */
+.veil{
+  position:fixed;inset:0;z-index:60;background:rgba(10,20,30,.5);
+  display:none;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(2px)
+}
+.veil.open{display:flex}
+@media (min-width:640px){.veil{align-items:center}}
+.sheet{
+  width:100%;max-width:560px;max-height:92dvh;overflow:auto;background:var(--card);
+  border-radius:20px 20px 0 0;box-shadow:var(--shadow-lg);
+  animation:up .22s cubic-bezier(.2,.8,.3,1);
+  padding-bottom:env(safe-area-inset-bottom)
+}
+@media (min-width:640px){.sheet{border-radius:20px;animation:pop .18s ease-out}}
+@keyframes up{from{transform:translateY(24px);opacity:.5}}
+@keyframes pop{from{transform:scale(.97);opacity:0}}
+.sheet-hd{
+  display:flex;align-items:center;gap:10px;padding:15px 18px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2;
+  border-radius:20px 20px 0 0
+}
+.sheet-hd h3{font-size:16px;flex:1}
+.sheet-hd .x{background:none;border:0;font-size:22px;line-height:1;color:var(--muted);
+  cursor:pointer;padding:2px 6px;border-radius:8px}
+.sheet-hd .x:hover{background:var(--line-2)}
+.sheet-bd{padding:16px 18px}
+.sheet-ft{padding:12px 18px 18px;display:flex;gap:9px}
+.sheet-ft:empty{display:none}
+.sheet-ft .btn{flex:1}
+
+.chooser{padding:14px 18px 22px;display:grid;gap:10px}
+.chooser button{
+  display:flex;align-items:center;gap:13px;text-align:start;width:100%;cursor:pointer;
+  background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+  font-size:16px;font-weight:700
+}
+.chooser button:hover{border-color:var(--brand);background:var(--brand-soft)}
+.chooser button .ic{font-size:24px}
+.chooser button small{display:block;font-weight:500;font-size:12.5px;color:var(--muted)}
+
+/* ============================================================ donorpicker */
+.picker{position:relative}
+.dp-chosen{
+  display:flex;align-items:center;gap:9px;background:var(--brand-soft);color:var(--brand);
+  border-radius:var(--radius-sm);padding:9px 12px;font-weight:700;font-size:14.5px
+}
+.dp-chosen button{margin-inline-start:auto;background:none;border:0;cursor:pointer;
+  color:inherit;font-size:18px;line-height:1;opacity:.7}
+.dp-results{
+  border:1px solid var(--line);border-radius:var(--radius-sm);margin-top:6px;
+  max-height:210px;overflow:auto;background:var(--card)
+}
+.dp-results button{
+  display:block;width:100%;text-align:start;background:none;border:0;cursor:pointer;
+  padding:9px 12px;border-bottom:1px solid var(--line-2);font-size:14px
+}
+.dp-results button:last-child{border-bottom:0}
+.dp-results button:hover{background:var(--card-2)}
+.dp-results button small{color:var(--muted);font-size:12px;margin-inline-start:6px}
+.dp-results .mk{color:var(--brand);font-weight:700}
+.dp-new{border:1px dashed var(--line);border-radius:var(--radius-sm);padding:12px;margin-top:8px;
+  background:var(--card-2)}
+
+/* ================================================================= kanban */
+.kb{display:grid;gap:12px}
+@media (min-width:760px){.kb{grid-template-columns:repeat(4,1fr);align-items:start}}
+.kcol{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px;min-height:110px;transition:border-color .15s,background .15s
+}
+.kcol.over{border-color:var(--brand);background:var(--brand-soft)}
+.kcol > h3{font-size:13.5px;display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.kcol > h3 .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.kcol > h3 .cnt{margin-inline-start:auto;font-size:11.5px;color:var(--muted);
+  background:var(--line-2);border-radius:99px;padding:1px 8px;font-weight:700}
+.kcard{
+  background:var(--card-2);border:1px solid var(--line);border-radius:12px;
+  padding:11px;margin-bottom:9px;cursor:grab
+}
+.kcard.dragging{opacity:.4}
+.kcard b{display:block;font-size:14px;font-weight:650;margin-bottom:6px}
+.kcard .meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.kcard .ft{display:flex;gap:6px;align-items:center}
+.kcard select{
+  flex:1;font-size:12px;padding:4px 7px;border-radius:7px;border:1px solid var(--line);
+  background:var(--card);min-width:0
+}
+.kcard .logdot{color:var(--brand);font-size:12px;font-weight:700}
+
+/* ================================================================ filters */
+.filters{display:grid;gap:9px;grid-template-columns:1fr 1fr}
+@media (min-width:760px){.filters{grid-template-columns:repeat(5,1fr)}}
+/* grid items default to min-width:auto, and a date input's intrinsic width is
+   wider than the cell — without this the filter row overflows and misaligns */
+.filters > *{min-width:0}
+.filters .fld{margin:0}
+.filters .inp{width:100%;min-width:0}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.chips button{
+  background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 13px;
+  font-size:13px;font-weight:650;cursor:pointer;color:var(--muted)
+}
+.chips button.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+
+/* ================================================================= misc */
+.kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:14px}
+.kv:last-child{border-bottom:0}
+.kv span{color:var(--muted);min-width:82px;font-size:13px}
+.kv b{font-weight:650}
+.log{
+  background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--radius-sm);
+  padding:11px;font-size:13px;white-space:pre-wrap;max-height:230px;overflow:auto;
+  line-height:1.65;margin:0;font-family:inherit
+}
+.back{background:none;border:0;color:var(--brand);font-weight:700;cursor:pointer;
+  padding:4px 0;margin-bottom:8px;font-size:14px}
+
+/* ================================================================= toast */
+#toasts{
+  position:fixed;inset-inline:0;z-index:80;display:grid;gap:8px;justify-items:center;
+  bottom:calc(var(--tab-h) + 88px + env(safe-area-inset-bottom));pointer-events:none;padding:0 14px
+}
+.toast{
+  background:var(--ink);color:var(--bg);border-radius:99px;padding:10px 20px;
+  font-size:14px;font-weight:650;box-shadow:var(--shadow-lg);animation:up .2s;max-width:92vw
+}
+.toast.bad{background:var(--bad);color:#fff}
+.toast.ok{background:var(--ok);color:#fff}
+
+/* ================================================================ updater */
+#updater{
+  position:fixed;inset-inline:0;z-index:70;
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));
+  display:none;justify-content:center;padding:10px 14px
+}
+#updater.show{display:flex}
+#updater .in{
+  background:var(--ink);color:var(--bg);border-radius:14px;padding:11px 12px 11px 16px;
+  display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);
+  font-size:14px;font-weight:650;max-width:520px;width:100%
+}
+#updater button{
+  margin-inline-start:auto;background:var(--brand);color:var(--brand-ink);border:0;
+  border-radius:9px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13.5px;flex:none
+}
+@media (min-width:900px){#updater{bottom:16px}}
+
+/* ================================================================ boot */
+#boot{min-height:100dvh;display:grid;place-items:center;gap:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="boot"><span class="spin"></span></div>
+</div>
+
+<!-- generic sheet / modal -->
+<div class="veil" id="modal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="sheet-hd">
+      <h3 id="modal-title"></h3>
+      <button class="x" data-act="modal-close" aria-label="סגירה">✕</button>
+    </div>
+    <div class="sheet-bd" id="modal-body"></div>
+    <div class="sheet-ft" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- confirm -->
+<div class="veil" id="ask">
+  <div class="sheet" role="alertdialog" aria-modal="true">
+    <div class="sheet-hd"><h3 id="ask-title"></h3></div>
+    <div class="sheet-bd" id="ask-body"></div>
+    <div class="sheet-ft">
+      <button class="btn ghost" data-act="ask-no">ביטול</button>
+      <button class="btn danger" data-act="ask-yes" id="ask-yes">אישור</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<div id="updater">
+  <div class="in">
+    <span>🔄 גרסה חדשה זמינה</span>
+    <button id="updater-btn">עדכן עכשיו</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+'use strict';
+
+/* ==========================================================================
+ * gius — single-file fundraising manager.
+ * Everything lives here on purpose: one file to deploy, one file to cache.
+ * ======================================================================== */
+
+var SUPABASE_URL = 'https://zrftjkghhjhqzopvdzou.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnRqa2doaGpocXpvcHZkem91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDc4MzQsImV4cCI6MjEwMDg4MzgzNH0.DWcW3o4Y9Is3jGx1frHkrUz7cc045aH1m1uKsrwRhIA';
+
+var SESSION_KEY = 'gius.session';
+var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
+var STAGE_COLOR = { 'הכנה': 'var(--muted)', 'הרצה': 'var(--brand)', 'השלמה': 'var(--ok)', 'חסומה': 'var(--bad)' };
+var EPS = 0.005;
+
+// Fallback only — the real lists live in g_config and are editable in Settings.
+var DEFAULT_CONFIG = {
+  categories: ['תרומה', 'גביה', 'מגביות', 'פרוייקטים', 'הוראות קבע', 'פרנסים ותאריכים'],
+  causes: [],
+  domains: ['כספים', 'שימור תורמים', 'תשתיות', 'יעד יזום']
+};
+var CONFIG_KEYS = [
+  { key: 'categories', label: 'סעיפי תנועה', hint: 'מזין את שדה "סעיף" בטופס התנועה' },
+  { key: 'causes', label: 'עילות התחייבות', hint: 'מזין את שדה "עילה" בטופס ההתחייבות' },
+  { key: 'domains', label: 'תחומי משימות', hint: 'מזין את שדה "תחום" בטופס המשימה' }
+];
+
+var sb = null;
+
+/* ------------------------------------------------------------------ utils */
+function $(sel, root) { return (root || document).querySelector(sel); }
+function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function num(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  var n = parseFloat(String(v == null ? '' : v).replace(/[^\d.\-]/g, ''));
+  return isFinite(n) ? n : 0;
+}
+function sum(arr, pick) {
+  var t = 0;
+  for (var i = 0; i < arr.length; i++) t += num(pick ? pick(arr[i]) : arr[i]);
+  return t;
+}
+var ilsFmt = new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 });
+function ils(n) { return ilsFmt.format(Math.round(num(n))); }
+function nis(n) { return new Intl.NumberFormat('he-IL', { maximumFractionDigits: 0 }).format(Math.round(num(n))); }
+
+function todayISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function nowISO() { return new Date().toISOString(); }
+function monthOf(iso) { return String(iso || '').slice(0, 7); }
+function heDate(iso) {
+  if (!iso) return '—';
+  var p = String(iso).slice(0, 10).split('-');
+  if (p.length !== 3) return String(iso);
+  return p[2] + '.' + p[1] + '.' + p[0];
+}
+function monthLabel(m) {
+  var p = String(m || '').split('-');
+  if (p.length !== 2) return String(m || '');
+  return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+}
+function shiftMonth(m, delta) {
+  var p = m.split('-');
+  var d = new Date(+p[0], +p[1] - 1 + delta, 1);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+}
+function initials(name) {
+  var parts = String(name || '?').trim().split(/\s+/);
+  return (parts[0] || '?').charAt(0) + (parts[1] ? parts[1].charAt(0) : '');
+}
+function byName(a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'he'); }
+function uniqSorted(list) {
+  var seen = {}, out = [];
+  for (var i = 0; i < list.length; i++) {
+    var v = String(list[i] == null ? '' : list[i]).trim();
+    if (!v || seen[v]) continue;
+    seen[v] = 1; out.push(v);
+  }
+  return out.sort(function (a, b) { return a.localeCompare(b, 'he'); });
+}
+
+/* ------------------------------------------------------------------ state */
+var state = {
+  user: null,
+  screen: 'home',
+  month: monthOf(todayISO()),
+  config: { categories: [], causes: [], domains: [] },
+  donors: [], pledges: [], txns: [], tasks: [], targets: [], users: [],
+  donorId: null,
+  donorSearch: '',
+  pf: { agent: '', status: '', cause: '', from: '', to: '' }
+};
+
+/* --------------------------------------------------------------- data api */
+function ok(res) {
+  if (res.error) throw res.error;
+  return res.data;
+}
+function selectAll(table, live, order, asc) {
+  var q = sb.from(table).select('*');
+  if (live) q = q.eq('deleted', false);
+  if (order) q = q.order(order, { ascending: asc !== false, nullsFirst: false });
+  return q.then(ok);
+}
+function insert(table, row) {
+  return sb.from(table).insert(row).select().single().then(ok);
+}
+function update(table, id, patch) {
+  patch = Object.assign({}, patch, { updated_at: nowISO() });
+  return sb.from(table).update(patch).eq('id', id).select().single().then(ok);
+}
+function softDelete(table, id) {
+  return update(table, id, { deleted: true, deleted_at: nowISO() });
+}
+
+function loadAll() {
+  return Promise.all([
+    selectAll('g_donors', true, 'name'),
+    selectAll('g_pledges', true, 'due_date'),
+    selectAll('g_txns', true, 'txn_date', false),
+    selectAll('g_tasks', true, 'due_date'),
+    selectAll('g_targets', false, 'month', false),
+    selectAll('g_users', false, 'created_at'),
+    sb.from('g_config').select('*').then(ok)
+  ]).then(function (r) {
+    state.donors = r[0] || [];
+    state.pledges = r[1] || [];
+    state.txns = r[2] || [];
+    state.tasks = r[3] || [];
+    state.targets = r[4] || [];
+    state.users = r[5] || [];
+    var cfg = { categories: [], causes: [], domains: [] };
+    var seen = {};
+    (r[6] || []).forEach(function (row) {
+      if (!Array.isArray(row.value)) return;
+      cfg[row.key] = row.value.slice();
+      seen[row.key] = true;
+    });
+    // Seed defaults only when the row is absent. An owner who empties a list
+    // must get an empty list back, not the defaults resurrected under them.
+    Object.keys(DEFAULT_CONFIG).forEach(function (k) {
+      if (!seen[k]) cfg[k] = DEFAULT_CONFIG[k].slice();
+    });
+    state.config = cfg;
+  });
+}
+
+function saveConfigList(key, list) {
+  return sb.from('g_config')
+    .upsert({ key: key, value: list, updated_at: nowISO() }, { onConflict: 'key' })
+    .select().single().then(ok);
+}
+
+/* ------------------------------------------------------------- selectors */
+function donorById(id) {
+  for (var i = 0; i < state.donors.length; i++) if (state.donors[i].id === id) return state.donors[i];
+  return null;
+}
+function donorName(id) { var d = donorById(id); return d ? d.name : '— תורם שנמחק —'; }
+function pledgeById(id) {
+  for (var i = 0; i < state.pledges.length; i++) if (state.pledges[i].id === id) return state.pledges[i];
+  return null;
+}
+function txnsOfDonor(id) { return state.txns.filter(function (t) { return t.donor_id === id; }); }
+function pledgesOfDonor(id) { return state.pledges.filter(function (p) { return p.donor_id === id; }); }
+function collectedForPledge(pid) {
+  return sum(state.txns.filter(function (t) { return t.pledge_id === pid; }), function (t) { return t.amount; });
+}
+function pledgeStatus(p) {
+  var c = collectedForPledge(p.id);
+  if (c <= EPS) return 'לא בוצע';
+  if (c + EPS < num(p.amount)) return 'חלקי';
+  return 'בוצע';
+}
+function statusClass(s) { return s === 'בוצע' ? 'ok' : s === 'חלקי' ? 'warn' : ''; }
+function monthTxns(m) { return state.txns.filter(function (t) { return monthOf(t.txn_date) === m; }); }
+function targetFor(m) {
+  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].month === m) return num(state.targets[i].amount);
+  return 0;
+}
+function agentPool() {
+  return uniqSorted(
+    state.users.map(function (u) { return u.full_name; })
+      .concat(state.donors.map(function (d) { return d.agent; }))
+      .concat(state.pledges.map(function (p) { return p.agent; }))
+      .concat(state.txns.map(function (t) { return t.agent; }))
+  );
+}
+function isOwner() { return state.user && state.user.role === 'owner'; }
+
+/* ------------------------------------------------------------------- ui */
+function toast(msg, kind) {
+  var el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(function () {
+    el.style.transition = 'opacity .25s'; el.style.opacity = '0';
+    setTimeout(function () { el.remove(); }, 260);
+  }, 2600);
+}
+function errToast(e) {
+  console.error(e);
+  toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', 'bad');
+}
+
+function openModal(title, body, foot) {
+  $('#modal-title').textContent = title;
+  $('#modal-body').style.padding = '';   // the chooser zeroes this out — always reset
+  $('#modal-body').innerHTML = body;
+  $('#modal-foot').innerHTML = foot || '';
+  $('#modal').classList.add('open');
+  document.body.classList.add('locked');
+}
+function closeModal() {
+  $('#modal').classList.remove('open');
+  $('#modal-body').innerHTML = '';
+  $('#modal-foot').innerHTML = '';
+  if (!$('#ask').classList.contains('open')) document.body.classList.remove('locked');
+}
+var askResolve = null;
+function ask(title, text, yesLabel) {
+  $('#ask-title').textContent = title;
+  $('#ask-body').innerHTML = '<p style="margin:0;color:var(--ink-2)">' + esc(text) + '</p>';
+  $('#ask-yes').textContent = yesLabel || 'אישור';
+  $('#ask').classList.add('open');
+  document.body.classList.add('locked');
+  return new Promise(function (res) { askResolve = res; });
+}
+function closeAsk(v) {
+  $('#ask').classList.remove('open');
+  if (!$('#modal').classList.contains('open')) document.body.classList.remove('locked');
+  if (askResolve) { askResolve(v); askResolve = null; }
+}
+
+function selectHTML(name, options, value, placeholder) {
+  var h = '<select class="inp" id="' + name + '">';
+  h += '<option value="">' + esc(placeholder || '— ללא —') + '</option>';
+  for (var i = 0; i < options.length; i++) {
+    var o = options[i];
+    h += '<option value="' + esc(o) + '"' + (String(o) === String(value == null ? '' : value) ? ' selected' : '') + '>' + esc(o) + '</option>';
+  }
+  return h + '</select>';
+}
+function datalistHTML(id, options) {
+  var h = '<datalist id="' + id + '">';
+  for (var i = 0; i < options.length; i++) h += '<option value="' + esc(options[i]) + '"></option>';
+  return h + '</datalist>';
+}
+function val(id) { var el = $('#' + id); return el ? String(el.value).trim() : ''; }
+function checked(id) { var el = $('#' + id); return !!(el && el.checked); }
+function nullable(v) { return v === '' ? null : v; }
+
+function busy(btn, on) {
+  if (!btn) return;
+  btn.disabled = !!on;
+  if (on) { btn.dataset.label = btn.innerHTML; btn.innerHTML = '<span class="spin"></span>'; }
+  else if (btn.dataset.label) { btn.innerHTML = btn.dataset.label; }
+}
+
+function emptyBox(icon, text) {
+  return '<div class="empty"><span class="big">' + icon + '</span>' + esc(text) + '</div>';
+}
+
+/* ====================================================================== */
+/*  LOGIN                                                                  */
+/* ====================================================================== */
+function markSVG(cls) {
+  return '<svg class="' + cls + '" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<rect x="2" y="2" width="96" height="96" rx="24" fill="var(--brand)"/>' +
+    '<circle cx="50" cy="50" r="26" fill="none" stroke="#fff" stroke-width="8"/>' +
+    '<circle cx="50" cy="50" r="10" fill="#fff"/></svg>';
+}
+
+function renderLogin() {
+  $('#app').innerHTML =
+    '<div class="auth"><form class="auth-card" id="login-form">' +
+      markSVG('mark') +
+      '<h1>גיוס</h1>' +
+      '<div class="sub">ניהול גיוס כספים</div>' +
+      '<label class="fld"><span>שם משתמש</span>' +
+        '<input class="inp" id="lg-user" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>' +
+      '<label class="fld"><span>סיסמה</span>' +
+        '<input class="inp" id="lg-pass" type="password" autocomplete="current-password" required></label>' +
+      '<button class="btn block" type="submit" id="lg-btn">כניסה</button>' +
+      '<div class="auth-err" id="lg-err"></div>' +
+    '</form></div>';
+
+  $('#login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    doLogin();
+  });
+  var u = $('#lg-user');
+  if (u) u.focus();
+}
+
+function loginError(msg) {
+  var el = $('#lg-err');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function doLogin() {
+  var username = val('lg-user');
+  var password = $('#lg-pass') ? $('#lg-pass').value : '';
+  var btn = $('#lg-btn');
+  $('#lg-err').classList.remove('show');
+  if (!username || !password) { loginError('נא למלא שם משתמש וסיסמה'); return; }
+
+  busy(btn, true);
+  sb.from('g_users').select('*').eq('username', username).limit(1)
+    .then(ok)
+    .then(function (rows) {
+      var u = rows && rows[0];
+      if (!u || String(u.password) !== String(password)) throw new Error('bad');
+      if (!u.active) throw new Error('inactive');
+      state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(state.user)); } catch (_) {}
+      return boot();
+    })
+    .catch(function (e) {
+      busy(btn, false);
+      if (e && e.message === 'bad') loginError('שם משתמש או סיסמה שגויים');
+      else if (e && e.message === 'inactive') loginError('המשתמש מושבת. פנו לבעלים.');
+      else loginError('שגיאת התחברות: ' + ((e && e.message) || 'לא ידוע'));
+    });
+}
+
+function logout() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  state.user = null;
+  state.screen = 'home';
+  state.donorId = null;
+  renderLogin();
+}
+
+/* ====================================================================== */
+/*  SHELL                                                                  */
+/* ====================================================================== */
+var TABS = [
+  { id: 'home', ic: '🏠', label: 'בית' },
+  { id: 'donors', ic: '🙋', label: 'תורמים' },
+  { id: 'pledges', ic: '🤝', label: 'התחייבויות' },
+  { id: 'tasks', ic: '🗂️', label: 'משימות' },
+  { id: 'settings', ic: '⚙️', label: 'הגדרות' }
+];
+
+function renderShell() {
+  var tabs = TABS.map(function (t) {
+    return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
+      '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
+  }).join('');
+
+  $('#app').innerHTML =
+    '<header class="topbar">' +
+      '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
+      '<nav class="tabbar">' + tabs + '</nav>' +
+      '<div class="who"><div style="text-align:end"><div class="nm">' + esc(state.user.full_name) + '</div>' +
+        '<span class="role">' + (isOwner() ? 'בעלים' : 'מנהל') + '</span></div>' +
+        '<button class="btn ghost sm" data-act="logout">יציאה</button></div>' +
+    '</header>' +
+    '<main id="view"></main>' +
+    (state.screen === 'settings' ? '' : '<button class="fab" data-act="fab" aria-label="הוספה">＋</button>');
+}
+
+function render() {
+  if (!state.user) { renderLogin(); return; }
+  renderShell();
+  var view = $('#view');
+  if (state.screen === 'home') view.innerHTML = viewHome();
+  else if (state.screen === 'donors') view.innerHTML = state.donorId ? viewDonorCard() : viewDonors();
+  else if (state.screen === 'pledges') view.innerHTML = viewPledges();
+  else if (state.screen === 'tasks') { view.innerHTML = viewTasks(); wireKanban(); }
+  else if (state.screen === 'settings') view.innerHTML = viewSettings();
+
+  // Only jump to the top when the user actually moved somewhere. Re-rendering
+  // in place (a saved row, a dragged task) must not throw away their scroll.
+  var key = state.screen + '/' + (state.donorId || '');
+  if (key !== lastViewKey) { window.scrollTo(0, 0); lastViewKey = key; }
+}
+var lastViewKey = '';
+
+function go(screen) {
+  if (screen === 'settings' && !isOwner()) {
+    toast('אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', 'bad');
+    return;
+  }
+  state.screen = screen;
+  state.donorId = null;
+  render();
+}
+
+/* ====================================================================== */
+/*  HOME                                                                   */
+/* ====================================================================== */
+function momentumMsg(pct) {
+  if (pct >= 100) return '🏆 עמדנו ביעד!';
+  if (pct >= 75) return '⚡ כמעט שם — דחיפה אחרונה!';
+  if (pct >= 50) return '🔥 מעל המחצית — ממשיכים!';
+  if (pct >= 25) return '💪 רבע דרך — מומנטום!';
+  return '🚀 מתחילים!';
+}
+
+function ringHTML(pct) {
+  var R = 52, C = 2 * Math.PI * R;
+  var dash = C * Math.max(0, Math.min(100, pct)) / 100;
+  return '<div class="ring-wrap">' +
+    '<svg class="ring" viewBox="0 0 120 120">' +
+      '<circle class="bg" cx="60" cy="60" r="' + R + '"></circle>' +
+      '<circle class="fg" cx="60" cy="60" r="' + R + '" stroke-dasharray="' + dash.toFixed(1) + ' ' + C.toFixed(1) + '"></circle>' +
+    '</svg>' +
+    '<div class="ring-val"><b>' + Math.round(pct) + '%</b><span>מהיעד</span></div>' +
+  '</div>';
+}
+
+function breakdownTable(rows, label, total) {
+  if (!rows.length) return emptyBox('📊', 'אין תנועות בחודש זה');
+  var h = '<div class="tw"><table><thead><tr><th>' + esc(label) + '</th><th class="num">תנועות</th>' +
+    '<th class="num">סכום</th><th class="num">חלק</th></tr></thead><tbody>';
+  rows.forEach(function (r) {
+    var share = total > 0 ? (r.total / total * 100) : 0;
+    h += '<tr><td>' + esc(r.key) + '</td>' +
+      '<td class="num">' + r.count + '</td>' +
+      '<td class="num">' + ils(r.total) + '</td>' +
+      '<td class="num" style="min-width:76px"><div class="bar"><i style="width:' + share.toFixed(1) + '%"></i></div>' +
+      '<small style="color:var(--muted)">' + share.toFixed(0) + '%</small></td></tr>';
+  });
+  h += '</tbody><tfoot><tr><td>סה"כ</td><td class="num">' + sum(rows, function (r) { return r.count; }) +
+    '</td><td class="num">' + ils(total) + '</td><td></td></tr></tfoot></table></div>';
+  return h;
+}
+
+function groupBy(list, pick, fallback) {
+  var map = {}, order = [];
+  list.forEach(function (item) {
+    var k = String(pick(item) || '').trim() || fallback;
+    if (!map[k]) { map[k] = { key: k, total: 0, count: 0 }; order.push(k); }
+    map[k].total += num(item.amount);
+    map[k].count++;
+  });
+  return order.map(function (k) { return map[k]; })
+    .sort(function (a, b) { return b.total - a.total; });
+}
+
+function viewHome() {
+  var m = state.month;
+  var txns = monthTxns(m);
+  var collected = sum(txns, function (t) { return t.amount; });
+  var target = targetFor(m);
+  var remaining = Math.max(0, target - collected);
+  var pct = target > 0 ? (collected / target * 100) : 0;
+
+  var h = '';
+
+  /* ---- month state card ---- */
+  h += '<section class="card">' +
+    '<div class="monthnav">' +
+      '<button class="btn ghost sm" data-act="month" data-d="-1" aria-label="חודש קודם">›</button>' +
+      '<b>' + esc(monthLabel(m)) + '</b>' +
+      '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">‹</button>' +
+      '<span class="grow"></span>' +
+      (isOwner() ? '<button class="btn soft sm" data-act="target-set" data-month="' + m + '">קביעת יעד</button>' : '') +
+    '</div>' +
+    '<div class="hero">' + ringHTML(pct) +
+      '<div class="hero-stats">' +
+        '<div class="stat"><span>יעד החודש</span><b>' + (target > 0 ? ils(target) : '— לא הוגדר —') + '</b></div>' +
+        '<div class="stat ok"><span>נגבה</span><b>' + ils(collected) + '</b></div>' +
+        '<div class="stat warn"><span>נותר</span><b>' + (target > 0 ? ils(remaining) : '—') + '</b></div>' +
+        '<div class="stat"><span>תנועות</span><b>' + txns.length + '</b></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="momentum">' + momentumMsg(target > 0 ? pct : 0) + '</div>' +
+  '</section>';
+
+  /* ---- breakdowns ---- */
+  h += '<div class="grid2">' +
+    '<section class="card"><h2>📊 פילוח לפי סעיף</h2>' +
+      breakdownTable(groupBy(txns, function (t) { return t.category; }, 'ללא סעיף'), 'סעיף', collected) +
+    '</section>' +
+    '<section class="card"><h2>🎖️ פילוח לפי שגריר</h2>' +
+      breakdownTable(groupBy(txns, function (t) { return t.agent; }, 'ללא שגריר'), 'שגריר', collected) +
+    '</section>' +
+  '</div>';
+
+  /* ---- my day ---- */
+  var me = state.user.full_name;
+  var myTasks = state.tasks.filter(function (t) { return t.assignee === me && t.stage !== 'השלמה'; });
+  var myPledges = state.pledges.filter(function (p) {
+    return p.agent === me && collectedForPledge(p.id) + EPS < num(p.amount);
+  });
+
+  h += '<section class="card"><h2>☀️ מה שלי היום<span class="cnt">' + (myTasks.length + myPledges.length) + '</span></h2>';
+  if (!myTasks.length && !myPledges.length) {
+    h += emptyBox('✨', 'אין משימות פתוחות או התחייבויות ממתינות על שמך');
+  } else {
+    if (myTasks.length) {
+      h += '<div style="font-size:12.5px;font-weight:700;color:var(--muted);margin:2px 0 4px">משימות פתוחות</div>';
+      myTasks.forEach(function (t) {
+        var late = t.due_date && t.due_date < todayISO();
+        h += '<div class="row" data-act="task-open" data-id="' + t.id + '">' +
+          '<div class="av">🗂️</div><div class="main"><b>' + esc(t.title) + '</b>' +
+          '<small>' + esc(t.domain || 'ללא תחום') + ' · ' + esc(t.stage) + '</small></div>' +
+          '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + heDate(t.due_date) + '</span></div></div>';
+      });
+    }
+    if (myPledges.length) {
+      h += '<div style="font-size:12.5px;font-weight:700;color:var(--muted);margin:12px 0 4px">התחייבויות שטרם נגבו במלואן</div>';
+      myPledges.forEach(function (p) {
+        var c = collectedForPledge(p.id);
+        var left = Math.max(0, num(p.amount) - c);
+        h += '<div class="row" data-act="donor-open" data-id="' + p.donor_id + '">' +
+          '<div class="av">🤝</div><div class="main"><b>' + esc(donorName(p.donor_id)) + '</b>' +
+          '<small>' + esc(p.cause || 'ללא עילה') + ' · ' + ils(p.amount) + '</small></div>' +
+          '<div class="end">' + ils(left) + '<small>נותר</small></div></div>';
+      });
+    }
+  }
+  h += '</section>';
+  return h;
+}
+
+/* ====================================================================== */
+/*  DONORS                                                                 */
+/* ====================================================================== */
+function donorMatches(q) {
+  q = String(q || '').trim().toLowerCase();
+  var list = state.donors.slice().sort(byName);
+  if (!q) return list;
+  return list.filter(function (d) {
+    return String(d.name || '').toLowerCase().indexOf(q) >= 0 ||
+      String(d.phone || '').indexOf(q) >= 0 ||
+      String(d.agent || '').toLowerCase().indexOf(q) >= 0;
+  });
+}
+
+function donorRowsHTML(list) {
+  if (!list.length) return emptyBox('🙋', state.donors.length ? 'אין תורם התואם את החיפוש' : 'עדיין אין תורמים');
+  return list.map(function (d) {
+    var given = sum(txnsOfDonor(d.id), function (t) { return t.amount; });
+    return '<div class="row" data-act="donor-open" data-id="' + d.id + '">' +
+      '<div class="av' + (d.is_vip ? ' vip' : '') + '">' + esc(initials(d.name)) + '</div>' +
+      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + '</b>' +
+      '<small>' + esc(d.phone || 'ללא טלפון') + (d.agent ? ' · ' + esc(d.agent) : '') + '</small></div>' +
+      '<div class="end">' + ils(given) + '<small>נתן</small></div></div>';
+  }).join('');
+}
+
+function viewDonors() {
+  var list = donorMatches(state.donorSearch);
+  return '<section class="card">' +
+    '<div class="addrow" style="margin:0 0 10px">' +
+      '<input class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
+      '<button class="btn" data-act="donor-new">＋ תורם</button>' +
+    '</div>' +
+    '<h2>🙋 תורמים<span class="cnt">' + list.length + '</span></h2>' +
+    '<div id="donor-list">' + donorRowsHTML(list) + '</div>' +
+  '</section>';
+}
+
+function viewDonorCard() {
+  var d = donorById(state.donorId);
+  if (!d) { state.donorId = null; return viewDonors(); }
+
+  var pl = pledgesOfDonor(d.id);
+  var tx = txnsOfDonor(d.id).slice().sort(function (a, b) { return String(b.txn_date).localeCompare(String(a.txn_date)); });
+  var pledged = sum(pl, function (p) { return p.amount; });
+  var given = sum(tx, function (t) { return t.amount; });
+  var left = Math.max(0, pledged - given);
+
+  var h = '<button class="back" data-act="donor-back">› חזרה לרשימת התורמים</button>';
+
+  h += '<section class="card">' +
+    '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">' +
+      '<div class="av' + (d.is_vip ? ' vip' : '') + '" style="width:52px;height:52px;border-radius:15px;font-size:18px">' +
+        esc(initials(d.name)) + '</div>' +
+      '<div style="flex:1;min-width:0"><h2 style="font-size:19px;margin:0">' + esc(d.name) +
+        (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + '</h2>' +
+        '<div style="color:var(--muted);font-size:13.5px">' + esc(d.phone || 'ללא טלפון') + '</div></div>' +
+    '</div>' +
+    '<div class="btnrow" style="margin-bottom:12px">' +
+      '<button class="btn sm" data-act="donor-edit" data-id="' + d.id + '">עריכה</button>' +
+      '<button class="btn soft sm" data-act="vip-toggle" data-id="' + d.id + '">' +
+        (d.is_vip ? '☆ הסרת VIP' : '★ סימון VIP') + '</button>' +
+      (d.phone ? '<a class="btn ghost sm" href="tel:' + esc(d.phone) + '">📞 חיוג</a>' : '') +
+      '<button class="btn ghost sm" data-act="txn-new" data-donor="' + d.id + '">＋ תנועה</button>' +
+      '<button class="btn ghost sm" data-act="pledge-new" data-donor="' + d.id + '">＋ התחייבות</button>' +
+      '<button class="btn danger sm" data-act="donor-del" data-id="' + d.id + '">מחיקה</button>' +
+    '</div>' +
+    '<div class="hero-stats" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="stat"><span>סה"כ התחייב</span><b>' + ils(pledged) + '</b></div>' +
+      '<div class="stat ok"><span>סה"כ נתן</span><b>' + ils(given) + '</b></div>' +
+      '<div class="stat warn"><span>נותר</span><b>' + ils(left) + '</b></div>' +
+    '</div>' +
+    '<div style="margin-top:12px">' +
+      '<div class="kv"><span>שגריר</span><b>' + esc(d.agent || '—') + '</b></div>' +
+      '<div class="kv"><span>תגיות</span><b>' + ((d.tags && d.tags.length) ? d.tags.map(function (t) { return '<span class="badge">' + esc(t) + '</span>'; }).join(' ') : '—') + '</b></div>' +
+    '</div>' +
+    '<label class="fld" style="margin-top:12px"><span>הערות</span>' +
+      '<textarea class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
+    '<button class="btn sm" data-act="notes-save" data-id="' + d.id + '">שמירת הערות</button>' +
+  '</section>';
+
+  /* pledges */
+  h += '<section class="card"><h2>🤝 התחייבויות<span class="cnt">' + pl.length + '</span></h2>';
+  if (!pl.length) h += emptyBox('🤝', 'אין התחייבויות לתורם זה');
+  else {
+    h += '<div class="tw"><table><thead><tr><th>עילה</th><th class="num">סכום</th><th class="num">נגבה</th>' +
+      '<th class="num">נותר</th><th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
+    pl.forEach(function (p) {
+      var c = collectedForPledge(p.id), st = pledgeStatus(p);
+      h += '<tr><td>' + esc(p.cause || '—') + '</td>' +
+        '<td class="num">' + ils(p.amount) + '</td>' +
+        '<td class="num">' + ils(c) + '</td>' +
+        '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
+        '<td>' + heDate(p.due_date) + '</td>' +
+        '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
+        '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.id + '">עריכה</button></td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+  h += '</section>';
+
+  /* transactions */
+  h += '<section class="card"><h2>💰 תנועות<span class="cnt">' + tx.length + '</span></h2>';
+  if (!tx.length) h += emptyBox('💰', 'אין תנועות לתורם זה');
+  else {
+    h += '<div class="tw"><table><thead><tr><th>תאריך</th><th class="num">סכום</th><th>סעיף</th>' +
+      '<th>שגריר</th><th>מנהל</th><th>נפרע</th><th></th></tr></thead><tbody>';
+    tx.forEach(function (t) {
+      h += '<tr><td>' + heDate(t.txn_date) + '</td>' +
+        '<td class="num">' + ils(t.amount) + '</td>' +
+        '<td>' + esc(t.category || '—') + '</td>' +
+        '<td>' + esc(t.agent || '—') + '</td>' +
+        '<td>' + esc(t.manager || '—') + '</td>' +
+        '<td><span class="badge ' + (t.cleared ? 'ok' : 'warn') + '">' + (t.cleared ? 'נפרע' : 'ממתין') + '</span></td>' +
+        '<td><button class="btn ghost xs" data-act="txn-edit" data-id="' + t.id + '">עריכה</button></td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+  h += '</section>';
+  return h;
+}
+
+/* ====================================================================== */
+/*  PLEDGES                                                                */
+/* ====================================================================== */
+function filteredPledges() {
+  var f = state.pf;
+  return state.pledges.filter(function (p) {
+    if (f.agent && p.agent !== f.agent) return false;
+    if (f.cause && p.cause !== f.cause) return false;
+    if (f.status && pledgeStatus(p) !== f.status) return false;
+    if (f.from && (!p.due_date || p.due_date < f.from)) return false;
+    if (f.to && (!p.due_date || p.due_date > f.to)) return false;
+    return true;
+  });
+}
+
+function pledgeTableHTML(list) {
+  if (!list.length) return emptyBox('🤝', state.pledges.length ? 'אין התחייבות התואמת את המסננים' : 'עדיין אין התחייבויות');
+  var h = '<div class="tw"><table><thead><tr><th>תורם</th><th>עילה</th><th>שגריר</th>' +
+    '<th class="num">סכום</th><th class="num">נגבה</th><th class="num">נותר</th>' +
+    '<th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
+  list.forEach(function (p) {
+    var c = collectedForPledge(p.id), st = pledgeStatus(p);
+    var late = p.due_date && p.due_date < todayISO() && st !== 'בוצע';
+    h += '<tr class="click" data-act="donor-open" data-id="' + p.donor_id + '">' +
+      '<td><b>' + esc(donorName(p.donor_id)) + '</b></td>' +
+      '<td>' + esc(p.cause || '—') + '</td>' +
+      '<td>' + esc(p.agent || '—') + '</td>' +
+      '<td class="num">' + ils(p.amount) + '</td>' +
+      '<td class="num">' + ils(c) + '</td>' +
+      '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
+      '<td>' + (late ? '<span class="badge bad">' + heDate(p.due_date) + '</span>' : heDate(p.due_date)) + '</td>' +
+      '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
+      '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.id + '">עריכה</button> ' +
+        '<button class="btn danger xs" data-act="pledge-del" data-id="' + p.id + '">מחיקה</button></td></tr>';
+  });
+  h += '</tbody></table></div>';
+  return h;
+}
+
+function pledgeTotalsHTML(list) {
+  var pledged = sum(list, function (p) { return p.amount; });
+  var got = sum(list, function (p) { return collectedForPledge(p.id); });
+  return '<div class="hero-stats" style="grid-template-columns:repeat(2,1fr)">' +
+    '<div class="stat"><span>סה"כ התחייבויות</span><b>' + ils(pledged) + '</b></div>' +
+    '<div class="stat ok"><span>נגבה</span><b>' + ils(got) + '</b></div>' +
+    '<div class="stat warn"><span>נותר</span><b>' + ils(Math.max(0, pledged - got)) + '</b></div>' +
+    '<div class="stat"><span>מספר התחייבויות</span><b>' + list.length + '</b></div>' +
+  '</div>';
+}
+
+function viewPledges() {
+  var list = filteredPledges();
+  var f = state.pf;
+  return '<section class="card">' +
+    '<h2>🤝 התחייבויות<span class="cnt">' + list.length + '</span>' +
+      '<span class="sp"><button class="btn sm" data-act="pledge-new">＋ התחייבות</button></span></h2>' +
+    '<div id="pledge-totals">' + pledgeTotalsHTML(list) + '</div>' +
+    '<div class="filters" style="margin-top:12px">' +
+      '<label class="fld"><span>שגריר</span>' + selectHTML('pf-agent', agentPool(), f.agent, 'הכל') + '</label>' +
+      '<label class="fld"><span>סטטוס</span>' + selectHTML('pf-status', ['לא בוצע', 'חלקי', 'בוצע'], f.status, 'הכל') + '</label>' +
+      '<label class="fld"><span>עילה</span>' + selectHTML('pf-cause', state.config.causes, f.cause, 'הכל') + '</label>' +
+      '<label class="fld"><span>מתאריך</span><input class="inp" type="date" id="pf-from" value="' + esc(f.from) + '"></label>' +
+      '<label class="fld"><span>עד תאריך</span><input class="inp" type="date" id="pf-to" value="' + esc(f.to) + '"></label>' +
+    '</div>' +
+    '<div class="btnrow" style="margin-bottom:12px">' +
+      '<button class="btn ghost sm" data-act="pf-clear">ניקוי מסננים</button></div>' +
+    '<div id="pledge-table">' + pledgeTableHTML(list) + '</div>' +
+  '</section>';
+}
+
+function refreshPledges() {
+  var list = filteredPledges();
+  var t = $('#pledge-table'), o = $('#pledge-totals');
+  if (t) t.innerHTML = pledgeTableHTML(list);
+  if (o) o.innerHTML = pledgeTotalsHTML(list);
+}
+
+/* ====================================================================== */
+/*  TASKS (kanban)                                                         */
+/* ====================================================================== */
+function viewTasks() {
+  var h = '<section class="card" style="margin-bottom:14px">' +
+    '<h2>🗂️ משימות<span class="cnt">' + state.tasks.length + '</span>' +
+    '<span class="sp"><button class="btn sm" data-act="task-new">＋ משימה</button></span></h2>' +
+    '<div style="color:var(--muted);font-size:13px">גררו כרטיס בין העמודות, או שנו שלב בבורר שבתוך הכרטיס.</div>' +
+  '</section><div class="kb">';
+
+  STAGES.forEach(function (st) {
+    var list = state.tasks.filter(function (t) { return t.stage === st; });
+    h += '<div class="kcol" data-stage="' + esc(st) + '">' +
+      '<h3><span class="dot" style="background:' + STAGE_COLOR[st] + '"></span>' + esc(st) +
+      '<span class="cnt">' + list.length + '</span></h3>';
+    if (!list.length) h += '<div class="empty" style="padding:14px 6px;font-size:13px">אין משימות</div>';
+    list.forEach(function (t) {
+      var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
+      h += '<div class="kcard" data-id="' + t.id + '">' +
+        '<b>' + esc(t.title) + '</b>' +
+        '<div class="meta">' +
+          (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
+          (t.domain ? '<span class="badge">' + esc(t.domain) + '</span>' : '') +
+          (t.due_date ? '<span class="badge ' + (late ? 'bad' : '') + '">' + heDate(t.due_date) + '</span>' : '') +
+          (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
+        '</div>' +
+        '<div class="ft">' +
+          '<select data-inp="stage" data-id="' + t.id + '">' +
+            STAGES.map(function (s) {
+              return '<option value="' + esc(s) + '"' + (s === t.stage ? ' selected' : '') + '>' + esc(s) + '</option>';
+            }).join('') +
+          '</select>' +
+          '<button class="btn ghost xs" data-act="task-open" data-id="' + t.id + '">פתיחה</button>' +
+        '</div>' +
+      '</div>';
+    });
+    h += '</div>';
+  });
+  return h + '</div>';
+}
+
+function wireKanban() {
+  $$('.kcard').forEach(function (c) {
+    c.draggable = true;
+    c.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('text/plain', c.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+      c.classList.add('dragging');
+    });
+    c.addEventListener('dragend', function () { c.classList.remove('dragging'); });
+  });
+  $$('.kcol').forEach(function (col) {
+    col.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('over');
+    });
+    col.addEventListener('dragleave', function () { col.classList.remove('over'); });
+    col.addEventListener('drop', function (e) {
+      e.preventDefault();
+      col.classList.remove('over');
+      var id = e.dataTransfer.getData('text/plain');
+      if (id) moveTask(id, col.dataset.stage);
+    });
+  });
+}
+
+function moveTask(id, stage) {
+  var t = null;
+  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) t = state.tasks[i];
+  if (!t || t.stage === stage) return;
+  var prev = t.stage;
+  t.stage = stage;
+  render();
+  update('g_tasks', id, { stage: stage }).catch(function (e) {
+    t.stage = prev; render(); errToast(e);
+  });
+}
+
+/* ====================================================================== */
+/*  SETTINGS                                                               */
+/* ====================================================================== */
+function viewSettings() {
+  if (!isOwner()) {
+    return '<section class="card">' + emptyBox('🔒', 'אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד') + '</section>';
+  }
+
+  var h = '';
+
+  /* users */
+  h += '<section class="card"><h2>👥 ניהול משתמשים<span class="cnt">' + state.users.length + '</span>' +
+    '<span class="sp"><button class="btn sm" data-act="user-new">＋ משתמש</button></span></h2>' +
+    '<div class="tw"><table><thead><tr><th>שם מלא</th><th>שם משתמש</th><th>תפקיד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
+  state.users.forEach(function (u) {
+    h += '<tr><td><b>' + esc(u.full_name) + '</b></td><td>' + esc(u.username) + '</td>' +
+      '<td><span class="badge ' + (u.role === 'owner' ? 'brand' : '') + '">' + (u.role === 'owner' ? 'בעלים' : 'מנהל') + '</span></td>' +
+      '<td><span class="badge ' + (u.active ? 'ok' : 'bad') + '">' + (u.active ? 'פעיל' : 'מושבת') + '</span></td>' +
+      '<td><button class="btn ghost xs" data-act="user-edit" data-id="' + u.id + '">עריכה</button> ' +
+        '<button class="btn ghost xs" data-act="user-pass" data-id="' + u.id + '">סיסמה</button> ' +
+        '<button class="btn ' + (u.active ? 'danger' : 'soft') + ' xs" data-act="user-toggle" data-id="' + u.id + '">' +
+          (u.active ? 'השבתה' : 'הפעלה') + '</button></td></tr>';
+  });
+  h += '</tbody></table></div></section>';
+
+  /* lists */
+  h += '<section class="card"><h2>📋 ניהול רשימות</h2>' +
+    '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">הרשימות האלו מזינות את כל התפריטים באפליקציה.</div>' +
+    '<div class="grid2">';
+  CONFIG_KEYS.forEach(function (c) {
+    var items = state.config[c.key] || [];
+    h += '<div style="border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px">' +
+      '<div style="font-weight:700;font-size:14px">' + esc(c.label) + '</div>' +
+      '<div style="color:var(--muted);font-size:12px;margin-bottom:9px">' + esc(c.hint) + '</div>';
+    if (!items.length) h += '<div style="color:var(--muted);font-size:13px;padding:8px 0">הרשימה ריקה</div>';
+    items.forEach(function (v, i) {
+      h += '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--line-2)">' +
+        '<span style="flex:1;font-size:14px">' + esc(v) + '</span>' +
+        '<button class="btn ghost xs" data-act="cfg-edit" data-key="' + c.key + '" data-i="' + i + '">עריכה</button>' +
+        '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
+    });
+    h += '<div class="addrow">' +
+      '<input class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
+      '<button class="btn sm" data-act="cfg-add" data-key="' + c.key + '">הוספה</button></div>' +
+      '</div>';
+  });
+  h += '</div></section>';
+
+  /* targets */
+  h += '<section class="card"><h2>🎯 יעד חודשי<span class="cnt">' + state.targets.length + '</span>' +
+    '<span class="sp"><button class="btn sm" data-act="target-set">קביעת יעד</button></span></h2>';
+  if (!state.targets.length) h += emptyBox('🎯', 'עדיין לא הוגדרו יעדים');
+  else {
+    h += '<div class="tw"><table><thead><tr><th>חודש</th><th class="num">יעד</th><th class="num">נגבה</th>' +
+      '<th class="num">אחוז</th><th></th></tr></thead><tbody>';
+    state.targets.forEach(function (t) {
+      var got = sum(monthTxns(t.month), function (x) { return x.amount; });
+      var pct = num(t.amount) > 0 ? got / num(t.amount) * 100 : 0;
+      h += '<tr><td>' + esc(monthLabel(t.month)) + '</td>' +
+        '<td class="num">' + ils(t.amount) + '</td><td class="num">' + ils(got) + '</td>' +
+        '<td class="num">' + pct.toFixed(0) + '%</td>' +
+        '<td><button class="btn ghost xs" data-act="target-set" data-month="' + esc(t.month) + '">עריכה</button></td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+  h += '</section>';
+  return h;
+}
+
+/* ====================================================================== */
+/*  DONOR PICKER (search-as-you-type + inline create)                      */
+/* ====================================================================== */
+function pickerHTML(id, donorId) {
+  var d = donorId ? donorById(donorId) : null;
+  return '<div class="picker" id="' + id + '" data-value="' + esc(d ? d.id : '') + '">' +
+    '<div class="dp-chosen' + (d ? '' : ' hidden') + '">' +
+      '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
+      '<button type="button" class="dp-clear" aria-label="ניקוי">✕</button>' +
+    '</div>' +
+    '<input class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
+    '<div class="dp-results hidden"></div>' +
+    '<div class="dp-new hidden">' +
+      '<div style="font-weight:700;font-size:13px;margin-bottom:8px">תורם חדש</div>' +
+      '<div class="f2">' +
+        '<label class="fld"><span>שם התורם</span><input class="inp dp-n-name"></label>' +
+        '<label class="fld"><span>טלפון</span><input class="inp dp-n-phone" inputmode="tel"></label>' +
+      '</div>' +
+      '<div class="btnrow"><button type="button" class="btn sm dp-n-save">שמירה ובחירה</button>' +
+      '<button type="button" class="btn ghost sm dp-n-cancel">ביטול</button></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function pickerValue(id) { var el = $('#' + id); return el ? el.dataset.value : ''; }
+
+function wirePicker(id, onChange) {
+  var root = $('#' + id);
+  if (!root) return;
+  var q = $('.dp-q', root), res = $('.dp-results', root), box = $('.dp-new', root);
+  var chosen = $('.dp-chosen', root);
+
+  function setDonor(d) {
+    root.dataset.value = d ? d.id : '';
+    $('.dp-name', chosen).textContent = d ? d.name : '';
+    chosen.classList.toggle('hidden', !d);
+    q.classList.toggle('hidden', !!d);
+    res.classList.add('hidden');
+    box.classList.add('hidden');
+    if (!d) { q.value = ''; q.focus(); }
+    if (onChange) onChange(d);
+  }
+
+  function paint() {
+    var term = q.value.trim();
+    var list = donorMatches(term).slice(0, 30);
+    var h = '';
+    list.forEach(function (d) {
+      h += '<button type="button" data-id="' + d.id + '">' + esc(d.name) +
+        '<small>' + esc(d.phone || 'ללא טלפון') + '</small></button>';
+    });
+    h += '<button type="button" class="mk" data-new="1">＋ צור תורם חדש' +
+      (term ? ' — "' + esc(term) + '"' : '') + '</button>';
+    res.innerHTML = h;
+    res.classList.remove('hidden');
+  }
+
+  q.addEventListener('focus', paint);
+  q.addEventListener('input', paint);
+
+  res.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.new) {
+      res.classList.add('hidden');
+      box.classList.remove('hidden');
+      $('.dp-n-name', box).value = q.value.trim();
+      $('.dp-n-name', box).focus();
+      return;
+    }
+    setDonor(donorById(b.dataset.id));
+  });
+
+  $('.dp-clear', chosen).addEventListener('click', function () { setDonor(null); });
+  $('.dp-n-cancel', box).addEventListener('click', function () {
+    box.classList.add('hidden');
+    q.focus();
+  });
+  $('.dp-n-save', box).addEventListener('click', function () {
+    var btn = this;
+    var name = $('.dp-n-name', box).value.trim();
+    var phone = $('.dp-n-phone', box).value.trim();
+    if (!name) { toast('נא למלא שם תורם', 'bad'); return; }
+    busy(btn, true);
+    insert('g_donors', { name: name, phone: phone || null })
+      .then(function (d) {
+        state.donors.push(d);
+        busy(btn, false);
+        $('.dp-n-name', box).value = '';
+        $('.dp-n-phone', box).value = '';
+        setDonor(d);
+        toast('התורם נוצר', 'ok');
+      })
+      .catch(function (e) { busy(btn, false); errToast(e); });
+  });
+}
+
+/* ====================================================================== */
+/*  FORMS                                                                  */
+/* ====================================================================== */
+function pledgeOptionsFor(donorId) {
+  var list = donorId ? pledgesOfDonor(donorId) : [];
+  var h = '<option value="">— ללא שיוך —</option>';
+  list.forEach(function (p) {
+    var left = Math.max(0, num(p.amount) - collectedForPledge(p.id));
+    h += '<option value="' + p.id + '">' + esc(p.cause || 'התחייבות') + ' · ' + ils(p.amount) +
+      ' (נותר ' + ils(left) + ')</option>';
+  });
+  return h;
+}
+
+function formTxn(existing, presetDonor) {
+  var t = existing || {};
+  var donorId = t.donor_id || presetDonor || '';
+  var body =
+    '<label class="fld"><span>תורם *</span></label>' + pickerHTML('txn-donor', donorId) +
+    '<div class="f2" style="margin-top:12px">' +
+      '<label class="fld"><span>סכום *</span><input class="inp" id="txn-amount" inputmode="decimal" value="' + esc(t.amount != null ? num(t.amount) : '') + '"></label>' +
+      '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="txn-date" value="' + esc(t.txn_date || todayISO()) + '"></label>' +
+    '</div>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>סעיף</span>' + selectHTML('txn-category', state.config.categories, t.category, '— ללא סעיף —') + '</label>' +
+      '<label class="fld"><span>שגריר</span><input class="inp" id="txn-agent" list="dl-agents" value="' + esc(t.agent || '') + '"></label>' +
+    '</div>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>מנהל מטפל</span>' +
+        selectHTML('txn-manager', state.users.map(function (u) { return u.full_name; }),
+          t.manager != null ? t.manager : state.user.full_name, '— ללא —') + '</label>' +
+      '<label class="fld"><span>שיוך להתחייבות</span>' +
+        '<select class="inp" id="txn-pledge">' + pledgeOptionsFor(donorId) + '</select></label>' +
+    '</div>' +
+    '<label class="fld chk"><input type="checkbox" id="txn-cleared"' + (t.id ? (t.cleared ? ' checked' : '') : ' checked') + '><span>נפרע</span></label>' +
+    '<label class="fld"><span>הערה</span><textarea class="inp" id="txn-note">' + esc(t.note || '') + '</textarea></label>' +
+    datalistHTML('dl-agents', agentPool());
+
+  var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    (t.id ? '<button class="btn danger" data-act="txn-del" data-id="' + t.id + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="txn-save" data-id="' + (t.id || '') + '">שמירה</button>';
+
+  openModal(t.id ? 'עריכת תנועה' : '💰 תנועה חדשה', body, foot);
+  wirePicker('txn-donor', function (d) {
+    var sel = $('#txn-pledge');
+    if (sel) sel.innerHTML = pledgeOptionsFor(d ? d.id : '');
+  });
+  if (t.pledge_id) { var sel = $('#txn-pledge'); if (sel) sel.value = t.pledge_id; }
+}
+
+function saveTxn(id) {
+  var donorId = pickerValue('txn-donor');
+  if (!donorId) { toast('נא לבחור תורם', 'bad'); return Promise.resolve(); }
+  var amount = num(val('txn-amount'));
+  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', 'bad'); return Promise.resolve(); }
+  var row = {
+    donor_id: donorId,
+    pledge_id: nullable(val('txn-pledge')),
+    amount: amount,
+    txn_date: val('txn-date') || todayISO(),
+    category: nullable(val('txn-category')),
+    agent: nullable(val('txn-agent')),
+    manager: nullable(val('txn-manager')),
+    cleared: checked('txn-cleared'),
+    note: nullable(val('txn-note'))
+  };
+  return id ? update('g_txns', id, row) : insert('g_txns', row);
+}
+
+function formPledge(existing, presetDonor) {
+  var p = existing || {};
+  var body =
+    '<label class="fld"><span>תורם *</span></label>' + pickerHTML('pl-donor', p.donor_id || presetDonor || '') +
+    '<div class="f2" style="margin-top:12px">' +
+      '<label class="fld"><span>סכום *</span><input class="inp" id="pl-amount" inputmode="decimal" value="' + esc(p.amount != null ? num(p.amount) : '') + '"></label>' +
+      '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="pl-due" value="' + esc(p.due_date || '') + '"></label>' +
+    '</div>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>עילה</span>' + selectHTML('pl-cause', state.config.causes, p.cause, '— ללא עילה —') + '</label>' +
+      '<label class="fld"><span>שגריר</span><input class="inp" id="pl-agent" list="dl-agents" value="' + esc(p.agent || (p.id ? '' : state.user.full_name)) + '"></label>' +
+    '</div>' +
+    '<label class="fld"><span>הערה</span><textarea class="inp" id="pl-note">' + esc(p.note || '') + '</textarea></label>' +
+    (state.config.causes.length ? '' :
+      '<div style="color:var(--muted);font-size:12.5px">אין עדיין עילות. אפשר להוסיף אותן במסך ההגדרות.</div>') +
+    datalistHTML('dl-agents', agentPool());
+
+  var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    (p.id ? '<button class="btn danger" data-act="pledge-del" data-id="' + p.id + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="pledge-save" data-id="' + (p.id || '') + '">שמירה</button>';
+
+  openModal(p.id ? 'עריכת התחייבות' : '🤝 התחייבות חדשה', body, foot);
+  wirePicker('pl-donor');
+}
+
+function savePledge(id) {
+  var donorId = pickerValue('pl-donor');
+  if (!donorId) { toast('נא לבחור תורם', 'bad'); return Promise.resolve(); }
+  var amount = num(val('pl-amount'));
+  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', 'bad'); return Promise.resolve(); }
+  var row = {
+    donor_id: donorId,
+    amount: amount,
+    cause: nullable(val('pl-cause')),
+    agent: nullable(val('pl-agent')),
+    due_date: nullable(val('pl-due')),
+    note: nullable(val('pl-note'))
+  };
+  return id ? update('g_pledges', id, row) : insert('g_pledges', row);
+}
+
+function formTask(existing) {
+  var t = existing || {};
+  var people = uniqSorted(state.users.filter(function (u) { return u.active; })
+    .map(function (u) { return u.full_name; }));
+  var body =
+    '<label class="fld"><span>כותרת *</span><input class="inp" id="tk-title" value="' + esc(t.title || '') + '"></label>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>שלב</span>' + selectHTML('tk-stage', STAGES, t.stage || 'הכנה', 'הכנה') + '</label>' +
+      '<label class="fld"><span>אחראי</span><input class="inp" id="tk-assignee" list="dl-people" value="' +
+        esc(t.assignee != null ? t.assignee : (t.id ? '' : state.user.full_name)) + '"></label>' +
+    '</div>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>תחום</span>' + selectHTML('tk-domain', state.config.domains, t.domain, '— ללא תחום —') + '</label>' +
+      '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="tk-due" value="' + esc(t.due_date || '') + '"></label>' +
+    '</div>' +
+    (t.log ? '<div class="fld"><span>יומן</span><pre class="log">' + esc(t.log) + '</pre></div>' : '') +
+    '<label class="fld"><span>הוספה ליומן</span>' +
+      '<textarea class="inp" id="tk-log" placeholder="רישום חדש — יתווסף ליומן עם תאריך ושם…"></textarea></label>' +
+    datalistHTML('dl-people', people);
+
+  var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    (t.id ? '<button class="btn danger" data-act="task-del" data-id="' + t.id + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="task-save" data-id="' + (t.id || '') + '">שמירה</button>';
+
+  openModal(t.id ? 'עריכת משימה' : '📋 משימה חדשה', body, foot);
+  var titleEl = $('#tk-title');
+  if (titleEl && !t.id) titleEl.focus();
+}
+
+function saveTask(id) {
+  var title = val('tk-title');
+  if (!title) { toast('נא למלא כותרת', 'bad'); return Promise.resolve(); }
+  var existing = null;
+  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) existing = state.tasks[i];
+
+  var row = {
+    title: title,
+    stage: val('tk-stage') || 'הכנה',
+    assignee: nullable(val('tk-assignee')),
+    domain: nullable(val('tk-domain')),
+    due_date: nullable(val('tk-due'))
+  };
+  var entry = val('tk-log');
+  if (entry) {
+    var stamp = '[' + heDate(todayISO()) + ' · ' + state.user.full_name + ']';
+    var prev = (existing && existing.log) ? existing.log + '\n' : '';
+    row.log = prev + stamp + ' ' + entry;
+  }
+  return id ? update('g_tasks', id, row) : insert('g_tasks', row);
+}
+
+function formDonor(existing) {
+  var d = existing || {};
+  var body =
+    '<div class="f2">' +
+      '<label class="fld"><span>שם *</span><input class="inp" id="dn-name" value="' + esc(d.name || '') + '"></label>' +
+      '<label class="fld"><span>טלפון</span><input class="inp" id="dn-phone" inputmode="tel" value="' + esc(d.phone || '') + '"></label>' +
+    '</div>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>שגריר</span><input class="inp" id="dn-agent" list="dl-agents" value="' + esc(d.agent || '') + '"></label>' +
+      '<label class="fld"><span>תגיות (מופרדות בפסיק)</span><input class="inp" id="dn-tags" value="' +
+        esc((d.tags || []).join(', ')) + '"></label>' +
+    '</div>' +
+    '<label class="fld chk"><input type="checkbox" id="dn-vip"' + (d.is_vip ? ' checked' : '') + '><span>תורם VIP</span></label>' +
+    '<label class="fld"><span>הערות</span><textarea class="inp" id="dn-notes">' + esc(d.notes || '') + '</textarea></label>' +
+    datalistHTML('dl-agents', agentPool());
+
+  var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="donor-save" data-id="' + (d.id || '') + '">שמירה</button>';
+  openModal(d.id ? 'עריכת תורם' : '🙋 תורם חדש', body, foot);
+  var n = $('#dn-name'); if (n && !d.id) n.focus();
+}
+
+function saveDonor(id) {
+  var name = val('dn-name');
+  if (!name) { toast('נא למלא שם', 'bad'); return Promise.resolve(); }
+  var tags = val('dn-tags').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  var row = {
+    name: name,
+    phone: nullable(val('dn-phone')),
+    agent: nullable(val('dn-agent')),
+    tags: tags,
+    is_vip: checked('dn-vip'),
+    notes: nullable(val('dn-notes'))
+  };
+  return id ? update('g_donors', id, row) : insert('g_donors', row);
+}
+
+function formUser(existing) {
+  var u = existing || {};
+  var body =
+    '<div class="f2">' +
+      '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
+      '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
+    '</div>' +
+    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="text"></label>') +
+    '<div class="f2">' +
+      '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
+        '<option value="manager"' + (u.role === 'manager' || !u.role ? ' selected' : '') + '>מנהל</option>' +
+        '<option value="owner"' + (u.role === 'owner' ? ' selected' : '') + '>בעלים</option></select></label>' +
+      '<label class="fld chk" style="margin-top:22px"><input type="checkbox" id="us-active"' +
+        (u.id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
+    '</div>';
+  var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="user-save" data-id="' + (u.id || '') + '">שמירה</button>';
+  openModal(u.id ? 'עריכת משתמש' : '👤 משתמש חדש', body, foot);
+}
+
+function saveUser(id) {
+  var full = val('us-full'), uname = val('us-name');
+  if (!full || !uname) { toast('נא למלא שם מלא ושם משתמש', 'bad'); return Promise.resolve(); }
+  var row = {
+    full_name: full, username: uname,
+    role: val('us-role') || 'manager',
+    active: checked('us-active')
+  };
+  if (!id) {
+    var p = $('#us-pass') ? $('#us-pass').value : '';
+    if (!p) { toast('נא להזין סיסמה', 'bad'); return Promise.resolve(); }
+    row.password = p;
+    return insert('g_users', row);
+  }
+  return update('g_users', id, row);
+}
+
+function formPassword(u) {
+  openModal('שינוי סיסמה — ' + u.full_name,
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="text" autocomplete="new-password"></label>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="pass-save" data-id="' + u.id + '">שמירה</button>');
+  var el = $('#pw-new'); if (el) el.focus();
+}
+
+function formTarget(month) {
+  var m = month || state.month;
+  var cur = 0;
+  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].month === m) cur = num(state.targets[i].amount);
+  openModal('🎯 יעד חודשי',
+    '<div class="f2">' +
+      '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="tg-month" value="' + esc(m) + '"></label>' +
+      '<label class="fld"><span>סכום יעד *</span><input class="inp" id="tg-amount" inputmode="decimal" value="' + (cur || '') + '"></label>' +
+    '</div>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="target-save">שמירה</button>');
+}
+
+function saveTarget() {
+  var m = val('tg-month');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('נא לבחור חודש תקין', 'bad'); return Promise.resolve(); }
+  var amount = num(val('tg-amount'));
+  return sb.from('g_targets')
+    .upsert({ month: m, amount: amount, updated_at: nowISO() }, { onConflict: 'month' })
+    .select().single().then(ok);
+}
+
+/* ====================================================================== */
+/*  ACTIONS                                                                */
+/* ====================================================================== */
+function afterSave(msg) {
+  return loadAll().then(function () {
+    closeModal();
+    render();
+    if (msg) toast(msg, 'ok');
+  });
+}
+
+function runSave(btn, fn, msg) {
+  busy(btn, true);
+  Promise.resolve()
+    .then(fn)
+    .then(function (r) {
+      if (r === undefined) { busy(btn, false); return; }   // validation stopped it
+      return afterSave(msg);
+    })
+    .catch(function (e) { busy(btn, false); errToast(e); });
+}
+
+function findUser(id) {
+  for (var i = 0; i < state.users.length; i++) if (state.users[i].id === id) return state.users[i];
+  return null;
+}
+function findTask(id) {
+  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) return state.tasks[i];
+  return null;
+}
+
+var ACTIONS = {
+  'tab': function (el) { go(el.dataset.tab); },
+  'logout': function () { logout(); },
+  'modal-close': function () { closeModal(); },
+  'ask-yes': function () { closeAsk(true); },
+  'ask-no': function () { closeAsk(false); },
+
+  'month': function (el) { state.month = shiftMonth(state.month, +el.dataset.d); render(); },
+
+  'fab': function () {
+    openModal('מה מוסיפים?',
+      '<div class="chooser">' +
+        '<button data-act="txn-new"><span class="ic">💰</span><span>תנועה<small>רישום כסף שנכנס</small></span></button>' +
+        '<button data-act="task-new"><span class="ic">📋</span><span>משימה<small>מטלה לקנבן</small></span></button>' +
+        '<button data-act="pledge-new"><span class="ic">🤝</span><span>התחייבות<small>הבטחת תרומה</small></span></button>' +
+      '</div>', '');
+    $('#modal-body').style.padding = '0';
+  },
+
+  /* donors */
+  'donor-new': function () { formDonor(null); },
+  'donor-edit': function (el) { formDonor(donorById(el.dataset.id)); },
+  'donor-save': function (el) { runSave(el, function () { return saveDonor(el.dataset.id); }, 'נשמר'); },
+  'donor-open': function (el) {
+    state.screen = 'donors';
+    state.donorId = el.dataset.id;
+    render();
+  },
+  'donor-back': function () { state.donorId = null; render(); },
+  'vip-toggle': function (el) {
+    var d = donorById(el.dataset.id);
+    if (!d) return;
+    update('g_donors', d.id, { is_vip: !d.is_vip })
+      .then(function () { d.is_vip = !d.is_vip; render(); })
+      .catch(errToast);
+  },
+  'notes-save': function (el) {
+    var notes = $('#donor-notes') ? $('#donor-notes').value : '';
+    busy(el, true);
+    update('g_donors', el.dataset.id, { notes: notes || null })
+      .then(function () {
+        var d = donorById(el.dataset.id);
+        if (d) d.notes = notes;
+        busy(el, false);
+        toast('ההערות נשמרו', 'ok');
+      })
+      .catch(function (e) { busy(el, false); errToast(e); });
+  },
+  'donor-del': function (el) {
+    var d = donorById(el.dataset.id);
+    if (!d) return;
+    var hasData = pledgesOfDonor(d.id).length || txnsOfDonor(d.id).length;
+    ask('מחיקת תורם',
+      hasData
+        ? 'לתורם יש התחייבויות או תנועות. המחיקה היא רכה — הרשומות יישמרו במסד ולא יוצגו.'
+        : 'למחוק את "' + d.name + '"? המחיקה רכה וניתנת לשחזור במסד.',
+      'מחיקה'
+    ).then(function (yes) {
+      if (!yes) return;
+      softDelete('g_donors', d.id)
+        .then(function () { state.donorId = null; return afterSave('התורם נמחק'); })
+        .catch(errToast);
+    });
+  },
+
+  /* transactions */
+  'txn-new': function (el) { formTxn(null, el.dataset.donor || ''); },
+  'txn-edit': function (el) {
+    var t = null;
+    for (var i = 0; i < state.txns.length; i++) if (state.txns[i].id === el.dataset.id) t = state.txns[i];
+    if (t) formTxn(t);
+  },
+  'txn-save': function (el) { runSave(el, function () { return saveTxn(el.dataset.id); }, 'התנועה נשמרה'); },
+  'txn-del': function (el) {
+    ask('מחיקת תנועה', 'למחוק את התנועה? המחיקה רכה.', 'מחיקה').then(function (yes) {
+      if (!yes) return;
+      softDelete('g_txns', el.dataset.id).then(function () { return afterSave('נמחק'); }).catch(errToast);
+    });
+  },
+
+  /* pledges */
+  'pledge-new': function (el) { formPledge(null, el.dataset.donor || ''); },
+  'pledge-edit': function (el) { formPledge(pledgeById(el.dataset.id)); },
+  'pledge-save': function (el) { runSave(el, function () { return savePledge(el.dataset.id); }, 'ההתחייבות נשמרה'); },
+  'pledge-del': function (el) {
+    ask('מחיקת התחייבות', 'למחוק את ההתחייבות? המחיקה רכה.', 'מחיקה').then(function (yes) {
+      if (!yes) return;
+      softDelete('g_pledges', el.dataset.id).then(function () { return afterSave('נמחק'); }).catch(errToast);
+    });
+  },
+  'pf-clear': function () {
+    state.pf = { agent: '', status: '', cause: '', from: '', to: '' };
+    render();
+  },
+
+  /* tasks */
+  'task-new': function () { formTask(null); },
+  'task-open': function (el) { formTask(findTask(el.dataset.id)); },
+  'task-save': function (el) { runSave(el, function () { return saveTask(el.dataset.id); }, 'המשימה נשמרה'); },
+  'task-del': function (el) {
+    ask('מחיקת משימה', 'למחוק את המשימה? המחיקה רכה.', 'מחיקה').then(function (yes) {
+      if (!yes) return;
+      softDelete('g_tasks', el.dataset.id).then(function () { return afterSave('נמחק'); }).catch(errToast);
+    });
+  },
+
+  /* settings — users */
+  'user-new': function () { formUser(null); },
+  'user-edit': function (el) { formUser(findUser(el.dataset.id)); },
+  'user-save': function (el) { runSave(el, function () { return saveUser(el.dataset.id); }, 'המשתמש נשמר'); },
+  'user-pass': function (el) { var u = findUser(el.dataset.id); if (u) formPassword(u); },
+  'pass-save': function (el) {
+    var p = $('#pw-new') ? $('#pw-new').value : '';
+    if (!p) { toast('נא להזין סיסמה', 'bad'); return; }
+    runSave(el, function () { return update('g_users', el.dataset.id, { password: p }); }, 'הסיסמה עודכנה');
+  },
+  'user-toggle': function (el) {
+    var u = findUser(el.dataset.id);
+    if (!u) return;
+    if (u.id === state.user.id && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', 'bad'); return; }
+    update('g_users', u.id, { active: !u.active })
+      .then(function () { u.active = !u.active; render(); toast('עודכן', 'ok'); })
+      .catch(errToast);
+  },
+
+  /* settings — lists */
+  'cfg-add': function (el) {
+    var key = el.dataset.key;
+    var input = $('#cfg-add-' + key);
+    var v = input ? input.value.trim() : '';
+    if (!v) { toast('נא להזין ערך', 'bad'); return; }
+    var list = (state.config[key] || []).slice();
+    if (list.indexOf(v) >= 0) { toast('הערך כבר קיים', 'bad'); return; }
+    list.push(v);
+    runSave(el, function () { return saveConfigList(key, list); }, 'נוסף');
+  },
+  'cfg-edit': function (el) {
+    var key = el.dataset.key, i = +el.dataset.i;
+    var list = (state.config[key] || []).slice();
+    openModal('עריכת ערך',
+      '<label class="fld"><span>ערך</span><input class="inp" id="cfg-v" value="' + esc(list[i] || '') + '"></label>' +
+      '<div style="color:var(--muted);font-size:12.5px">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
+      '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+      '<button class="btn" data-act="cfg-edit-save" data-key="' + key + '" data-i="' + i + '">שמירה</button>');
+  },
+  'cfg-edit-save': function (el) {
+    var key = el.dataset.key, i = +el.dataset.i;
+    var v = val('cfg-v');
+    if (!v) { toast('נא להזין ערך', 'bad'); return; }
+    var list = (state.config[key] || []).slice();
+    list[i] = v;
+    runSave(el, function () { return saveConfigList(key, list); }, 'נשמר');
+  },
+  'cfg-del': function (el) {
+    var key = el.dataset.key, i = +el.dataset.i;
+    var list = (state.config[key] || []).slice();
+    ask('הסרת ערך', 'להסיר את "' + list[i] + '" מהרשימה? רשומות קיימות שמשתמשות בערך יישארו כמות שהן.', 'הסרה')
+      .then(function (yes) {
+        if (!yes) return;
+        list.splice(i, 1);
+        saveConfigList(key, list).then(function () { return afterSave('הוסר'); }).catch(errToast);
+      });
+  },
+
+  /* settings — targets */
+  'target-set': function (el) { formTarget(el.dataset.month || state.month); },
+  'target-save': function (el) { runSave(el, saveTarget, 'היעד נשמר'); }
+};
+
+/* --------------------------------------------------------- global events */
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-act]');
+  if (!el) return;
+  var fn = ACTIONS[el.dataset.act];
+  if (!fn) return;
+  if (el.tagName === 'A') return;
+  e.preventDefault();
+  fn(el);
+});
+
+document.addEventListener('input', function (e) {
+  var el = e.target;
+  if (el.id === 'donor-q') {
+    state.donorSearch = el.value;
+    var box = $('#donor-list');
+    if (box) box.innerHTML = donorRowsHTML(donorMatches(state.donorSearch));
+    var cnt = $('#view .card > h2 .cnt');
+    if (cnt) cnt.textContent = donorMatches(state.donorSearch).length;
+  }
+});
+
+document.addEventListener('change', function (e) {
+  var el = e.target;
+  if (el.dataset && el.dataset.inp === 'stage') {
+    moveTask(el.dataset.id, el.value);
+    return;
+  }
+  var map = { 'pf-agent': 'agent', 'pf-status': 'status', 'pf-cause': 'cause', 'pf-from': 'from', 'pf-to': 'to' };
+  if (el.id && map[el.id]) {
+    state.pf[map[el.id]] = el.value;
+    refreshPledges();
+  }
+});
+
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  if ($('#ask').classList.contains('open')) closeAsk(false);
+  else if ($('#modal').classList.contains('open')) closeModal();
+});
+
+$('#modal').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+$('#ask').addEventListener('click', function (e) { if (e.target === this) closeAsk(false); });
+
+/* ====================================================================== */
+/*  BOOT                                                                   */
+/* ====================================================================== */
+function boot() {
+  $('#app').innerHTML = '<div id="boot"><span class="spin"></span></div>';
+  return loadAll()
+    .then(function () { render(); })
+    .catch(function (e) {
+      console.error(e);
+      $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
+        '<h1>שגיאת טעינה</h1><div class="sub">לא הצלחנו לטעון את הנתונים מהשרת.</div>' +
+        '<div class="auth-err show">' + esc((e && e.message) || 'שגיאה לא ידועה') + '</div>' +
+        '<button class="btn block" style="margin-top:14px" onclick="location.reload()">רענון</button>' +
+        '</div></div>';
+    });
+}
+
+function start() {
+  if (!window.supabase || !window.supabase.createClient) {
+    $('#app').innerHTML = '<div class="auth"><div class="auth-card"><h1>שגיאת טעינה</h1>' +
+      '<div class="sub">ספריית Supabase לא נטענה. בדקו את החיבור לאינטרנט ורעננו.</div>' +
+      '<button class="btn block" onclick="location.reload()">רענון</button></div></div>';
+    return;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (_) {}
+  if (saved && saved.id) {
+    state.user = saved;
+    // Re-validate the stored session against the table on every cold start.
+    sb.from('g_users').select('*').eq('id', saved.id).limit(1).then(ok)
+      .then(function (rows) {
+        var u = rows && rows[0];
+        if (!u || !u.active) { logout(); return; }
+        state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
+        try { localStorage.setItem(SESSION_KEY, JSON.stringify(state.user)); } catch (_) {}
+        boot();
+      })
+      .catch(function () { boot(); });
+  } else {
+    renderLogin();
+  }
+}
+
+/* -------------------------------------------------- service worker + update */
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  var updater = $('#updater');
+  var btn = $('#updater-btn');
+  var waiting = null;
+  var updateRequested = false;
+
+  function showUpdate(sw) {
+    waiting = sw;
+    updater.classList.add('show');
+  }
+
+  btn.addEventListener('click', function () {
+    updateRequested = true;
+    if (!waiting) { location.reload(); return; }
+    btn.disabled = true;
+    btn.textContent = 'מעדכן…';
+    waiting.postMessage({ type: 'SKIP_WAITING' });
+  });
+
+  var reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    // The very first worker fires this when it calls clients.claim(). Reloading
+    // then would yank the page out from under a first-time visitor, mid-form.
+    // Only an update the user actually asked for may reload.
+    if (!updateRequested || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+
+  navigator.serviceWorker.register('sw.js').then(function (reg) {
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+    reg.addEventListener('updatefound', function () {
+      var nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', function () {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdate(nw);
+      });
+    });
+  }).catch(function (e) { console.warn('SW registration failed', e); });
+}
+
+window.addEventListener('load', registerSW);
+start();
+
+})();
+</script>
+</body>
+</html>
