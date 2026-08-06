@@ -57,6 +57,21 @@ node scripts/check-js.mjs
 רק `SELECT, INSERT, UPDATE`. כל קריאה מסננת `.eq('deleted', false)`.
 משתמשים הם החריג: הם לא נמחקים אף פעם, השדה `active` הוא המחיקה הרכה שלהם.
 
+> **מלכודת:** `GRANT` הוא אדיטיבי בלבד — הוא לא מסיר כלום. פרויקט Supabase
+> סטנדרטי מגיע עם `alter default privileges in schema public grant all on
+> tables to anon, authenticated`, ולכן כל טבלה שנוצרה ב-0001 קיבלה DELETE
+> ו-TRUNCATE אוטומטית, וה-`grant select, insert, update` שבסוף 0001 לא לקח
+> אותם. `migrations/0002_revoke_delete.sql` עושה `REVOKE` מפורש ומתקן את זה.
+> **טבלה חדשה תיוולד שוב עם DELETE** — כל מיגרציה שמוסיפה טבלה חייבת לכלול
+> `revoke all` ואז `grant select, insert, update`. לבדיקה:
+>
+> ```sql
+> select table_name, string_agg(distinct privilege_type, ', ' order by privilege_type)
+> from information_schema.role_table_grants
+> where grantee = 'anon' and table_schema = 'public' and table_name like 'g\_%'
+> group by table_name;
+> ```
+
 ### 5. `updated_at` בכל שינוי
 לכל רשומה בכל טבלה יש `updated_at`, ומטופל ע"י טריגר `g_touch_updated_at`
 בצד השרת — לא בהסתמכות על הלקוח. זה הבסיס למנוע מיזוג עתידי, ולכן הוא חייב
@@ -206,11 +221,13 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 לא רץ אוטומטית. להריץ ידנית מול הפרויקט (SQL Editor או `supabase db push`):
 
 ```
-migrations/0001_init.sql
+migrations/0001_init.sql          ✅ הורץ
+migrations/0002_revoke_delete.sql ⏳ ממתין להרצה
 ```
 
-הקובץ אידמפוטנטי — אפשר להריץ שוב בבטחה. הוא זורע את המשתמש הראשוני
+שני הקבצים אידמפוטנטיים — אפשר להריץ שוב בבטחה. 0001 זורע את המשתמש הראשוני
 (`mmf` / `770770`, מענדי פרידמן, owner) ואת רשימות הפתיחה, ותו לא.
+0002 מסיר מ-`anon` את הרשאת ה-DELETE שנשארה לו (ר' סעיף 4).
 
 **מיגרציות חדשות:** קובץ חדש ורץ קדימה בלבד (`0002_...sql`), אף פעם לא עריכה
 של קובץ שכבר רץ.
