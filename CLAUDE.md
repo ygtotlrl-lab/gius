@@ -15,12 +15,14 @@
 index.html                 האפליקציה כולה — HTML + CSS + JS מוטבעים. קובץ אחד.
 sw.js                      service worker
 manifest.json              PWA manifest
+.nojekyll                  מנטרל Jekyll — בלעדיו GitHub Pages לא מגיש תיקיות שמתחילות בנקודה
+.well-known/assetlinks.json  אימות בעלות ל-TWA. חייב להתאים לטביעת המפתח החותם.
 icons/                     אייקונים (נוצרים ע"י scripts/gen-icons.mjs — לא לערוך ידנית)
 migrations/0001_init.sql   סכמת הבסיס. להריץ ידנית מול הפרויקט.
 scripts/check-js.mjs       שער חובה לפני כל push
 scripts/gen-icons.mjs      מחולל האייקונים
-signing/gius.keystore      מפתח החתימה הקבוע של ה-APK — לעולם לא להחליף
-signing/sign-apk.sh        סקריפט חתימה מחדש של APK במפתח הקבוע
+signing/gius.keystore      keystore ידני — 🚫 לא בשימוש. נשמר לתיעוד, לא למחוק.
+signing/sign-apk.sh        סקריפט חתימה שמפנה ל-keystore הלא-פעיל — לא בשימוש
 ```
 
 ---
@@ -235,16 +237,40 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 
 ## חתימת APK — מפתח קבוע (לעולם לא משתנה!)
 
+**המפתח הקבוע של הפרויקט הוא ה-keystore ש-PWABuilder ייצר בבניית ה-APK.** הוא זה
+שחתם את הגרסה שהותקנה בפועל אצל המשתמשים, ולכן הוא — ורק הוא — המפתח של gius מכאן
+והלאה. ה-keystore הידני שיצרנו לפני כן (`signing/gius.keystore`) **אינו בשימוש**.
+
+| | |
+|---|---|
+| **מקור** | keystore שנוצר ע"י PWABuilder בבניית ה-APK |
+| **Package ID** | `com.gius.app` |
+| **alias** | `my-key-alias` |
+| **storepass** | `uqNfubfXeOyp` |
+| **keypass** | `uqNfubfXeOyp` (זהה ל-storepass) |
+| **SHA256** | `DA:61:B1:4D:3E:46:B7:AE:82:8C:E6:D0:77:4A:6E:43:4D:1F:F6:E0:91:B7:0C:7C:EF:29:2D:02:A1:31:FC:4C` |
+
+> **איפה הקובץ:** PWABuilder מוסר את ה-keystore בחבילת ההורדה של ה-APK (יחד עם
+> `signing-key-info.txt`). **הוא לא בריפו** — יש לשמור אותו בגיבוי בטוח מחוץ למכונת
+> הבנייה. אם הוא יאבד, אין שום דרך לשחזר אותו, וכל המשתמשים הקיימים ייאלצו להסיר
+> ולהתקין מחדש.
+
+### 🚫 `signing/gius.keystore` — לא פעיל
+
 | | |
 |---|---|
 | **קובץ** | `signing/gius.keystore` (PKCS12, RSA 2048) |
 | **alias** | `gius` |
-| **storepass** | `gius123` |
-| **keypass** | `gius123` (זהה ל-storepass) |
+| **storepass / keypass** | `gius123` |
 | **תוקף** | 10,000 יום — 07.08.2026 עד 23.12.2053 |
 | **SHA256** | `74:48:32:F5:58:92:79:95:FA:7B:61:7A:48:3D:BB:4E:9B:B1:72:1B:46:F9:C6:03:B6:7C:DA:8E:18:91:7D:95` |
 | **SHA1** | `FC:DC:62:EC:4C:45:04:E2:F6:99:9B:96:39:8F:95:47:F9:FC:86:13` |
 | **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
+
+הקובץ נוצר לפני שהתברר ש-PWABuilder חותם במפתח משלו. **שום APK מותקן לא נחתם בו.**
+אסור לחתום בו APK חדש — חתימה בו תיצור אפליקציה זרה מול ההתקנות הקיימות.
+**לא למחוק אותו** — הוא נשאר בריפו כתיעוד היסטורי, מסומן כלא-פעיל.
+`signing/sign-apk.sh` מפנה לקובץ הזה, ולכן גם הוא לא בשימוש כמות שהוא.
 
 ### ⛔ אזהרה — אין להחליף את המפתח לעולם
 
@@ -257,38 +283,79 @@ APK שנחתם במפתח אחר נחשב אפליקציה **זרה**, וההת�
 במפתח הישן" אחרי שהוא אבד.
 
 לכן:
-1. **לעולם לא להריץ `keytool -genkeypair` שוב** עבור הפרויקט הזה. הריצה הראשונה
-   כבר בוצעה, והקובץ בריפו הוא התוצאה שלה.
-2. **לעולם לא למחוק, לדרוס או "לרענן" את `signing/gius.keystore`.** הוא חלק מהריפו
-   בדיוק כדי שלא יאבד — כמו שקרה ב-yoman-avoda כשהמפתח ישב ב-`/tmp`.
-3. **כל APK חדש נחתם אך ורק במפתח הזה**, גם אם נבנה בכלי אחר (PWABuilder, Bubblewrap,
-   Android Studio).
+1. **כל בנייה עתידית חייבת להיחתם במפתח של PWABuilder** (`my-key-alias`), גם אם
+   נבנתה בכלי אחר (Bubblewrap, Android Studio). ב-PWABuilder יש לבחור
+   **"Use my existing signing key"** ולהעלות את ה-keystore השמור — לעולם לא
+   "Create new signing key".
+2. **לעולם לא להריץ `keytool -genkeypair`** עבור הפרויקט הזה.
+3. **ה-Package ID חייב להישאר `com.gius.app`.** גם שינוי שלו יוצר אפליקציה נפרדת.
 4. אחרי חתימה — לאמת שה-SHA256 תואם לטבלה למעלה.
+5. **`.well-known/assetlinks.json` חייב להתאים לטביעת האצבע.** אם המפתח משתנה
+   מכל סיבה — הקובץ חייב להתעדכן באותה נשימה, אחרת ה-TWA יאבד את אימות הבעלות
+   וייפתח כדפדפן. ר' הפרק הבא.
 
 ### חתימה
 
 ```bash
-./signing/sign-apk.sh app-unsigned.apk gius.apk
+apksigner sign --ks <pwabuilder-keystore> --ks-key-alias my-key-alias \
+  --ks-pass pass:uqNfubfXeOyp --key-pass pass:uqNfubfXeOyp app.apk
 ```
 
-הסקריפט מריץ `zipalign` ואז `apksigner`, ובסוף `apksigner verify --print-certs`.
-דורש Android build-tools ב-PATH.
-
-חלופה ידנית (apksigner):
+חלופה (jarsigner, אם אין apksigner):
 ```bash
-apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
-  --ks-pass pass:gius123 --key-pass pass:gius123 app.apk
+jarsigner -keystore <pwabuilder-keystore> -storepass uqNfubfXeOyp \
+  -keypass uqNfubfXeOyp app.apk my-key-alias
 ```
 
-חלופה ידנית (jarsigner, אם אין apksigner):
+אימות טביעת האצבע — חייב להחזיר את ה-SHA256 מהטבלה:
 ```bash
-jarsigner -keystore signing/gius.keystore -storepass gius123 -keypass gius123 app.apk gius
+keytool -list -v -keystore <pwabuilder-keystore> -storepass uqNfubfXeOyp
+apksigner verify --print-certs app.apk
 ```
 
-אימות טביעת האצבע:
-```bash
-keytool -list -v -keystore signing/gius.keystore -storepass gius123
+---
+
+## אימות בעלות ל-TWA — `.well-known/assetlinks.json`
+
+ה-APK הוא TWA (Trusted Web Activity). אנדרואיד פותח אותו במצב אפליקציה מלא **רק אם**
+האתר מצהיר שהוא מכיר בחבילה — דרך Digital Asset Links. בלי הצהרה תקפה האפליקציה
+נופלת חזרה למצב דפדפן (Custom Tab עם שורת כתובת).
+
+`/.well-known/assetlinks.json` בשורש הריפו:
+
+```json
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.gius.app",
+    "sha256_cert_fingerprints": ["DA:61:B1:4D:...:FC:4C"]
+  }
+}]
 ```
+
+**כללים:**
+1. **`sha256_cert_fingerprints` חייב להיות זהה לטביעת האצבע של המפתח החותם** —
+   זו שבטבלת החתימה למעלה. אלה שני צדדים של אותה הצהרה: המפתח שחותם על ה-APK
+   והטביעה שהאתר מצהיר עליה. **מפתח שמשתנה מחייב עדכון של הקובץ הזה**, אחרת
+   האימות נכשל וכל המשתמשים חוזרים למצב דפדפן.
+2. **`package_name` חייב להיות `com.gius.app`** — זהה ל-Package ID של ה-APK.
+3. **`.nojekyll` בשורש הריפו הוא תנאי הכרחי.** GitHub Pages מריץ Jekyll כברירת
+   מחדל, ו-Jekyll **לא מגיש תיקיות שמתחילות בנקודה** — בלי `.nojekyll` הקובץ
+   פשוט יחזיר 404. הקובץ קיים בריפו; לא למחוק אותו.
+
+**אימות אחרי פריסה:**
+```bash
+curl -i https://ygtotlrl-lab.github.io/gius/.well-known/assetlinks.json
+```
+צריך להחזיר `200` ו-JSON תקין.
+
+> **הערה שדורשת בדיקה בשטח:** אנדרואיד מושך את רשימת ההצהרות מ**שורש ה-origin** —
+> `https://ygtotlrl-lab.github.io/.well-known/assetlinks.json` — ולא מתת-הנתיב
+> `/gius/`. באתר Project Pages תת-הנתיב אינו שורש ה-origin, ולכן ייתכן שהקובץ
+> הזה לבדו לא יספיק. אם אחרי הפריסה האפליקציה עדיין נפתחת כדפדפן: הפתרון הוא
+> ריפו `ygtotlrl-lab.github.io` (User Pages) שמגיש `/.well-known/assetlinks.json`
+> בשורש, עם מערך שמכיל הצהרה לכל אפליקציה בארגון (gius, yoman-avoda וכו').
 
 ---
 
