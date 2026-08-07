@@ -48,12 +48,19 @@ rm -f "$ALIGNED"
 apksigner verify --print-certs "$OUT"
 
 # Verify what actually landed in the APK, not just what we asked for.
-if ! apksigner verify --print-certs "$OUT" | grep -qiF "$EXPECTED_SHA256"; then
+# apksigner prints the digest lowercase and WITHOUT colons ("da61b1…"), while
+# keytool prints it uppercase WITH colons — so both sides get normalised before
+# comparing. Matching the colon form against apksigner output never succeeds.
+normalise() { tr -d ':' | tr 'A-Z' 'a-z'; }
+WANT="$(printf '%s' "$EXPECTED_SHA256" | normalise)"
+GOT="$(apksigner verify --print-certs "$OUT" \
+       | grep -i 'SHA-256 digest' | head -1 | awk '{print $NF}' | normalise)"
+if [ "$WANT" != "$GOT" ]; then
   echo "❌ signed APK does not carry the expected certificate!" >&2
+  echo "   expected: $WANT" >&2
+  echo "   actual:   $GOT" >&2
   exit 1
 fi
 
 echo "✅ Signed with the permanent gius key -> $OUT"
 echo "   SHA256 $EXPECTED_SHA256"
-echo "   This must stay identical to .well-known/assetlinks.json, or the TWA"
-echo "   loses ownership verification and opens as a browser."
