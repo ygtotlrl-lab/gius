@@ -25,7 +25,12 @@
 
 ```bash
 node scripts/check-js.mjs    # חובה לפני כל push
-node scripts/gen-icons.mjs   # מחדש את האייקונים
+node scripts/gen-icons.mjs   # מחדש את האייקונים (PWA + APK)
 ```
+
+## APK
+
+מעטפת אנדרואיד מסוג **WebView** (לא TWA) ב-[`android/`](android/README.md).
+בנייה: Actions → **Build APK** → Run workflow.
 
 הכללים המחייבים והתיעוד המלא של מבנה הנתונים — ב-[CLAUDE.md](CLAUDE.md).

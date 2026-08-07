@@ -1,8 +1,17 @@
-// Generates the PWA icons from pure pixel math — no image libraries, no binary
-// blobs checked in by hand. Re-run with:  node scripts/gen-icons.mjs
+// Generates the PWA icons *and* the APK launcher icons from pure pixel math —
+// no image libraries, no binary blobs checked in by hand.
+// Re-run with:  node scripts/gen-icons.mjs
 //
 // The mark is the same shape the app uses for its month-progress ring: an open
 // ring with a solid centre dot, on the brand teal, in a rounded square.
+//
+// Outputs:
+//   icons/                                   the PWA / favicon set
+//   android/app/src/main/res/mipmap-*/        the APK launcher icons
+//     ic_launcher.png             legacy square icon (API 25 and below)
+//     ic_launcher_foreground.png  adaptive-icon foreground, transparent, mark only
+//   (the adaptive-icon background is a flat brand-teal shape drawable, checked
+//    in as XML — see res/drawable/ic_launcher_background.xml)
 
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -11,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'icons');
+const RES = join(ROOT, 'android', 'app', 'src', 'main', 'res');
 
 const BRAND = [15, 118, 110];   // #0f766e
 const INK = [255, 255, 255];
@@ -63,7 +73,10 @@ function encodePng(width, height, rgba) {
 
 // ------------------------------------------------------------------ the mark
 // `pad` leaves safe-area room so the same art works as a maskable icon.
-function drawIcon(size, pad = 0) {
+// `box: false` drops the teal rounded square and draws the ring alone on
+// transparency — that is what an adaptive-icon foreground layer needs, since
+// Android supplies the background layer itself.
+function drawIcon(size, pad = 0, { box: drawBox = true, ink = INK } = {}) {
   const px = Buffer.alloc(size * size * 4);
   const c = (size - 1) / 2;
   const box = size * (1 - pad);                 // side of the rounded square
@@ -103,9 +116,9 @@ function drawIcon(size, pad = 0) {
       }
       const n = SS * SS;
       const i = (y * size + x) * 4;
-      if (inBox) put(i, BRAND, inBox / n);
-      if (inRing) put(i, INK, inRing / n);
-      if (inDot) put(i, INK, inDot / n);
+      if (drawBox && inBox) put(i, BRAND, inBox / n);
+      if (inRing) put(i, ink, inRing / n);
+      if (inDot) put(i, ink, inDot / n);
     }
   }
   return encodePng(size, size, px);
@@ -122,4 +135,31 @@ const files = [
 for (const [name, size, pad] of files) {
   writeFileSync(join(OUT, name), drawIcon(size, pad));
   console.log('wrote icons/' + name);
+}
+
+// ------------------------------------------------------- APK launcher icons
+// Densities: the legacy icon is 48dp, the adaptive foreground canvas is 108dp.
+const DENSITIES = [
+  ['mdpi', 1],
+  ['hdpi', 1.5],
+  ['xhdpi', 2],
+  ['xxhdpi', 3],
+  ['xxxhdpi', 4],
+];
+
+// Adaptive icons mask everything outside the central 66dp of the 108dp canvas,
+// so the mark has to live inside 66/108 ≈ 0.611 of the width. The ring's outer
+// diameter is 0.685 of `box`, so box = 0.85·size puts it at 0.582 — inside the
+// safe zone with room to spare, and the same optical weight as the PWA icon.
+const FOREGROUND_PAD = 0.15;
+
+for (const [density, scale] of DENSITIES) {
+  const dir = join(RES, 'mipmap-' + density);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'ic_launcher.png'), drawIcon(Math.round(48 * scale), 0));
+  writeFileSync(
+    join(dir, 'ic_launcher_foreground.png'),
+    drawIcon(Math.round(108 * scale), FOREGROUND_PAD, { box: false }),
+  );
+  console.log('wrote android .../mipmap-' + density + '/ic_launcher{,_foreground}.png');
 }

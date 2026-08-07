@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.gius.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.gius.app"   // must stay identical to the PWABuilder TWA it replaces
+        minSdk 21
+        targetSdk 34
+        // The TWA that PWABuilder built is versionCode 1. Anything installing
+        // over it has to be higher.
+        versionCode 2
+        versionName "2.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}
