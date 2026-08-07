@@ -21,8 +21,9 @@ icons/                     אייקונים (נוצרים ע"י scripts/gen-icon
 migrations/0001_init.sql   סכמת הבסיס. להריץ ידנית מול הפרויקט.
 scripts/check-js.mjs       שער חובה לפני כל push
 scripts/gen-icons.mjs      מחולל האייקונים
+signing/pwabuilder.keystore  ✅ המפתח הפעיל — לעולם לא להחליף, לא למחוק
 signing/gius.keystore      keystore ידני — 🚫 לא בשימוש. נשמר לתיעוד, לא למחוק.
-signing/sign-apk.sh        סקריפט חתימה שמפנה ל-keystore הלא-פעיל — לא בשימוש
+signing/sign-apk.sh        חתימת APK במפתח הפעיל, עם אימות טביעת אצבע
 ```
 
 ---
@@ -243,17 +244,32 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 
 | | |
 |---|---|
+| **קובץ** | `signing/pwabuilder.keystore` — **בריפו** |
 | **מקור** | keystore שנוצר ע"י PWABuilder בבניית ה-APK |
 | **Package ID** | `com.gius.app` |
 | **alias** | `my-key-alias` |
 | **storepass** | `uqNfubfXeOyp` |
 | **keypass** | `uqNfubfXeOyp` (זהה ל-storepass) |
 | **SHA256** | `DA:61:B1:4D:3E:46:B7:AE:82:8C:E6:D0:77:4A:6E:43:4D:1F:F6:E0:91:B7:0C:7C:EF:29:2D:02:A1:31:FC:4C` |
+| **SHA1** | `8F:C6:AA:00:FC:F0:64:D7:6F:DF:39:A3:63:80:A0:D4:DD:08:07:9F` |
+| **סוג** | PKCS12, RSA 2048, SHA256withRSA |
+| **תוקף** | 07.08.2026 עד 10.05.2081 |
+| **DN** | `CN=גיוס Admin, OU=Engineering, O=גיוס — ניהול גיוס כספים, C=US` |
 
-> **איפה הקובץ:** PWABuilder מוסר את ה-keystore בחבילת ההורדה של ה-APK (יחד עם
-> `signing-key-info.txt`). **הוא לא בריפו** — יש לשמור אותו בגיבוי בטוח מחוץ למכונת
-> הבנייה. אם הוא יאבד, אין שום דרך לשחזר אותו, וכל המשתמשים הקיימים ייאלצו להסיר
-> ולהתקין מחדש.
+**המפתח שמור בריפו** — בדיוק כמו `signing/yoman.keystore` ב-`ygtotlrl-lab/yoman-avoda`.
+זה נועד למנוע את התרחיש היחיד שאין ממנו חזרה: אובדן המפתח. הוא לא נשמר רק
+בחבילת ההורדה של PWABuilder, שמתיישנת ונמחקת.
+
+> **⚠️ הריפו ציבורי.** המשמעות: ה-keystore **והסיסמה שלו** גלויים לכל אחד, ולכן כל
+> אחד יכול לחתום APK שאנדרואיד יקבל כעדכון ל-`com.gius.app`. זו החלטה מודעת —
+> אותה החלטה שהתקבלה ב-yoman-avoda — ומקובלת בהקשר של כלי פנימי שמותקן בצד
+> (sideload) ולא מופץ ב-Google Play. **אם gius אי פעם יעלה ל-Google Play, או
+> יחרוג מהצוות הפנימי:** להוציא את המפתח מהריפו, לנקות אותו מההיסטוריה,
+> ולעבור ל-Play App Signing. אחרי דחיפה לריפו ציבורי המפתח נחשב חשוף לצמיתות —
+> אין "ביטול" ע"י מחיקת הקובץ.
+
+**גיבוי:** גם עם המפתח בריפו, כדאי לשמור עותק בגיבוי נפרד. אם הריפו יימחק —
+המפתח נמחק איתו, וכל המשתמשים הקיימים ייאלצו להסיר ולהתקין מחדש.
 
 ### 🚫 `signing/gius.keystore` — לא פעיל
 
@@ -270,7 +286,10 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 הקובץ נוצר לפני שהתברר ש-PWABuilder חותם במפתח משלו. **שום APK מותקן לא נחתם בו.**
 אסור לחתום בו APK חדש — חתימה בו תיצור אפליקציה זרה מול ההתקנות הקיימות.
 **לא למחוק אותו** — הוא נשאר בריפו כתיעוד היסטורי, מסומן כלא-פעיל.
-`signing/sign-apk.sh` מפנה לקובץ הזה, ולכן גם הוא לא בשימוש כמות שהוא.
+
+שימו לב לבלבול הצפוי: שני קבצי `.keystore` יושבים זה לצד זה ב-`signing/`.
+**`pwabuilder.keystore` הוא הפעיל. `gius.keystore` הוא לא.** ההבחנה היא בטביעת
+האצבע — רק `DA:61:B1:4D:...` תקפה.
 
 ### ⛔ אזהרה — אין להחליף את המפתח לעולם
 
@@ -283,10 +302,10 @@ APK שנחתם במפתח אחר נחשב אפליקציה **זרה**, וההת�
 במפתח הישן" אחרי שהוא אבד.
 
 לכן:
-1. **כל בנייה עתידית חייבת להיחתם במפתח של PWABuilder** (`my-key-alias`), גם אם
-   נבנתה בכלי אחר (Bubblewrap, Android Studio). ב-PWABuilder יש לבחור
-   **"Use my existing signing key"** ולהעלות את ה-keystore השמור — לעולם לא
-   "Create new signing key".
+1. **כל בנייה עתידית חייבת להיחתם ב-`signing/pwabuilder.keystore`** (alias
+   `my-key-alias`), גם אם נבנתה בכלי אחר (Bubblewrap, Android Studio).
+   ב-PWABuilder יש לבחור **"Use my existing signing key"** ולהעלות את הקובץ
+   מהריפו — לעולם לא "Create new signing key".
 2. **לעולם לא להריץ `keytool -genkeypair`** עבור הפרויקט הזה.
 3. **ה-Package ID חייב להישאר `com.gius.app`.** גם שינוי שלו יוצר אפליקציה נפרדת.
 4. אחרי חתימה — לאמת שה-SHA256 תואם לטבלה למעלה.
@@ -297,19 +316,29 @@ APK שנחתם במפתח אחר נחשב אפליקציה **זרה**, וההת�
 ### חתימה
 
 ```bash
-apksigner sign --ks <pwabuilder-keystore> --ks-key-alias my-key-alias \
+./signing/sign-apk.sh app-unsigned.apk gius.apk
+```
+
+הסקריפט מריץ `zipalign` ואז `apksigner`, ודורש Android build-tools ב-PATH.
+יש בו שני שערים שנועדו למנוע את התקלה הבלתי הפיכה: הוא **מסרב לחתום** אם טביעת
+האצבע של ה-keystore אינה `DA:61:B1:4D:...`, ואחרי החתימה הוא מוודא שה-APK אכן
+נושא את התעודה הזו.
+
+חלופה ידנית (apksigner):
+```bash
+apksigner sign --ks signing/pwabuilder.keystore --ks-key-alias my-key-alias \
   --ks-pass pass:uqNfubfXeOyp --key-pass pass:uqNfubfXeOyp app.apk
 ```
 
-חלופה (jarsigner, אם אין apksigner):
+חלופה ידנית (jarsigner, אם אין apksigner):
 ```bash
-jarsigner -keystore <pwabuilder-keystore> -storepass uqNfubfXeOyp \
+jarsigner -keystore signing/pwabuilder.keystore -storepass uqNfubfXeOyp \
   -keypass uqNfubfXeOyp app.apk my-key-alias
 ```
 
 אימות טביעת האצבע — חייב להחזיר את ה-SHA256 מהטבלה:
 ```bash
-keytool -list -v -keystore <pwabuilder-keystore> -storepass uqNfubfXeOyp
+keytool -list -v -keystore signing/pwabuilder.keystore -storepass uqNfubfXeOyp
 apksigner verify --print-certs app.apk
 ```
 
