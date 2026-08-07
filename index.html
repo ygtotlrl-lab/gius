@@ -1039,6 +1039,309 @@ window.lsFails = lsFails;
 window.lsOkSince = lsOkSince;
 window.lsGuardToast = lsGuardToast;
 /* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
+/* ── PEND_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
+// `extra` — פעולה שנכשלה כשל תוכן חוזר (`dead`) נשארת בתור וגלויה בהגדרות.
+// היא נספרת בסימונים ככל פעולה אחרת, אבל ראוי שתיאמר במפורש בסרגל.
+var PEND_CFG = {
+  app: 'gius', key: 'g_pending',
+  extra: function () {
+    try {
+      var q = JSON.parse(lsGet('g_outbox', '[]'));
+      var d = Array.isArray(q) ? q.filter(function (o) { return o && o.dead; }).length : 0;
+      return d ? ('❌ ' + d + ' נכשלו — ר\' הגדרות') : '';
+    } catch (e) { return ''; }
+  }
+};
+
+/* ═══ ממתין לסנכרון — מודול משותף (סבב 12) ═══════════════════════════════
+   הבעיה שהמודול הזה פותר: אחרי שמירה מקומית המסך נראה **בדיוק** כמו אחרי
+   שמירה בענן. המשתמש רושם תשלום ברכבת התחתית, רואה אותו ברשימה, וסוגר את
+   האפליקציה בהנחה שהוא שמור — בזמן שהוא יושב רק על המכשיר הזה. סימון גלוי
+   הוא ההבדל בין "שמור" ל"שמור אצלך בלבד".
+
+   שלוש רמות תצוגה, כולן מהמפה אחת:
+     • **תגית ⏳ על הרשומה עצמה** — `pendTag(key)`, נכנסת לשורה ברשימה.
+     • **מונה גלוי** — סרגל תחתון, מוצג רק כשיש משהו ממתין.
+     • **התרעה** — משהו ממתין מעל 24 שעות ⇐ באנר אדום קבוע שנשאר עד סגירה.
+
+   ⚠️ **ההגדרה של "ממתין" היא ראייתית, לא אופטימית.** רשומה מסומנת ממתינה
+   ברגע שנכתבה במכשיר, ויורדת מהסימון **רק כשיש ראיה שהענן קיבל אותה**:
+   תשובת הצלחה, או דחיפת-מצב מוצלחת שכללה אותה. כשל רשת אינו ראיה לכלום
+   ולכן **אינו מוריד סימון** — תשובה שאבדה ברשת היא בדיוק המקרה שבו הרשומה
+   אולי כן נכנסה, ואולי לא. ספק ⇐ נשאר מסומן.
+
+   ⚠️ **כשל סמכותי כן מוריד את הסימון** (`pendFailed`) — שגיאת ולידציה או
+   הרשאה אומרת שהשורה **לא** נכתבה, וסימון "ממתין" עליה היה שקר מהכיוון
+   השני: הוא מבטיח שליחה חוזרת שלא תקרה לעולם.
+
+   ⚠️ **הכלל לדחיפת-מצב מלא** (`pendConfirmPush`): דחיפה מוצלחת מאשרת כל מה
+   שסומן **לפני שצילום המצב נלקח** — לא לפני שהיא הסתיימה. רשומה שנכתבה
+   באמצע הדחיפה אינה בתוכה, והורדת הסימון ממנה הייתה מאבדת אותה בשקט.
+   לכן `t0` נלקח לפני קריאת המצב המקומי, ומועבר לכאן.
+
+   התלויות: `lsSet`/`lsGet` (מודול האחסון) ו-`esc`. `PEND_CFG` מוגדרת מעליו
+   והיא **הדבר היחיד שנבדל בין האפליקציות**.
+   ═══════════════════════════════════════════════════════════════════════ */
+var PEND_LATE_MS = 24 * 60 * 60 * 1000;   // סף ההתרעה
+var PEND_MAX = 800;                       // תקרת המפה — הגנה מפני צמיחה בלי גבול
+var _pendMap = null;
+var _pendAlertDismissed = 0;
+
+// `PEND_CFG.key` יכולה להיות מחרוזת או פונקציה. yoman-avoda מחזיקה שני
+// מוסדות באותו דומיין, וסימוני האחד אינם תקפים לשני — שם היא פונקציה.
+function pendKeyName() {
+  var k = (typeof PEND_CFG === 'object') ? PEND_CFG.key : null;
+  if (typeof k === 'function') { try { k = k(); } catch (e) { k = null; } }
+  return k || 'pending_sync';
+}
+// החלפת הקשר (מוסד/משתמש) — המפה נטענת מחדש מהמפתח החדש.
+function pendReload() { _pendMap = null; pendAll(); pendRender(); }
+
+function pendAll() {
+  if (_pendMap) return _pendMap;
+  var v = null;
+  try { var raw = lsGet(pendKeyName(), null); v = raw == null ? null : JSON.parse(raw); }
+  catch (e) { v = null; }
+  _pendMap = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  // ניקוי ערכים פגומים — חותמת שאינה מספר חיובי אינה ראיה לכלום
+  Object.keys(_pendMap).forEach(function (k) {
+    var t = Number(_pendMap[k]);
+    if (!isFinite(t) || t <= 0) delete _pendMap[k];
+  });
+  return _pendMap;
+}
+
+// הכתיבה עוברת דרך lsSet (כלל ברזל 1). כישלון כאן אינו שקט: lsSet מרימה
+// באנר ורושמת ליומן, ו-lsGuardToast יבלע כל "✅" בשתי השניות הבאות.
+function pendSave() {
+  var m = pendAll();
+  var keys = Object.keys(m);
+  if (keys.length > PEND_MAX) {
+    // גריעה של הישנים ביותר. זו לא "מחיקת נתון שטרם הסתנכרן" — הרשומה עצמה
+    // נשארת במקומה; רק הסימון שלה יורד. עדיין נרשם ליומן, כי סימון שנעלם
+    // בלי אישור הוא בדיוק מה שהמודול בא למנוע.
+    keys.sort(function (a, b) { return m[a] - m[b]; });
+    var drop = keys.slice(0, keys.length - PEND_MAX);
+    drop.forEach(function (k) { delete m[k]; });
+    try { lsLog('pend-overflow', drop.length + ' סימונים נגרעו (תקרה ' + PEND_MAX + ')', 0); } catch (e) { }
+  }
+  return lsSet(pendKeyName(), JSON.stringify(m));
+}
+
+// סימון. חותמת קיימת **אינה נדרסת** — הגיל נמדד מהכתיבה הראשונה שלא אושרה,
+// אחרת עריכה חוזרת של אותה רשומה הייתה מאפסת את שעון ההתרעה לנצח.
+function pendMark(key) {
+  if (!key) return 0;
+  var m = pendAll();
+  if (!m[key]) { m[key] = Date.now(); pendSave(); pendRender(); }
+  return m[key];
+}
+function pendMarkMany(keys) {
+  if (!keys || !keys.length) return;
+  var m = pendAll(), now = Date.now(), ch = false;
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i] && !m[keys[i]]) { m[keys[i]] = now; ch = true; }
+  }
+  if (ch) { pendSave(); pendRender(); }
+}
+
+// אישור — יש ראיה שהענן קיבל.
+function pendClear(key) {
+  if (!key) return;
+  var m = pendAll();
+  if (m[key]) { delete m[key]; pendSave(); pendRender(); }
+}
+function pendClearMany(keys) {
+  if (!keys || !keys.length) return;
+  var m = pendAll(), ch = false;
+  for (var i = 0; i < keys.length; i++) if (m[keys[i]]) { delete m[keys[i]]; ch = true; }
+  if (ch) { pendSave(); pendRender(); }
+}
+
+// כשל סמכותי — הכתיבה **לא** נכנסה, ולכן הסימון יורד. ראה ההערה בראש המודול.
+function pendFailed(key) { pendClear(key); }
+
+// אישור דחיפת-מצב מלא: כל מה שסומן לפני `t0` נכלל בצילום שנדחף בהצלחה.
+// `prefix` מגביל לקטגוריה אחת — דחיפה של מפתח אחד אינה מאשרת את השאר.
+function pendConfirmPush(prefix, t0) {
+  var m = pendAll(), ch = false;
+  t0 = Number(t0) || 0;
+  if (!t0) return;
+  Object.keys(m).forEach(function (k) {
+    if (prefix && k.indexOf(prefix) !== 0) return;
+    if (m[k] < t0) { delete m[k]; ch = true; }
+  });
+  if (ch) { pendSave(); pendRender(); }
+}
+
+function pendHas(key) { return !!pendAll()[key]; }
+function pendSince(key) { return pendAll()[key] || 0; }
+function pendCount() { return Object.keys(pendAll()).length; }
+function pendOldest() {
+  var m = pendAll(), keys = Object.keys(m), t = 0;
+  for (var i = 0; i < keys.length; i++) if (!t || m[keys[i]] < t) t = m[keys[i]];
+  return t;
+}
+function pendLateCount() {
+  var m = pendAll(), keys = Object.keys(m), n = 0, cut = Date.now() - PEND_LATE_MS;
+  for (var i = 0; i < keys.length; i++) if (m[keys[i]] < cut) n++;
+  return n;
+}
+function pendReset() { _pendMap = {}; pendSave(); pendRender(); }
+
+function pendFmtAge(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  var mi = Math.floor(ms / 60000);
+  if (mi < 1) return 'פחות מדקה';
+  if (mi < 60) return mi + ' דק׳';
+  var h = Math.floor(mi / 60);
+  if (h < 24) return h + ' שע׳';
+  return Math.floor(h / 24) + ' ימים';
+}
+
+/* --------------------------------------------------------------- תצוגה */
+function pendEnsureStyle() {
+  if (document.getElementById('pend-style')) return;
+  var s = document.createElement('style');
+  s.id = 'pend-style';
+  s.textContent =
+    '.pend-tag{display:inline-block;background:#fde68a;color:#78350f;border:1px solid #f59e0b;' +
+    'border-radius:999px;padding:0 7px;font-size:.68rem;font-weight:700;line-height:1.6;' +
+    'white-space:nowrap;vertical-align:middle;margin:0 4px}' +
+    '.pend-tag.late{background:#fecaca;color:#7f1d1d;border-color:#dc2626}' +
+    '#pend-bar{position:fixed;z-index:2147482000;left:0;right:0;bottom:0;padding:8px 12px;' +
+    'text-align:center;direction:rtl;font:600 13px/1.5 inherit;color:#3d2c00;background:#ffd88a;' +
+    'box-shadow:0 -2px 10px rgba(0,0,0,.18)}' +
+    '#pend-bar.late{background:#ffb4ab;color:#5c1a12}' +
+    '#pend-alert{position:fixed;z-index:2147483000;left:0;right:0;top:0;padding:10px 14px;' +
+    'direction:rtl;font:700 13px/1.6 inherit;color:#fff;background:#b91c1c;' +
+    'box-shadow:0 2px 10px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;justify-content:center}' +
+    '#pend-alert button{background:rgba(255,255,255,.25);color:#fff;border:1px solid #fff;' +
+    'border-radius:6px;padding:2px 10px;font:inherit;cursor:pointer}';
+  (document.head || document.documentElement).appendChild(s);
+}
+
+// התגית שנכנסת לשורת הרשומה. מחזירה מחרוזת ריקה כשאין מה להציג, כדי
+// שאפשר יהיה לשרשר אותה ללא תנאי בכל תבנית.
+function pendTag(key) {
+  var t = pendSince(key);
+  if (!t) return '';
+  pendEnsureStyle();
+  var age = Date.now() - t, late = age > PEND_LATE_MS;
+  var title = 'ממתין לסנכרון מאז ' + new Date(t).toLocaleString('he-IL') +
+              ' (' + pendFmtAge(age) + ') — שמור במכשיר, טרם אושר בענן';
+  return '<span class="pend-tag' + (late ? ' late' : '') + '" title="' + esc(title) + '">' +
+         (late ? '⚠️' : '⏳') + ' ממתין</span>';
+}
+
+function pendCounterText() {
+  var n = pendCount(), off = (typeof navigator !== 'undefined' && navigator && navigator.onLine === false);
+  if (!n) return off ? '⚠️ אין רשת' : '';
+  var late = pendLateCount();
+  var s = (late ? '⚠️ ' : (off ? '⚠️ אין רשת · ' : '⏳ ')) + n + ' פעולות ממתינות לסנכרון';
+  var old = pendOldest();
+  if (old) s += ' · הישנה ביותר לפני ' + pendFmtAge(Date.now() - old);
+  return s;
+}
+
+function pendRender() {
+  if (typeof document === 'undefined' || !document.body) return;
+  pendEnsureStyle();
+  var txt = pendCounterText(), bar = document.getElementById('pend-bar');
+  if (!txt) { if (bar) bar.style.display = 'none'; }
+  else {
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'pend-bar';
+      document.body.appendChild(bar);
+    }
+    var extra = '';
+    try { if (typeof PEND_CFG === 'object' && PEND_CFG.extra) extra = PEND_CFG.extra() || ''; } catch (e) { }
+    bar.textContent = txt + (extra ? ' · ' + extra : '');
+    bar.className = pendLateCount() ? 'late' : '';
+    bar.style.display = '';
+  }
+  pendRenderAlert();
+}
+
+// ההתרעה נפרדת מהמונה בכוונה: מונה הוא מידע, וסרגל תחתון נבלע ברעש המסך.
+// משהו שממתין מעל יממה כבר אינו "מסתנכרן ברקע" — זו תקלה שדורשת פעולה.
+function pendRenderAlert() {
+  var late = pendLateCount(), el = document.getElementById('pend-alert');
+  if (!late || (_pendAlertDismissed && (Date.now() - _pendAlertDismissed) < 6 * 60 * 60 * 1000)) {
+    if (el) el.remove();
+    return;
+  }
+  var msg = '⚠️ ' + late + ' פעולות ממתינות לסנכרון מעל 24 שעות — בדוק חיבור לאינטרנט. הנתונים שמורים במכשיר בלבד.';
+  if (el) { var sp = el.firstChild; if (sp) sp.textContent = msg; return; }
+  el = document.createElement('div');
+  el.id = 'pend-alert';
+  var span = document.createElement('span');
+  span.textContent = msg;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'הבנתי';
+  btn.onclick = function () { _pendAlertDismissed = Date.now(); pendRenderAlert(); };
+  el.appendChild(span);
+  el.appendChild(btn);
+  document.body.appendChild(el);
+}
+
+// פאנל להגדרות — מה בדיוק ממתין, ומאיזה גיל.
+function pendStatusHTML() {
+  var m = pendAll(), keys = Object.keys(m);
+  keys.sort(function (a, b) { return m[a] - m[b]; });
+  var h = '<div style="font-size:13px;line-height:1.8">';
+  h += '<div>מצב רשת: <b>' + (navigator.onLine ? 'מקוון' : 'לא מקוון') + '</b></div>';
+  h += '<div>פעולות ממתינות לסנכרון: <b>' + keys.length + '</b></div>';
+  if (!keys.length) { h += '<div style="color:#16a34a">✅ הכול מסונכרן</div></div>'; return h; }
+  h += '<div style="margin-top:6px;max-height:220px;overflow:auto">';
+  keys.slice(0, 60).forEach(function (k) {
+    var age = Date.now() - m[k], late = age > PEND_LATE_MS;
+    h += '<div style="display:flex;gap:8px;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,.08);padding:3px 0">' +
+         '<span>' + esc(k) + '</span><span style="' + (late ? 'color:#b91c1c;font-weight:700' : 'opacity:.7') + '">' +
+         esc(pendFmtAge(age)) + '</span></div>';
+  });
+  if (keys.length > 60) h += '<div style="opacity:.7">…ועוד ' + (keys.length - 60) + '</div>';
+  h += '</div></div>';
+  return h;
+}
+
+// רענון תקופתי — הגיל מוצג בתגיות ובמונה, וסף ה-24 שעות חייב להיחצות
+// גם כשהמשתמש לא נגע בכלום.
+var _pendTick = null;
+function pendBoot() {
+  pendAll();
+  pendRender();
+  if (!_pendTick) _pendTick = setInterval(pendRender, 60000);
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('online', pendRender);
+    window.addEventListener('offline', pendRender);
+  }
+}
+/* ═══════════════ סוף מודול "ממתין לסנכרון" ═════════════════════════════ */
+
+/* ── חיבור gius למודול ────────────────────────────────────────────────────
+   כאן הכתיבה היא מקומית-תחילה עם תור יוצא, ולכן האישור מדויק יותר מאשר
+   באחיות: **הראיה היא שהתור התרוקן מהרשומה הזו.** `pendSyncOutbox()` מחשבת
+   את הסימונים מחדש מתוך התור אחרי כל ריקון — כך רשומה שיש לה עדיין פעולה
+   ממתינה נשארת מסומנת, גם אם פעולה קודמת עליה כבר נשלחה בהצלחה.
+   (בשלב 3, כשהתור יוחלף בדחיפת-מצב, זה יעבור ל-`pendConfirmPush`.)
+   ───────────────────────────────────────────────────────────────────────── */
+function pendRowKey(table, id) { return table + ':' + id; }
+function pendRenderStatus() {
+  var el = document.getElementById('pend-status-box');
+  if (el) el.innerHTML = pendStatusHTML();
+}
+// מסנכרנת את מפת הסימונים מול התור: מה שאין לו יותר פעולה בתור — אושר.
+function pendSyncOutbox() {
+  var live = {};
+  outboxRead().forEach(function (o) { if (o && o.table) live[pendRowKey(o.table, o.id)] = 1; });
+  var m = pendAll(), gone = [];
+  Object.keys(m).forEach(function (k) { if (!live[k]) gone.push(k); });
+  pendClearMany(gone);
+}
+
 
 /* ------------------------------------------------------------------ utils */
 function $(sel, root) { return (root || document).querySelector(sel); }
@@ -1328,6 +1631,7 @@ function insert(table, row) {
   // ה-insert נשלח כ-upsert על המפתח הראשי: ניסיון חוזר אחרי תשובה שאבדה
   // ברשת לא ייכשל על מפתח כפול, ולכן ריקון התור אידמפוטנטי.
   enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: m.key });
+  pendMark(pendRowKey(table, full[m.key]));
   var saved = upsertLocal(table, full);
   applyMirrorToState();
   return Promise.resolve(saved);
@@ -1337,6 +1641,7 @@ function update(table, id, patch) {
   var m = tableMeta(table);
   var p = Object.assign({}, patch, { updated_at: nowISO() });
   enqueue({ op: 'update', table: table, id: id, patch: p });
+  pendMark(pendRowKey(table, id));
   var row = Object.assign({}, p);
   row[m.key] = id;
   var saved = upsertLocal(table, row);
@@ -1357,6 +1662,7 @@ function upsertBy(table, conflict, row) {
   if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
   else if (full[m.key] == null && m.key !== conflict) full[m.key] = newId();
   enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: conflict });
+  pendMark(pendRowKey(table, full[m.key]));
   if (cur) Object.keys(full).forEach(function (k) { cur[k] = full[k]; });
   else arr.push(full);
   mirrorSave(table);
@@ -1408,6 +1714,7 @@ function flushOutbox() {
     var rest = q.filter(function (o) { return !o._done; });
     rest.forEach(function (o) { delete o._done; });
     outboxWrite(rest);
+    pendSyncOutbox();   // מה שירד מהתור — אושר
     syncBarRender();
     return allOk;
   }).catch(function (e) {
@@ -1489,27 +1796,14 @@ function startSync() {
 /* ------------------------------------------------- מחוון מצב הסנכרון */
 // המשתמש חייב לדעת שהוא עובד ללא רשת ושיש פעולות שממתינות — אחרת "נשמר"
 // נראה בדיוק כמו "נשמר בענן", וזו בדיוק ההטעיה שהסבב הזה בא למנוע.
+// מאז סבב 12 המחוון הוא **סרגל אחד משותף לארבע האפליקציות** (`#pend-bar`
+// מהמודול), ולא סרגל מקומי. הפונקציה נשארת בשמה כי היא נקראת מכמה מקומות,
+// והיא מסנכרנת קודם את מפת הסימונים מול התור — התור הוא מקור האמת כאן.
 function syncBarRender() {
-  var pend = outboxRead();
-  var dead = pend.filter(function (o) { return o.dead; }).length;
-  var off = !navigator.onLine;
-  var el = document.getElementById('syncbar');
-  if (!pend.length && !off) { if (el) el.style.display = 'none'; return; }
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'syncbar';
-    el.style.cssText = 'position:fixed;z-index:2147482000;left:0;right:0;bottom:0;padding:8px 12px;' +
-      'text-align:center;direction:rtl;font:600 13px/1.5 inherit;color:#3d2c00;background:#ffd88a;' +
-      'box-shadow:0 -2px 10px rgba(0,0,0,.18)';
-    (document.body || document.documentElement).appendChild(el);
-  }
-  var msg;
-  if (dead) msg = '❌ ' + dead + ' פעולות לא הצליחו להישמר בענן — הן שמורות במכשיר וממתינות בהגדרות';
-  else if (off) msg = '⚠️ אין רשת — עובדים מקומית' + (pend.length ? (' · ' + pend.length + ' פעולות ממתינות לסנכרון') : '');
-  else msg = '☁️ מסנכרן… ' + pend.length + ' פעולות ממתינות';
-  el.textContent = msg;
-  el.style.background = dead ? '#ffb4ab' : '#ffd88a';
-  el.style.display = '';
+  pendSyncOutbox();
+  pendRender();
+  var old = document.getElementById('syncbar');   // שריד מגרסה קודמת
+  if (old) old.remove();
 }
 window.addEventListener('online', syncBarRender);
 window.addEventListener('offline', syncBarRender);
@@ -1517,7 +1811,8 @@ window.addEventListener('offline', syncBarRender);
 /* ------------------------------------------------- פאנל מצב בהגדרות */
 function syncStatusHTML() {
   var pend = outboxRead();
-  var h = '<div style="font-size:13px;line-height:1.8">';
+  var h = pendStatusHTML();
+  h += '<div style="font-size:13px;line-height:1.8">';
   h += '<div>מצב רשת: <b>' + (navigator.onLine ? 'מקוון' : 'לא מקוון') + '</b></div>';
   h += '<div>סנכרון מלא אחרון: <b>' +
        (_lastPullOk ? esc(new Date(_lastPullOk).toLocaleString('he-IL')) : '— טרם הסתנכרן —') + '</b></div>';
@@ -1932,7 +2227,7 @@ function donorRowsHTML(list) {
     var given = sum(txnsOfDonor(d.id), function (t) { return t.amount; });
     return '<div class="row" data-act="donor-open" data-id="' + d.id + '">' +
       '<div class="av' + (d.is_vip ? ' vip' : '') + '">' + esc(initials(d.name)) + '</div>' +
-      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + '</b>' +
+      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + pendTag(pendRowKey('g_donors', d.id)) + '</b>' +
       '<small>' + esc(d.phone || 'ללא טלפון') + (d.agent ? ' · ' + esc(d.agent) : '') + '</small></div>' +
       '<div class="end">' + ils(given) + '<small>נתן</small></div></div>';
   }).join('');
@@ -2001,7 +2296,7 @@ function viewDonorCard() {
       '<th class="num">נותר</th><th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
     pl.forEach(function (p) {
       var c = collectedForPledge(p.id), st = pledgeStatus(p);
-      h += '<tr><td>' + esc(p.cause || '—') + '</td>' +
+      h += '<tr><td>' + esc(p.cause || '—') + pendTag(pendRowKey('g_pledges', p.id)) + '</td>' +
         '<td class="num">' + ils(p.amount) + '</td>' +
         '<td class="num">' + ils(c) + '</td>' +
         '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
@@ -2020,7 +2315,7 @@ function viewDonorCard() {
     h += '<div class="tw"><table><thead><tr><th>תאריך</th><th class="num">סכום</th><th>סעיף</th>' +
       '<th>שגריר</th><th>מנהל</th><th>נפרע</th><th></th></tr></thead><tbody>';
     tx.forEach(function (t) {
-      h += '<tr><td>' + heDate(t.txn_date) + '</td>' +
+      h += '<tr><td>' + heDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.id)) + '</td>' +
         '<td class="num">' + ils(t.amount) + '</td>' +
         '<td>' + esc(t.category || '—') + '</td>' +
         '<td>' + esc(t.agent || '—') + '</td>' +
@@ -2058,7 +2353,7 @@ function pledgeTableHTML(list) {
     var c = collectedForPledge(p.id), st = pledgeStatus(p);
     var late = p.due_date && p.due_date < todayISO() && st !== 'בוצע';
     h += '<tr class="click" data-act="donor-open" data-id="' + p.donor_id + '">' +
-      '<td><b>' + esc(donorName(p.donor_id)) + '</b></td>' +
+      '<td><b>' + esc(donorName(p.donor_id)) + '</b>' + pendTag(pendRowKey('g_pledges', p.id)) + '</td>' +
       '<td>' + esc(p.cause || '—') + '</td>' +
       '<td>' + esc(p.agent || '—') + '</td>' +
       '<td class="num">' + ils(p.amount) + '</td>' +
@@ -2130,7 +2425,7 @@ function viewTasks() {
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
       h += '<div class="kcard" data-id="' + t.id + '">' +
-        '<b>' + esc(t.title) + '</b>' +
+        '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.id)) +
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
           (t.domain ? '<span class="badge">' + esc(t.domain) + '</span>' : '') +
@@ -2917,6 +3212,9 @@ function start() {
   // כדי שהמשיכה שאחריה תכתוב לאחסון שכבר יש בו מקום.
   try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
   mirrorLoad();
+  // סימוני "ממתין לסנכרון" (סבב 12) — נטענים מהדיסק לפני הרינדור הראשון,
+  // כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
+  try { pendBoot(); pendSyncOutbox(); } catch (e) { console.warn('[pend] pendBoot', e); }
 
   var saved = null;
   try { saved = JSON.parse(lsGet(SESSION_KEY, 'null')); } catch (_) { saved = null; }
