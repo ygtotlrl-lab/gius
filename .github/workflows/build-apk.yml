@@ -1,15 +1,12 @@
 name: Build APK
 
-# Builds the native WebView shell in android/ (NOT a TWA — see CLAUDE.md).
+# Builds the native WebView shell in android/ (NOT a TWA — see CLAUDE.md) and
+# signs it with the project's permanent key, signing/pwabuilder.keystore, which
+# lives in the repo. No secret, no manual input: there is no way to accidentally
+# produce an APK signed with a different key.
 #
-# Signing: gius's permanent key is the keystore PWABuilder generated, and that
-# file is deliberately NOT in the repo. Put it in a repository secret to get a
-# signed APK out of this workflow:
-#
-#   base64 -w0 <pwabuilder-keystore>      # then paste as secret GIUS_KEYSTORE_B64
-#
-# Without the secret the job still runs and uploads the UNSIGNED APK, which
-# cannot be installed — sign it yourself with the command CLAUDE.md documents.
+# Signing runs through signing/sign-apk.sh — the same script used by hand — so
+# the fingerprint gate exists in exactly one place.
 
 on:
   workflow_dispatch:
@@ -40,46 +37,20 @@ jobs:
           cd android
           ./gradlew :app:assembleRelease --no-daemon
 
-      - name: Sign APK with the permanent key
-        id: sign
-        env:
-          KEYSTORE_B64: ${{ secrets.GIUS_KEYSTORE_B64 }}
+      - name: Sign with the permanent key
         run: |
-          cd android
-          UNSIGNED=app/build/outputs/apk/release/app-release-unsigned.apk
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "::warning::Secret GIUS_KEYSTORE_B64 is not set — uploading the UNSIGNED APK."
-            cp "$UNSIGNED" gius-unsigned.apk
-            echo "apk=android/gius-unsigned.apk" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "$KEYSTORE_B64" | base64 -d > /tmp/gius.keystore
+          # zipalign + apksigner live in build-tools, which is not on PATH by default.
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           echo "Using build-tools: $BT"
-          "$BT/zipalign" -p -f 4 "$UNSIGNED" aligned.apk
-          "$BT/apksigner" sign \
-            --ks /tmp/gius.keystore \
-            --ks-key-alias my-key-alias \
-            --ks-pass pass:uqNfubfXeOyp \
-            --key-pass pass:uqNfubfXeOyp \
-            --out gius.apk \
-            aligned.apk
-          rm -f /tmp/gius.keystore aligned.apk
-          "$BT/apksigner" verify --print-certs gius.apk | tee certs.txt
-          # Fail loudly rather than ship an APK signed by the wrong key: a mismatch
-          # means every existing install has to be uninstalled first.
-          EXPECTED=da61b14d3e46b7ae828ce6d0774a6e434d1ff6e091b70c7cef292d02a131fc4c
-          ACTUAL=$(grep -io 'SHA-256 digest: [0-9a-f]*' certs.txt | head -1 | awk '{print $3}')
-          if [ "$ACTUAL" != "$EXPECTED" ]; then
-            echo "::error::Signing key fingerprint mismatch. expected=$EXPECTED actual=$ACTUAL"
-            exit 1
-          fi
-          echo "✅ Signed with the permanent key."
-          echo "apk=android/gius.apk" >> "$GITHUB_OUTPUT"
+          echo "$BT" >> "$GITHUB_PATH"
+          export PATH="$BT:$PATH"
+          ./signing/sign-apk.sh \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            gius.apk
 
-      - name: Upload APK
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
           name: gius-apk
-          path: ${{ steps.sign.outputs.apk }}
+          path: gius.apk
           if-no-files-found: error

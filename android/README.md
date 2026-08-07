@@ -53,17 +53,12 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 ### הדרך המומלצת — GitHub Actions (לא צריך שום דבר מותקן)
 
 `.github/workflows/build-apk.yml`: Actions → **Build APK** → **Run workflow**.
-ה-APK יורד כ-artifact בשם `gius-apk`.
+ה-APK **החתום** יורד כ-artifact בשם `gius-apk`.
 
-כדי שה-workflow גם **יחתום**, יש להגדיר secret בשם `GIUS_KEYSTORE_B64` עם
-ה-keystore של PWABuilder בקידוד base64:
-
-```bash
-base64 -w0 <pwabuilder-keystore>   # להדביק בתור הערך של ה-secret
-```
-
-בלי ה-secret ה-workflow עדיין רץ ומעלה APK **לא חתום** (לא ניתן להתקנה).
-ה-workflow מאמת שטביעת האצבע יוצאת בדיוק `DA:61:B1:4D:...:FC:4C` ונכשל אם לא.
+החתימה נעשית ב-`signing/sign-apk.sh` מול `signing/pwabuilder.keystore` שבריפו —
+**אין secret ואין קלט ידני**, ולכן אין דרך לבנות בטעות APK במפתח אחר. הסקריפט
+מסרב לחתום אם טביעת האצבע של ה-keystore אינה `DA:61:B1:4D:...:FC:4C`, ואחרי
+החתימה מוודא שה-APK אכן נושא את התעודה הזו — ה-workflow נכשל בכל אחד מהמקרים.
 
 ### בנייה מקומית (דורשת Android SDK)
 
@@ -78,15 +73,12 @@ gradle wrapper --gradle-version 8.7   # פעם אחת
 חתימה במפתח הקבוע (ר' CLAUDE.md — **אין להחליף מפתח**):
 
 ```bash
-zipalign -p -f 4 app-release-unsigned.apk aligned.apk
-apksigner sign --ks <pwabuilder-keystore> --ks-key-alias my-key-alias \
-  --ks-pass pass:uqNfubfXeOyp --key-pass pass:uqNfubfXeOyp \
-  --out gius.apk aligned.apk
-apksigner verify --print-certs gius.apk
-# SHA-256 חייב להיות DA:61:B1:4D:3E:46:B7:AE:82:8C:E6:D0:77:4A:6E:43:4D:1F:F6:E0:91:B7:0C:7C:EF:29:2D:02:A1:31:FC:4C
+../signing/sign-apk.sh app/build/outputs/apk/release/app-release-unsigned.apk gius.apk
 ```
 
-> **ה-keystore של PWABuilder אינו בריפו** (ר' CLAUDE.md). הוא הגיע בחבילת ההורדה
-> של ה-APK יחד עם `signing-key-info.txt`. אם הוא אבד — אין דרך לשחזר אותו, וכל
-> המשתמשים יצטרכו להסיר את האפליקציה ולהתקין מחדש; במקרה כזה אפשר לעבור לחתימה
-> ב-`signing/gius.keystore` שבריפו, אבל זו החלטה שמחייבת הסרה חד-פעמית אצל כולם.
+הסקריפט מריץ `zipalign` ואז `apksigner` מול `signing/pwabuilder.keystore`
+(alias `my-key-alias`), ואוכף את טביעת האצבע לפני ואחרי החתימה.
+
+> **ה-keystore נמצא בריפו** — `signing/pwabuilder.keystore`, בדיוק כמו
+> `signing/yoman.keystore` ב-yoman-avoda. שים לב ש-`signing/gius.keystore`
+> שלידו הוא המפתח הידני הישן ו**אינו בשימוש** — ההבחנה היא בטביעת האצבע.
