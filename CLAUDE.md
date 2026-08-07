@@ -19,6 +19,8 @@ icons/                     אייקונים (נוצרים ע"י scripts/gen-icon
 migrations/0001_init.sql   סכמת הבסיס. להריץ ידנית מול הפרויקט.
 scripts/check-js.mjs       שער חובה לפני כל push
 scripts/gen-icons.mjs      מחולל האייקונים
+signing/gius.keystore      מפתח החתימה הקבוע של ה-APK — לעולם לא להחליף
+signing/sign-apk.sh        סקריפט חתימה מחדש של APK במפתח הקבוע
 ```
 
 ---
@@ -94,6 +96,20 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 ### 8. אין נתוני דמה
 בבסיס יש רק את המשתמש הראשוני ואת רשימות הבחירה. שום תורם, התחייבות, תנועה
 או משימה לדוגמה — לא בקוד ולא ב-migration.
+
+### 9. ⚠️ קידום `CACHE_NAME` ב-`sw.js` בכל שינוי קוד — חובה
+**כל שינוי ב-`index.html` (או בכל נכס אחר ב-`CORE`) מחייב קידום המספר ב-`CACHE_NAME`**
+(`gius-v1` → `gius-v2` → …). בלי זה ה-`install` מוצא מטמון קיים באותו שם, ה-`activate`
+לא מנקה כלום, ומשתמש שכבר ביקר באפליקציה ממשיך לקבל **את הקליפה הישנה מהמטמון** —
+הקוד החדש פשוט לא מגיע אליו, בלי שום סימן שמשהו לא בסדר.
+
+> **מצב נוכחי:** `CACHE_NAME` נשאר `gius-v1` מאז ההקמה, ולאורך כל השחרורים שמאז.
+> המשמעות: כל מי שהתקין או ביקר בגרסה מוקדמת מחזיק קליפה מיושנת. **השחרור הבא
+> חייב לקדם את המספר** כדי לשחרר אותם.
+
+הכלל הזה משלים את סעיף 8 בפרק ה-service worker (אין `skipWaiting()` ב-install):
+הקידום הוא שגורם ל-SW חדש להיכנס למצב `waiting`, וזה מה שמדליק את באנר
+"🔄 גרסה חדשה זמינה". בלי קידום — אין SW חדש, אין באנר, אין עדכון.
 
 ---
 
@@ -191,7 +207,8 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 
 ## Service worker — כללים שאסור לשבור
 
-`CACHE_NAME = 'gius-v1'`. **להעלות את המספר בכל שחרור** שמשנה נכסים.
+`CACHE_NAME = 'gius-v1'`. **להעלות את המספר בכל שחרור** שמשנה נכסים — ר' כלל ברזל 9,
+זו חובה ולא המלצה.
 
 1. **סריקת מטמון לפי קידומת בלבד.** `activate` מוחק רק מפתחות שמתחילים ב-`gius-`.
    ה-origin `ygtotlrl-lab.github.io` משותף לכל אפליקציות הארגון —
@@ -213,6 +230,65 @@ RLS מופעל על כל טבלה, עם policy פתוחה (`using (true) with ch
 8. **אין `skipWaiting()` ב-install.** הדף מציג באנר "🔄 גרסה חדשה זמינה" עם כפתור
    "עדכן עכשיו"; רק לחיצה שולחת `{type:'SKIP_WAITING'}`, ו-`controllerchange`
    מרענן פעם אחת.
+
+---
+
+## חתימת APK — מפתח קבוע (לעולם לא משתנה!)
+
+| | |
+|---|---|
+| **קובץ** | `signing/gius.keystore` (PKCS12, RSA 2048) |
+| **alias** | `gius` |
+| **storepass** | `gius123` |
+| **keypass** | `gius123` (זהה ל-storepass) |
+| **תוקף** | 10,000 יום — 07.08.2026 עד 23.12.2053 |
+| **SHA256** | `74:48:32:F5:58:92:79:95:FA:7B:61:7A:48:3D:BB:4E:9B:B1:72:1B:46:F9:C6:03:B6:7C:DA:8E:18:91:7D:95` |
+| **SHA1** | `FC:DC:62:EC:4C:45:04:E2:F6:99:9B:96:39:8F:95:47:F9:FC:86:13` |
+| **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
+
+### ⛔ אזהרה — אין להחליף את המפתח לעולם
+
+אנדרואיד מזהה אפליקציה מותקנת לפי **חתימת המפתח**, לא לפי שם הקובץ או מספר הגרסה.
+APK שנחתם במפתח אחר נחשב אפליקציה **זרה**, וההתקנה מעל הקיימת נכשלת בשגיאת
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+
+**המשמעות המעשית של החלפת מפתח:** כל משתמש שכבר התקין יצטרך **להסיר את האפליקציה
+ולהתקין מחדש** — ואין דרך לעקוף את זה. אין שחזור, אין מיגרציה, אין "חתימה מחדש
+במפתח הישן" אחרי שהוא אבד.
+
+לכן:
+1. **לעולם לא להריץ `keytool -genkeypair` שוב** עבור הפרויקט הזה. הריצה הראשונה
+   כבר בוצעה, והקובץ בריפו הוא התוצאה שלה.
+2. **לעולם לא למחוק, לדרוס או "לרענן" את `signing/gius.keystore`.** הוא חלק מהריפו
+   בדיוק כדי שלא יאבד — כמו שקרה ב-yoman-avoda כשהמפתח ישב ב-`/tmp`.
+3. **כל APK חדש נחתם אך ורק במפתח הזה**, גם אם נבנה בכלי אחר (PWABuilder, Bubblewrap,
+   Android Studio).
+4. אחרי חתימה — לאמת שה-SHA256 תואם לטבלה למעלה.
+
+### חתימה
+
+```bash
+./signing/sign-apk.sh app-unsigned.apk gius.apk
+```
+
+הסקריפט מריץ `zipalign` ואז `apksigner`, ובסוף `apksigner verify --print-certs`.
+דורש Android build-tools ב-PATH.
+
+חלופה ידנית (apksigner):
+```bash
+apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
+  --ks-pass pass:gius123 --key-pass pass:gius123 app.apk
+```
+
+חלופה ידנית (jarsigner, אם אין apksigner):
+```bash
+jarsigner -keystore signing/gius.keystore -storepass gius123 -keypass gius123 app.apk gius
+```
+
+אימות טביעת האצבע:
+```bash
+keytool -list -v -keystore signing/gius.keystore -storepass gius123
+```
 
 ---
 
