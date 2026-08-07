@@ -52,7 +52,9 @@ check('sw.js', join(ROOT, 'sw.js'));
 // ---- cheap sanity checks that a parser cannot catch ------------------------
 const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
 const rules = [
-  [/CACHE_NAME\s*=\s*'gius-v1'/.test(sw), "sw.js: CACHE_NAME must be 'gius-v1'"],
+  // הכלל הקודם קיבע את השם ל-'gius-v1' — כלומר **חסם את הקידום שכלל ברזל 9
+  // מחייב**, ולכן ה-CACHE_NAME לא זז מאז ההקמה. עכשיו נבדקת התבנית בלבד.
+  [/CACHE_NAME\s*=\s*'gius-v\d+'/.test(sw), "sw.js: CACHE_NAME must match 'gius-v<N>'"],
   [/supabase\.co/.test(sw), 'sw.js: must skip supabase.co requests'],
   [/mode:\s*'cors'/.test(sw), "sw.js: CDN fetches must use mode:'cors'"],
   [/text\/html;\s*charset=utf-8/.test(sw), 'sw.js: offline page needs an explicit Content-Type'],

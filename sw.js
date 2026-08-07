@@ -1,7 +1,7 @@
 /* gius — service worker
  *
  * Constraints this file exists to satisfy (see CLAUDE.md):
- *   - CACHE_NAME is 'gius-v1'. Bump the number on every release.
+ *   - CACHE_NAME is 'gius-vN'. Bump the number on every release.
  *   - CDN scripts are fetched with mode:'cors' so the cached response is a real
  *     readable response and never an opaque one.
  *   - Requests to *.supabase.co are skipped entirely — never cached, never
@@ -18,7 +18,7 @@
  *     body and brick the app offline.
  */
 
-const CACHE_NAME = 'gius-v1';
+const CACHE_NAME = 'gius-v2';
 const CACHE_PREFIX = 'gius-';
 
 const SCOPE_URL = new URL('./', self.location);

@@ -509,6 +509,537 @@ var CONFIG_KEYS = [
 
 var sb = null;
 
+/* ---------------------------------------------- עוזרי רשת משותפים (סבב 11)
+   אותם שמות ואותו נוסח הודעות כמו בשלוש האחיות. gius נבנתה בלעדיהם, ולכן
+   `sb.from(...)` כאן לא היה מוגבל בזמן: ברשת "חצי מחוברת" ה-fetch לא מצליח
+   ולא נכשל, והמשתמש ממתין לנצח. */
+var NET_TIMEOUT_MS = 8000;
+var MSG_OFFLINE = '⚠️ אין חיבור לאינטרנט — הפעולה תסתנכרן כשהחיבור יחזור';
+var MSG_SAVED = '✅ נשמר בהצלחה';
+var MSG_BAD_LOGIN = '❌ שם משתמש או סיסמה שגויים';
+function isNetErr(e) {
+  if (!navigator.onLine) return true;
+  var m = ((e && (e.message || e.details || '')) + '').toLowerCase();
+  return m.indexOf('fetch') !== -1 || m.indexOf('network') !== -1 ||
+         m.indexOf('failed to') !== -1 || m.indexOf('timeout') !== -1;
+}
+function withTimeout(p, ms) {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise(function (_, reject) {
+      setTimeout(function () { reject(new Error('timeout')); }, ms || NET_TIMEOUT_MS);
+    })
+  ]);
+}
+function errMsg(e) { return isNetErr(e) ? MSG_OFFLINE : ('שגיאה: ' + ((e && (e.message || e.code)) || e)); }
+
+// ═══ עמידות אחסון מקומי (סבב 11) ═══
+// ── מדיניות האחסון המקומי של האפליקציה הזו ─────────────────────────────
+// זו הטבלה **היחידה** שנבדלת בין ארבע האפליקציות; המודול שמתחתיה זהה בכולן.
+var LS_CFG = {
+  app: 'gius',
+  logKey: 'g_ls_log',
+  hzPrefix: 'g_ls_hz_',
+
+  // שלב א — מטמון שניתן לשחזר מהענן בכל רגע. מראת המשתמשים מזינה רק רשימות
+  // שמות בתפריטים ואת טבלת ההגדרות; אין בה סיסמאות (ר' `strip` ב-TABLES),
+  // ואיבודה אופליין הוא קוסמטי בלבד. שאר המראות הן הנתונים עצמם ולכן שלב ב.
+  tier1: ['g_mirror_users'],
+
+  // שלב ב — רשומות ישנות שכבר מסונכרנות, הישן ביותר קודם.
+  // ⚠️ `g_mirror_donors` **אינה** כאן: התורמים הם אבות המפתח הזר של התנועות
+  //    וההתחייבויות, והם קטנים. פינוי שלהם היה משאיר תנועות בלי שם מוצג.
+  //    רצפת 400 יום על הכסף — שנה שלמה אחורה נשארת זמינה גם בלי רשת.
+  tier2: [
+    { key: 'g_mirror_txns',    label: 'תנועות',      ts: rowTs, minAgeMs: 400 * 86400000 },
+    { key: 'g_mirror_pledges', label: 'התחייבויות',  ts: rowTs, minAgeMs: 400 * 86400000 },
+    { key: 'g_mirror_tasks',   label: 'משימות',      ts: rowTs, minAgeMs: 180 * 86400000 }
+  ],
+
+  // כלל ג: כל עוד יש פעולה בתור היוצא — לא מפנים כלום.
+  pending: function () { try { return outboxRead().length > 0; } catch (e) { return true; } },
+
+  // עֵד הסנכרון: חותמת המשיכה המלאה המוצלחת האחרונה.
+  syncedThrough: function () { var v = parseInt(lsGet('g_synced_at', '0'), 10); return isFinite(v) ? v : 0; }
+};
+// מתאם הטוסט — ⚠️ החתימה כאן היא toast(msg, kind) ולא toast(msg, dur).
+function lsToast(msg) { try { toast(msg, 'bad'); } catch (e) {} }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   עמידות אחסון מקומי — מודול משותף (סבב 11).
+   **הקטע הזה זהה מילה במילה בארבע האפליקציות** (hanhala-ruchanit, schar-limud,
+   yoman-avoda, gius). כל שינוי כאן חייב להיעשות בארבעתן באותו סבב.
+   התלויות היחידות שמחוץ לו: `LS_CFG` (טבלת מדיניות פר-אפליקציה, מוגדרת מעליו),
+   `lsToast(msg, dur)` (מתאם דק לטוסט של האפליקציה) ו-`esc()`.
+
+   הרקע: ארבע האפליקציות מתארחות על אותו origin ולכן חולקות מכסת localStorage
+   אחת (~5MB). הסכנה אינה אובדן הנתונים הקיימים — הם בענן — אלא **כתיבה חדשה
+   שנכשלת בזמן שהמשתמש מקבל אישור הצלחה**. לכן:
+     1. `lsSet` מחזירה false בכישלון, ומציגה באנר אדום קבוע. **כל קורא במסלול
+        קריטי חייב לבדוק את הערך המוחזר ולא להציג "נשמר" אחריו.**
+     2. `lsBoot` מודדת את הנפח של **כל** המפתחות בדומיין (לא רק של האפליקציה
+        הנוכחית) ומתריעה מעל 3MB / 4MB.
+     3. מעל 60% מהמכסה מתבצע **פינוי יזום** — לא מחכים לכישלון.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+var LS_QUOTA_BYTES = 5 * 1024 * 1024;   // מכסת origin טיפוסית
+var LS_WARN_BYTES  = 3 * 1024 * 1024;   // התרעה
+var LS_CRIT_BYTES  = 4 * 1024 * 1024;   // התרעה בולטת
+var LS_SWEEP_PCT   = 0.60;              // מעל זה — פינוי יזום בעלייה
+var LS_SWEEP_TO    = 0.45;              // יעד הפינוי היזום
+var LS_LOG_MAX     = 12;                // אורך יומן הפינוי הנשמר
+
+// נוסח אחיד בארבע האפליקציות. סמלים: ✅ הצלחה / ⚠️ אזהרה / ❌ שגיאה, בתחילה.
+var MSG_LS_FULL   = '❌ האחסון במכשיר מלא — לא ניתן לשמור. פנו מקום בהגדרות ← אחסון מקומי.';
+var MSG_LS_BLOCK  = '❌ האחסון במכשיר חסום — לא ניתן לשמור במכשיר.';
+var MSG_LS_WARN   = '⚠️ האחסון המקומי מתמלא — כדאי לפנות מקום בהגדרות';
+var MSG_LS_CRIT   = '⚠️ האחסון המקומי כמעט מלא — פנו מקום בהגדרות מיד';
+var MSG_LS_PRUNED = '⚠️ נתונים ישנים פונו מהמכשיר מחוסר מקום — הם שמורים בענן ויחזרו כשתהיה רשת';
+
+// כל האפליקציות שחולקות את ה-origin. הקידומת היא מה שמזהה מי תופס מה.
+var LS_APPS = [
+  { id: 'hanhala', name: 'הנהלה רוחנית', pre: ['ys_'] },
+  { id: 'schar',   name: 'שכר לימוד',    pre: ['sl_'] },
+  { id: 'yoman',   name: 'יומן עבודה',   pre: ['tb_'] },
+  { id: 'gius',    name: 'גיוס',         pre: ['g_', 'gius'] }
+];
+
+function lsFmtBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' ב׳';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB';
+  return (n / (1024 * 1024)).toFixed(2) + ' MB';
+}
+function lsAppOf(key) {
+  var k = String(key == null ? '' : key);
+  for (var i = 0; i < LS_APPS.length; i++) {
+    for (var j = 0; j < LS_APPS[i].pre.length; j++) {
+      if (k.indexOf(LS_APPS[i].pre[j]) === 0) return LS_APPS[i];
+    }
+  }
+  return { id: 'other', name: 'אחר', pre: [] };
+}
+// UTF-16: שני בתים לתו, גם למפתח וגם לערך. הערכה, לא מדידה מדויקת — אבל
+// עקבית, וזה מה שנדרש כדי להשוות מול הסף.
+function lsEntryBytes(key, val) {
+  return (String(key == null ? '' : key).length + String(val == null ? '' : val).length) * 2;
+}
+
+// מדידת **כל** המפתחות בדומיין, לא רק של האפליקציה הנוכחית — זה כל העניין:
+// המכסה משותפת, ולכן אפליקציה שמסתכלת רק על עצמה לא רואה את מה שחונק אותה.
+function lsUsage() {
+  var out = { total: 0, quota: LS_QUOTA_BYTES, free: 0, pct: 0, apps: [], keys: [], ok: true };
+  var byApp = {}, i;
+  for (i = 0; i < LS_APPS.length; i++) byApp[LS_APPS[i].id] = { id: LS_APPS[i].id, name: LS_APPS[i].name, bytes: 0, count: 0 };
+  byApp.other = { id: 'other', name: 'אחר', bytes: 0, count: 0 };
+  try {
+    for (i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k == null) continue;
+      var v = '';
+      try { v = localStorage.getItem(k) || ''; } catch (e) { }
+      var b = lsEntryBytes(k, v), a = lsAppOf(k);
+      out.total += b;
+      out.keys.push({ key: k, bytes: b, app: a.id, appName: a.name });
+      if (!byApp[a.id]) byApp[a.id] = { id: a.id, name: a.name, bytes: 0, count: 0 };
+      byApp[a.id].bytes += b; byApp[a.id].count++;
+    }
+  } catch (e) { out.ok = false; }
+  out.keys.sort(function (x, y) { return y.bytes - x.bytes; });
+  Object.keys(byApp).forEach(function (id) { if (byApp[id].count) out.apps.push(byApp[id]); });
+  out.apps.sort(function (x, y) { return y.bytes - x.bytes; });
+  out.free = Math.max(0, out.quota - out.total);
+  out.pct = out.quota ? out.total / out.quota : 0;
+  return out;
+}
+
+/* ── יומן הפינוי ────────────────────────────────────────────────────────
+   הפינוי שקט כלפי המשתמש, אבל **לא בלתי נראה** — בלי יומן אי אפשר לדעת
+   מתי ומה פונה. נשמר קצר בכוונה (12 רשומות) כדי שהיומן עצמו לא יהפוך
+   לצרכן מקום. הכתיבה כאן גולמית ולא דרך `lsSet` — אחרת כישלון ביומן היה
+   מפעיל פינוי שכותב ליומן, וחוזר חלילה. */
+function lsSetRaw(key, value) {
+  try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+}
+function lsLogRead() {
+  try { var v = JSON.parse(localStorage.getItem(LS_CFG.logKey) || '[]'); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+}
+function lsLog(action, detail, bytes) {
+  var e = { t: Date.now(), a: String(action), d: String(detail == null ? '' : detail), b: Number(bytes) || 0 };
+  try { console.info('[ls] ' + e.a + (e.d ? ' · ' + e.d : '') + (e.b ? ' · ' + lsFmtBytes(e.b) : '')); } catch (e1) { }
+  try {
+    var arr = lsLogRead();
+    arr.push(e);
+    while (arr.length > LS_LOG_MAX) arr.shift();
+    lsSetRaw(LS_CFG.logKey, JSON.stringify(arr));
+  } catch (e2) { }
+}
+
+// שמות הזריקה משתנים בין דפדפנים; code 22 הוא הישן, 1014 הוא של פיירפוקס.
+function lsIsQuotaErr(e) {
+  if (!e) return false;
+  var n = e.name || '';
+  return n === 'QuotaExceededError' || n === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+         e.code === 22 || e.code === 1014;
+}
+
+/* ── באנר כישלון קבוע ───────────────────────────────────────────────────
+   טוסט נעלם אחרי שלוש שניות; כישלון שמירה חייב להישאר על המסך עד שהמשתמש
+   סוגר אותו, אחרת הוא בדיוק "הכישלון השקט" שאנחנו מונעים. */
+function lsAlert(msg) {
+  var el = document.getElementById('ls-alert');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'ls-alert';
+    el.setAttribute('role', 'alert');
+    el.style.cssText = 'position:fixed;z-index:2147483000;left:0;right:0;top:0;background:#b3261e;' +
+      'color:#fff;direction:rtl;text-align:center;font:700 14px/1.6 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;' +
+      'padding:12px 46px;box-shadow:0 2px 14px rgba(0,0,0,.35)';
+    var sp = document.createElement('span');
+    sp.id = 'ls-alert-msg';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '✕';
+    b.setAttribute('aria-label', 'סגור');
+    b.style.cssText = 'position:absolute;right:10px;top:9px;background:transparent;border:0;color:#fff;' +
+      'font:700 17px/1 sans-serif;cursor:pointer;padding:4px 8px';
+    b.addEventListener('click', function () { el.style.display = 'none'; });
+    el.appendChild(sp); el.appendChild(b);
+    (document.body || document.documentElement).appendChild(el);
+  }
+  var m = document.getElementById('ls-alert-msg');
+  if (m) m.textContent = String(msg == null ? '' : msg);
+  el.style.display = '';
+}
+
+/* ── כתיבה מוגנת ────────────────────────────────────────────────────────
+   **כל כתיבה ל-localStorage באפליקציה עוברת דרך כאן.** אין קריאה ישירה
+   ל-`localStorage.setItem` מחוץ למודול הזה (למעט `lsSetRaw` שבתוכו).
+   מחזירה true/false — ומסלול קריטי שמתעלם מהערך המוחזר הוא באג. */
+var _lsSweeping = false;
+var _lsToastAt = 0;
+/* "אף כישלון שקט" — מונה כישלונות גלובלי.
+   מסלול קריטי (רישום נוכחות, שמירת תשלום, הוספת רשומה, רישום תנועה) עוטף את
+   הפעולה כך:  `var t = lsFails(); ...await save()...; if (!lsOkSince(t)) return;`
+   ורק אז מציג "נשמר". כך גם כתיבה שנכשלה עמוק בתוך שרשרת async מונעת את טוסט
+   ההצלחה, בלי להשחיל ערך מוחזר דרך עשר פונקציות. */
+var _lsFailCount = 0;
+function lsFails() { return _lsFailCount; }
+function lsOkSince(n) { return _lsFailCount === n; }
+
+/* ── שער "אין טוסט הצלחה אחרי כישלון שמירה" ─────────────────────────────
+   נקודת אכיפה **אחת** במקום עשרות בדיקות פזורות שאפשר לשכוח באחת: `toast()`
+   של כל אפליקציה פותחת ב-`if (!lsGuardToast(msg)) return;`, וכל הודעה
+   שמתחילה ב-✅ נבלעת אם כתיבה מקומית נכשלה בשתי וחצי השניות האחרונות —
+   כלומר בתוך אותה פעולת משתמש. הבאנר האדום כבר על המסך, והוא ההודעה
+   הנכונה. **אין להסיר את השורה הזו מ-`toast`** — בלעדיה חוזר בדיוק המצב
+   שהסבב הזה בא למנוע: כתיבה שנכשלה ומשתמש שמקבל "נשמר בהצלחה". */
+var _lsLastFailAt = 0;
+var LS_SUCCESS_MUTE_MS = 2500;
+function lsSuccessBlocked() { return (Date.now() - _lsLastFailAt) < LS_SUCCESS_MUTE_MS; }
+function lsGuardToast(msg) {
+  return !(String(msg == null ? '' : msg).indexOf('✅') === 0 && lsSuccessBlocked());
+}
+function lsSet(key, value) {
+  var v = (value == null ? '' : String(value));
+  try { localStorage.setItem(key, v); return true; } catch (e) {
+    // בתוך פינוי — כישלון הוא תוצאה, לא טריגר לפינוי נוסף (רקורסיה).
+    if (_lsSweeping) return false;
+    _lsFailCount++;
+    _lsLastFailAt = Date.now();
+    if (lsIsQuotaErr(e)) {
+      // מנגנון חירום: פינוי נוסף לפי **אותו סדר** בדיוק, וניסיון אחד נוסף.
+      var need = lsEntryBytes(key, v) + 64 * 1024;
+      var freed = lsSweepGuarded('חירום — כתיבה נכשלה במכסה: ' + key, need);
+      if (freed > 0) {
+        // הצליח בניסיון השני — לא כישלון. המונה מוחזר כדי שהמסלול הקריטי
+        // יציג "נשמר", שהרי הנתון באמת נשמר.
+        try { localStorage.setItem(key, v); _lsFailCount--; _lsLastFailAt = 0; lsLog('כתיבה חוזרת הצליחה', key, 0); return true; }
+        catch (e2) { e = e2; }
+      }
+      lsLog('❌ כתיבה נכשלה (מכסה)', key, lsEntryBytes(key, v));
+      lsAlert(MSG_LS_FULL);
+      lsToastThrottled(MSG_LS_FULL);
+    } else {
+      lsLog('❌ כתיבה נכשלה (אחסון חסום)', key, 0);
+      lsAlert(MSG_LS_BLOCK);
+      lsToastThrottled(MSG_LS_BLOCK);
+    }
+    try { console.warn('[ls] setItem נכשל עבור ' + key + ':', e && e.message); } catch (e3) { }
+    return false;
+  }
+}
+// הבאנר אידמפוטנטי ולכן מוצג בכל כישלון; הטוסט מווסת כדי שסדרת כתיבות
+// כושלת לא תהפוך למטר טוסטים שמסתיר את ההודעה עצמה.
+function lsToastThrottled(msg) {
+  var now = Date.now();
+  if (now - _lsToastAt < 8000) return;
+  _lsToastAt = now;
+  try { lsToast(msg, 6000); } catch (e) { }
+}
+function lsGet(key, fallback) {
+  try {
+    var v = localStorage.getItem(key);
+    return v == null ? (fallback === undefined ? null : fallback) : v;
+  } catch (e) { return fallback === undefined ? null : fallback; }
+}
+function lsRemove(key) {
+  try { localStorage.removeItem(key); return true; } catch (e) { return false; }
+}
+
+/* ── אופק הפינוי ────────────────────────────────────────────────────────
+   פינוי שלב ב׳ גורע רשומות ישנות מהעותק **שעל הדיסק** בלבד. כדי שהן לא
+   יחזרו לדיסק בשמירה הבאה (מנוע המיזוג מחזיר כל רשומה מרוחקת שאין לה
+   מקבילה מקומית — ולכן פינוי בלי אופק הוא חסר משמעות), נשמר לכל מפתח
+   "אופק": חותמת הזמן של הרשומה החדשה ביותר שפונתה. `lsSetArray` מסננת
+   מתחתיו בכל כתיבה. **הזיכרון והענן לא נוגעים** — רק הדיסק מצטמצם. */
+function lsHorizon(key) {
+  var v = parseInt(lsGet(LS_CFG.hzPrefix + key, '0'), 10);
+  return isFinite(v) && v > 0 ? v : 0;
+}
+function lsHorizonKeys() {
+  var out = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf(LS_CFG.hzPrefix) === 0) out.push(k);
+    }
+  } catch (e) { }
+  return out;
+}
+function lsClearHorizons() {
+  var ks = lsHorizonKeys();
+  ks.forEach(lsRemove);
+  if (ks.length) lsLog('אופק הפינוי נוקה', ks.length + ' מפתחות', 0);
+  return ks.length;
+}
+// כתיבת מערך מכובדת-אופק. `tsOf(rec)` מחזירה חותמת זמן במילישניות.
+function lsSetArray(key, arr, tsOf) {
+  var list = Array.isArray(arr) ? arr : [];
+  var hz = lsHorizon(key), keep = list;
+  if (hz > 0 && typeof tsOf === 'function') {
+    keep = list.filter(function (r) {
+      var t = Number(tsOf(r));
+      return !(isFinite(t) && t > 0 && t <= hz);
+    });
+  }
+  return lsSet(key, JSON.stringify(keep));
+}
+
+/* ── פינוי יזום ─────────────────────────────────────────────────────────
+   סדר קפדני:
+     א. מטמונים וערכים שניתן לשחזר מהענן בכל רגע.
+     ב. ארכיון ורשומות ישנות **שכבר מסונכרנות** — הישן ביותר קודם.
+     ג. ⛔ נתון שטרם הסתנכרן לענן לא מפונה בשום מצב, גם אם המקום נגמר
+        לגמרי. במצב כזה עדיף להיכשל ברעש מאשר למחוק. */
+function lsSweepGuarded(reason, needBytes) {
+  if (_lsSweeping) return 0;
+  _lsSweeping = true;
+  try { return lsSweep(reason, needBytes); }
+  finally { _lsSweeping = false; }
+}
+function lsSweep(reason, needBytes) {
+  var need = Number(needBytes) || 0, freed = 0, i;
+  lsLog('פינוי התחיל', reason, 0);
+
+  // ── שלב א: מטמונים שניתן לשחזר מהענן ──
+  var sized = [];
+  (LS_CFG.tier1 || []).forEach(function (k) {
+    var v = lsGet(k, null);
+    if (v != null) sized.push({ k: k, b: lsEntryBytes(k, v) });
+  });
+  sized.sort(function (a, b) { return b.b - a.b; });   // הגדול קודם — מפנה מהר
+  var hit = [];
+  for (i = 0; i < sized.length; i++) {
+    if (need && freed >= need) break;
+    if (lsRemove(sized[i].k)) { freed += sized[i].b; hit.push(sized[i].k); }
+  }
+  if (hit.length) lsLog('פינוי א׳ — מטמונים', hit.join(', '), freed);
+  if (need && freed >= need) return freed;
+
+  // ── שלב ב: רשומות ישנות מסונכרנות ──
+  // כלל ג נאכף כאן, לפני הכול: אם יש **משהו** בתור שטרם עלה לענן, אי אפשר
+  // לדעת מה כבר בטוח שם — ולכן שלב ב מדולג לגמרי.
+  if (LS_CFG.pending && LS_CFG.pending()) {
+    lsLog('פינוי ב׳ דולג', 'יש נתונים שטרם סונכרנו — לא מפנים דבר', 0);
+    return freed;
+  }
+  var through = 0;
+  try { through = Number(LS_CFG.syncedThrough && LS_CFG.syncedThrough()) || 0; } catch (e) { through = 0; }
+  var specs = (LS_CFG.tier2 || []).slice();
+  // מפתח יכול להביא עֵד סנכרון משלו (`spec.syncedThrough`) כשהחותמת הגלובלית
+  // אינה מעידה עליו — למשל מערך שנדחף בנפרד ובהצלחה נפרדת.
+  var anyOwn = false;
+  for (i = 0; i < specs.length; i++) if (typeof specs[i].syncedThrough === 'function') anyOwn = true;
+  if (!through && !anyOwn) {
+    lsLog('פינוי ב׳ דולג', 'אין חותמת סנכרון מאומתת', 0);
+    return freed;
+  }
+  for (i = 0; i < specs.length; i++) specs[i]._b = lsEntryBytes(specs[i].key, lsGet(specs[i].key, ''));
+  specs.sort(function (a, b) { return b._b - a._b; });
+  for (i = 0; i < specs.length; i++) {
+    if (need && freed >= need) break;
+    freed += lsPruneKey(specs[i], through, need ? Math.max(0, need - freed) : 0);
+  }
+  return freed;
+}
+function lsPruneKey(spec, through, want) {
+  var raw = lsGet(spec.key, null);
+  if (raw == null) return 0;
+  var arr;
+  try { arr = JSON.parse(raw); } catch (e) { return 0; }
+  if (!Array.isArray(arr) || arr.length < 2) return 0;
+
+  // רצפת גיל פר-מפתח: גם רשומה מסונכרנת לא מפונה אם היא טרייה מדי. בלעדיה
+  // היינו מפנים דווקא את מה שהמשתמש עובד עליו עכשיו.
+  var cut = through;
+  if (typeof spec.syncedThrough === 'function') {
+    try { cut = Number(spec.syncedThrough()) || 0; } catch (e0) { cut = 0; }
+  }
+  if (!cut) return 0;
+  if (spec.minAgeMs) cut = Math.min(cut, Date.now() - spec.minAgeMs);
+  if (cut <= 0) return 0;
+
+  var before = lsEntryBytes(spec.key, raw);
+  var cand = [];
+  for (var i = 0; i < arr.length; i++) {
+    var t = Number(spec.ts(arr[i]));
+    if (isFinite(t) && t > 0 && t <= cut) cand.push({ i: i, t: t });
+  }
+  if (!cand.length) return 0;
+  cand.sort(function (a, b) { return a.t - b.t; });     // הישן ביותר קודם
+
+  var target = want > 0 ? want : Math.max(0, before - Math.floor(before * 0.5));
+  var drop = {}, hz = 0, est = 0, kept = arr.length;
+  for (i = 0; i < cand.length && est < target && kept > 1; i++) {
+    var rec = arr[cand[i].i];
+    var s = '';
+    try { s = JSON.stringify(rec) || ''; } catch (e2) { s = ''; }
+    est += s.length * 2;
+    drop[cand[i].i] = 1;
+    hz = cand[i].t;
+    kept--;
+  }
+  if (!hz) return 0;
+  var next = arr.filter(function (r, ix) { return !drop[ix]; });
+  var json = JSON.stringify(next);
+  if (!lsSetRaw(spec.key, json)) return 0;
+  lsSetRaw(LS_CFG.hzPrefix + spec.key, String(hz));
+  var gained = Math.max(0, before - lsEntryBytes(spec.key, json));
+  lsLog('פינוי ב׳ — ' + (spec.label || spec.key),
+        (arr.length - next.length) + ' רשומות ישנות, עד ' + new Date(hz).toLocaleDateString('he-IL'),
+        gained);
+  if (typeof spec.after === 'function') { try { spec.after(next); } catch (e3) { } }
+  return gained;
+}
+
+/* ── בדיקת העלייה ───────────────────────────────────────────────────────
+   נקראת פעם אחת בכל עליית אפליקציה, לפני שהמשתמש מספיק לכתוב משהו. */
+function lsBoot() {
+  var u = lsUsage(), swept = 0;
+  if (u.total >= u.quota * LS_SWEEP_PCT) {
+    swept = lsSweepGuarded('פינוי יזום בעלייה — ' + Math.round(u.pct * 100) + '% מהמכסה',
+                           Math.max(0, u.total - Math.floor(u.quota * LS_SWEEP_TO)));
+    if (swept > 0) u = lsUsage();
+  }
+  if (u.total >= LS_CRIT_BYTES) {
+    lsLog('⚠️ מעל 4MB', lsFmtBytes(u.total), u.total);
+    lsAlert(MSG_LS_CRIT + ' (' + lsFmtBytes(u.total) + ' מתוך ' + lsFmtBytes(u.quota) + ')');
+  } else if (u.total >= LS_WARN_BYTES) {
+    lsLog('⚠️ מעל 3MB', lsFmtBytes(u.total), u.total);
+    try { lsToast(MSG_LS_WARN + ' (' + lsFmtBytes(u.total) + ')', 5000); } catch (e) { }
+  }
+  if (lsHorizonKeys().length) { try { lsToast(MSG_LS_PRUNED, 6000); } catch (e1) { } }
+  return { usage: u, swept: swept };
+}
+
+/* ── שורת המצב בהגדרות ─────────────────────────────────────────────────── */
+function lsStatusHTML() {
+  var u = lsUsage();
+  var pct = Math.min(100, Math.round(u.pct * 100));
+  var col = u.total >= LS_CRIT_BYTES ? '#b3261e' : (u.total >= LS_WARN_BYTES ? '#b26a00' : '#2e7d32');
+  var h = '<div class="ls-status" dir="rtl" style="font-size:13px;line-height:1.7">';
+  h += '<div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:4px">' +
+       '<span>נפח כולל בדומיין</span><span style="color:' + col + '">' + esc(lsFmtBytes(u.total)) +
+       ' / ' + esc(lsFmtBytes(u.quota)) + ' (' + pct + '%)</span></div>';
+  h += '<div style="background:rgba(128,128,128,.25);border-radius:6px;height:9px;overflow:hidden;margin-bottom:8px">' +
+       '<div style="width:' + pct + '%;height:100%;background:' + col + '"></div></div>';
+  h += '<div style="margin-bottom:8px">נשאר: <b>' + esc(lsFmtBytes(u.free)) + '</b></div>';
+
+  h += '<div style="font-weight:800;margin:10px 0 4px">פילוח לפי אפליקציה</div><table style="width:100%;border-collapse:collapse">';
+  u.apps.forEach(function (a) {
+    h += '<tr><td style="padding:2px 0">' + esc(a.name) + (a.id === LS_CFG.app ? ' <b>(זו)</b>' : '') +
+         '</td><td style="text-align:left;padding:2px 0">' + esc(lsFmtBytes(a.bytes)) +
+         ' <span style="opacity:.6">· ' + a.count + ' מפתחות</span></td></tr>';
+  });
+  if (!u.apps.length) h += '<tr><td>—</td><td></td></tr>';
+  h += '</table>';
+
+  h += '<div style="font-weight:800;margin:10px 0 4px">פילוח לפי מפתח (12 הגדולים)</div><table style="width:100%;border-collapse:collapse">';
+  u.keys.slice(0, 12).forEach(function (k) {
+    h += '<tr><td style="padding:2px 0;word-break:break-all">' + esc(k.key) +
+         '<span style="opacity:.6"> · ' + esc(k.appName) + '</span></td>' +
+         '<td style="text-align:left;padding:2px 0;white-space:nowrap">' + esc(lsFmtBytes(k.bytes)) + '</td></tr>';
+  });
+  if (!u.keys.length) h += '<tr><td>—</td><td></td></tr>';
+  h += '</table>';
+
+  var hz = lsHorizonKeys();
+  if (hz.length) {
+    h += '<div style="margin-top:10px;padding:8px;border-radius:8px;background:rgba(178,106,0,.12);color:#b26a00">' +
+         '⚠️ פונו רשומות ישנות מ-' + hz.length + ' מפתחות מחוסר מקום. הן שמורות בענן ויחזרו לתצוגה כשיש רשת.</div>';
+  }
+
+  var log = lsLogRead();
+  h += '<div style="font-weight:800;margin:10px 0 4px">יומן פינוי</div>';
+  if (!log.length) h += '<div style="opacity:.6">— טרם בוצע פינוי —</div>';
+  else {
+    h += '<div style="font-size:12px;opacity:.85">';
+    for (var i = log.length - 1; i >= 0; i--) {
+      var d = new Date(log[i].t);
+      h += '<div>' + esc(d.toLocaleDateString('he-IL')) + ' ' + esc(d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })) +
+           ' — ' + esc(log[i].a) + (log[i].d ? ' · ' + esc(log[i].d) : '') +
+           (log[i].b ? ' · ' + esc(lsFmtBytes(log[i].b)) : '') + '</div>';
+    }
+    h += '</div>';
+  }
+
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+       '<button type="button" onclick="window.lsSweepNow()">🧹 פנה מקום עכשיו</button>' +
+       '<button type="button" onclick="window.lsRefreshStatus()">↻ רענן</button>';
+  if (hz.length) h += '<button type="button" onclick="window.lsRestoreAll()">☁️ טען הכל מחדש מהענן</button>';
+  h += '</div></div>';
+  return h;
+}
+function lsRenderStatus() {
+  var el = document.getElementById('ls-status-box');
+  if (el) el.innerHTML = lsStatusHTML();
+}
+function lsRefreshStatus() { lsRenderStatus(); }
+function lsSweepNow() {
+  var before = lsUsage().total;
+  var freed = lsSweepGuarded('פינוי ידני מההגדרות', 0);
+  lsRenderStatus();
+  try { lsToast(freed > 0 ? ('✅ פונו ' + lsFmtBytes(freed)) : '⚠️ אין מה לפנות — אין נתונים מסונכרנים וישנים דיים', 4000); } catch (e) { }
+  return before - lsUsage().total;
+}
+function lsRestoreAll() {
+  lsClearHorizons();
+  lsRenderStatus();
+  try { lsToast('✅ האופק נוקה — הנתונים הישנים יחזרו בסנכרון הבא', 4000); } catch (e) { }
+}
+window.lsSweepNow = lsSweepNow;
+window.lsRefreshStatus = lsRefreshStatus;
+window.lsRestoreAll = lsRestoreAll;
+window.lsSet = lsSet;
+window.lsGet = lsGet;
+window.lsUsage = lsUsage;
+window.lsFails = lsFails;
+window.lsOkSince = lsOkSince;
+window.lsGuardToast = lsGuardToast;
+/* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
+
 /* ------------------------------------------------------------------ utils */
 function $(sel, root) { return (root || document).querySelector(sel); }
 function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -582,64 +1113,428 @@ var state = {
   pf: { agent: '', status: '', cause: '', from: '', to: '' }
 };
 
-/* --------------------------------------------------------------- data api */
+/* ══════════════════════════════════════════════════════════════════════════
+   עבודה אופליין מלאה (סבב 11) — עותק מקומי, קריאה ממנו, סנכרון ברקע ומנוע
+   מיזוג ברמת רשומה לפי `updated_at`.
+
+   לפני הסבב הזה gius קראה מהענן בכל טעינה ושמרה מקומית רק את מפתח הכניסה,
+   ולכן בלי רשת לא היה לה מה להציג ולא היה לה לאן לכתוב. הדפוס כאן זהה לזה
+   של hanhala-ruchanit ו-yoman-avoda:
+
+     1. **עותק מקומי** — כל טבלה נשמרת ב-`g_mirror_<table>`, כולל רשומות
+        מחוקות (tombstones). בלעדיהן מחיקה שנעשתה במכשיר אחר לא הייתה מגיעה
+        לכאן לעולם: המיזוג מחזיר כל רשומה מקומית שאין לה מקבילה מרוחקת.
+     2. **קריאה מהעותק בעלייה** — `boot()` מרנדר מהמראה מיד, ורק אחר כך
+        מסנכרן. אין יותר ספינר תלוי-רשת.
+     3. **כתיבה מקומית-תחילה** — `insert`/`update`/`softDelete` כותבות למראה
+        ולתור היוצא (`g_outbox`) ומחזירות מיד. הרשת היא עניין של הרקע.
+     4. **מיזוג ברמת רשומה** — `mergeRows` לפי `updated_at`; הענן מנצח
+        בשוויון (דטרמיניסטי). **היעדר רשומה בענן אינו מחיקה.**
+
+   ⚠️ שינוי מדיניות מתועד: הסינון `deleted = false` **ירד מהשאילתה** ועבר
+   לנקודה אחת — `liveRows()`. חייבים למשוך גם את המחוקות, אחרת אין tombstones.
+   זה בדיוק הדפוס של schar-limud (הסינון ב-`syncAll`, כלל 6 שם).
+
+   ⚠️ מחיר מודע, זהה למתועד ב-yoman: רשומה שנמחקה **פיזית** במסד תחזור פעם
+   אחת מהמראה המקומית. ב-gius זה תיאורטי — ל-`anon` אין הרשאת DELETE (כלל
+   ברזל 4) — ולכן מחיקה היא תמיד `deleted=true`, שהיא tombstone לכל דבר.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// supabase-js לא זורק בכשל — הוא מחזיר {data:null,error:{...}}. הפונקציה הזו
+// היא מה שהופך תשובה כזו לזריקה, ולכן כל `.then(ok)` חייב להישאר.
 function ok(res) {
-  if (res.error) throw res.error;
-  return res.data;
+  if (res && res.error) throw res.error;
+  return res ? res.data : null;
 }
-function selectAll(table, live, order, asc) {
-  var q = sb.from(table).select('*');
-  if (live) q = q.eq('deleted', false);
-  if (order) q = q.order(order, { ascending: asc !== false, nullsFirst: false });
-  return q.then(ok);
+
+var MIRROR_PREFIX = 'g_mirror_';
+var OUTBOX_KEY = 'g_outbox';
+var SYNCED_KEY = 'g_synced_at';
+var PULL_MS = 20000;     // משיכה מלאה
+var FLUSH_MS = 5000;     // ריקון התור (לא נוגע ברשת כשהתור ריק)
+
+// `strip` — עמודות שלא נשמרות במראה. הסיסמאות של **כל** המשתמשים בטקסט גלוי
+// ב-localStorage של כל מכשיר הן חשיפה חדשה וגרועה יותר מזו שכבר מתועדת
+// (כלל ברזל 7), ואין בהן צורך: הכניסה האופליין נשענת על `gius.session`
+// שנשמר בכניסה המקוונת, לא על השוואת סיסמה מקומית.
+var TABLES = [
+  { t: 'g_donors',  key: 'id',  soft: true,  order: 'name' },
+  { t: 'g_pledges', key: 'id',  soft: true,  order: 'due_date' },
+  { t: 'g_txns',    key: 'id',  soft: true,  order: 'txn_date', desc: true },
+  { t: 'g_tasks',   key: 'id',  soft: true,  order: 'due_date' },
+  { t: 'g_targets', key: 'id',  soft: false, order: 'month', desc: true, conflict: 'month' },
+  { t: 'g_users',   key: 'id',  soft: false, order: 'created_at', strip: ['password'] },
+  { t: 'g_config',  key: 'key', soft: false, conflict: 'key' }
+];
+function tableMeta(t) {
+  for (var i = 0; i < TABLES.length; i++) if (TABLES[i].t === t) return TABLES[i];
+  return { t: t, key: 'id', soft: false };
 }
+
+var MIRROR = {};
+var _syncTimer = null, _flushTimer = null, _pulling = false, _flushing = false;
+var _netWarned = false, _lastPullOk = 0;
+
+/* ------------------------------------------------------------- מזהים */
+// מזהה נוצר בצד הלקוח כדי שהכתיבה תעבוד בלי רשת. הסכימה משתמשת ב-uuid
+// (`gen_random_uuid()`) בדיוק בשביל זה — ראה "מבנה הנתונים" ב-CLAUDE.md.
+function newId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    if (window.crypto && window.crypto.getRandomValues) {
+      var b = new Uint8Array(16);
+      window.crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;
+      b[8] = (b[8] & 0x3f) | 0x80;
+      var h = [];
+      for (var i = 0; i < 16; i++) h.push((b[i] + 0x100).toString(16).slice(1));
+      return h.slice(0, 4).join('') + '-' + h.slice(4, 6).join('') + '-' + h.slice(6, 8).join('') +
+             '-' + h.slice(8, 10).join('') + '-' + h.slice(10, 16).join('');
+    }
+  } catch (e) { }
+  // נפילה-חזרה אחרונה: עדיין uuid תקין תחבירית, פשוט פחות אקראי.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+/* --------------------------------------------------------------- מראה */
+function rowTs(r) {
+  if (!r || typeof r !== 'object') return 0;
+  var x = Date.parse(r.updated_at || r.created_at || '');
+  return isFinite(x) ? x : 0;
+}
+function mirrorLoad() {
+  TABLES.forEach(function (m) {
+    var v = null;
+    try { var raw = lsGet(MIRROR_PREFIX + m.t, null); v = raw == null ? null : JSON.parse(raw); }
+    catch (e) { console.warn('[mirror] ' + m.t + ' פגום — נטען ריק', e); v = null; }
+    MIRROR[m.t] = Array.isArray(v) ? v.filter(function (r) { return r && typeof r === 'object'; }) : [];
+  });
+}
+function mirrorSave(t) { return lsSetArray(MIRROR_PREFIX + t, MIRROR[t] || [], rowTs); }
+function mirrorHasData() {
+  for (var i = 0; i < TABLES.length; i++) if ((MIRROR[TABLES[i].t] || []).length) return true;
+  return false;
+}
+function findRow(arr, keyName, k) {
+  for (var i = 0; i < arr.length; i++) if (String(arr[i][keyName]) === String(k)) return arr[i];
+  return null;
+}
+
+// מנוע המיזוג. הענן הוא בסיס הסדר ומנצח בשוויון — דטרמיניסטי, ולכן שני
+// מכשירים שממזגים את אותם שני צדדים מגיעים לאותה תוצאה בדיוק.
+function mergeRows(local, remote, keyName) {
+  local = Array.isArray(local) ? local : [];
+  remote = Array.isArray(remote) ? remote : [];
+  var out = [], seen = {};
+  remote.forEach(function (r) {
+    var k = String(r[keyName]);
+    seen[k] = 1;
+    var l = findRow(local, keyName, k);
+    out.push(l && rowTs(l) > rowTs(r) ? l : r);
+  });
+  local.forEach(function (l) {
+    // היעדר רשומה בענן אינו מחיקה — היא עשויה להיות כתיבה מקומית שטרם עלתה.
+    if (!seen[String(l[keyName])]) out.push(l);
+  });
+  return out;
+}
+
+function liveRows(t) {
+  var m = tableMeta(t), arr = MIRROR[t] || [];
+  return m.soft ? arr.filter(function (r) { return !r.deleted; }) : arr.slice();
+}
+// שכפול סדר השאילתה בצד הלקוח — עכשיו שהמיון כבר לא מגיע מהשרת.
+function sortRows(t, arr) {
+  var m = tableMeta(t);
+  if (!m.order) return arr;
+  var dir = m.desc ? -1 : 1;
+  return arr.sort(function (a, b) {
+    var x = a[m.order], y = b[m.order];
+    var xe = (x == null || x === ''), ye = (y == null || y === '');
+    if (xe && ye) return 0;
+    if (xe) return 1;                    // nullsFirst:false — ריקים בסוף, תמיד
+    if (ye) return -1;
+    if (m.order === 'name') return String(x).localeCompare(String(y), 'he') * dir;
+    return (x < y ? -1 : x > y ? 1 : 0) * dir;
+  });
+}
+
+function configFromMirror() {
+  var cfg = { categories: [], causes: [], domains: [] }, seen = {};
+  (MIRROR.g_config || []).forEach(function (row) {
+    if (!Array.isArray(row.value)) return;
+    cfg[row.key] = row.value.slice();
+    seen[row.key] = true;
+  });
+  // ברירות מחדל רק כשהשורה חסרה לגמרי. בעלים שרוקן רשימה חייב לקבל רשימה
+  // ריקה בחזרה, לא את ברירות המחדל שקמות לתחייה מתחתיו.
+  Object.keys(DEFAULT_CONFIG).forEach(function (k) { if (!seen[k]) cfg[k] = DEFAULT_CONFIG[k].slice(); });
+  return cfg;
+}
+function applyMirrorToState() {
+  state.donors  = sortRows('g_donors',  liveRows('g_donors'));
+  state.pledges = sortRows('g_pledges', liveRows('g_pledges'));
+  state.txns    = sortRows('g_txns',    liveRows('g_txns'));
+  state.tasks   = sortRows('g_tasks',   liveRows('g_tasks'));
+  state.targets = sortRows('g_targets', liveRows('g_targets'));
+  state.users   = sortRows('g_users',   liveRows('g_users'));
+  state.config  = configFromMirror();
+}
+
+/* -------------------------------------------------------------- התור */
+function outboxRead() {
+  try { var v = JSON.parse(lsGet(OUTBOX_KEY, '[]')); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+}
+function outboxCount() { return outboxRead().length; }
+function outboxWrite(q) { return lsSet(OUTBOX_KEY, JSON.stringify(q)); }
+
+// ⚠️ **התור נכתב לפני שהמראה מתעדכנת, ובכוונה.** אם הכתיבה לתור נכשלה
+// (אחסון מלא), הפעולה לעולם לא תגיע לענן — ולכן היא חייבת להיכשל **בקול**,
+// כאן, לפני שמשהו על המסך מתנהג כאילו נשמר. `runSave` תופסת את הזריקה,
+// מציגה שגיאה, ו-`lsGuardToast` חוסם ממילא כל "✅" בשתי השניות הבאות.
+function enqueue(op) {
+  op.oid = newId();
+  op.ts = Date.now();
+  op.tries = 0;
+  var q = outboxRead();
+  q.push(op);
+  if (!outboxWrite(q)) throw new Error(MSG_LS_FULL);
+  scheduleFlush();
+  return op;
+}
+
+/* ------------------------------------------------- API כתיבה (מקומי-תחילה) */
+function upsertLocal(t, row) {
+  var m = tableMeta(t);
+  var arr = MIRROR[t] || (MIRROR[t] = []);
+  var cur = findRow(arr, m.key, row[m.key]);
+  if (cur) Object.keys(row).forEach(function (k) { cur[k] = row[k]; });
+  else arr.push(row);
+  mirrorSave(t);
+  return cur || row;
+}
+
 function insert(table, row) {
-  return sb.from(table).insert(row).select().single().then(ok);
+  var m = tableMeta(table);
+  var full = Object.assign({}, row);
+  if (full[m.key] == null) full[m.key] = newId();
+  if (!full.created_at) full.created_at = nowISO();
+  full.updated_at = nowISO();
+  if (m.soft) { if (full.deleted == null) full.deleted = false; if (full.deleted_at === undefined) full.deleted_at = null; }
+  // ה-insert נשלח כ-upsert על המפתח הראשי: ניסיון חוזר אחרי תשובה שאבדה
+  // ברשת לא ייכשל על מפתח כפול, ולכן ריקון התור אידמפוטנטי.
+  enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: m.key });
+  var saved = upsertLocal(table, full);
+  applyMirrorToState();
+  return Promise.resolve(saved);
 }
+
 function update(table, id, patch) {
-  patch = Object.assign({}, patch, { updated_at: nowISO() });
-  return sb.from(table).update(patch).eq('id', id).select().single().then(ok);
+  var m = tableMeta(table);
+  var p = Object.assign({}, patch, { updated_at: nowISO() });
+  enqueue({ op: 'update', table: table, id: id, patch: p });
+  var row = Object.assign({}, p);
+  row[m.key] = id;
+  var saved = upsertLocal(table, row);
+  applyMirrorToState();
+  return Promise.resolve(saved);
 }
+
 function softDelete(table, id) {
   return update(table, id, { deleted: true, deleted_at: nowISO() });
 }
 
-function loadAll() {
-  return Promise.all([
-    selectAll('g_donors', true, 'name'),
-    selectAll('g_pledges', true, 'due_date'),
-    selectAll('g_txns', true, 'txn_date', false),
-    selectAll('g_tasks', true, 'due_date'),
-    selectAll('g_targets', false, 'month', false),
-    selectAll('g_users', false, 'created_at'),
-    sb.from('g_config').select('*').then(ok)
-  ]).then(function (r) {
-    state.donors = r[0] || [];
-    state.pledges = r[1] || [];
-    state.txns = r[2] || [];
-    state.tasks = r[3] || [];
-    state.targets = r[4] || [];
-    state.users = r[5] || [];
-    var cfg = { categories: [], causes: [], domains: [] };
-    var seen = {};
-    (r[6] || []).forEach(function (row) {
-      if (!Array.isArray(row.value)) return;
-      cfg[row.key] = row.value.slice();
-      seen[row.key] = true;
-    });
-    // Seed defaults only when the row is absent. An owner who empties a list
-    // must get an empty list back, not the defaults resurrected under them.
-    Object.keys(DEFAULT_CONFIG).forEach(function (k) {
-      if (!seen[k]) cfg[k] = DEFAULT_CONFIG[k].slice();
-    });
-    state.config = cfg;
+// upsert לפי עמודה שאינה המפתח הראשי (חודש ביעדים, key ברשימות).
+function upsertBy(table, conflict, row) {
+  var m = tableMeta(table);
+  var full = Object.assign({}, row, { updated_at: nowISO() });
+  var arr = MIRROR[table] || (MIRROR[table] = []);
+  var cur = findRow(arr, conflict, full[conflict]);
+  if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
+  else if (full[m.key] == null && m.key !== conflict) full[m.key] = newId();
+  enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: conflict });
+  if (cur) Object.keys(full).forEach(function (k) { cur[k] = full[k]; });
+  else arr.push(full);
+  mirrorSave(table);
+  applyMirrorToState();
+  return Promise.resolve(cur || full);
+}
+
+function saveConfigList(key, list) { return upsertBy('g_config', 'key', { key: key, value: list }); }
+
+/* --------------------------------------------------------- ריקון התור */
+function sendOp(op) {
+  if (!sb) return Promise.reject(new Error('אין חיבור'));
+  var q;
+  if (op.op === 'upsert')      q = sb.from(op.table).upsert(op.row, { onConflict: op.conflict || 'id' });
+  else if (op.op === 'update') q = sb.from(op.table).update(op.patch).eq('id', op.id);
+  else return Promise.reject(new Error('פעולה לא מוכרת: ' + op.op));
+  return withTimeout(q).then(function (res) {
+    if (res && res.error) throw res.error;
+    return true;
   });
 }
 
-function saveConfigList(key, list) {
-  return sb.from('g_config')
-    .upsert({ key: key, value: list, updated_at: nowISO() }, { onConflict: 'key' })
-    .select().single().then(ok);
+function flushOutbox() {
+  if (_flushing) return Promise.resolve(false);
+  var q = outboxRead();
+  if (!q.length) return Promise.resolve(true);
+  if (!navigator.onLine) return Promise.resolve(false);
+  _flushing = true;
+  var i = 0;
+  function step() {
+    if (i >= q.length) return Promise.resolve(true);
+    var op = q[i];
+    // פעולה שסומנה ככשל קבוע מדולגת — אבל **נשארת בתור** וגלויה בהגדרות.
+    // מחיקה שקטה של פעולה שהמשתמש ביצע היא בדיוק הכישלון השקט שאסור.
+    if (op.dead) { i++; return step(); }
+    return sendOp(op).then(function () {
+      op._done = true; i++;
+      return step();
+    }, function (e) {
+      op.tries = (op.tries || 0) + 1;
+      op.err = (e && (e.message || e.code)) || String(e);
+      // כשל רשת חוזר וננסה שוב; כשל תוכן (ולידציה, מפתח זר) יחזור על עצמו
+      // לנצח, ולכן אחרי חמישה ניסיונות הוא מסומן ומדולג — לא נמחק.
+      if (!isNetErr(e) && op.tries >= 5) op.dead = true;
+      return false;   // עוצרים כאן — סדר ה-FIFO הוא מה ששומר על יחסי המפתח הזר
+    });
+  }
+  return step().then(function (allOk) {
+    var rest = q.filter(function (o) { return !o._done; });
+    rest.forEach(function (o) { delete o._done; });
+    outboxWrite(rest);
+    syncBarRender();
+    return allOk;
+  }).catch(function (e) {
+    console.warn('[outbox]', e);
+    return false;
+  }).then(function (r) { _flushing = false; return r; });
+}
+
+/* ------------------------------------------------------------- משיכה */
+function syncPull() {
+  if (_pulling || !sb) return Promise.resolve(false);
+  _pulling = true;
+  return Promise.all(TABLES.map(function (m) {
+    // ⚠️ בלי `.eq('deleted', false)` — חייבים גם את ה-tombstones, אחרת מחיקה
+    //    שנעשתה במכשיר אחר לא תגיע לכאן לעולם. הסינון ב-`liveRows()`.
+    return withTimeout(sb.from(m.t).select('*'))
+      .then(function (res) { return { m: m, res: res }; },
+            function (e) { return { m: m, res: { error: e } }; });
+  })).then(function (list) {
+    var errs = [];
+    list.forEach(function (x) {
+      if (!x.res || x.res.error || !Array.isArray(x.res.data)) { errs.push(x.m.t); return; }
+      var rows = x.res.data;
+      if (x.m.strip) {
+        rows = rows.map(function (r) {
+          var c = Object.assign({}, r);
+          x.m.strip.forEach(function (f) { delete c[f]; });
+          return c;
+        });
+      }
+      MIRROR[x.m.t] = mergeRows(MIRROR[x.m.t], rows, x.m.key);
+      mirrorSave(x.m.t);
+    });
+    applyMirrorToState();
+    if (!errs.length) {
+      _lastPullOk = Date.now();
+      // עֵד הפינוי: כל מה שגילו קטן מהמשיכה המלאה המוצלחת האחרונה, **וכשהתור
+      // ריק**, כבר נמצא בענן. שני התנאים נבדקים ב-LS_CFG.
+      lsSet(SYNCED_KEY, String(_lastPullOk));
+      if (_netWarned) { _netWarned = false; toast('☁️ החיבור לנתונים חזר', 'ok'); }
+    } else {
+      console.warn('[sync] נכשלו:', errs.join(', '));
+      if (!_netWarned) {
+        _netWarned = true;
+        toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', 'bad');
+      }
+    }
+    return !errs.length;
+  }).catch(function (e) {
+    console.warn('[sync]', e);
+    return false;
+  }).then(function (r) { _pulling = false; syncBarRender(); return r; });
+}
+
+// ריקון קודם למשיכה: אחרת המשיכה מחזירה את הגרסה הישנה של רשומה שכתבנו
+// מקומית, ואף שהמיזוג לפי `updated_at` היה מנצח בכל מקרה — עדיף שהענן
+// יהיה מעודכן לפני שקוראים ממנו.
+function syncNow() {
+  return flushOutbox().then(function () { return syncPull(); }).then(function (ok) {
+    render();
+    return ok;
+  });
+}
+function scheduleFlush() {
+  if (_flushTimer) return;
+  _flushTimer = setTimeout(function () { _flushTimer = null; flushOutbox(); }, 400);
+}
+function startSync() {
+  if (_syncTimer) return;
+  _syncTimer = setInterval(function () {
+    if (!state.user) return;
+    flushOutbox().then(function () {
+      if (Date.now() - _lastPullOk >= PULL_MS) return syncPull().then(function () { render(); });
+    });
+  }, FLUSH_MS);
+  window.addEventListener('online', function () { syncNow(); });
+}
+
+/* ------------------------------------------------- מחוון מצב הסנכרון */
+// המשתמש חייב לדעת שהוא עובד ללא רשת ושיש פעולות שממתינות — אחרת "נשמר"
+// נראה בדיוק כמו "נשמר בענן", וזו בדיוק ההטעיה שהסבב הזה בא למנוע.
+function syncBarRender() {
+  var pend = outboxRead();
+  var dead = pend.filter(function (o) { return o.dead; }).length;
+  var off = !navigator.onLine;
+  var el = document.getElementById('syncbar');
+  if (!pend.length && !off) { if (el) el.style.display = 'none'; return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'syncbar';
+    el.style.cssText = 'position:fixed;z-index:2147482000;left:0;right:0;bottom:0;padding:8px 12px;' +
+      'text-align:center;direction:rtl;font:600 13px/1.5 inherit;color:#3d2c00;background:#ffd88a;' +
+      'box-shadow:0 -2px 10px rgba(0,0,0,.18)';
+    (document.body || document.documentElement).appendChild(el);
+  }
+  var msg;
+  if (dead) msg = '❌ ' + dead + ' פעולות לא הצליחו להישמר בענן — הן שמורות במכשיר וממתינות בהגדרות';
+  else if (off) msg = '⚠️ אין רשת — עובדים מקומית' + (pend.length ? (' · ' + pend.length + ' פעולות ממתינות לסנכרון') : '');
+  else msg = '☁️ מסנכרן… ' + pend.length + ' פעולות ממתינות';
+  el.textContent = msg;
+  el.style.background = dead ? '#ffb4ab' : '#ffd88a';
+  el.style.display = '';
+}
+window.addEventListener('online', syncBarRender);
+window.addEventListener('offline', syncBarRender);
+
+/* ------------------------------------------------- פאנל מצב בהגדרות */
+function syncStatusHTML() {
+  var pend = outboxRead();
+  var h = '<div style="font-size:13px;line-height:1.8">';
+  h += '<div>מצב רשת: <b>' + (navigator.onLine ? 'מקוון' : 'לא מקוון') + '</b></div>';
+  h += '<div>סנכרון מלא אחרון: <b>' +
+       (_lastPullOk ? esc(new Date(_lastPullOk).toLocaleString('he-IL')) : '— טרם הסתנכרן —') + '</b></div>';
+  h += '<div>פעולות ממתינות: <b>' + pend.length + '</b></div>';
+  if (pend.length) {
+    h += '<div class="tw" style="margin-top:8px"><table><thead><tr><th>פעולה</th><th>טבלה</th><th>נוצרה</th><th>מצב</th></tr></thead><tbody>';
+    pend.slice(0, 30).forEach(function (o) {
+      h += '<tr><td>' + esc(o.op === 'update' ? 'עדכון' : 'הוספה/עדכון') + '</td><td>' + esc(o.table) + '</td>' +
+           '<td>' + esc(new Date(o.ts).toLocaleString('he-IL')) + '</td>' +
+           '<td>' + (o.dead ? '<span class="badge bad">נכשל — ' + esc(o.err || '') + '</span>'
+                            : (o.tries ? '<span class="badge">ניסיון ' + o.tries + '</span>' : 'ממתין')) + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<div style="margin-top:8px"><button class="btn sm" data-act="outbox-retry">נסה לסנכרן עכשיו</button></div>';
+  }
+  h += '</div>';
+  return h;
 }
 
 /* ------------------------------------------------------------- selectors */
@@ -681,6 +1576,8 @@ function isOwner() { return state.user && state.user.role === 'owner'; }
 
 /* ------------------------------------------------------------------- ui */
 function toast(msg, kind) {
+  // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
+  if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
   var el = document.createElement('div');
   el.className = 'toast' + (kind ? ' ' + kind : '');
   el.textContent = msg;
@@ -798,27 +1695,32 @@ function doLogin() {
   $('#lg-err').classList.remove('show');
   if (!username || !password) { loginError('נא למלא שם משתמש וסיסמה'); return; }
 
+  // ⚠️ כניסה **חדשה** דורשת רשת, בכוונה: המראה המקומית אינה מחזיקה סיסמאות
+  //    (ר' `strip` ב-TABLES), ושכפול הסיסמאות של כל המשתמשים לכל מכשיר היה
+  //    חשיפה גרועה יותר מזו שכבר מתועדת בכלל ברזל 7. מי שכבר נכנס פעם אחת
+  //    ממשיך לעבוד אופליין דרך `gius.session`.
+  if (!navigator.onLine) { loginError(MSG_OFFLINE); return; }
   busy(btn, true);
-  sb.from('g_users').select('*').eq('username', username).limit(1)
+  withTimeout(sb.from('g_users').select('*').eq('username', username).limit(1))
     .then(ok)
     .then(function (rows) {
       var u = rows && rows[0];
       if (!u || String(u.password) !== String(password)) throw new Error('bad');
       if (!u.active) throw new Error('inactive');
       state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
-      try { localStorage.setItem(SESSION_KEY, JSON.stringify(state.user)); } catch (_) {}
+      lsSet(SESSION_KEY, JSON.stringify(state.user));
       return boot();
     })
     .catch(function (e) {
       busy(btn, false);
-      if (e && e.message === 'bad') loginError('שם משתמש או סיסמה שגויים');
+      if (e && e.message === 'bad') loginError(MSG_BAD_LOGIN);
       else if (e && e.message === 'inactive') loginError('המשתמש מושבת. פנו לבעלים.');
-      else loginError('שגיאת התחברות: ' + ((e && e.message) || 'לא ידוע'));
+      else loginError(isNetErr(e) ? MSG_OFFLINE : ('שגיאת התחברות: ' + ((e && e.message) || 'לא ידוע')));
     });
 }
 
 function logout() {
-  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  lsRemove(SESSION_KEY);
   state.user = null;
   state.screen = 'home';
   state.donorId = null;
@@ -1283,9 +2185,11 @@ function moveTask(id, stage) {
   var prev = t.stage;
   t.stage = stage;
   render();
-  update('g_tasks', id, { stage: stage }).catch(function (e) {
-    t.stage = prev; render(); errToast(e);
-  });
+  // update() כבר לא נכשלת ברשת (היא מקומית-תחילה) — היא נכשלת רק כשהכתיבה
+  // המקומית או התור נכשלו, וזה בדיוק המצב שבו הגרירה חייבת לחזור אחורה.
+  Promise.resolve().then(function () { return update('g_tasks', id, { stage: stage }); })
+    .then(function () { scheduleFlush(); })
+    .catch(function (e) { t.stage = prev; render(); errToast(e); });
 }
 
 /* ====================================================================== */
@@ -1297,6 +2201,10 @@ function viewSettings() {
   }
 
   var h = '';
+
+  /* אחסון מקומי + מצב סנכרון (סבב 11) */
+  h += '<section class="card"><h2>💾 אחסון מקומי</h2><div id="ls-status-box">' + lsStatusHTML() + '</div></section>';
+  h += '<section class="card"><h2>☁️ מצב סנכרון</h2>' + syncStatusHTML() + '</section>';
 
   /* users */
   h += '<section class="card"><h2>👥 ניהול משתמשים<span class="cnt">' + state.users.length + '</span>' +
@@ -1714,20 +2622,22 @@ function saveTarget() {
   var m = val('tg-month');
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('נא לבחור חודש תקין', 'bad'); return Promise.resolve(); }
   var amount = num(val('tg-amount'));
-  return sb.from('g_targets')
-    .upsert({ month: m, amount: amount, updated_at: nowISO() }, { onConflict: 'month' })
-    .select().single().then(ok);
+  return upsertBy('g_targets', 'month', { month: m, amount: amount });
 }
 
 /* ====================================================================== */
 /*  ACTIONS                                                                */
 /* ====================================================================== */
+// מקומי-תחילה: הכתיבה כבר במראה ובתור, ולכן אין שום סיבה להמתין לרשת לפני
+// שמרעננים את המסך. הסנכרון רץ ברקע ומרנדר שוב כשהוא מביא משהו חדש.
 function afterSave(msg) {
-  return loadAll().then(function () {
-    closeModal();
-    render();
-    if (msg) toast(msg, 'ok');
-  });
+  closeModal();
+  applyMirrorToState();
+  render();
+  syncBarRender();
+  if (msg) toast(msg, 'ok');
+  scheduleFlush();
+  return Promise.resolve();
 }
 
 function runSave(btn, fn, msg) {
@@ -1758,6 +2668,7 @@ var ACTIONS = {
   'ask-no': function () { closeAsk(false); },
 
   'month': function (el) { state.month = shiftMonth(state.month, +el.dataset.d); render(); },
+  'outbox-retry': function () { syncNow().then(function () { render(); }); },
 
   'fab': function () {
     openModal('מה מוסיפים?',
@@ -1968,16 +2879,27 @@ $('#ask').addEventListener('click', function (e) { if (e.target === this) closeA
 /* ====================================================================== */
 function boot() {
   $('#app').innerHTML = '<div id="boot"><span class="spin"></span></div>';
-  return loadAll()
-    .then(function () { render(); })
-    .catch(function (e) {
-      console.error(e);
-      $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
-        '<h1>שגיאת טעינה</h1><div class="sub">לא הצלחנו לטעון את הנתונים מהשרת.</div>' +
-        '<div class="auth-err show">' + esc((e && e.message) || 'שגיאה לא ידועה') + '</div>' +
-        '<button class="btn block" style="margin-top:14px" onclick="location.reload()">רענון</button>' +
-        '</div></div>';
-    });
+  // ⭐ קריאה מהעותק המקומי **ראשונה**, לפני כל נגיעה ברשת. זה כל ההבדל
+  //    בין אפליקציה שעובדת אופליין לאחת שרק מציגה ספינר.
+  applyMirrorToState();
+  syncBarRender();
+  startSync();
+
+  if (mirrorHasData()) {
+    render();                 // המשתמש רואה נתונים מיד — גם בלי רשת
+    syncNow();                // ורענון ברקע
+    return Promise.resolve();
+  }
+
+  // אין עותק מקומי כלל (התקנה ראשונה / משתמש חדש) — כאן רשת היא חובה.
+  return syncNow().then(function (okPull) {
+    if (okPull || mirrorHasData()) { render(); return; }
+    $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
+      '<h1>שגיאת טעינה</h1><div class="sub">אין עדיין עותק מקומי של הנתונים, ולא הצלחנו לטעון מהשרת. ' +
+      'התחברו לרשת פעם אחת — מכאן והלאה האפליקציה תעבוד גם בלעדיה.</div>' +
+      '<button class="btn block" style="margin-top:14px" onclick="location.reload()">רענון</button>' +
+      '</div></div>';
+  });
 }
 
 function start() {
@@ -1991,23 +2913,38 @@ function start() {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 
+  // עמידות אחסון (סבב 11): מדידה + פינוי יזום, ואז טעינת המראה — בסדר הזה,
+  // כדי שהמשיכה שאחריה תכתוב לאחסון שכבר יש בו מקום.
+  try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
+  mirrorLoad();
+
   var saved = null;
-  try { saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (_) {}
+  try { saved = JSON.parse(lsGet(SESSION_KEY, 'null')); } catch (_) { saved = null; }
   if (saved && saved.id) {
     state.user = saved;
-    // Re-validate the stored session against the table on every cold start.
-    sb.from('g_users').select('*').eq('id', saved.id).limit(1).then(ok)
-      .then(function (rows) {
-        var u = rows && rows[0];
-        if (!u || !u.active) { logout(); return; }
-        state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
-        try { localStorage.setItem(SESSION_KEY, JSON.stringify(state.user)); } catch (_) {}
-        boot();
-      })
-      .catch(function () { boot(); });
+    boot();                 // ← לא ממתינים לאימות מהרשת; עולים מיד
+    revalidateSession(saved);
   } else {
     renderLogin();
   }
+}
+
+// אימות הסשן מול הטבלה — ברקע, ואחרי שהאפליקציה כבר עלתה.
+// ⚠️ יציאה מהחשבון **רק על תשובה סמכותית** (המשתמש לא קיים או הושבת). כשל
+//    רשת אינו ראיה לכלום, ואם הוא היה מנתק — האפליקציה הייתה זורקת החוצה כל
+//    משתמש אופליין, כלומר מבטלת את כל העבודה האופליין. אותו כלל בדיוק מתועד
+//    ב-hanhala-ruchanit ("כניסה אופליין", סעיף 7).
+function revalidateSession(saved) {
+  if (!navigator.onLine) return;
+  withTimeout(sb.from('g_users').select('*').eq('id', saved.id).limit(1)).then(ok)
+    .then(function (rows) {
+      var u = rows && rows[0];
+      if (!u || !u.active) { toast('המשתמש הושבת — נדרשת כניסה מחדש', 'bad'); logout(); return; }
+      state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
+      lsSet(SESSION_KEY, JSON.stringify(state.user));
+      render();
+    })
+    .catch(function (e) { console.warn('[session] אימות נדחה (רשת) — ממשיכים מקומית', e); });
 }
 
 /* -------------------------------------------------- service worker + update */
