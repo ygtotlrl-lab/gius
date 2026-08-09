@@ -516,6 +516,10 @@ var sb = null;
 var NET_TIMEOUT_MS = 8000;
 var MSG_OFFLINE = '⚠️ אין חיבור לאינטרנט — הפעולה תסתנכרן כשהחיבור יחזור';
 var MSG_SAVED = '✅ נשמר בהצלחה';
+// נוסח משותף לארבע האפליקציות (סבב 12 שלב 4). שמירה מקומית שטרם אושרה
+// בענן **חייבת** להיאמר אחרת משמירה שאושרה — אחרת "נשמר" נראה בדיוק אותו
+// דבר בשני המצבים, וזו ההטעיה שהסבב הזה בא למנוע.
+var MSG_SAVED_LOCAL = '✅ נשמר במכשיר — יסונכרן כשתחזור הרשת';
 var MSG_BAD_LOGIN = '❌ שם משתמש או סיסמה שגויים';
 function isNetErr(e) {
   if (!navigator.onLine) return true;
@@ -557,7 +561,7 @@ var LS_CFG = {
   ],
 
   // כלל ג: כל עוד יש פעולה בתור היוצא — לא מפנים כלום.
-  pending: function () { try { return outboxRead().length > 0; } catch (e) { return true; } },
+  pending: function () { try { return pendCount() > 0; } catch (e) { return true; } },
 
   // עֵד הסנכרון: חותמת המשיכה המלאה המוצלחת האחרונה.
   syncedThrough: function () { var v = parseInt(lsGet('g_synced_at', '0'), 10); return isFinite(v) ? v : 0; }
@@ -1040,18 +1044,9 @@ window.lsOkSince = lsOkSince;
 window.lsGuardToast = lsGuardToast;
 /* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
 /* ── PEND_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
-// `extra` — פעולה שנכשלה כשל תוכן חוזר (`dead`) נשארת בתור וגלויה בהגדרות.
-// היא נספרת בסימונים ככל פעולה אחרת, אבל ראוי שתיאמר במפורש בסרגל.
-var PEND_CFG = {
-  app: 'gius', key: 'g_pending',
-  extra: function () {
-    try {
-      var q = JSON.parse(lsGet('g_outbox', '[]'));
-      var d = Array.isArray(q) ? q.filter(function (o) { return o && o.dead; }).length : 0;
-      return d ? ('❌ ' + d + ' נכשלו — ר\' הגדרות') : '';
-    } catch (e) { return ''; }
-  }
-};
+// מאז שלב 3 אין כאן תור, ולכן אין `extra` — הסימונים הם מקור האמת היחיד,
+// בדיוק כמו ב-schar-limud.
+var PEND_CFG = { app: 'gius', key: 'g_pending' };
 
 /* ═══ ממתין לסנכרון — מודול משותף (סבב 12) ═══════════════════════════════
    הבעיה שהמודול הזה פותר: אחרי שמירה מקומית המסך נראה **בדיוק** כמו אחרי
@@ -1322,25 +1317,16 @@ function pendBoot() {
 /* ═══════════════ סוף מודול "ממתין לסנכרון" ═════════════════════════════ */
 
 /* ── חיבור gius למודול ────────────────────────────────────────────────────
-   כאן הכתיבה היא מקומית-תחילה עם תור יוצא, ולכן האישור מדויק יותר מאשר
-   באחיות: **הראיה היא שהתור התרוקן מהרשומה הזו.** `pendSyncOutbox()` מחשבת
-   את הסימונים מחדש מתוך התור אחרי כל ריקון — כך רשומה שיש לה עדיין פעולה
-   ממתינה נשארת מסומנת, גם אם פעולה קודמת עליה כבר נשלחה בהצלחה.
-   (בשלב 3, כשהתור יוחלף בדחיפת-מצב, זה יעבור ל-`pendConfirmPush`.)
+   מאז שלב 3 הכתיבה היא מקומית-תחילה עם **דחיפת מצב** (אין תור). האישור
+   מגיע משני מקורות: `pendClear` על תשובת upsert מוצלחת פר-רשומה, ו-
+   `pendReconcile` שמחשב את המפה מחדש אחרי משיכה שהצליחה.
    ───────────────────────────────────────────────────────────────────────── */
 function pendRowKey(table, id) { return table + ':' + id; }
 function pendRenderStatus() {
   var el = document.getElementById('pend-status-box');
   if (el) el.innerHTML = pendStatusHTML();
 }
-// מסנכרנת את מפת הסימונים מול התור: מה שאין לו יותר פעולה בתור — אושר.
-function pendSyncOutbox() {
-  var live = {};
-  outboxRead().forEach(function (o) { if (o && o.table) live[pendRowKey(o.table, o.id)] = 1; });
-  var m = pendAll(), gone = [];
-  Object.keys(m).forEach(function (k) { if (!live[k]) gone.push(k); });
-  pendClearMany(gone);
-}
+
 
 
 /* ------------------------------------------------------------------ utils */
@@ -1475,7 +1461,7 @@ function tableMeta(t) {
 }
 
 var MIRROR = {};
-var _syncTimer = null, _flushTimer = null, _pulling = false, _flushing = false;
+var _syncTimer = null, _flushTimer = null, _pulling = false;
 var _netWarned = false, _lastPullOk = 0;
 
 /* ------------------------------------------------------------- מזהים */
@@ -1528,7 +1514,11 @@ function findRow(arr, keyName, k) {
 
 // מנוע המיזוג. הענן הוא בסיס הסדר ומנצח בשוויון — דטרמיניסטי, ולכן שני
 // מכשירים שממזגים את אותם שני צדדים מגיעים לאותה תוצאה בדיוק.
-function mergeRows(local, remote, keyName) {
+// ⚠️ **`isPending` — רשומה מקומית שטרם אושרה בענן מנצחת ללא תלות בחותמת.**
+// הטריגר `g_touch_updated_at` דורס את `updated_at` ב-NOW() בכל UPDATE בצד
+// השרת, ולכן דחיפה של מכשיר אחר נראית "חדשה" מעריכה מקומית שעדיין לא עלתה.
+// בלי הכלל הזה העריכה המקומית הייתה נעלמת בשקט. אותו כלל בדיוק ב-schar-limud.
+function mergeRows(local, remote, keyName, isPending) {
   local = Array.isArray(local) ? local : [];
   remote = Array.isArray(remote) ? remote : [];
   var out = [], seen = {};
@@ -1536,7 +1526,8 @@ function mergeRows(local, remote, keyName) {
     var k = String(r[keyName]);
     seen[k] = 1;
     var l = findRow(local, keyName, k);
-    out.push(l && rowTs(l) > rowTs(r) ? l : r);
+    if (!l) { out.push(r); return; }
+    out.push(((isPending && isPending(k)) || rowTs(l) > rowTs(r)) ? l : r);
   });
   local.forEach(function (l) {
     // היעדר רשומה בענן אינו מחיקה — היא עשויה להיות כתיבה מקומית שטרם עלתה.
@@ -1588,26 +1579,15 @@ function applyMirrorToState() {
 }
 
 /* -------------------------------------------------------------- התור */
-function outboxRead() {
-  try { var v = JSON.parse(lsGet(OUTBOX_KEY, '[]')); return Array.isArray(v) ? v : []; }
-  catch (e) { return []; }
-}
-function outboxCount() { return outboxRead().length; }
-function outboxWrite(q) { return lsSet(OUTBOX_KEY, JSON.stringify(q)); }
 
-// ⚠️ **התור נכתב לפני שהמראה מתעדכנת, ובכוונה.** אם הכתיבה לתור נכשלה
-// (אחסון מלא), הפעולה לעולם לא תגיע לענן — ולכן היא חייבת להיכשל **בקול**,
-// כאן, לפני שמשהו על המסך מתנהג כאילו נשמר. `runSave` תופסת את הזריקה,
-// מציגה שגיאה, ו-`lsGuardToast` חוסם ממילא כל "✅" בשתי השניות הבאות.
-function enqueue(op) {
-  op.oid = newId();
-  op.ts = Date.now();
-  op.tries = 0;
-  var q = outboxRead();
-  q.push(op);
-  if (!outboxWrite(q)) throw new Error(MSG_LS_FULL);
-  scheduleFlush();
-  return op;
+// ⚠️ **הכתיבה המקומית חייבת להיכשל בקול.** אם היא נכשלה (אחסון מלא) הפעולה
+// לא תגיע לענן לעולם, ולכן היא זורקת כאן — לפני שמשהו על המסך מתנהג כאילו
+// נשמר. `runSave` תופסת את הזריקה, מציגה שגיאה, ו-`lsGuardToast` חוסם ממילא
+// כל "✅" בשתי השניות הבאות.
+function markLocal(table, id) {
+  if (!mirrorSave(table)) throw new Error(MSG_LS_FULL);
+  if (!pendMark(pendRowKey(table, id))) throw new Error(MSG_LS_FULL);
+  schedulePush();
 }
 
 /* ------------------------------------------------- API כתיבה (מקומי-תחילה) */
@@ -1630,9 +1610,8 @@ function insert(table, row) {
   if (m.soft) { if (full.deleted == null) full.deleted = false; if (full.deleted_at === undefined) full.deleted_at = null; }
   // ה-insert נשלח כ-upsert על המפתח הראשי: ניסיון חוזר אחרי תשובה שאבדה
   // ברשת לא ייכשל על מפתח כפול, ולכן ריקון התור אידמפוטנטי.
-  enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: m.key });
-  pendMark(pendRowKey(table, full[m.key]));
   var saved = upsertLocal(table, full);
+  markLocal(table, full[m.key]);
   applyMirrorToState();
   return Promise.resolve(saved);
 }
@@ -1640,11 +1619,10 @@ function insert(table, row) {
 function update(table, id, patch) {
   var m = tableMeta(table);
   var p = Object.assign({}, patch, { updated_at: nowISO() });
-  enqueue({ op: 'update', table: table, id: id, patch: p });
-  pendMark(pendRowKey(table, id));
   var row = Object.assign({}, p);
   row[m.key] = id;
   var saved = upsertLocal(table, row);
+  markLocal(table, id);
   applyMirrorToState();
   return Promise.resolve(saved);
 }
@@ -1661,72 +1639,133 @@ function upsertBy(table, conflict, row) {
   var cur = findRow(arr, conflict, full[conflict]);
   if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
   else if (full[m.key] == null && m.key !== conflict) full[m.key] = newId();
-  enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: conflict });
-  pendMark(pendRowKey(table, full[m.key]));
   if (cur) Object.keys(full).forEach(function (k) { cur[k] = full[k]; });
   else arr.push(full);
-  mirrorSave(table);
+  markLocal(table, full[m.key]);
   applyMirrorToState();
   return Promise.resolve(cur || full);
 }
 
 function saveConfigList(key, list) { return upsertBy('g_config', 'key', { key: key, value: list }); }
 
-/* --------------------------------------------------------- ריקון התור */
-function sendOp(op) {
-  if (!sb) return Promise.reject(new Error('אין חיבור'));
-  var q;
-  if (op.op === 'upsert')      q = sb.from(op.table).upsert(op.row, { onConflict: op.conflict || 'id' });
-  else if (op.op === 'update') q = sb.from(op.table).update(op.patch).eq('id', op.id);
-  else return Promise.reject(new Error('פעולה לא מוכרת: ' + op.op));
-  return withTimeout(q).then(function (res) {
-    if (res && res.error) throw res.error;
-    return true;
+/* ------------------------------------------------- דחיפת מצב (סבב 12 שלב 3)
+   התור היוצא הוחלף בדחיפת-מצב, השיטה המוכחת בשלוש האחיות. היא פשוטה יותר
+   וחסינה יותר: **אין פריט שיכול "להיתקע" לבדו.** בתור, פעולה אחת שנכשלה
+   כשל תוכן חסמה את כל מה שאחריה (FIFO) או הפכה ל-`dead` ונשארה תלויה;
+   בדחיפת-מצב כל רשומה עומדת בפני עצמה, וכל סנכרון מתקן את מה שחסר.
+   ─────────────────────────────────────────────────────────────────────── */
+// ⛔ `g_users` **אינה נדחפת לעולם.** המראה מסירה ממנה את `password`
+//    (`strip`), ודחיפת-מצב שלה הייתה כותבת סיסמאות ריקות לכל המשתמשים.
+//    כתיבות משתמשים דורשות רשת — ר' CLAUDE.md.
+var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config'];
+
+function rowPendingKey(t, row) { return pendRowKey(t, row[tableMeta(t).key]); }
+
+// מה צריך לעלות: אין מקבילה בענן, מקומי חדש יותר, **או עדיין מסומן ⏳**.
+// הסעיף השלישי אינו ייתור — ר' ההערה ב-mergeRows על הטריגר שדורס updated_at.
+function dirtyRows(t, remoteByKey) {
+  var m = tableMeta(t);
+  return (MIRROR[t] || []).filter(function (l) {
+    var k = String(l[m.key]);
+    if (k === 'undefined' || k === 'null') return false;
+    var r = remoteByKey[k];
+    return !r || rowTs(l) > rowTs(r) || pendHas(pendRowKey(t, l[m.key]));
   });
 }
 
-function flushOutbox() {
-  if (_flushing) return Promise.resolve(false);
-  var q = outboxRead();
-  if (!q.length) return Promise.resolve(true);
-  if (!navigator.onLine) return Promise.resolve(false);
-  _flushing = true;
-  var i = 0;
+function pushRow(t, row) {
+  var m = tableMeta(t);
+  return withTimeout(sb.from(t).upsert(row, { onConflict: m.conflict || m.key }))
+    .then(function (res) { if (res && res.error) throw res.error; return true; });
+}
+
+// דוחפת טבלה אחת. כישלון ברשומה אחת אינו עוצר את השאר: אין כאן תלות סדר
+// בין רשומות של אותה טבלה, והסדר בין הטבלאות (תורמים לפני התחייבויות
+// ותנועות) נשמר ע"י סדר `PUSH_TABLES` — הוא מה ששומר על המפתח הזר.
+function pushTable(t, remoteByKey) {
+  var rows = dirtyRows(t, remoteByKey);
+  if (!rows.length) return Promise.resolve([]);
+  var still = [], i = 0;
   function step() {
-    if (i >= q.length) return Promise.resolve(true);
-    var op = q[i];
-    // פעולה שסומנה ככשל קבוע מדולגת — אבל **נשארת בתור** וגלויה בהגדרות.
-    // מחיקה שקטה של פעולה שהמשתמש ביצע היא בדיוק הכישלון השקט שאסור.
-    if (op.dead) { i++; return step(); }
-    return sendOp(op).then(function () {
-      op._done = true; i++;
+    if (i >= rows.length) return Promise.resolve(still);
+    var row = rows[i++], pk = rowPendingKey(t, row);
+    return pushRow(t, row).then(function () {
+      pendClear(pk);
       return step();
     }, function (e) {
-      op.tries = (op.tries || 0) + 1;
-      op.err = (e && (e.message || e.code)) || String(e);
-      // כשל רשת חוזר וננסה שוב; כשל תוכן (ולידציה, מפתח זר) יחזור על עצמו
-      // לנצח, ולכן אחרי חמישה ניסיונות הוא מסומן ומדולג — לא נמחק.
-      if (!isNetErr(e) && op.tries >= 5) op.dead = true;
-      return false;   // עוצרים כאן — סדר ה-FIFO הוא מה ששומר על יחסי המפתח הזר
+      // כשל רשת אינו ראיה לכלום ⇒ נשאר מסומן וננסה שוב. כשל סמכותי
+      // (ולידציה, מפתח זר, הרשאה) יחזור על עצמו לנצח, ולכן הסימון יורד
+      // כדי לא להבטיח שליחה חוזרת שלא תקרה.
+      console.warn('[push] ' + t, e && (e.message || e));
+      if (isNetErr(e)) still.push(pk); else pendFailed(pk);
+      return step();
     });
   }
-  return step().then(function (allOk) {
-    var rest = q.filter(function (o) { return !o._done; });
-    rest.forEach(function (o) { delete o._done; });
-    outboxWrite(rest);
-    pendSyncOutbox();   // מה שירד מהתור — אושר
-    syncBarRender();
-    return allOk;
-  }).catch(function (e) {
-    console.warn('[outbox]', e);
-    return false;
-  }).then(function (r) { _flushing = false; return r; });
+  return step();
+}
+
+function pushDirty(remote) {
+  if (!sb || !navigator.onLine) return Promise.resolve([]);
+  var acc = [], i = 0;
+  function step() {
+    if (i >= PUSH_TABLES.length) return Promise.resolve(acc);
+    var t = PUSH_TABLES[i++];
+    return pushTable(t, remote[t] || {}).then(function (still) {
+      acc = acc.concat(still);
+      return step();
+    });
+  }
+  return step();
+}
+
+/* ── הגירה חד-פעמית מהתור היוצא ────────────────────────────────────────────
+   ⚠️ **אסור שפעולה שנרשמה אופליין תיעלם במעבר.** כל פעולה בתור כבר הוחלה
+   על המראה בזמן שנרשמה (`insert`/`update` עדכנו אותה מיד), ולכן הנתון עצמו
+   קיים — מה שחסר הוא הידיעה שהוא טרם עלה. לכן ההגירה **ממירה כל פעולה
+   לסימון ⏳**, ודחיפת-המצב הראשונה תעלה אותה.
+
+   שני שערים: רשומה שאיננה במראה (מצב שלא אמור לקרות) **משוחזרת מגוף
+   הפעולה**, והתור נמחק **רק אחרי** שהסימונים נשמרו בהצלחה. אם השמירה
+   נכשלה — התור נשאר במקומו וההגירה תנסה שוב בעלייה הבאה. */
+function migrateOutbox() {
+  var q;
+  try { q = JSON.parse(lsGet(OUTBOX_KEY, '[]')); } catch (e) { q = null; }
+  if (!Array.isArray(q)) { lsRemove(OUTBOX_KEY); return 0; }
+  if (!q.length) { lsRemove(OUTBOX_KEY); return 0; }
+  var n = 0, keys = [];
+  q.forEach(function (op) {
+    if (!op || !op.table || op.id == null) return;
+    var m = tableMeta(op.table), arr = MIRROR[op.table] || (MIRROR[op.table] = []);
+    if (!findRow(arr, m.key, op.id)) {
+      // שחזור מגוף הפעולה — עדיף רשומה חלקית על פני אובדן שקט.
+      var row = Object.assign({}, (op.op === 'upsert' ? op.row : op.patch) || {});
+      row[m.key] = op.id;
+      if (!row.updated_at) row.updated_at = new Date(op.ts || Date.now()).toISOString();
+      arr.push(row);
+      mirrorSave(op.table);
+    }
+    keys.push(pendRowKey(op.table, op.id));
+    n++;
+  });
+  if (keys.length) {
+    pendMarkMany(keys);
+    // אימות שהסימונים אכן נשמרו לפני שמוחקים את המקור
+    var okAll = keys.every(function (k) { return pendHas(k); });
+    if (!okAll) { console.warn('[outbox] ההגירה לא הושלמה — התור נשאר'); return 0; }
+  }
+  lsRemove(OUTBOX_KEY);
+  try { lsLog('outbox-migrate', n + ' פעולות מהתור הומרו לסימוני ⏳', 0); } catch (e) { }
+  if (n) toast('☁️ ' + n + ' פעולות שהמתינו בתור הועברו לסנכרון החדש', 'ok');
+  return n;
 }
 
 /* ------------------------------------------------------------- משיכה */
+// מחזירה `{ok, remote}` — `remote` היא מפת הענן פר-טבלה, והיא מה שמאפשר
+// לדחיפה שאחריה לדעת מה מקומי-וחדש-יותר.
 function syncPull() {
-  if (_pulling || !sb) return Promise.resolve(false);
+  if (_pulling || !sb) return Promise.resolve({ ok: false, remote: {} });
   _pulling = true;
+  var remoteMaps = {};
   return Promise.all(TABLES.map(function (m) {
     // ⚠️ בלי `.eq('deleted', false)` — חייבים גם את ה-tombstones, אחרת מחיקה
     //    שנעשתה במכשיר אחר לא תגיע לכאן לעולם. הסינון ב-`liveRows()`.
@@ -1745,7 +1784,11 @@ function syncPull() {
           return c;
         });
       }
-      MIRROR[x.m.t] = mergeRows(MIRROR[x.m.t], rows, x.m.key);
+      var map = {};
+      rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
+      remoteMaps[x.m.t] = map;
+      MIRROR[x.m.t] = mergeRows(MIRROR[x.m.t], rows, x.m.key,
+        function (k) { return pendHas(pendRowKey(x.m.t, k)); });
       mirrorSave(x.m.t);
     });
     applyMirrorToState();
@@ -1762,33 +1805,48 @@ function syncPull() {
         toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', 'bad');
       }
     }
-    return !errs.length;
+    return { ok: !errs.length, remote: remoteMaps };
   }).catch(function (e) {
     console.warn('[sync]', e);
-    return false;
+    return { ok: false, remote: {} };
   }).then(function (r) { _pulling = false; syncBarRender(); return r; });
 }
 
-// ריקון קודם למשיכה: אחרת המשיכה מחזירה את הגרסה הישנה של רשומה שכתבנו
-// מקומית, ואף שהמיזוג לפי `updated_at` היה מנצח בכל מקרה — עדיף שהענן
-// יהיה מעודכן לפני שקוראים ממנו.
+// ⚠️ **משיכה קודמת לדחיפה** — הפוך מהסדר של התור. בדחיפת-מצב אי אפשר לדעת
+// מה "מקומי וחדש יותר" בלי לראות קודם מה יש בענן, ודחיפה עיוורת הייתה
+// מחזירה לחיים רשומה שנמחקה במכשיר אחר. `_pushT0` נלקח לפני המשיכה: רשומה
+// שנכתבה תוך כדי הסנכרון לא נבדקה ולא נדחפה, ולכן הסימון שלה חייב להישאר.
 function syncNow() {
-  return flushOutbox().then(function () { return syncPull(); }).then(function (ok) {
-    render();
-    return ok;
+  var t0 = Date.now();
+  return syncPull().then(function (res) {
+    if (!res.ok) { render(); return false; }
+    return pushDirty(res.remote).then(function (still) {
+      pendReconcile(still, t0);
+      render();
+      return true;
+    });
   });
 }
-function scheduleFlush() {
+// הסימונים מחושבים מחדש **רק אחרי משיכה שהצליחה**: זו ראיה ישירה ולא הסקה.
+// מה שנכתב אחרי `t0` לא נבדק מול הענן ולכן אינו מנוקה.
+function pendReconcile(still, t0) {
+  var want = {};
+  (still || []).forEach(function (k) { want[k] = 1; });
+  pendMarkMany(Object.keys(want));
+  var m = pendAll(), gone = [];
+  Object.keys(m).forEach(function (k) { if (!want[k] && m[k] < t0) gone.push(k); });
+  pendClearMany(gone);
+}
+function schedulePush() {
   if (_flushTimer) return;
-  _flushTimer = setTimeout(function () { _flushTimer = null; flushOutbox(); }, 400);
+  _flushTimer = setTimeout(function () { _flushTimer = null; syncNow(); }, 400);
 }
 function startSync() {
   if (_syncTimer) return;
   _syncTimer = setInterval(function () {
     if (!state.user) return;
-    flushOutbox().then(function () {
-      if (Date.now() - _lastPullOk >= PULL_MS) return syncPull().then(function () { render(); });
-    });
+    // יש משהו שממתין ⇒ מסנכרנים מיד; אחרת מספיקה משיכה תקופתית.
+    if (pendCount() > 0 || Date.now() - _lastPullOk >= PULL_MS) syncNow();
   }, FLUSH_MS);
   window.addEventListener('online', function () { syncNow(); });
 }
@@ -1800,7 +1858,6 @@ function startSync() {
 // מהמודול), ולא סרגל מקומי. הפונקציה נשארת בשמה כי היא נקראת מכמה מקומות,
 // והיא מסנכרנת קודם את מפת הסימונים מול התור — התור הוא מקור האמת כאן.
 function syncBarRender() {
-  pendSyncOutbox();
   pendRender();
   var old = document.getElementById('syncbar');   // שריד מגרסה קודמת
   if (old) old.remove();
@@ -1810,24 +1867,11 @@ window.addEventListener('offline', syncBarRender);
 
 /* ------------------------------------------------- פאנל מצב בהגדרות */
 function syncStatusHTML() {
-  var pend = outboxRead();
   var h = pendStatusHTML();
   h += '<div style="font-size:13px;line-height:1.8">';
-  h += '<div>מצב רשת: <b>' + (navigator.onLine ? 'מקוון' : 'לא מקוון') + '</b></div>';
   h += '<div>סנכרון מלא אחרון: <b>' +
        (_lastPullOk ? esc(new Date(_lastPullOk).toLocaleString('he-IL')) : '— טרם הסתנכרן —') + '</b></div>';
-  h += '<div>פעולות ממתינות: <b>' + pend.length + '</b></div>';
-  if (pend.length) {
-    h += '<div class="tw" style="margin-top:8px"><table><thead><tr><th>פעולה</th><th>טבלה</th><th>נוצרה</th><th>מצב</th></tr></thead><tbody>';
-    pend.slice(0, 30).forEach(function (o) {
-      h += '<tr><td>' + esc(o.op === 'update' ? 'עדכון' : 'הוספה/עדכון') + '</td><td>' + esc(o.table) + '</td>' +
-           '<td>' + esc(new Date(o.ts).toLocaleString('he-IL')) + '</td>' +
-           '<td>' + (o.dead ? '<span class="badge bad">נכשל — ' + esc(o.err || '') + '</span>'
-                            : (o.tries ? '<span class="badge">ניסיון ' + o.tries + '</span>' : 'ממתין')) + '</td></tr>';
-    });
-    h += '</tbody></table></div>';
-    h += '<div style="margin-top:8px"><button class="btn sm" data-act="outbox-retry">נסה לסנכרן עכשיו</button></div>';
-  }
+  h += '<div style="margin-top:8px"><button class="btn sm" data-act="outbox-retry">סנכרן עכשיו</button></div>';
   h += '</div>';
   return h;
 }
@@ -2483,7 +2527,7 @@ function moveTask(id, stage) {
   // update() כבר לא נכשלת ברשת (היא מקומית-תחילה) — היא נכשלת רק כשהכתיבה
   // המקומית או התור נכשלו, וזה בדיוק המצב שבו הגרירה חייבת לחזור אחורה.
   Promise.resolve().then(function () { return update('g_tasks', id, { stage: stage }); })
-    .then(function () { scheduleFlush(); })
+    .then(function () { schedulePush(); })
     .catch(function (e) { t.stage = prev; render(); errToast(e); });
 }
 
@@ -2930,8 +2974,9 @@ function afterSave(msg) {
   applyMirrorToState();
   render();
   syncBarRender();
-  if (msg) toast(msg, 'ok');
-  scheduleFlush();
+  // בלי רשת ההודעה חייבת לומר את האמת: נשמר **במכשיר**, לא בענן.
+  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, 'ok');
+  schedulePush();
   return Promise.resolve();
 }
 
@@ -3214,7 +3259,10 @@ function start() {
   mirrorLoad();
   // סימוני "ממתין לסנכרון" (סבב 12) — נטענים מהדיסק לפני הרינדור הראשון,
   // כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
-  try { pendBoot(); pendSyncOutbox(); } catch (e) { console.warn('[pend] pendBoot', e); }
+  try { pendBoot(); } catch (e) { console.warn('[pend] pendBoot', e); }
+  // ⚠️ ההגירה מהתור רצה **אחרי** שהמראה נטענה ולפני הסנכרון הראשון —
+  // אחרת פעולה שהמתינה בתור הייתה נעלמת במעבר.
+  try { migrateOutbox(); } catch (e) { console.warn('[outbox] migrate', e); }
 
   var saved = null;
   try { saved = JSON.parse(lsGet(SESSION_KEY, 'null')); } catch (_) { saved = null; }
