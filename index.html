@@ -516,6 +516,10 @@ var sb = null;
 var NET_TIMEOUT_MS = 8000;
 var MSG_OFFLINE = '⚠️ אין חיבור לאינטרנט — הפעולה תסתנכרן כשהחיבור יחזור';
 var MSG_SAVED = '✅ נשמר בהצלחה';
+// נוסח משותף לארבע האפליקציות (סבב 12 שלב 4). שמירה מקומית שטרם אושרה
+// בענן **חייבת** להיאמר אחרת משמירה שאושרה — אחרת "נשמר" נראה בדיוק אותו
+// דבר בשני המצבים, וזו ההטעיה שהסבב הזה בא למנוע.
+var MSG_SAVED_LOCAL = '✅ נשמר במכשיר — יסונכרן כשתחזור הרשת';
 var MSG_BAD_LOGIN = '❌ שם משתמש או סיסמה שגויים';
 function isNetErr(e) {
   if (!navigator.onLine) return true;
@@ -557,7 +561,7 @@ var LS_CFG = {
   ],
 
   // כלל ג: כל עוד יש פעולה בתור היוצא — לא מפנים כלום.
-  pending: function () { try { return outboxRead().length > 0; } catch (e) { return true; } },
+  pending: function () { try { return pendCount() > 0; } catch (e) { return true; } },
 
   // עֵד הסנכרון: חותמת המשיכה המלאה המוצלחת האחרונה.
   syncedThrough: function () { var v = parseInt(lsGet('g_synced_at', '0'), 10); return isFinite(v) ? v : 0; }
@@ -1039,6 +1043,291 @@ window.lsFails = lsFails;
 window.lsOkSince = lsOkSince;
 window.lsGuardToast = lsGuardToast;
 /* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
+/* ── PEND_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
+// מאז שלב 3 אין כאן תור, ולכן אין `extra` — הסימונים הם מקור האמת היחיד,
+// בדיוק כמו ב-schar-limud.
+var PEND_CFG = { app: 'gius', key: 'g_pending' };
+
+/* ═══ ממתין לסנכרון — מודול משותף (סבב 12) ═══════════════════════════════
+   הבעיה שהמודול הזה פותר: אחרי שמירה מקומית המסך נראה **בדיוק** כמו אחרי
+   שמירה בענן. המשתמש רושם תשלום ברכבת התחתית, רואה אותו ברשימה, וסוגר את
+   האפליקציה בהנחה שהוא שמור — בזמן שהוא יושב רק על המכשיר הזה. סימון גלוי
+   הוא ההבדל בין "שמור" ל"שמור אצלך בלבד".
+
+   שלוש רמות תצוגה, כולן מהמפה אחת:
+     • **תגית ⏳ על הרשומה עצמה** — `pendTag(key)`, נכנסת לשורה ברשימה.
+     • **מונה גלוי** — סרגל תחתון, מוצג רק כשיש משהו ממתין.
+     • **התרעה** — משהו ממתין מעל 24 שעות ⇐ באנר אדום קבוע שנשאר עד סגירה.
+
+   ⚠️ **ההגדרה של "ממתין" היא ראייתית, לא אופטימית.** רשומה מסומנת ממתינה
+   ברגע שנכתבה במכשיר, ויורדת מהסימון **רק כשיש ראיה שהענן קיבל אותה**:
+   תשובת הצלחה, או דחיפת-מצב מוצלחת שכללה אותה. כשל רשת אינו ראיה לכלום
+   ולכן **אינו מוריד סימון** — תשובה שאבדה ברשת היא בדיוק המקרה שבו הרשומה
+   אולי כן נכנסה, ואולי לא. ספק ⇐ נשאר מסומן.
+
+   ⚠️ **כשל סמכותי כן מוריד את הסימון** (`pendFailed`) — שגיאת ולידציה או
+   הרשאה אומרת שהשורה **לא** נכתבה, וסימון "ממתין" עליה היה שקר מהכיוון
+   השני: הוא מבטיח שליחה חוזרת שלא תקרה לעולם.
+
+   ⚠️ **הכלל לדחיפת-מצב מלא** (`pendConfirmPush`): דחיפה מוצלחת מאשרת כל מה
+   שסומן **לפני שצילום המצב נלקח** — לא לפני שהיא הסתיימה. רשומה שנכתבה
+   באמצע הדחיפה אינה בתוכה, והורדת הסימון ממנה הייתה מאבדת אותה בשקט.
+   לכן `t0` נלקח לפני קריאת המצב המקומי, ומועבר לכאן.
+
+   התלויות: `lsSet`/`lsGet` (מודול האחסון) ו-`esc`. `PEND_CFG` מוגדרת מעליו
+   והיא **הדבר היחיד שנבדל בין האפליקציות**.
+   ═══════════════════════════════════════════════════════════════════════ */
+var PEND_LATE_MS = 24 * 60 * 60 * 1000;   // סף ההתרעה
+var PEND_MAX = 800;                       // תקרת המפה — הגנה מפני צמיחה בלי גבול
+var _pendMap = null;
+var _pendAlertDismissed = 0;
+
+// `PEND_CFG.key` יכולה להיות מחרוזת או פונקציה. yoman-avoda מחזיקה שני
+// מוסדות באותו דומיין, וסימוני האחד אינם תקפים לשני — שם היא פונקציה.
+function pendKeyName() {
+  var k = (typeof PEND_CFG === 'object') ? PEND_CFG.key : null;
+  if (typeof k === 'function') { try { k = k(); } catch (e) { k = null; } }
+  return k || 'pending_sync';
+}
+// החלפת הקשר (מוסד/משתמש) — המפה נטענת מחדש מהמפתח החדש.
+function pendReload() { _pendMap = null; pendAll(); pendRender(); }
+
+function pendAll() {
+  if (_pendMap) return _pendMap;
+  var v = null;
+  try { var raw = lsGet(pendKeyName(), null); v = raw == null ? null : JSON.parse(raw); }
+  catch (e) { v = null; }
+  _pendMap = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  // ניקוי ערכים פגומים — חותמת שאינה מספר חיובי אינה ראיה לכלום
+  Object.keys(_pendMap).forEach(function (k) {
+    var t = Number(_pendMap[k]);
+    if (!isFinite(t) || t <= 0) delete _pendMap[k];
+  });
+  return _pendMap;
+}
+
+// הכתיבה עוברת דרך lsSet (כלל ברזל 1). כישלון כאן אינו שקט: lsSet מרימה
+// באנר ורושמת ליומן, ו-lsGuardToast יבלע כל "✅" בשתי השניות הבאות.
+function pendSave() {
+  var m = pendAll();
+  var keys = Object.keys(m);
+  if (keys.length > PEND_MAX) {
+    // גריעה של הישנים ביותר. זו לא "מחיקת נתון שטרם הסתנכרן" — הרשומה עצמה
+    // נשארת במקומה; רק הסימון שלה יורד. עדיין נרשם ליומן, כי סימון שנעלם
+    // בלי אישור הוא בדיוק מה שהמודול בא למנוע.
+    keys.sort(function (a, b) { return m[a] - m[b]; });
+    var drop = keys.slice(0, keys.length - PEND_MAX);
+    drop.forEach(function (k) { delete m[k]; });
+    try { lsLog('pend-overflow', drop.length + ' סימונים נגרעו (תקרה ' + PEND_MAX + ')', 0); } catch (e) { }
+  }
+  return lsSet(pendKeyName(), JSON.stringify(m));
+}
+
+// סימון. חותמת קיימת **אינה נדרסת** — הגיל נמדד מהכתיבה הראשונה שלא אושרה,
+// אחרת עריכה חוזרת של אותה רשומה הייתה מאפסת את שעון ההתרעה לנצח.
+function pendMark(key) {
+  if (!key) return 0;
+  var m = pendAll();
+  if (!m[key]) { m[key] = Date.now(); pendSave(); pendRender(); }
+  return m[key];
+}
+function pendMarkMany(keys) {
+  if (!keys || !keys.length) return;
+  var m = pendAll(), now = Date.now(), ch = false;
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i] && !m[keys[i]]) { m[keys[i]] = now; ch = true; }
+  }
+  if (ch) { pendSave(); pendRender(); }
+}
+
+// אישור — יש ראיה שהענן קיבל.
+function pendClear(key) {
+  if (!key) return;
+  var m = pendAll();
+  if (m[key]) { delete m[key]; pendSave(); pendRender(); }
+}
+function pendClearMany(keys) {
+  if (!keys || !keys.length) return;
+  var m = pendAll(), ch = false;
+  for (var i = 0; i < keys.length; i++) if (m[keys[i]]) { delete m[keys[i]]; ch = true; }
+  if (ch) { pendSave(); pendRender(); }
+}
+
+// כשל סמכותי — הכתיבה **לא** נכנסה, ולכן הסימון יורד. ראה ההערה בראש המודול.
+function pendFailed(key) { pendClear(key); }
+
+// אישור דחיפת-מצב מלא: כל מה שסומן לפני `t0` נכלל בצילום שנדחף בהצלחה.
+// `prefix` מגביל לקטגוריה אחת — דחיפה של מפתח אחד אינה מאשרת את השאר.
+function pendConfirmPush(prefix, t0) {
+  var m = pendAll(), ch = false;
+  t0 = Number(t0) || 0;
+  if (!t0) return;
+  Object.keys(m).forEach(function (k) {
+    if (prefix && k.indexOf(prefix) !== 0) return;
+    if (m[k] < t0) { delete m[k]; ch = true; }
+  });
+  if (ch) { pendSave(); pendRender(); }
+}
+
+function pendHas(key) { return !!pendAll()[key]; }
+function pendSince(key) { return pendAll()[key] || 0; }
+function pendCount() { return Object.keys(pendAll()).length; }
+function pendOldest() {
+  var m = pendAll(), keys = Object.keys(m), t = 0;
+  for (var i = 0; i < keys.length; i++) if (!t || m[keys[i]] < t) t = m[keys[i]];
+  return t;
+}
+function pendLateCount() {
+  var m = pendAll(), keys = Object.keys(m), n = 0, cut = Date.now() - PEND_LATE_MS;
+  for (var i = 0; i < keys.length; i++) if (m[keys[i]] < cut) n++;
+  return n;
+}
+function pendReset() { _pendMap = {}; pendSave(); pendRender(); }
+
+function pendFmtAge(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  var mi = Math.floor(ms / 60000);
+  if (mi < 1) return 'פחות מדקה';
+  if (mi < 60) return mi + ' דק׳';
+  var h = Math.floor(mi / 60);
+  if (h < 24) return h + ' שע׳';
+  return Math.floor(h / 24) + ' ימים';
+}
+
+/* --------------------------------------------------------------- תצוגה */
+function pendEnsureStyle() {
+  if (document.getElementById('pend-style')) return;
+  var s = document.createElement('style');
+  s.id = 'pend-style';
+  s.textContent =
+    '.pend-tag{display:inline-block;background:#fde68a;color:#78350f;border:1px solid #f59e0b;' +
+    'border-radius:999px;padding:0 7px;font-size:.68rem;font-weight:700;line-height:1.6;' +
+    'white-space:nowrap;vertical-align:middle;margin:0 4px}' +
+    '.pend-tag.late{background:#fecaca;color:#7f1d1d;border-color:#dc2626}' +
+    '#pend-bar{position:fixed;z-index:2147482000;left:0;right:0;bottom:0;padding:8px 12px;' +
+    'text-align:center;direction:rtl;font:600 13px/1.5 inherit;color:#3d2c00;background:#ffd88a;' +
+    'box-shadow:0 -2px 10px rgba(0,0,0,.18)}' +
+    '#pend-bar.late{background:#ffb4ab;color:#5c1a12}' +
+    '#pend-alert{position:fixed;z-index:2147483000;left:0;right:0;top:0;padding:10px 14px;' +
+    'direction:rtl;font:700 13px/1.6 inherit;color:#fff;background:#b91c1c;' +
+    'box-shadow:0 2px 10px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;justify-content:center}' +
+    '#pend-alert button{background:rgba(255,255,255,.25);color:#fff;border:1px solid #fff;' +
+    'border-radius:6px;padding:2px 10px;font:inherit;cursor:pointer}';
+  (document.head || document.documentElement).appendChild(s);
+}
+
+// התגית שנכנסת לשורת הרשומה. מחזירה מחרוזת ריקה כשאין מה להציג, כדי
+// שאפשר יהיה לשרשר אותה ללא תנאי בכל תבנית.
+function pendTag(key) {
+  var t = pendSince(key);
+  if (!t) return '';
+  pendEnsureStyle();
+  var age = Date.now() - t, late = age > PEND_LATE_MS;
+  var title = 'ממתין לסנכרון מאז ' + new Date(t).toLocaleString('he-IL') +
+              ' (' + pendFmtAge(age) + ') — שמור במכשיר, טרם אושר בענן';
+  return '<span class="pend-tag' + (late ? ' late' : '') + '" title="' + esc(title) + '">' +
+         (late ? '⚠️' : '⏳') + ' ממתין</span>';
+}
+
+function pendCounterText() {
+  var n = pendCount(), off = (typeof navigator !== 'undefined' && navigator && navigator.onLine === false);
+  if (!n) return off ? '⚠️ אין רשת' : '';
+  var late = pendLateCount();
+  var s = (late ? '⚠️ ' : (off ? '⚠️ אין רשת · ' : '⏳ ')) + n + ' פעולות ממתינות לסנכרון';
+  var old = pendOldest();
+  if (old) s += ' · הישנה ביותר לפני ' + pendFmtAge(Date.now() - old);
+  return s;
+}
+
+function pendRender() {
+  if (typeof document === 'undefined' || !document.body) return;
+  pendEnsureStyle();
+  var txt = pendCounterText(), bar = document.getElementById('pend-bar');
+  if (!txt) { if (bar) bar.style.display = 'none'; }
+  else {
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'pend-bar';
+      document.body.appendChild(bar);
+    }
+    var extra = '';
+    try { if (typeof PEND_CFG === 'object' && PEND_CFG.extra) extra = PEND_CFG.extra() || ''; } catch (e) { }
+    bar.textContent = txt + (extra ? ' · ' + extra : '');
+    bar.className = pendLateCount() ? 'late' : '';
+    bar.style.display = '';
+  }
+  pendRenderAlert();
+}
+
+// ההתרעה נפרדת מהמונה בכוונה: מונה הוא מידע, וסרגל תחתון נבלע ברעש המסך.
+// משהו שממתין מעל יממה כבר אינו "מסתנכרן ברקע" — זו תקלה שדורשת פעולה.
+function pendRenderAlert() {
+  var late = pendLateCount(), el = document.getElementById('pend-alert');
+  if (!late || (_pendAlertDismissed && (Date.now() - _pendAlertDismissed) < 6 * 60 * 60 * 1000)) {
+    if (el) el.remove();
+    return;
+  }
+  var msg = '⚠️ ' + late + ' פעולות ממתינות לסנכרון מעל 24 שעות — בדוק חיבור לאינטרנט. הנתונים שמורים במכשיר בלבד.';
+  if (el) { var sp = el.firstChild; if (sp) sp.textContent = msg; return; }
+  el = document.createElement('div');
+  el.id = 'pend-alert';
+  var span = document.createElement('span');
+  span.textContent = msg;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'הבנתי';
+  btn.onclick = function () { _pendAlertDismissed = Date.now(); pendRenderAlert(); };
+  el.appendChild(span);
+  el.appendChild(btn);
+  document.body.appendChild(el);
+}
+
+// פאנל להגדרות — מה בדיוק ממתין, ומאיזה גיל.
+function pendStatusHTML() {
+  var m = pendAll(), keys = Object.keys(m);
+  keys.sort(function (a, b) { return m[a] - m[b]; });
+  var h = '<div style="font-size:13px;line-height:1.8">';
+  h += '<div>מצב רשת: <b>' + (navigator.onLine ? 'מקוון' : 'לא מקוון') + '</b></div>';
+  h += '<div>פעולות ממתינות לסנכרון: <b>' + keys.length + '</b></div>';
+  if (!keys.length) { h += '<div style="color:#16a34a">✅ הכול מסונכרן</div></div>'; return h; }
+  h += '<div style="margin-top:6px;max-height:220px;overflow:auto">';
+  keys.slice(0, 60).forEach(function (k) {
+    var age = Date.now() - m[k], late = age > PEND_LATE_MS;
+    h += '<div style="display:flex;gap:8px;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,.08);padding:3px 0">' +
+         '<span>' + esc(k) + '</span><span style="' + (late ? 'color:#b91c1c;font-weight:700' : 'opacity:.7') + '">' +
+         esc(pendFmtAge(age)) + '</span></div>';
+  });
+  if (keys.length > 60) h += '<div style="opacity:.7">…ועוד ' + (keys.length - 60) + '</div>';
+  h += '</div></div>';
+  return h;
+}
+
+// רענון תקופתי — הגיל מוצג בתגיות ובמונה, וסף ה-24 שעות חייב להיחצות
+// גם כשהמשתמש לא נגע בכלום.
+var _pendTick = null;
+function pendBoot() {
+  pendAll();
+  pendRender();
+  if (!_pendTick) _pendTick = setInterval(pendRender, 60000);
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('online', pendRender);
+    window.addEventListener('offline', pendRender);
+  }
+}
+/* ═══════════════ סוף מודול "ממתין לסנכרון" ═════════════════════════════ */
+
+/* ── חיבור gius למודול ────────────────────────────────────────────────────
+   מאז שלב 3 הכתיבה היא מקומית-תחילה עם **דחיפת מצב** (אין תור). האישור
+   מגיע משני מקורות: `pendClear` על תשובת upsert מוצלחת פר-רשומה, ו-
+   `pendReconcile` שמחשב את המפה מחדש אחרי משיכה שהצליחה.
+   ───────────────────────────────────────────────────────────────────────── */
+function pendRowKey(table, id) { return table + ':' + id; }
+function pendRenderStatus() {
+  var el = document.getElementById('pend-status-box');
+  if (el) el.innerHTML = pendStatusHTML();
+}
+
+
 
 /* ------------------------------------------------------------------ utils */
 function $(sel, root) { return (root || document).querySelector(sel); }
@@ -1172,7 +1461,7 @@ function tableMeta(t) {
 }
 
 var MIRROR = {};
-var _syncTimer = null, _flushTimer = null, _pulling = false, _flushing = false;
+var _syncTimer = null, _flushTimer = null, _pulling = false;
 var _netWarned = false, _lastPullOk = 0;
 
 /* ------------------------------------------------------------- מזהים */
@@ -1225,7 +1514,11 @@ function findRow(arr, keyName, k) {
 
 // מנוע המיזוג. הענן הוא בסיס הסדר ומנצח בשוויון — דטרמיניסטי, ולכן שני
 // מכשירים שממזגים את אותם שני צדדים מגיעים לאותה תוצאה בדיוק.
-function mergeRows(local, remote, keyName) {
+// ⚠️ **`isPending` — רשומה מקומית שטרם אושרה בענן מנצחת ללא תלות בחותמת.**
+// הטריגר `g_touch_updated_at` דורס את `updated_at` ב-NOW() בכל UPDATE בצד
+// השרת, ולכן דחיפה של מכשיר אחר נראית "חדשה" מעריכה מקומית שעדיין לא עלתה.
+// בלי הכלל הזה העריכה המקומית הייתה נעלמת בשקט. אותו כלל בדיוק ב-schar-limud.
+function mergeRows(local, remote, keyName, isPending) {
   local = Array.isArray(local) ? local : [];
   remote = Array.isArray(remote) ? remote : [];
   var out = [], seen = {};
@@ -1233,7 +1526,8 @@ function mergeRows(local, remote, keyName) {
     var k = String(r[keyName]);
     seen[k] = 1;
     var l = findRow(local, keyName, k);
-    out.push(l && rowTs(l) > rowTs(r) ? l : r);
+    if (!l) { out.push(r); return; }
+    out.push(((isPending && isPending(k)) || rowTs(l) > rowTs(r)) ? l : r);
   });
   local.forEach(function (l) {
     // היעדר רשומה בענן אינו מחיקה — היא עשויה להיות כתיבה מקומית שטרם עלתה.
@@ -1285,26 +1579,15 @@ function applyMirrorToState() {
 }
 
 /* -------------------------------------------------------------- התור */
-function outboxRead() {
-  try { var v = JSON.parse(lsGet(OUTBOX_KEY, '[]')); return Array.isArray(v) ? v : []; }
-  catch (e) { return []; }
-}
-function outboxCount() { return outboxRead().length; }
-function outboxWrite(q) { return lsSet(OUTBOX_KEY, JSON.stringify(q)); }
 
-// ⚠️ **התור נכתב לפני שהמראה מתעדכנת, ובכוונה.** אם הכתיבה לתור נכשלה
-// (אחסון מלא), הפעולה לעולם לא תגיע לענן — ולכן היא חייבת להיכשל **בקול**,
-// כאן, לפני שמשהו על המסך מתנהג כאילו נשמר. `runSave` תופסת את הזריקה,
-// מציגה שגיאה, ו-`lsGuardToast` חוסם ממילא כל "✅" בשתי השניות הבאות.
-function enqueue(op) {
-  op.oid = newId();
-  op.ts = Date.now();
-  op.tries = 0;
-  var q = outboxRead();
-  q.push(op);
-  if (!outboxWrite(q)) throw new Error(MSG_LS_FULL);
-  scheduleFlush();
-  return op;
+// ⚠️ **הכתיבה המקומית חייבת להיכשל בקול.** אם היא נכשלה (אחסון מלא) הפעולה
+// לא תגיע לענן לעולם, ולכן היא זורקת כאן — לפני שמשהו על המסך מתנהג כאילו
+// נשמר. `runSave` תופסת את הזריקה, מציגה שגיאה, ו-`lsGuardToast` חוסם ממילא
+// כל "✅" בשתי השניות הבאות.
+function markLocal(table, id) {
+  if (!mirrorSave(table)) throw new Error(MSG_LS_FULL);
+  if (!pendMark(pendRowKey(table, id))) throw new Error(MSG_LS_FULL);
+  schedulePush();
 }
 
 /* ------------------------------------------------- API כתיבה (מקומי-תחילה) */
@@ -1327,8 +1610,8 @@ function insert(table, row) {
   if (m.soft) { if (full.deleted == null) full.deleted = false; if (full.deleted_at === undefined) full.deleted_at = null; }
   // ה-insert נשלח כ-upsert על המפתח הראשי: ניסיון חוזר אחרי תשובה שאבדה
   // ברשת לא ייכשל על מפתח כפול, ולכן ריקון התור אידמפוטנטי.
-  enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: m.key });
   var saved = upsertLocal(table, full);
+  markLocal(table, full[m.key]);
   applyMirrorToState();
   return Promise.resolve(saved);
 }
@@ -1336,10 +1619,10 @@ function insert(table, row) {
 function update(table, id, patch) {
   var m = tableMeta(table);
   var p = Object.assign({}, patch, { updated_at: nowISO() });
-  enqueue({ op: 'update', table: table, id: id, patch: p });
   var row = Object.assign({}, p);
   row[m.key] = id;
   var saved = upsertLocal(table, row);
+  markLocal(table, id);
   applyMirrorToState();
   return Promise.resolve(saved);
 }
@@ -1356,70 +1639,133 @@ function upsertBy(table, conflict, row) {
   var cur = findRow(arr, conflict, full[conflict]);
   if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
   else if (full[m.key] == null && m.key !== conflict) full[m.key] = newId();
-  enqueue({ op: 'upsert', table: table, id: full[m.key], row: full, conflict: conflict });
   if (cur) Object.keys(full).forEach(function (k) { cur[k] = full[k]; });
   else arr.push(full);
-  mirrorSave(table);
+  markLocal(table, full[m.key]);
   applyMirrorToState();
   return Promise.resolve(cur || full);
 }
 
 function saveConfigList(key, list) { return upsertBy('g_config', 'key', { key: key, value: list }); }
 
-/* --------------------------------------------------------- ריקון התור */
-function sendOp(op) {
-  if (!sb) return Promise.reject(new Error('אין חיבור'));
-  var q;
-  if (op.op === 'upsert')      q = sb.from(op.table).upsert(op.row, { onConflict: op.conflict || 'id' });
-  else if (op.op === 'update') q = sb.from(op.table).update(op.patch).eq('id', op.id);
-  else return Promise.reject(new Error('פעולה לא מוכרת: ' + op.op));
-  return withTimeout(q).then(function (res) {
-    if (res && res.error) throw res.error;
-    return true;
+/* ------------------------------------------------- דחיפת מצב (סבב 12 שלב 3)
+   התור היוצא הוחלף בדחיפת-מצב, השיטה המוכחת בשלוש האחיות. היא פשוטה יותר
+   וחסינה יותר: **אין פריט שיכול "להיתקע" לבדו.** בתור, פעולה אחת שנכשלה
+   כשל תוכן חסמה את כל מה שאחריה (FIFO) או הפכה ל-`dead` ונשארה תלויה;
+   בדחיפת-מצב כל רשומה עומדת בפני עצמה, וכל סנכרון מתקן את מה שחסר.
+   ─────────────────────────────────────────────────────────────────────── */
+// ⛔ `g_users` **אינה נדחפת לעולם.** המראה מסירה ממנה את `password`
+//    (`strip`), ודחיפת-מצב שלה הייתה כותבת סיסמאות ריקות לכל המשתמשים.
+//    כתיבות משתמשים דורשות רשת — ר' CLAUDE.md.
+var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config'];
+
+function rowPendingKey(t, row) { return pendRowKey(t, row[tableMeta(t).key]); }
+
+// מה צריך לעלות: אין מקבילה בענן, מקומי חדש יותר, **או עדיין מסומן ⏳**.
+// הסעיף השלישי אינו ייתור — ר' ההערה ב-mergeRows על הטריגר שדורס updated_at.
+function dirtyRows(t, remoteByKey) {
+  var m = tableMeta(t);
+  return (MIRROR[t] || []).filter(function (l) {
+    var k = String(l[m.key]);
+    if (k === 'undefined' || k === 'null') return false;
+    var r = remoteByKey[k];
+    return !r || rowTs(l) > rowTs(r) || pendHas(pendRowKey(t, l[m.key]));
   });
 }
 
-function flushOutbox() {
-  if (_flushing) return Promise.resolve(false);
-  var q = outboxRead();
-  if (!q.length) return Promise.resolve(true);
-  if (!navigator.onLine) return Promise.resolve(false);
-  _flushing = true;
-  var i = 0;
+function pushRow(t, row) {
+  var m = tableMeta(t);
+  return withTimeout(sb.from(t).upsert(row, { onConflict: m.conflict || m.key }))
+    .then(function (res) { if (res && res.error) throw res.error; return true; });
+}
+
+// דוחפת טבלה אחת. כישלון ברשומה אחת אינו עוצר את השאר: אין כאן תלות סדר
+// בין רשומות של אותה טבלה, והסדר בין הטבלאות (תורמים לפני התחייבויות
+// ותנועות) נשמר ע"י סדר `PUSH_TABLES` — הוא מה ששומר על המפתח הזר.
+function pushTable(t, remoteByKey) {
+  var rows = dirtyRows(t, remoteByKey);
+  if (!rows.length) return Promise.resolve([]);
+  var still = [], i = 0;
   function step() {
-    if (i >= q.length) return Promise.resolve(true);
-    var op = q[i];
-    // פעולה שסומנה ככשל קבוע מדולגת — אבל **נשארת בתור** וגלויה בהגדרות.
-    // מחיקה שקטה של פעולה שהמשתמש ביצע היא בדיוק הכישלון השקט שאסור.
-    if (op.dead) { i++; return step(); }
-    return sendOp(op).then(function () {
-      op._done = true; i++;
+    if (i >= rows.length) return Promise.resolve(still);
+    var row = rows[i++], pk = rowPendingKey(t, row);
+    return pushRow(t, row).then(function () {
+      pendClear(pk);
       return step();
     }, function (e) {
-      op.tries = (op.tries || 0) + 1;
-      op.err = (e && (e.message || e.code)) || String(e);
-      // כשל רשת חוזר וננסה שוב; כשל תוכן (ולידציה, מפתח זר) יחזור על עצמו
-      // לנצח, ולכן אחרי חמישה ניסיונות הוא מסומן ומדולג — לא נמחק.
-      if (!isNetErr(e) && op.tries >= 5) op.dead = true;
-      return false;   // עוצרים כאן — סדר ה-FIFO הוא מה ששומר על יחסי המפתח הזר
+      // כשל רשת אינו ראיה לכלום ⇒ נשאר מסומן וננסה שוב. כשל סמכותי
+      // (ולידציה, מפתח זר, הרשאה) יחזור על עצמו לנצח, ולכן הסימון יורד
+      // כדי לא להבטיח שליחה חוזרת שלא תקרה.
+      console.warn('[push] ' + t, e && (e.message || e));
+      if (isNetErr(e)) still.push(pk); else pendFailed(pk);
+      return step();
     });
   }
-  return step().then(function (allOk) {
-    var rest = q.filter(function (o) { return !o._done; });
-    rest.forEach(function (o) { delete o._done; });
-    outboxWrite(rest);
-    syncBarRender();
-    return allOk;
-  }).catch(function (e) {
-    console.warn('[outbox]', e);
-    return false;
-  }).then(function (r) { _flushing = false; return r; });
+  return step();
+}
+
+function pushDirty(remote) {
+  if (!sb || !navigator.onLine) return Promise.resolve([]);
+  var acc = [], i = 0;
+  function step() {
+    if (i >= PUSH_TABLES.length) return Promise.resolve(acc);
+    var t = PUSH_TABLES[i++];
+    return pushTable(t, remote[t] || {}).then(function (still) {
+      acc = acc.concat(still);
+      return step();
+    });
+  }
+  return step();
+}
+
+/* ── הגירה חד-פעמית מהתור היוצא ────────────────────────────────────────────
+   ⚠️ **אסור שפעולה שנרשמה אופליין תיעלם במעבר.** כל פעולה בתור כבר הוחלה
+   על המראה בזמן שנרשמה (`insert`/`update` עדכנו אותה מיד), ולכן הנתון עצמו
+   קיים — מה שחסר הוא הידיעה שהוא טרם עלה. לכן ההגירה **ממירה כל פעולה
+   לסימון ⏳**, ודחיפת-המצב הראשונה תעלה אותה.
+
+   שני שערים: רשומה שאיננה במראה (מצב שלא אמור לקרות) **משוחזרת מגוף
+   הפעולה**, והתור נמחק **רק אחרי** שהסימונים נשמרו בהצלחה. אם השמירה
+   נכשלה — התור נשאר במקומו וההגירה תנסה שוב בעלייה הבאה. */
+function migrateOutbox() {
+  var q;
+  try { q = JSON.parse(lsGet(OUTBOX_KEY, '[]')); } catch (e) { q = null; }
+  if (!Array.isArray(q)) { lsRemove(OUTBOX_KEY); return 0; }
+  if (!q.length) { lsRemove(OUTBOX_KEY); return 0; }
+  var n = 0, keys = [];
+  q.forEach(function (op) {
+    if (!op || !op.table || op.id == null) return;
+    var m = tableMeta(op.table), arr = MIRROR[op.table] || (MIRROR[op.table] = []);
+    if (!findRow(arr, m.key, op.id)) {
+      // שחזור מגוף הפעולה — עדיף רשומה חלקית על פני אובדן שקט.
+      var row = Object.assign({}, (op.op === 'upsert' ? op.row : op.patch) || {});
+      row[m.key] = op.id;
+      if (!row.updated_at) row.updated_at = new Date(op.ts || Date.now()).toISOString();
+      arr.push(row);
+      mirrorSave(op.table);
+    }
+    keys.push(pendRowKey(op.table, op.id));
+    n++;
+  });
+  if (keys.length) {
+    pendMarkMany(keys);
+    // אימות שהסימונים אכן נשמרו לפני שמוחקים את המקור
+    var okAll = keys.every(function (k) { return pendHas(k); });
+    if (!okAll) { console.warn('[outbox] ההגירה לא הושלמה — התור נשאר'); return 0; }
+  }
+  lsRemove(OUTBOX_KEY);
+  try { lsLog('outbox-migrate', n + ' פעולות מהתור הומרו לסימוני ⏳', 0); } catch (e) { }
+  if (n) toast('☁️ ' + n + ' פעולות שהמתינו בתור הועברו לסנכרון החדש', 'ok');
+  return n;
 }
 
 /* ------------------------------------------------------------- משיכה */
+// מחזירה `{ok, remote}` — `remote` היא מפת הענן פר-טבלה, והיא מה שמאפשר
+// לדחיפה שאחריה לדעת מה מקומי-וחדש-יותר.
 function syncPull() {
-  if (_pulling || !sb) return Promise.resolve(false);
+  if (_pulling || !sb) return Promise.resolve({ ok: false, remote: {} });
   _pulling = true;
+  var remoteMaps = {};
   return Promise.all(TABLES.map(function (m) {
     // ⚠️ בלי `.eq('deleted', false)` — חייבים גם את ה-tombstones, אחרת מחיקה
     //    שנעשתה במכשיר אחר לא תגיע לכאן לעולם. הסינון ב-`liveRows()`.
@@ -1438,7 +1784,11 @@ function syncPull() {
           return c;
         });
       }
-      MIRROR[x.m.t] = mergeRows(MIRROR[x.m.t], rows, x.m.key);
+      var map = {};
+      rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
+      remoteMaps[x.m.t] = map;
+      MIRROR[x.m.t] = mergeRows(MIRROR[x.m.t], rows, x.m.key,
+        function (k) { return pendHas(pendRowKey(x.m.t, k)); });
       mirrorSave(x.m.t);
     });
     applyMirrorToState();
@@ -1455,33 +1805,48 @@ function syncPull() {
         toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', 'bad');
       }
     }
-    return !errs.length;
+    return { ok: !errs.length, remote: remoteMaps };
   }).catch(function (e) {
     console.warn('[sync]', e);
-    return false;
+    return { ok: false, remote: {} };
   }).then(function (r) { _pulling = false; syncBarRender(); return r; });
 }
 
-// ריקון קודם למשיכה: אחרת המשיכה מחזירה את הגרסה הישנה של רשומה שכתבנו
-// מקומית, ואף שהמיזוג לפי `updated_at` היה מנצח בכל מקרה — עדיף שהענן
-// יהיה מעודכן לפני שקוראים ממנו.
+// ⚠️ **משיכה קודמת לדחיפה** — הפוך מהסדר של התור. בדחיפת-מצב אי אפשר לדעת
+// מה "מקומי וחדש יותר" בלי לראות קודם מה יש בענן, ודחיפה עיוורת הייתה
+// מחזירה לחיים רשומה שנמחקה במכשיר אחר. `_pushT0` נלקח לפני המשיכה: רשומה
+// שנכתבה תוך כדי הסנכרון לא נבדקה ולא נדחפה, ולכן הסימון שלה חייב להישאר.
 function syncNow() {
-  return flushOutbox().then(function () { return syncPull(); }).then(function (ok) {
-    render();
-    return ok;
+  var t0 = Date.now();
+  return syncPull().then(function (res) {
+    if (!res.ok) { render(); return false; }
+    return pushDirty(res.remote).then(function (still) {
+      pendReconcile(still, t0);
+      render();
+      return true;
+    });
   });
 }
-function scheduleFlush() {
+// הסימונים מחושבים מחדש **רק אחרי משיכה שהצליחה**: זו ראיה ישירה ולא הסקה.
+// מה שנכתב אחרי `t0` לא נבדק מול הענן ולכן אינו מנוקה.
+function pendReconcile(still, t0) {
+  var want = {};
+  (still || []).forEach(function (k) { want[k] = 1; });
+  pendMarkMany(Object.keys(want));
+  var m = pendAll(), gone = [];
+  Object.keys(m).forEach(function (k) { if (!want[k] && m[k] < t0) gone.push(k); });
+  pendClearMany(gone);
+}
+function schedulePush() {
   if (_flushTimer) return;
-  _flushTimer = setTimeout(function () { _flushTimer = null; flushOutbox(); }, 400);
+  _flushTimer = setTimeout(function () { _flushTimer = null; syncNow(); }, 400);
 }
 function startSync() {
   if (_syncTimer) return;
   _syncTimer = setInterval(function () {
     if (!state.user) return;
-    flushOutbox().then(function () {
-      if (Date.now() - _lastPullOk >= PULL_MS) return syncPull().then(function () { render(); });
-    });
+    // יש משהו שממתין ⇒ מסנכרנים מיד; אחרת מספיקה משיכה תקופתית.
+    if (pendCount() > 0 || Date.now() - _lastPullOk >= PULL_MS) syncNow();
   }, FLUSH_MS);
   window.addEventListener('online', function () { syncNow(); });
 }
@@ -1489,50 +1854,24 @@ function startSync() {
 /* ------------------------------------------------- מחוון מצב הסנכרון */
 // המשתמש חייב לדעת שהוא עובד ללא רשת ושיש פעולות שממתינות — אחרת "נשמר"
 // נראה בדיוק כמו "נשמר בענן", וזו בדיוק ההטעיה שהסבב הזה בא למנוע.
+// מאז סבב 12 המחוון הוא **סרגל אחד משותף לארבע האפליקציות** (`#pend-bar`
+// מהמודול), ולא סרגל מקומי. הפונקציה נשארת בשמה כי היא נקראת מכמה מקומות,
+// והיא מסנכרנת קודם את מפת הסימונים מול התור — התור הוא מקור האמת כאן.
 function syncBarRender() {
-  var pend = outboxRead();
-  var dead = pend.filter(function (o) { return o.dead; }).length;
-  var off = !navigator.onLine;
-  var el = document.getElementById('syncbar');
-  if (!pend.length && !off) { if (el) el.style.display = 'none'; return; }
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'syncbar';
-    el.style.cssText = 'position:fixed;z-index:2147482000;left:0;right:0;bottom:0;padding:8px 12px;' +
-      'text-align:center;direction:rtl;font:600 13px/1.5 inherit;color:#3d2c00;background:#ffd88a;' +
-      'box-shadow:0 -2px 10px rgba(0,0,0,.18)';
-    (document.body || document.documentElement).appendChild(el);
-  }
-  var msg;
-  if (dead) msg = '❌ ' + dead + ' פעולות לא הצליחו להישמר בענן — הן שמורות במכשיר וממתינות בהגדרות';
-  else if (off) msg = '⚠️ אין רשת — עובדים מקומית' + (pend.length ? (' · ' + pend.length + ' פעולות ממתינות לסנכרון') : '');
-  else msg = '☁️ מסנכרן… ' + pend.length + ' פעולות ממתינות';
-  el.textContent = msg;
-  el.style.background = dead ? '#ffb4ab' : '#ffd88a';
-  el.style.display = '';
+  pendRender();
+  var old = document.getElementById('syncbar');   // שריד מגרסה קודמת
+  if (old) old.remove();
 }
 window.addEventListener('online', syncBarRender);
 window.addEventListener('offline', syncBarRender);
 
 /* ------------------------------------------------- פאנל מצב בהגדרות */
 function syncStatusHTML() {
-  var pend = outboxRead();
-  var h = '<div style="font-size:13px;line-height:1.8">';
-  h += '<div>מצב רשת: <b>' + (navigator.onLine ? 'מקוון' : 'לא מקוון') + '</b></div>';
+  var h = pendStatusHTML();
+  h += '<div style="font-size:13px;line-height:1.8">';
   h += '<div>סנכרון מלא אחרון: <b>' +
        (_lastPullOk ? esc(new Date(_lastPullOk).toLocaleString('he-IL')) : '— טרם הסתנכרן —') + '</b></div>';
-  h += '<div>פעולות ממתינות: <b>' + pend.length + '</b></div>';
-  if (pend.length) {
-    h += '<div class="tw" style="margin-top:8px"><table><thead><tr><th>פעולה</th><th>טבלה</th><th>נוצרה</th><th>מצב</th></tr></thead><tbody>';
-    pend.slice(0, 30).forEach(function (o) {
-      h += '<tr><td>' + esc(o.op === 'update' ? 'עדכון' : 'הוספה/עדכון') + '</td><td>' + esc(o.table) + '</td>' +
-           '<td>' + esc(new Date(o.ts).toLocaleString('he-IL')) + '</td>' +
-           '<td>' + (o.dead ? '<span class="badge bad">נכשל — ' + esc(o.err || '') + '</span>'
-                            : (o.tries ? '<span class="badge">ניסיון ' + o.tries + '</span>' : 'ממתין')) + '</td></tr>';
-    });
-    h += '</tbody></table></div>';
-    h += '<div style="margin-top:8px"><button class="btn sm" data-act="outbox-retry">נסה לסנכרן עכשיו</button></div>';
-  }
+  h += '<div style="margin-top:8px"><button class="btn sm" data-act="outbox-retry">סנכרן עכשיו</button></div>';
   h += '</div>';
   return h;
 }
@@ -1932,7 +2271,7 @@ function donorRowsHTML(list) {
     var given = sum(txnsOfDonor(d.id), function (t) { return t.amount; });
     return '<div class="row" data-act="donor-open" data-id="' + d.id + '">' +
       '<div class="av' + (d.is_vip ? ' vip' : '') + '">' + esc(initials(d.name)) + '</div>' +
-      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + '</b>' +
+      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + pendTag(pendRowKey('g_donors', d.id)) + '</b>' +
       '<small>' + esc(d.phone || 'ללא טלפון') + (d.agent ? ' · ' + esc(d.agent) : '') + '</small></div>' +
       '<div class="end">' + ils(given) + '<small>נתן</small></div></div>';
   }).join('');
@@ -2001,7 +2340,7 @@ function viewDonorCard() {
       '<th class="num">נותר</th><th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
     pl.forEach(function (p) {
       var c = collectedForPledge(p.id), st = pledgeStatus(p);
-      h += '<tr><td>' + esc(p.cause || '—') + '</td>' +
+      h += '<tr><td>' + esc(p.cause || '—') + pendTag(pendRowKey('g_pledges', p.id)) + '</td>' +
         '<td class="num">' + ils(p.amount) + '</td>' +
         '<td class="num">' + ils(c) + '</td>' +
         '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
@@ -2020,7 +2359,7 @@ function viewDonorCard() {
     h += '<div class="tw"><table><thead><tr><th>תאריך</th><th class="num">סכום</th><th>סעיף</th>' +
       '<th>שגריר</th><th>מנהל</th><th>נפרע</th><th></th></tr></thead><tbody>';
     tx.forEach(function (t) {
-      h += '<tr><td>' + heDate(t.txn_date) + '</td>' +
+      h += '<tr><td>' + heDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.id)) + '</td>' +
         '<td class="num">' + ils(t.amount) + '</td>' +
         '<td>' + esc(t.category || '—') + '</td>' +
         '<td>' + esc(t.agent || '—') + '</td>' +
@@ -2058,7 +2397,7 @@ function pledgeTableHTML(list) {
     var c = collectedForPledge(p.id), st = pledgeStatus(p);
     var late = p.due_date && p.due_date < todayISO() && st !== 'בוצע';
     h += '<tr class="click" data-act="donor-open" data-id="' + p.donor_id + '">' +
-      '<td><b>' + esc(donorName(p.donor_id)) + '</b></td>' +
+      '<td><b>' + esc(donorName(p.donor_id)) + '</b>' + pendTag(pendRowKey('g_pledges', p.id)) + '</td>' +
       '<td>' + esc(p.cause || '—') + '</td>' +
       '<td>' + esc(p.agent || '—') + '</td>' +
       '<td class="num">' + ils(p.amount) + '</td>' +
@@ -2130,7 +2469,7 @@ function viewTasks() {
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
       h += '<div class="kcard" data-id="' + t.id + '">' +
-        '<b>' + esc(t.title) + '</b>' +
+        '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.id)) +
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
           (t.domain ? '<span class="badge">' + esc(t.domain) + '</span>' : '') +
@@ -2188,7 +2527,7 @@ function moveTask(id, stage) {
   // update() כבר לא נכשלת ברשת (היא מקומית-תחילה) — היא נכשלת רק כשהכתיבה
   // המקומית או התור נכשלו, וזה בדיוק המצב שבו הגרירה חייבת לחזור אחורה.
   Promise.resolve().then(function () { return update('g_tasks', id, { stage: stage }); })
-    .then(function () { scheduleFlush(); })
+    .then(function () { schedulePush(); })
     .catch(function (e) { t.stage = prev; render(); errToast(e); });
 }
 
@@ -2635,8 +2974,9 @@ function afterSave(msg) {
   applyMirrorToState();
   render();
   syncBarRender();
-  if (msg) toast(msg, 'ok');
-  scheduleFlush();
+  // בלי רשת ההודעה חייבת לומר את האמת: נשמר **במכשיר**, לא בענן.
+  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, 'ok');
+  schedulePush();
   return Promise.resolve();
 }
 
@@ -2917,6 +3257,12 @@ function start() {
   // כדי שהמשיכה שאחריה תכתוב לאחסון שכבר יש בו מקום.
   try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
   mirrorLoad();
+  // סימוני "ממתין לסנכרון" (סבב 12) — נטענים מהדיסק לפני הרינדור הראשון,
+  // כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
+  try { pendBoot(); } catch (e) { console.warn('[pend] pendBoot', e); }
+  // ⚠️ ההגירה מהתור רצה **אחרי** שהמראה נטענה ולפני הסנכרון הראשון —
+  // אחרת פעולה שהמתינה בתור הייתה נעלמת במעבר.
+  try { migrateOutbox(); } catch (e) { console.warn('[outbox] migrate', e); }
 
   var saved = null;
   try { saved = JSON.parse(lsGet(SESSION_KEY, 'null')); } catch (_) { saved = null; }
