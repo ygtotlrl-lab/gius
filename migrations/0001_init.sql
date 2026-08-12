@@ -200,13 +200,31 @@ end $$;
 grant usage on schema public to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- Seed — the initial owner and the editable lists.
+-- Seed — the editable lists only.
 -- Nothing else is seeded: the app ships empty of business data.
+--
+-- ⛔ NO USER IS SEEDED HERE, AND NONE MAY BE ADDED.
+-- Until round 24 this file carried an `insert into g_users` with a REAL
+-- owner username and password written in plain text — in a PUBLIC repo.
+-- Anyone who ever read this file (or its git history) holds that login,
+-- against a database whose RLS policy is `using (true)` and whose anon key
+-- ships inside index.html.
+--
+-- Create the first user MANUALLY in the Supabase SQL editor, with a password
+-- that has never been committed anywhere:
+--
+--     insert into g_users (username, password, full_name, role, active)
+--     values ('<username>', '<six digits>', '<full name>', 'owner', true)
+--     on conflict (username) do nothing;
+--
+-- ⛔ Never seed credentials — username, password, or key — in any file that
+--    is pushed to git. Deleting them later does NOT remove them: they stay
+--    readable in the repository history forever. See iron rule 8.
+--
+-- ⚠️ The existing production database already holds its owner row; this
+--    change does not touch it. Any password that was ever committed to this
+--    repo must be treated as compromised and rotated.
 -- ---------------------------------------------------------------------------
-insert into g_users (username, password, full_name, role, active)
-values ('mmf', '770770', 'מענדי פרידמן', 'owner', true)
-on conflict (username) do nothing;
-
 insert into g_config (key, value) values
   ('categories', '["תרומה","גביה","מגביות","פרוייקטים","הוראות קבע","פרנסים ותאריכים"]'::jsonb),
   ('causes',     '[]'::jsonb),

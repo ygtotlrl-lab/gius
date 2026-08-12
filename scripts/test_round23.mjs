@@ -99,7 +99,7 @@ function makeCtx(opts = {}) {
   return { ctx, store, calls };
 }
 
-const USER_A = { id: 'aaa', username: 'mmf', full_name: 'מענדי פרידמן', role: 'owner', active: true };
+const USER_A = { id: 'aaa', username: 'user_a', full_name: 'מענדי פרידמן', role: 'owner', active: true };
 const USER_B = { id: 'bbb', username: 'yossi', full_name: 'יוסי', role: 'manager', active: true };
 
 async function seedUsers(h, list) {
@@ -168,7 +168,7 @@ console.log('\n▶ ג. ⭐ כניסה אופליין למשתמש שאינו ה�
 {
   const h = makeCtx();
   await seedUsers(h, [
-    Object.assign({ _pass: '770770' }, USER_A),
+    Object.assign({ _pass: '135790' }, USER_A),
     Object.assign({ _pass: '654321' }, USER_B)
   ]);
   // הסשן שעל המכשיר הוא של A — B מעולם לא נכנס כאן.
@@ -183,8 +183,8 @@ console.log('\n▶ ג. ⭐ כניסה אופליין למשתמש שאינו ה�
 
   // וגם A עצמו ממשיך לעבוד — הכניסה אינה "אחד בלבד" בכיוון ההפוך.
   const h2 = makeCtx();
-  await seedUsers(h2, [Object.assign({ _pass: '770770' }, USER_A), Object.assign({ _pass: '654321' }, USER_B)]);
-  await h2.ctx.doLoginOffline('mmf', '770770', null);
+  await seedUsers(h2, [Object.assign({ _pass: '135790' }, USER_A), Object.assign({ _pass: '654321' }, USER_B)]);
+  await h2.ctx.doLoginOffline('user_a', '135790', null);
   eq('גם A נכנס אופליין', h2.ctx.state.user && h2.ctx.state.user.id, 'aaa');
 }
 
