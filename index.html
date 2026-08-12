@@ -1952,6 +1952,44 @@ function stripRows(t, rows) {
 function mirrorSave(t) {
   return lsSetArray(MIRROR_PREFIX + t, stripRows(t, MIRROR[t] || []), rowTs);
 }
+
+/* ═══ מראת המשתמשים — שני נתיבי כתיבה, מסנן אחד (סבב 26) ═════════════════
+   עד הסבב הזה `MIRROR.g_users` נבנתה **רק** דרך המשיכה המלאה של כל שבע
+   הטבלאות. המשמעות המעשית: משתמש שנכנס במכשיר שאינו שלו נכנס למראה רק
+   בסנכרון הבא — כלומר החלפת משתמש הייתה תלויה במשיכה מלאה מהענן, בזמן
+   שהשורה שלו כבר יושבת בזיכרון מהכניסה עצמה. עכשיו יש גם נתיב חלקי,
+   בדפוס `ysUsersCacheSave` לצד `ysUsersCacheSaveAll` של hanhala.
+
+   ⛔⛔ **שני הנתיבים עוברים דרך `usersSanitize` — ואין שלישי.** זו הנקודה
+   המדויקת שנשברה ב-hanhala בסבב 21 ותוקנה ב-22, ואותה נקודה בדיוק
+   שנשברה כאן בסבב 23 (הסינון ישב במשיכה בלבד, ולכן כתיבה מקומית עקפה
+   אותו וכתבה סיסמה גלויה לדיסק). נתיב חלקי הוא בדיוק ההזדמנות לחזור על
+   הטעות: הוא מקבל שורה **ישירות מתשובת הכניסה**, כלומר שורה שמכילה
+   `password` בוודאות. ⛔ אין לכתוב ל-`MIRROR.g_users` בלי לעבור כאן.
+
+   שכבת ההגנה השנייה נשארת במקומה: `mirrorSave` מסננת שוב בשער הדיסק. */
+function usersSanitize(rows) {
+  return (Array.isArray(rows) ? rows : [rows])
+    .filter(function (r) { return r && typeof r === 'object'; })
+    .map(function (r) { return stripCols('g_users', r); });
+}
+// הנתיב המלא — מחליף את המראה כולה (משיכה מלאה מהענן).
+function usersCacheSaveAll(rows) {
+  MIRROR.g_users = usersSanitize(rows);
+  return mirrorSave('g_users');
+}
+// הנתיב החלקי — משתמש **בודד**, בלי לגעת בשאר. ⚠️ מיזוג שדות ולא החלפת
+// שורה: תשובת כניסה שאינה כוללת עמודה (למשל לפני `0003_pass_fp.sql`)
+// אינה מוחקת ערך שכבר יש במראה.
+function usersCacheSave(row) {
+  var clean = usersSanitize(row)[0];
+  if (!clean || clean.id == null) return false;
+  var arr = MIRROR.g_users || (MIRROR.g_users = []);
+  var cur = findRow(arr, 'id', clean.id);
+  if (cur) Object.keys(clean).forEach(function (k) { cur[k] = clean[k]; });
+  else arr.push(clean);
+  return mirrorSave('g_users');
+}
 function mirrorHasData() {
   for (var i = 0; i < TABLES.length; i++) if ((MIRROR[TABLES[i].t] || []).length) return true;
   return false;
@@ -2147,10 +2185,11 @@ function writeUser(id, row) {
       return send(b2).then(function (r) { r._noFp = true; return r; });
     })
     .then(function (res) {
-      // ⛔ `upsertLocal` מסנן דרך `stripCols`, ולכן `password` אינו נכנס
-      //    למראה גם כאן. **אין `markLocal`** — אין מה לסמן.
+      // ⛔ סבב 26: דרך הנתיב החלקי של מראת המשתמשים, כלומר אותו
+      //    `usersSanitize` — ולכן `password` אינו נכנס למראה גם כאן.
+      //    **אין `markLocal`** — מה שכבר בענן אינו ממתין לכלום.
       var saved = (res && Array.isArray(res.data) && res.data[0]) || body;
-      upsertLocal('g_users', saved);
+      usersCacheSave(saved);
       applyMirrorToState();
       // "ללא טביעה" משני מקורות: העמודות עדיין לא קיימות (`_noFp`), או
       // שהגזירה עצמה נכשלה ולכן `pass_fp` נכתב `null` לצד סיסמה חדשה.
@@ -2331,9 +2370,12 @@ function syncPull() {
       var map = {};
       rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
       remoteMaps[x.m.t] = map;
-      MIRROR[x.m.t] = mergeRows(MIRROR[x.m.t], rows, x.m.key,
+      var merged = mergeRows(MIRROR[x.m.t], rows, x.m.key,
         function (k) { return pendHas(pendRowKey(x.m.t, k)); });
-      mirrorSave(x.m.t);
+      // סבב 26: מראת המשתמשים נשמרת דרך **הנתיב המלא** של המודול שלה,
+      // אותו מסנן בדיוק שמשמש את הנתיב החלקי. ר' `usersSanitize`.
+      if (x.m.t === 'g_users') usersCacheSaveAll(merged);
+      else { MIRROR[x.m.t] = merged; mirrorSave(x.m.t); }
     });
     applyMirrorToState();
     if (!errs.length) {
@@ -2744,6 +2786,13 @@ function doLogin() {
       if (!u.active) throw new Error('inactive');
       state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
       lsSet(SESSION_KEY, JSON.stringify(state.user));
+      // ⭐ סבב 26 — הנתיב החלקי. השורה הזו כבר בידינו מהכניסה, ולכן אין
+      // סיבה שהחלפת משתמש במכשיר תמתין למשיכה מלאה מהענן כדי שהוא ייכנס
+      // למראה. ⚠️ **אחרי `state.user`, לא לפניו** — התיקון של סבב 23:
+      // רענון שקודם לקביעת המשתמש הפעיל עובד על מצב שעוד לא השתנה.
+      // ⛔ `u` מכיל `password` (ה-`select` הוא `*`) — `usersCacheSave`
+      // מסננת אותו, וזו בדיוק הסיבה שהיא הנתיב היחיד.
+      try { usersCacheSave(u); } catch (e) { console.warn('[users] cache', e); }
       // השלמת טביעות למשתמשים קיימים — מקוון, ובעלים בלבד. מדלג בשקט אחרת.
       try { gBackfillPassFp(); } catch (e) { console.warn('[pass-fp]', e); }
       return boot();
@@ -4046,6 +4095,9 @@ function revalidateSession(saved) {
       if (!u || !u.active) { toast('המשתמש הושבת — נדרשת כניסה מחדש', 'bad'); logout(); return; }
       state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
       lsSet(SESSION_KEY, JSON.stringify(state.user));
+      // סבב 26: אותו נתיב חלקי, ואחרי קביעת המשתמש הפעיל — כאן זה תופס
+      // גם טביעה שהושלמה בענן מאז הכניסה האחרונה במכשיר הזה.
+      try { usersCacheSave(u); } catch (e) { console.warn('[users] cache', e); }
       render();
     })
     .catch(function (e) { console.warn('[session] אימות נדחה (רשת) — ממשיכים מקומית', e); });

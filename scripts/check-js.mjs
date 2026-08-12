@@ -102,6 +102,17 @@ try {
   failed++;
 }
 
+// ---- נתיב עדכון חלקי למראת המשתמשים (סבב 26) --------------------------------
+// ⚠️ **פרטי ל-gius**, כמו הקודם. הוא נכנס לשער מאותו נימוק בדיוק: הסבב הזה
+// הוסיף **נתיב כתיבה שני** למראת המשתמשים, וזו בדיוק ההזדמנות שבה מסנן
+// ה-`password` נשמט מנתיב אחד — מה שקרה כאן בסבב 23 וב-hanhala בסבב 21.
+try {
+  execFileSync(process.execPath, [join(ROOT, 'scripts', 'test_round26.mjs')],
+               { cwd: ROOT, stdio: 'inherit' });
+} catch (e) {
+  failed++;
+}
+
 if (failed) {
   console.error(`\n${failed} check(s) failed.`);
   process.exit(1);

@@ -336,8 +336,13 @@ console.log('\n▶ ח. אינווריאנטות במקור עצמו');
   ok('writeUser נכשל ברעש בלי רשת', /!navigator\.onLine\) return Promise\.reject/.test(WU));
   ok('gBackfillPassFp מותנית ב-owner', /_gFpBackfillDone[\s\S]{0,400}?role !== 'owner'/.test(SRC));
   ok('gBackfillPassFp מותנית ברשת', /_gFpBackfillDone[\s\S]{0,400}?navigator\.onLine/.test(SRC));
-  ok('CACHE_NAME קודם ל-gius-v11',
-    /const CACHE_NAME = 'gius-v11';/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')));
+  // ⚠️ **תבנית ולא מספר קבוע** (תוקן בסבב 26). הטענה המקורית קיבעה
+  // `gius-v11`, ולכן היא הייתה **נכשלת על כל קידום עתידי** — כלומר
+  // חוסמת בדיוק את מה שכלל ברזל 9 מחייב. זו אותה תקלה שכבר נמדדה כאן
+  // פעם אחת: `check-js.mjs` דרש `CACHE_NAME must be 'gius-v1'` ובגללו
+  // הגרסה לא זזה מאז ההקמה. ⛔ אין להחזיר מספר קבוע לטענה הזו.
+  ok('CACHE_NAME בתבנית gius-v<N>',
+    /const CACHE_NAME = 'gius-v\d+';/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')));
   ok('המיגרציה אדיטיבית ואידמפוטנטית',
     /add column if not exists pass_salt text;[\s\S]*add column if not exists pass_fp\s+text;/
       .test(fs.readFileSync(path.join(ROOT, 'migrations/0003_pass_fp.sql'), 'utf8')));
