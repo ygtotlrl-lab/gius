@@ -2423,7 +2423,7 @@ function renderLogin() {
       '<label class="fld"><span>שם משתמש</span>' +
         '<input class="inp" id="lg-user" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>' +
       '<label class="fld"><span>סיסמה</span>' +
-        '<input class="inp" id="lg-pass" type="password" autocomplete="current-password" required></label>' +
+        '<input class="inp" id="lg-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required></label>' +
       '<button class="btn block" type="submit" id="lg-btn">כניסה</button>' +
       '<div class="auth-err" id="lg-err"></div>' +
     '</form></div>';
@@ -3315,6 +3315,13 @@ function saveDonor(id) {
   return id ? update('g_donors', id, row) : insert('g_donors', row);
 }
 
+// סבב 19: סיסמה בת שש ספרות בדיוק. ⛔ נאכף **רק במסלולי יצירה/שינוי**
+// (`saveUser` על משתמש חדש, ו-`pass-save`) — ולא במסלול הכניסה. שם רק
+// משווים מול הסיסמה השמורה, ואכיפת פורמט הייתה נועלת בחוץ כל משתמש
+// שסיסמתו נקבעה לפני הסבב הזה.
+var PASS_SIX_RE = /^[0-9]{6}$/;
+var MSG_PASS_SIX = 'הסיסמה חייבת להיות שש ספרות';
+
 function formUser(existing) {
   var u = existing || {};
   var body =
@@ -3322,7 +3329,7 @@ function formUser(existing) {
       '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
       '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
     '</div>' +
-    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="text"></label>') +
+    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="text" inputmode="numeric" maxlength="6"></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
         '<option value="manager"' + (u.role === 'manager' || !u.role ? ' selected' : '') + '>מנהל</option>' +
@@ -3346,6 +3353,7 @@ function saveUser(id) {
   if (!id) {
     var p = $('#us-pass') ? $('#us-pass').value : '';
     if (!p) { toast('נא להזין סיסמה', 'bad'); return Promise.resolve(); }
+    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, 'bad'); return Promise.resolve(); }
     row.password = p;
     return insert('g_users', row);
   }
@@ -3354,7 +3362,7 @@ function saveUser(id) {
 
 function formPassword(u) {
   openModal('שינוי סיסמה — ' + u.full_name,
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="text" autocomplete="new-password"></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="pass-save" data-id="' + u.id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
@@ -3530,6 +3538,7 @@ var ACTIONS = {
   'pass-save': function (el) {
     var p = $('#pw-new') ? $('#pw-new').value : '';
     if (!p) { toast('נא להזין סיסמה', 'bad'); return; }
+    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, 'bad'); return; }
     runSave(el, function () { return update('g_users', el.dataset.id, { password: p }); }, 'הסיסמה עודכנה');
   },
   'user-toggle': function (el) {
