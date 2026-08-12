@@ -79,6 +79,17 @@ try {
   failed++;
 }
 
+// ---- אחידות התיעוד (סבב 18) -----------------------------------------------
+// כלל ברזל 8: פרק שמסומן SHARED חייב להיות זהה בית-לבית בארבעת הריפו, ופרק
+// שאינו מסומן הוא פרטי ואין ליישר אותו. אותו דפוס כמו הבדיקה שמעל — קובץ
+// זהה בארבעת הריפו, שנקרא מכאן כדי שהשער היחיד של gius יכסה גם אותו.
+try {
+  execFileSync(process.execPath, [join(ROOT, 'scripts', 'check-docs.mjs')],
+               { cwd: ROOT, stdio: 'inherit' });
+} catch (e) {
+  failed++;
+}
+
 if (failed) {
   console.error(`\n${failed} check(s) failed.`);
   process.exit(1);
