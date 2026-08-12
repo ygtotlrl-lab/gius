@@ -68,6 +68,17 @@ for (const [pass, msg] of rules) {
   console.error('  FAIL ' + msg);
 }
 
+// ---- אחידות "אזור מצב" (סבב 17) -------------------------------------------
+// שער נפרד ובאותה נשימה: כלל ברזל 7 אוכף שהרכיבים המשותפים זהים, יושבים
+// באותו מקום ומחווטים לקוד חי. הבדיקה חיה בקובץ משלה כי היא זהה בארבעת
+// הריפו; כאן היא רק נקראת, כדי שהשער היחיד של gius יכסה גם אותה.
+try {
+  execFileSync(process.execPath, [join(ROOT, 'scripts', 'check-status-area.mjs')],
+               { cwd: ROOT, stdio: 'inherit' });
+} catch (e) {
+  failed++;
+}
+
 if (failed) {
   console.error(`\n${failed} check(s) failed.`);
   process.exit(1);
