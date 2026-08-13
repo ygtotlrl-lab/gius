@@ -18,7 +18,7 @@
  *     body and brick the app offline.
  */
 
-const CACHE_NAME = 'gius-v13';
+const CACHE_NAME = 'gius-v14';
 const CACHE_PREFIX = 'gius-';
 
 const SCOPE_URL = new URL('./', self.location);
