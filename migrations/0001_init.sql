@@ -43,18 +43,34 @@ $$;
 -- ---------------------------------------------------------------------------
 -- g_users — application login accounts
 --   Users are never deleted; `active` is their soft-delete.
+--
+-- ⛔ `role` has NO DEFAULT (round 26 completion). Creating a user without an
+--    explicit role fails in the database, and that is the intended behaviour:
+--    a role is a decision, never a value that falls out on its own. This is
+--    now identical in all three user tables across the organisation —
+--    `g_users`, `ys_users`, `sl_users` are each `text not null` with no
+--    default. ⚠️ The values themselves are NOT shared and must not be
+--    aligned: `owner`/`manager` here, `admin`/`user` in schar-limud,
+--    `admin`/`senior`/`junior` in hanhala-ruchanit.
+--    (The previous `default 'manager'` failed closed — it granted the lower
+--    role — so this is a consistency fix, not a vulnerability fix.)
 -- ---------------------------------------------------------------------------
 create table if not exists g_users (
   id          uuid primary key default gen_random_uuid(),
   username    text        not null unique,
   password    text        not null,
   full_name   text        not null,
-  role        text        not null default 'manager'
+  role        text        not null
                           check (role in ('owner', 'manager')),
   active      boolean     not null default true,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+-- Upgrade path for an installation created before the round-26 completion.
+-- Idempotent, and a no-op on a fresh install: `create table` above already
+-- declares the column without a default. ⚠️ Touches no data — it only removes
+-- the column default, so existing rows keep the role they already hold.
+alter table g_users alter column role drop default;
 
 -- ---------------------------------------------------------------------------
 -- g_donors — תורמים
