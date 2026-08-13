@@ -23,6 +23,27 @@
 --      derived at runtime from g_txns.
 --
 -- Run this once against the project. It is idempotent.
+--
+-- ⛔ WHAT "IDEMPOTENT" HAS TO MEAN HERE (round 27)
+--   `create table if not exists` SKIPS an existing table entirely. So a file
+--   that only creates tables is idempotent in the trivial sense — running it
+--   twice does no harm — and useless in the sense that matters: an older
+--   installation that re-runs it does NOT receive any structural change made
+--   after it was first created. It silently keeps a schema the running code
+--   no longer matches.
+--
+--   Therefore: **every structural change made since the first install needs
+--   its own convergence statement here**, next to the table it belongs to —
+--   `add column if not exists`, `alter column … drop default`,
+--   `create index if not exists`, `drop trigger if exists` + `create trigger`,
+--   `drop policy if exists` + `create policy`, and an explicit `revoke` before
+--   any `grant` (a GRANT is additive and can never take a privilege away).
+--   ⛔ Never touch data. Structure only.
+--
+--   Convergence statements already here: `pass_salt`/`pass_fp` (0003),
+--   `role drop default` (round 26 completion), and the `revoke all` in the
+--   grants loop (0002). The upgrade migrations stay in the repo as the record
+--   of what changed and why — this file is what makes a stale install catch up.
 -- ============================================================================
 
 begin;
@@ -63,6 +84,8 @@ create table if not exists g_users (
   role        text        not null
                           check (role in ('owner', 'manager')),
   active      boolean     not null default true,
+  pass_salt   text,
+  pass_fp     text,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -71,6 +94,19 @@ create table if not exists g_users (
 -- declares the column without a default. ⚠️ Touches no data — it only removes
 -- the column default, so existing rows keep the role they already hold.
 alter table g_users alter column role drop default;
+
+-- Upgrade path for an installation created before 0003_pass_fp.sql (round 23).
+-- PBKDF2-SHA256 fingerprint (100k rounds, per-user random salt) that makes
+-- offline login possible. ⛔ `password` is NOT touched: the fingerprint is
+-- added ALONGSIDE it, never in place of it — that is a documented decision
+-- (iron rule 9; see "מודל הסיסמאות" in CLAUDE.md). What reaches the device is
+-- the fingerprint only; the password itself never does (`strip: ['password']`).
+-- ⚠️ Without these two lines an existing install re-running this file would
+--    keep a g_users with no fingerprint columns, and offline login would fail
+--    for every user with MSG_OFF_NO_FP — the exact silent drift this file's
+--    header warns about.
+alter table g_users add column if not exists pass_salt text;
+alter table g_users add column if not exists pass_fp   text;
 
 -- ---------------------------------------------------------------------------
 -- g_donors — תורמים
@@ -198,6 +234,19 @@ end $$;
 -- RLS + GRANTs
 --   Open policies by design (internal tool). DELETE is intentionally withheld
 --   from anon so that soft-delete cannot be bypassed from the client.
+--
+-- ⛔ THE `revoke all` IS LOAD-BEARING — do not "simplify" it away (0002).
+--   A GRANT is additive only: it can add a privilege, never remove one. A stock
+--   Supabase project ships with
+--       alter default privileges in schema public
+--         grant all on tables to anon, authenticated, service_role;
+--   so every table created above is BORN with DELETE and TRUNCATE for anon, and
+--   the `grant select, insert, update` below does not take them back. That was
+--   measured on the live project after the first run of this file: anon held
+--   DELETE and TRUNCATE on all seven tables while the soft-delete rule was
+--   documented as enforced. `migrations/0002_revoke_delete.sql` fixed the live
+--   database; the revoke here is what keeps a re-run of this file from being a
+--   no-op on that point.
 -- ---------------------------------------------------------------------------
 do $$
 declare t text;
@@ -209,11 +258,19 @@ begin
     execute format(
       'create policy %I on %I for all to anon, authenticated using (true) with check (true)',
       t || '_open', t);
+    execute format('revoke all on table %I from anon, authenticated', t);
     execute format('grant select, insert, update on table %I to anon, authenticated', t);
   end loop;
 end $$;
 
 grant usage on schema public to anon, authenticated;
+
+-- Keep a table added by a FUTURE migration from inheriting DELETE as well (0002).
+-- ⚠️ ALTER DEFAULT PRIVILEGES only affects defaults owned by the role running
+--    it. If Supabase's defaults were set by another role this is a no-op, and a
+--    new table still needs its own `revoke all` — see the trap in CLAUDE.md §4.
+alter default privileges in schema public
+  revoke delete, truncate on tables from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Seed — the editable lists only.
