@@ -125,6 +125,17 @@ try {
   failed++;
 }
 
+// ── בדיקת שלב א של סבב 30 — הגיבוי היומי ויומן הפעולות ──────────────────
+// ⚠️ הקובץ הזה **זהה בית-לבית בארבעת הריפו** פרט לבלוק `APP` — המודול
+// שהוא בודק משותף, ולכן גם הבדיקה שלו. הוא נכנס לשער מפני שהאינווריאנטה
+// שהוא שומר עליה שקטה מטבעה: גיבוי שנעצר נראה בדיוק כמו גיבוי שעובד.
+try {
+  execFileSync(process.execPath, [join(ROOT, 'scripts', 'test_round30_stage_a.mjs')],
+               { cwd: ROOT, stdio: 'inherit' });
+} catch (e) {
+  failed++;
+}
+
 if (failed) {
   console.error(`\n${failed} check(s) failed.`);
   process.exit(1);
