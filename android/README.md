@@ -43,7 +43,7 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 
 ## אייקונים
 
-נוצרים אוטומטית ע"י `node scripts/gen-icons.mjs` בשורש הריפו — אותו סקריפט
+נוצרים אוטומטית ע"י `node tools/gen-icons.mjs` בשורש הריפו — אותו סקריפט
 שמייצר את אייקוני ה-PWA, מאותה מתמטיקת פיקסלים. **לא לערוך ידנית** את
 `res/mipmap-*/`. הרקע של ה-adaptive icon הוא `res/drawable/ic_launcher_background.xml`
 (טורקיז המותג `#0F766E`).
