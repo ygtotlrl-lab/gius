@@ -45,7 +45,8 @@ const APP = {
   gates: ['check-structure.mjs', 'check-status-area.mjs', 'check-docs.mjs',
           'check-comments.mjs', 'check-capabilities.mjs',
           'test_round23.mjs', 'test_round26.mjs',
-          'test_round30_stage_a.mjs', 'test_round33_structure.mjs'],
+          'test_round30_stage_a.mjs', 'test_round33_structure.mjs',
+          'test_round35_hotwin.mjs'],
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 

@@ -1609,13 +1609,20 @@ async function bkMaybeDaily() {
         // ⛔ `cols` ולא `*` בטבלאות שיש בהן סוד (סבב 30) — `kv_backup`
         //    קריאה ל-`anon`, וגיבוי גורף של טבלת משתמשים היה מעתיק לשם
         //    סיסמאות וטביעות. מי שאין לו סוד מגדיר `cols` ריק ומקבל `*`.
-        var rt = await c.from(s.name).select(s.cols || '*');
+        var q = c.from(s.name).select(s.cols || '*');
+        // ⭐ `eq`/`order` פר-מקור (סבב 35) — סינון פר-מוסד וסדר דטרמיניסטי,
+        //    כדי שהחתימה הדיפרנציאלית לא תוטרד משינוי סדר-שורות אקראי.
+        if (s.eq) q = q.eq(s.eq[0], s.eq[1]);
+        if (s.order) q = q.order(s.order);
+        var rt = await q;
         if (!rt || rt.error || !Array.isArray(rt.data)) { ok = false; continue; }
         val = JSON.stringify(rt.data);
       }
       // מקור שאין לו ערך בענן — אין מה לגבות, וזה אינו כישלון.
       if (val == null) continue;
-      var bkey = pre + s.name;
+      // ⭐ `key` פר-מקור (סבב 35) — מקור-טבלה שמפתחו היה מתנגש במקור
+      //    ה-kv ההיסטורי באותו שם מקבל מפתח גיבוי משלו.
+      var bkey = pre + (s.key || s.name);
       var sig = bkSig(val), sigKey = 'bk_sig_' + bkey;
       if (lsGet(sigKey, '') === sig) { same++; continue; }
       var ins = await c.from(BK_TABLE).insert({ key: bkey, value: val });
@@ -2031,6 +2038,270 @@ function pendBoot() {
 }
 /* ═══════════════ סוף מודול "ממתין לסנכרון" ═════════════════════════════ */
 
+/* ── HW_CFG — הדבר היחיד שנבדל בין האפליקציות ───────────────────────────── */
+// ⭐ גבול השנה אומץ מ-schar-limud (סבב 35) — ספטמבר–אוגוסט, אותה נוסחה
+//    בדיוק, כדי ששתי אפליקציות הכספים יסגרו שנה באותו תאריך.
+function gAcadYearOf(iso) {
+  var d = new Date(String(iso == null ? '' : iso).slice(0, 10) + 'T00:00:00');
+  var y = d.getFullYear();
+  if (!isFinite(y)) return NaN;
+  return d.getMonth() >= 8 ? y : y - 1;
+}
+/* ⭐ החלון החם כאן הוא תנועות שנת הפעילות הנוכחית (סבב 35). תורמים,
+   התחייבויות ומשימות — תמיד חמים: התורמים הם אבות המפתח הזר (אותו נימוק
+   של `LS_CFG`), וההתחייבויות פתוחות לאורך שנים. «מסך העבר» הוא «תנועות
+   משנים קודמות» שבכרטיס התורם — קריאה בלבד.
+   ⚠️ תנועה בלי תאריך תקין נשארת חמה — ספק ⇐ לא מפנים. */
+var HW_CFG = {
+  enabled: true,
+  admin: function () { return isOwner(); },
+  specs: [{
+    key: 'g_mirror_txns',
+    label: 'תנועות שנים סגורות',
+    inWindow: function (t) {
+      var y = gAcadYearOf(t && t.txn_date);
+      if (!isFinite(y)) return true;
+      return y >= gAcadYearOf(todayISO());
+    },
+    idOf: function (r) { return r && r.id; },
+    ts: function (r) { return rowTs(r); },
+    isPending: function (r) { return pendHas(rowPendingKey('g_txns', r)); },
+    fetch: async function () {
+      try {
+        if (!sb) return { ok: false, rows: [] };
+        var res = await withTimeout(sb.from('g_txns').select('*'));
+        return (res && !res.error && Array.isArray(res.data))
+          ? { ok: true, rows: res.data } : { ok: false, rows: [] };
+      } catch (e) { return { ok: false, rows: [] }; }
+    },
+    rows: function () { return MIRROR.g_txns; },
+    apply: function (kept) {
+      return lsSetArray(MIRROR_PREFIX + 'g_txns', stripRows('g_txns', kept), rowTs);
+    }
+  }]
+};
+/* ═══ חלון חם ושחזור מקומי — מודול משותף (סבב 35) ════════════════════════
+   המכשיר מחזיק דרך קבע רק את «החלון החם» — התקופה הפעילה — וההיסטוריה
+   חיה בענן ונמשכת לפי דרישה לקריאה. זו הכללה של שני דפוסים שכבר הוכחו:
+   אופק הפינוי של סבב 11 (רק העותק שעל הדיסק מצטמצם; הזיכרון והענן לא
+   נוגעים) והארכוב של יומן-עבודה (הישן מדוגל, ונשלף רק כשמבקשים אותו).
+
+   ⛔ שני תנאים יחד, ללא יוצא מן הכלל (סבב 35) — רשומה מתפנה מהמכשיר רק
+      כשהיא גם מחוץ לחלון וגם מסונכרנת במלואה: אינה מסומנת ⏳, והעותק
+      הענני שלה נראה בפועל עם חותמת שאינה ישנה מהמקומית. ספק ⇐ נשארת.
+   ⛔ נכשל סגור (סבב 35) — אין רשת, המשיכה נכשלה או החזירה לא-מערך ⇒ לא
+      מפנים דבר. היעדר ראיה אינו ראיה — בדיוק הכלל של סבב 14.
+   ⛔ יש משהו שטרם עלה לענן ⇒ הפינוי מדולג כולו (סבב 35) — אותה הגנה של
+      `LS_CFG.pending()` שחלה על שלב ב של הפינוי, ובנוסף לבדיקה
+      הפר-רשומתית. שתי שכבות, לא אחת.
+   ⚠️ הפינוי רץ בעליית האפליקציה (מושהה — הוא דורש רשת), ושער הדיסק
+      (`hwDiskFilter`) שומר שהוא לא יתבטל: משיכה מהענן ממזגת את הישן
+      חזרה לזיכרון — וזה רצוי, המסך מציג הכול כשיש רשת — אבל בכתיבה
+      לדיסק, רשומה שמחוץ לחלון ושראייתה העננית בידינו אינה נכתבת שוב.
+      הראיה חיה בזיכרון בלבד (`_hwCloudSeen`): אחרי טעינה מחדש אין
+      ראיה, ולכן אין סינון — עד למשיכה המוצלחת הבאה.
+   ⚠️ «מסך העבר» הוא קריאה בלבד: `hwPastLoad` מושך מהענן לפי דרישה,
+      מסנן לרשומות החיות שמחוץ לחלון, ואינו שומר דבר דרך קבע.
+   ⭐ כפתור השחזור («שחזר הכול מהענן») קורא ל-`lsRestoreAll` שבמודול
+      האחסון הקפוא — בלי לערוך אותו — עם אישור דו-שלבי, למנהל בלבד
+      (`HW_CFG.admin`). הוא פעיל גם כשהחלון החם רדום.
+
+   מעל הבלוק יושבת `HW_CFG` — הדבר היחיד שנבדל בין האפליקציות: הפעלה,
+   שער המנהל, ומפרטי החלון (מפתח, חלון, זהות, חותמת, ⏳, משיכה, כתיבה).
+   ה-API: `hwBoot` · `hwSweep` · `hwNoteCloud` · `hwDiskFilter` ·
+   `hwPastLoad` · `hwRestoreMount` · `hwEnabled`.
+   ══════════════════════════════════════════════════════════════════════ */
+var HW_BOOT_DEFER_MS = 3000;      // כמו הפינוי הנדחה של סבב 14 — רשת אחרי עלייה
+var HW_RESTORE_ARM_MS = 8000;     // חלון האישור הדו-שלבי של כפתור השחזור
+var _hwCloudSeen = {};            // ראיה עננית בזיכרון בלבד: מפתח → {מזהה → חותמת}
+var _hwSweepBusy = false;
+var _hwSwept = 0;                 // כמה רשומות פונו בעלייה הזו — לתיעוד בלבד
+
+function _hwVal(v) { return (typeof v === 'function') ? v() : v; }
+function hwEnabled() {
+  try { return !!(typeof HW_CFG !== 'undefined' && HW_CFG && HW_CFG.enabled); }
+  catch (e) { return false; }
+}
+function _hwSpecs() {
+  try { return (typeof HW_CFG !== 'undefined' && HW_CFG && HW_CFG.specs) || []; }
+  catch (e) { return []; }
+}
+function _hwSpecFor(key) {
+  var specs = _hwSpecs();
+  for (var i = 0; i < specs.length; i++) {
+    try { if (_hwVal(specs[i].key) === key) return specs[i]; } catch (e) { }
+  }
+  return null;
+}
+function _hwLive(spec, rec) {
+  try { return spec.isLive ? !!spec.isLive(rec) : !(rec && rec.deleted); }
+  catch (e) { return true; }
+}
+
+// רישום הראיה העננית — כל משיכה מוצלחת מוסיפה ומעדכנת חותמות פר-מזהה.
+function hwNoteCloud(key, rows) {
+  if (!hwEnabled() || !Array.isArray(rows)) return;
+  var spec = _hwSpecFor(key);
+  if (!spec) return;
+  var idx = _hwCloudSeen[key] || (_hwCloudSeen[key] = {});
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i], id, t;
+    try { id = spec.idOf(r); t = Number(spec.ts(r)) || 0; } catch (e) { continue; }
+    if (id == null) continue;
+    id = String(id);
+    if (!(idx[id] >= t)) idx[id] = t;
+  }
+}
+
+// שער הדיסק. ⛔ כל ספק משאיר את הרשומה (סבב 35) — רשומה בלי ראיה עננית
+// עדכנית לה-עצמה נכתבת לדיסק כרגיל; רק ודאות מפנה.
+function hwDiskFilter(key, rows) {
+  if (!hwEnabled() || !Array.isArray(rows)) return rows;
+  var spec = _hwSpecFor(key);
+  if (!spec) return rows;
+  var idx = _hwCloudSeen[key];
+  if (!idx) return rows;
+  var kept = [];
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i], drop = false;
+    try {
+      if (!spec.inWindow(r)) {
+        var pend = true;
+        try { pend = !!spec.isPending(r); } catch (e1) { pend = true; }
+        if (!pend) {
+          var id = spec.idOf(r);
+          if (id != null) {
+            var ct = idx[String(id)];
+            var lt = Number(spec.ts(r)) || 0;
+            if (ct !== undefined && ct >= lt) drop = true;
+          }
+        }
+      }
+    } catch (e) { drop = false; }
+    if (!drop) kept.push(r);
+  }
+  return kept;
+}
+
+// הפינוי עצמו — מושך את העותק הענני של כל מפרט, ואז כותב לדיסק את הנשאר.
+async function hwSweep() {
+  if (!hwEnabled() || _hwSweepBusy) return { swept: 0 };
+  try {
+    if (typeof LS_CFG !== 'undefined' && LS_CFG &&
+        typeof LS_CFG.pending === 'function' && LS_CFG.pending()) {
+      try { lsLog('hw-skip', 'תור יוצא לא ריק'); } catch (e0) { }
+      return { swept: 0 };
+    }
+  } catch (e) { return { swept: 0 }; }
+  _hwSweepBusy = true;
+  var swept = 0;
+  try {
+    var specs = _hwSpecs();
+    for (var i = 0; i < specs.length; i++) {
+      var s = specs[i], key;
+      try { key = _hwVal(s.key); } catch (e1) { continue; }
+      var res = null;
+      try { res = await s.fetch(); } catch (e2) { res = null; }
+      if (!res || res.ok !== true || !Array.isArray(res.rows)) continue;
+      hwNoteCloud(key, res.rows);
+      var cur = null;
+      try { cur = s.rows(); } catch (e3) { cur = null; }
+      if (!Array.isArray(cur)) continue;
+      var kept = hwDiskFilter(key, cur);
+      if (kept.length === cur.length) continue;
+      var okW = false;
+      try { okW = !!s.apply(kept); } catch (e4) { okW = false; }
+      if (okW) {
+        var n = cur.length - kept.length;
+        swept += n;
+        try { lsLog('hw-sweep', (s.label || key) + ' −' + n); } catch (e5) { }
+      }
+    }
+  } catch (e6) { }
+  _hwSwept = swept;
+  _hwSweepBusy = false;
+  return { swept: swept };
+}
+
+// מסך העבר — קריאה בלבד. מחזיר מהענן את הרשומות החיות שמחוץ לחלון,
+// מהחדשה לישנה, בלי לגעת בדיסק ובלי לגעת בזיכרון האפליקציה.
+async function hwPastLoad(key, filter) {
+  var spec = _hwSpecFor(key);
+  if (!spec) return { ok: false, rows: [] };
+  var res = null;
+  try { res = await spec.fetch(); } catch (e) { res = null; }
+  if (!res || res.ok !== true || !Array.isArray(res.rows)) return { ok: false, rows: [] };
+  hwNoteCloud(key, res.rows);
+  var out = [];
+  for (var i = 0; i < res.rows.length; i++) {
+    var r = res.rows[i];
+    var inW = true;
+    try { inW = !!spec.inWindow(r); } catch (e1) { }
+    if (inW || !_hwLive(spec, r)) continue;
+    if (filter) { try { if (!filter(r)) continue; } catch (e2) { continue; } }
+    out.push(r);
+  }
+  out.sort(function (a, b) {
+    var ta = 0, tb = 0;
+    try { ta = Number(spec.ts(a)) || 0; tb = Number(spec.ts(b)) || 0; } catch (e3) { }
+    return tb - ta;
+  });
+  return { ok: true, rows: out };
+}
+
+/* ── כפתור השחזור — נגישות ל-`lsRestoreAll` ────────────────────────────── */
+// ⛔ הרכיב נתלה אחרי הבלוק הקפוא ואינו עורך אותו (סבב 35) — אותה טכניקה
+//    של `bkStatusMount`: «מידע טכני» חתום ב-`check-status-area.mjs`,
+//    והכפתור מצטרף אליו מבחוץ.
+var _hwRestoreArmed = 0;
+function hwRestoreHTML() {
+  return '<div class="sync-line hw-restore-line"><button type="button" ' +
+    'onclick="window.hwRestoreClick&&window.hwRestoreClick(this)">' +
+    '☁️ שחזר הכול מהענן</button></div>';
+}
+function hwRestoreMount() {
+  try {
+    if (!(typeof HW_CFG !== 'undefined' && HW_CFG &&
+          typeof HW_CFG.admin === 'function' && HW_CFG.admin())) return;
+  } catch (e) { return; }
+  var box = document.getElementById('tech-info-box');
+  if (!box) return;
+  var d = box.querySelector('details.tech-info');
+  if (!d) return;
+  var prev = d.querySelector('.hw-restore-line');
+  if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+  var wrap = document.createElement('div');
+  wrap.innerHTML = hwRestoreHTML();
+  var node = wrap.firstChild;
+  if (node) d.appendChild(node);
+}
+// אישור דו-שלבי: הלחיצה הראשונה חומשת לחלון קצר, השנייה מבצעת.
+function hwRestoreClick(btn) {
+  var now = Date.now();
+  if (!_hwRestoreArmed || (now - _hwRestoreArmed) > HW_RESTORE_ARM_MS) {
+    _hwRestoreArmed = now;
+    if (btn) btn.textContent = '⚠️ בטוח? לחיצה נוספת משחזרת הכול';
+    return;
+  }
+  _hwRestoreArmed = 0;
+  try { lsRestoreAll(); } catch (e) { }
+  if (btn) btn.textContent = '☁️ שחזר הכול מהענן';
+}
+window.hwRestoreClick = hwRestoreClick;
+window.hwRestoreMount = hwRestoreMount;
+
+/* ── נקודת ההפעלה ──────────────────────────────────────────────────────── */
+// ⛔ נקודת ההפעלה היחידה היא `hwBoot()` מפונקציית העלייה (סבב 35, כלל
+//    ברזל 12) — הפינוי מושהה מפני שהוא דורש רשת, בדיוק כמו הפינוי הנדחה
+//    של סבב 14. כשהמודול רדום (`HW_CFG.enabled` כבוי) היציאה מיידית,
+//    וכפתור השחזור נשאר פעיל בנפרד.
+function hwBoot() {
+  if (!hwEnabled()) return;
+  try { setTimeout(function () { hwSweep(); }, HW_BOOT_DEFER_MS); } catch (e) { }
+}
+window.hwBoot = hwBoot;
+/* ═══════════════ סוף מודול החלון החם ══════════════════════════════════ */
+
 /* ── חיבור gius למודול ────────────────────────────────────────────────────
    מאז שלב 3 הכתיבה היא מקומית-תחילה עם **דחיפת-מצב** (אין תור). האישור
    מגיע משני מקורות: `pendClear` על תשובת upsert מוצלחת פר-רשומה, ו-
@@ -2260,8 +2531,12 @@ function stripRows(t, rows) {
   if (!m.strip) return rows;
   return (rows || []).map(function (r) { return stripCols(t, r); });
 }
+// ⭐ שער החלון החם יושב כאן (סבב 35) — כל כתיבה למראה עוברת דרך
+//    `hwDiskFilter`: תנועה משנה סגורה שראייתה העננית בידינו אינה נכתבת
+//    שוב לדיסק. בלי ראיה — נכתבת כרגיל (המסנן מחזיר את המערך כמו שהוא).
 function mirrorSave(t) {
-  return lsSetArray(MIRROR_PREFIX + t, stripRows(t, MIRROR[t] || []), rowTs);
+  var rows = hwDiskFilter(MIRROR_PREFIX + t, MIRROR[t] || []);
+  return lsSetArray(MIRROR_PREFIX + t, stripRows(t, rows), rowTs);
 }
 
 /* ═══ מראת המשתמשים — שני נתיבי כתיבה, מסנן אחד (סבב 26) ═════════════════
@@ -2680,6 +2955,7 @@ function syncPull() {
     list.forEach(function (x) {
       if (!x.res || x.res.error || !Array.isArray(x.res.data)) { errs.push(x.m.t); return; }
       var rows = stripRows(x.m.t, x.res.data);
+      hwNoteCloud(MIRROR_PREFIX + x.m.t, rows);   // ראיה עננית לשער הדיסק (סבב 35)
       var map = {};
       rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
       remoteMaps[x.m.t] = map;
@@ -3206,6 +3482,7 @@ function renderShell() {
       '<nav class="tabbar">' + tabs + '</nav>' +
       '<div class="who"><div style="text-align:end"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isOwner() ? 'בעלים' : 'מנהל') + '</span></div>' +
+        '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
         '<button class="btn ghost sm" data-act="logout">יציאה</button></div>' +
     '</header>' +
     '<main id="view"></main>' +
@@ -3220,7 +3497,7 @@ function render() {
   else if (state.screen === 'donors') view.innerHTML = state.donorId ? viewDonorCard() : viewDonors();
   else if (state.screen === 'pledges') view.innerHTML = viewPledges();
   else if (state.screen === 'tasks') { view.innerHTML = viewTasks(); wireKanban(); }
-  else if (state.screen === 'settings') { view.innerHTML = viewSettings(); statusAreaMount(); bkStatusMount(); }
+  else if (state.screen === 'settings') { view.innerHTML = viewSettings(); statusAreaMount(); bkStatusMount(); hwRestoreMount(); }
 
   // Only jump to the top when the user actually moved somewhere. Re-rendering
   // in place (a saved row, a dragged task) must not throw away their scroll.
@@ -4167,6 +4444,22 @@ function formPassword(u) {
   var el = $('#pw-new'); if (el) el.focus();
 }
 
+// ⭐ סבב 35: החלפת סיסמה עצמית — לכל משתמש מחובר, מתוך המסך (כפתור 🔑
+//    בכותרת). הסיסמה הנוכחית מאומתת מול הענן ואינה נשמרת בשום מקום;
+//    הכתיבה עוברת ב-`passFields`+`writeUser` — אותו מסלול בדיוק כמו
+//    שינוי סיסמה ע"י הבעלים, כולל גזירת הטביעה מחדש.
+// ⚠️ הסיסמה **הנוכחית** אינה נבדקת מול תבנית שש-הספרות — בדיוק כמו
+//    במסלול הכניסה: אכיפה שם הייתה נועלת בחוץ סיסמה ותיקה ותקפה.
+function formMyPassword() {
+  openModal('🔑 שינוי הסיסמה שלי',
+    '<label class="fld"><span>סיסמה נוכחית *</span><input class="inp" id="mp-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>' +
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
+    '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="my-pass-save">שמירה</button>');
+  var el = $('#mp-cur'); if (el) el.focus();
+}
+
 function formTarget(month) {
   var m = month || state.month;
   var cur = 0;
@@ -4355,6 +4648,28 @@ var ACTIONS = {
       });
     }, 'הסיסמה עודכנה');
   },
+  'my-pass': function () { formMyPassword(); },
+  'my-pass-save': function (el) {
+    var cur = $('#mp-cur') ? $('#mp-cur').value : '';
+    var p1 = $('#mp-new') ? $('#mp-new').value : '';
+    var p2 = $('#mp-new2') ? $('#mp-new2').value : '';
+    if (!cur || !p1 || !p2) { toast('נא למלא את כל השדות', 'bad'); return; }
+    if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, 'bad'); return; }
+    if (p1 !== p2) { toast('הסיסמאות החדשות אינן זהות', 'bad'); return; }
+    if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
+    //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
+    runSave(el, function () {
+      return withTimeout(sb.from('g_users').select('id,password').eq('id', state.user.id).limit(1))
+        .then(function (res) {
+          if (res && res.error) throw res.error;
+          var u = res && Array.isArray(res.data) && res.data[0];
+          if (!u || String(u.password) !== String(cur)) throw new Error('הסיסמה הנוכחית שגויה');
+          return passFields(p1);
+        })
+        .then(function (pf) { return writeUser(state.user.id, pf).then(warnIfNoFp); });
+    }, 'הסיסמה עודכנה');
+  },
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;
@@ -4527,6 +4842,7 @@ function start() {
   //    משיכה מלאה שהצליחה, כלומר תלויה בפעילות סנכרון. זו הצורה שהשביתה
   //    את הגיבוי של הנהלה ל-25 יום בלי שאיש ידע.
   try { bkBoot(); } catch (e) { console.warn('[bk] bkBoot', e); }
+  try { hwBoot(); } catch (e) { console.warn('[hw] hwBoot', e); }
 
   var saved = null;
   try { saved = JSON.parse(lsGet(SESSION_KEY, 'null')); } catch (_) { saved = null; }
