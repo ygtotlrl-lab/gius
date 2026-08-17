@@ -1,6 +1,6 @@
 // Generates the PWA icons *and* the APK launcher icons from pure pixel math —
 // no image libraries, no binary blobs checked in by hand.
-// Re-run with:  node scripts/gen-icons.mjs
+// Re-run with:  node tools/gen-icons.mjs
 //
 // The mark is the same shape the app uses for its month-progress ring: an open
 // ring with a solid centre dot, on the brand teal, in a rounded square.

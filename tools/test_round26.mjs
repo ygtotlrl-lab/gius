@@ -14,7 +14,7 @@
  *    2. שאר המשתמשים במראה נשארים שלמים אחרי עדכון חלקי.
  *    3. כניסה אופליין למשתמש שאינו האחרון שנכנס עדיין עובדת.
  *
- *  הרצה:  node scripts/test_round26.mjs
+ *  הרצה:  node tools/test_round26.mjs
  */
 import fs from 'node:fs';
 import path from 'node:path';

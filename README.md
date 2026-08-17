@@ -25,8 +25,8 @@
 הכל בקובץ אחד: `index.html`. אין build.
 
 ```bash
-node scripts/check-js.mjs    # חובה לפני כל push
-node scripts/gen-icons.mjs   # מחדש את האייקונים (PWA + APK)
+node tools/check-js.mjs    # חובה לפני כל push
+node tools/gen-icons.mjs   # מחדש את האייקונים (PWA + APK)
 ```
 
 ## APK

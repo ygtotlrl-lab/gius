@@ -1,0 +1,93 @@
+# gius — קונטקסט פיתוח
+
+## פרטי ריפו
+- **ריפו:** `ygtotlrl-lab/gius`
+- **GitHub Pages:** `https://ygtotlrl-lab.github.io/gius/`
+- **טוקן:** מנוהל ב-Windows Credential Manager (host `github.com`) — לעולם לא בקובץ
+- **קובץ ראשי:** `index.html`
+- **Supabase:** project `zrftjkghhjhqzopvdzou` (⚠️ **ייעודי**, לא הפרויקט המשותף
+  של שלוש האחיות) | טבלאות `g_*` (ראה למטה)
+
+---
+
+## ⚠️ Supabase — GRANT חובה לטבלאות חדשות
+
+כל טבלה חדשה שנוצרת ב-`public` schema חייבת לכלול GRANT מפורש — אחרת supabase-js
+לא יוכל לגשת אליה. **⛔ וכאן הסדר הוא `revoke` ואז `grant`, ולא `grant` לבדו:**
+
+```sql
+revoke all on public.TABLE_NAME from anon, authenticated;
+grant select, insert, update on public.TABLE_NAME to anon, authenticated;
+grant all on public.TABLE_NAME to service_role;
+alter table public.TABLE_NAME enable row level security;
+```
+
+⚠️ **הסיבה:** `GRANT` הוא **אדיטיבי בלבד ואינו מסיר דבר**, ופרויקט Supabase
+סטנדרטי מגיע עם `alter default privileges … grant all on tables` — כלומר
+**כל טבלה נולדת עם `DELETE` ו-`TRUNCATE`**. מחיקה בארגון היא תמיד `deleted=true`
+(כלל ברזל 6 סעיף 1), ולכן ההרשאות האלה מיותרות בהגדרה ומסוכנות בפועל: מפתח
+ה-anon יושב גלוי ב-`index.html` הציבורי. ר' `migrations/0002_revoke_delete.sql`.
+
+מקור האמת המלא לסכימה: `migrations/0001_init.sql` (+`0002`/`0003`/`0004`).
+
+---
+
+## כללים קריטיים לפיתוח
+
+1. **`node tools/check-js.mjs` לפני כל push** — חובה מוחלטת. הוא מחלץ את ה-JS
+   המוטבע מ-`index.html`, מריץ `node --check` עליו ועל `sw.js`, ומריץ את כל
+   שערי האחידות ואת חבילות בדיקות הסבבים.
+2. **קידום `CACHE_NAME` ב-`sw.js`** בכל שינוי קוד — בלי זה העדכון לא מגיע
+   למשתמשים (כלל ברזל 9 שברשימת כללי הברזל שב-CLAUDE.md).
+3. **מחיקה רכה בלבד** — `deleted`+`deleted_at`; ⛔ אין `DELETE` פיזי בשום מקום.
+4. **אין סכומים מחושבים שמורים** — «נגבה»/«נותר»/סטטוס מחושבים בזמן ריצה
+   מ-`g_txns`.
+5. **`strip: ['password']` על `g_users`** — הסיסמה אינה יורדת לדיסק, בשלוש
+   נקודות אכיפה (משיכה · כתיבה מקומית · שער הדיסק).
+
+```bash
+node tools/check-js.mjs      # השער — חובה לפני כל push
+node tools/gen-icons.mjs     # מחדש את האייקונים (PWA + APK)
+```
+
+---
+
+## טבלאות
+
+| טבלה | תפקיד | הערות |
+|---|---|---|
+| `g_users` | משתמשי המערכת | `role` = `owner`/`manager`, `NOT NULL` בלי DEFAULT · ⛔ מוחרגת מ-`PUSH_TABLES` |
+| `g_donors` | תורמים | `agent` = שגריר (טקסט חופשי מול `full_name`) |
+| `g_pledges` | התחייבויות | FK ל-`g_donors` ב-RESTRICT |
+| `g_txns` | תנועות | FK ל-`g_donors` ול-`g_pledges` (האחרון nullable) |
+| `g_tasks` | משימות | קנבן בארבעה שלבים; `log` הוא טקסט מצטבר |
+| `g_targets` | יעד חודשי | `month` בפורמט `YYYY-MM`, ייחודי |
+| `g_config` | רשימות בחירה | `categories` · `causes` · `domains` (jsonb) |
+| `sync_log`, `kv_backup` | יומן וגיבוי | `INSERT`+`SELECT` בלבד — יומני ראיות (`migrations/0004`) |
+
+⚠️ **פרויקט Supabase נפרד:** שלוש האחיות חולקות את `kxbtskqobynewvnckaaz`;
+gius יושבת ב-`zrftjkghhjhqzopvdzou`. לכן `kv_backup` ו-`sync_log` נוצרו כאן
+מחדש ב-`0004`, **בסכימה זהה בית-לבית** — זה מה שמאפשר למודול הגיבוי המשותף
+להיות זהה בארבעתן.
+
+---
+
+## מצב נוכחי
+- בית · תורמים · התחייבויות · משימות · הגדרות ✅
+- עבודה אופליין מלאה: מראה מקומית, מיזוג ברמת רשומה, tombstones, סימון ⏳ ✅
+- כניסה אופליין מרובת-משתמשים מול `pass_salt`+`pass_fp` ✅ (סבב 23)
+- גיבוי יומי ויומן פעולות מהמודול המשותף ✅ (סבב 30)
+- PWA + באנר עדכון ✅ · מעטפת APK מסוג WebView ב-`android/` ✅
+
+**מצב המיגרציות:** `0001`–`0003` הורצו ואומתו. **`0004_backup_log.sql` נכתבה
+ועדיין ממתינה להרצה חיצונית** — ⛔ «נכתב» אינו «אומת».
+
+## פרטי מערכת
+- ⛔ **לעולם לא TWA ולא PWABuilder** — TWA מריץ את האתר בתוך כרום, וסינון התוכן
+  במכשירי המשתמשים חוסם את כרום. זה נמדד: ה-TWA הראשון של gius פשוט לא נפתח.
+- סנכרון: משיכה ← מיזוג ← דחיפת מה שמקומי-וחדש-יותר. ⛔ אין תור יוצא
+  (`g_outbox` הוסר בסבב 12 שלב 3 ולא ייבנה מחדש).
+- RLS פתוח (`using (true)`) — החלטה מודעת ומתועדת; ההרשאות נאכפות בשכבת
+  האפליקציה. ר' כלל ברזל 7 שב-CLAUDE.md.
+
+הכללים המחייבים והתיעוד המלא — ב-[CLAUDE.md](CLAUDE.md).

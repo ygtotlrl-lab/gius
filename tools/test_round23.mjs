@@ -12,7 +12,7 @@
  *    3. `password` אינו מופיע באף מפתח localStorage — בשום נתיב כתיבה.
  *    4. משתמש בלי טביעה מקבל את ההודעה הנכונה, ולא «סיסמה שגויה».
  *
- *  הרצה:  node scripts/test_round23.mjs
+ *  הרצה:  node tools/test_round23.mjs
  */
 import fs from 'node:fs';
 import path from 'node:path';

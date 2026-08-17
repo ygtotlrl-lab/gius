@@ -1,8 +1,0 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.gius.app",
-    "sha256_cert_fingerprints": ["DA:61:B1:4D:3E:46:B7:AE:82:8C:E6:D0:77:4A:6E:43:4D:1F:F6:E0:91:B7:0C:7C:EF:29:2D:02:A1:31:FC:4C"]
-  }
-}]
