@@ -18,7 +18,7 @@
  *     body and brick the app offline.
  */
 
-const CACHE_NAME = 'gius-v18';
+const CACHE_NAME = 'gius-v20';
 const CACHE_PREFIX = 'gius-';
 
 const SCOPE_URL = new URL('./', self.location);
@@ -105,6 +105,32 @@ async function fetchCors(url, timeoutMs) {
   }
 }
 
+// ------------------------------------------------------------ CDN self-healing
+// ⭐ Round 37 — the same self-healing the three sisters have had since
+//    round 35 (and hanhala since round 9). Until now gius only pre-cached the
+//    CDN list at install time: an asset that failed to download during install
+//    — a hiccup, a captive portal, a slow phone — stayed missing **forever**,
+//    because install never runs again for that CACHE_NAME. The app then broke
+//    offline with no sign that anything was wrong.
+// ⛔ mode:'cors' is required (round 35) — an opaque response has status 0 and
+//    cache.put rejects it, so the asset would silently never be stored.
+function ensureCdnCached() {
+  return caches.open(CACHE_NAME).then((cache) => Promise.all(
+    CDN_ASSETS.map((url) => cache.match(url, { ignoreVary: true })
+      .then((hit) => {
+        if (hit) return;
+        return fetchCors(url, CDN_TIMEOUT_MS).then((res) => {
+          if (res && res.ok && res.type !== 'opaque') {
+            console.log('[SW] healed CDN asset:', url);
+            return cache.put(url, res);
+          }
+        });
+      })
+      .catch(() => {}))
+  )).catch(() => {});
+}
+ensureCdnCached(); // top-level = runs once every time the SW wakes up
+
 // --------------------------------------------------------------------- install
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -133,6 +159,8 @@ self.addEventListener('activate', (event) => {
       return Promise.resolve(false);
     }));
     await self.clients.claim();
+    // Heal anything the install pass failed to fetch.
+    await ensureCdnCached();
   })());
 });
 
