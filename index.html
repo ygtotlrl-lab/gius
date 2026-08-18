@@ -2098,6 +2098,42 @@ function pendBoot() {
 }
 /* ═══════════════ סוף מודול "ממתין לסנכרון" ═════════════════════════════ */
 
+/* ═══ מזהי רשומות — מודול משותף (סבב 37א) ═════════════════════════════════
+   ⭐ **מזהה שנוצר במכשיר, לפני שהרשומה ראתה שרת** — הדפוס שכלל ברזל 6
+   («מזהים») קובע לארגון כולו. עד סבב 37א חיה אותה יכולת **בחמישה שמות**:
+   `newClientId` בשכר לימוד, `newId` ב-gius, `ysNewId` בהנהלה, ודפוס בלי
+   פונקציה ייעודית ביומן — כולן `crypto.randomUUID` עם אותן נפילות-חזרה,
+   ואף שער לא אכף זאת. זו בדיוק הפרת כלל ברזל 14 כפי שנוסח: «קיים רק
+   באחת, בשקט» אינו מצב חוקי, וגם «קיים בארבעתן בארבעה שמות» אינו.
+   ⛔ **השם המשותף הוא `newClientId`** (סבב 37א) — הוותיק והברור מכולם,
+   וזה שכבר היה בשימוש בשכר לימוד; שינוי שם במקום אחד היה מחייב סבב נוסף.
+   ⛔ **אין כאן שינוי התנהגות (סבב 37א) — רק שם וליבה אחידים.** שלושת
+   המסלולים הם אלה שהיו: `randomUUID` כשקיים · `getRandomValues` · ולבסוף
+   `Math.random`. הנפילה-חזרה אינה תיאורטית: `randomUUID` קיים רק
+   ב-secure context ובדפדפנים מודרניים, וב-WebView ישן הוא פשוט חסר.
+   ⛔ **מזהה קיים אינו משתנה לעולם (סבב 37א)** — האיחוד נוגע ל**יצירה**
+   בלבד. מזהה הוא מפתח המיזוג, ושינוי שלו היה מפצל רשומה אחת לשתיים.
+   ⛔ **ומזהה מכשיר אינו מזהה רשומה (סבב 37א)** — `getDeviceId`/
+   `_randDeviceId` הם מושג אחר (זהות של מכשיר, לא של נתון), ואינם עוברים
+   דרך המודול הזה.
+   ═══════════════════════════════════════════════════════════════════════ */
+function newClientId(){
+  try{
+    if(typeof crypto!=='undefined'&&crypto&&typeof crypto.randomUUID==='function')return crypto.randomUUID();
+  }catch(e){}
+  var b=null;
+  try{
+    if(typeof crypto!=='undefined'&&crypto&&typeof crypto.getRandomValues==='function'){
+      b=new Uint8Array(16);crypto.getRandomValues(b);
+    }
+  }catch(e){b=null;}
+  if(!b){b=new Array(16);for(var i=0;i<16;i++)b[i]=Math.floor(Math.random()*256);}
+  b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;  // גרסה 4, variant RFC 4122
+  var h=[],j;for(j=0;j<16;j++)h.push((b[j]+0x100).toString(16).slice(1));
+  return h.slice(0,4).join('')+'-'+h.slice(4,6).join('')+'-'+h.slice(6,8).join('')+'-'+h.slice(8,10).join('')+'-'+h.slice(10,16).join('');
+}
+/* ═══════════════ סוף מודול מזהי הרשומות ════════════════════════════════ */
+
 /* ── HW_CFG — הדבר היחיד שנבדל בין האפליקציות ───────────────────────────── */
 // ⭐ גבול השנה אומץ מ-schar-limud (סבב 35) — ספטמבר–אוגוסט, אותה נוסחה
 //    בדיוק, כדי ששתי אפליקציות הכספים יסגרו שנה באותו תאריך.
@@ -2533,26 +2569,10 @@ var _netWarned = false, _lastPullOk = 0;
 /* ------------------------------------------------------------- מזהים */
 // מזהה נוצר בצד הלקוח כדי שהכתיבה תעבוד בלי רשת. הסכימה משתמשת ב-uuid
 // (`gen_random_uuid()`) בדיוק בשביל זה — ראה "מבנה הנתונים" ב-CLAUDE.md.
-function newId() {
-  try {
-    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
-    if (window.crypto && window.crypto.getRandomValues) {
-      var b = new Uint8Array(16);
-      window.crypto.getRandomValues(b);
-      b[6] = (b[6] & 0x0f) | 0x40;
-      b[8] = (b[8] & 0x3f) | 0x80;
-      var h = [];
-      for (var i = 0; i < 16; i++) h.push((b[i] + 0x100).toString(16).slice(1));
-      return h.slice(0, 4).join('') + '-' + h.slice(4, 6).join('') + '-' + h.slice(6, 8).join('') +
-             '-' + h.slice(8, 10).join('') + '-' + h.slice(10, 16).join('');
-    }
-  } catch (e) { }
-  // נפילה-חזרה אחרונה: עדיין uuid תקין תחבירית, פשוט פחות אקראי.
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
-}
+// ⭐ **המחולל עצמו עבר למודול המשותף** (סבב 37א) — `newClientId()` זהה
+// בית-לבית בארבע האפליקציות, ו-`check-capabilities` אוכף את חתימתו.
+// ⛔ אין להחזיר לכאן `newId()` מקומי (סבב 37א) — חמישה שמות לאותה יכולת
+//    הם בדיוק מה שהסבב הזה בא לסלק, והם נסחפים בשקט זה מזה.
 
 /* ══════════════════════════════════════════════════════════════════════════
    המראה — טעינה מהדיסק, סינון סודות, מיזוג ותצוגה
@@ -2740,7 +2760,7 @@ function upsertLocal(t, row) {
 function insert(table, row) {
   var m = tableMeta(table);
   var full = Object.assign({}, row);
-  if (full[m.key] == null) full[m.key] = newId();
+  if (full[m.key] == null) full[m.key] = newClientId();
   if (!full.created_at) full.created_at = nowISO();
   full.updated_at = nowISO();
   if (m.soft) { if (full.deleted == null) full.deleted = false; if (full.deleted_at === undefined) full.deleted_at = null; }
@@ -2774,7 +2794,7 @@ function upsertBy(table, conflict, row) {
   var arr = MIRROR[table] || (MIRROR[table] = []);
   var cur = findRow(arr, conflict, full[conflict]);
   if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
-  else if (full[m.key] == null && m.key !== conflict) full[m.key] = newId();
+  else if (full[m.key] == null && m.key !== conflict) full[m.key] = newClientId();
   if (cur) Object.keys(full).forEach(function (k) { cur[k] = full[k]; });
   else arr.push(full);
   markLocal(table, full[m.key]);
@@ -2801,7 +2821,7 @@ function writeUser(id, row) {
   var body = Object.assign({}, row);
   body.updated_at = nowISO();
   if (id == null) {
-    if (body.id == null) body.id = newId();
+    if (body.id == null) body.id = newClientId();
     if (!body.created_at) body.created_at = nowISO();
   } else {
     body.id = id;
