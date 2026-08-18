@@ -78,6 +78,10 @@ function makeCtx(opts = {}) {
     SESSION_KEY: 'gius.session',
     MSG_BAD_LOGIN: '❌ שם משתמש או סיסמה שגויים',
     lsSetArray(key, arr) { store[key] = JSON.stringify(arr); return true; },
+    // ⭐ סבב 35: שער הדיסק של החלון החם עוטף את כתיבות המראה — כאן שקוף
+    //    בכוונה; בדיקות החלון עצמו יושבות ב-test_round35_hotwin.
+    hwDiskFilter(k, rows) { return rows; },
+    hwNoteCloud() {},
     lsSet(key, v) { store[key] = String(v); return true; },
     loginError(m) { calls.loginError.push(m); },
     busy() {},
