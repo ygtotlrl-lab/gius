@@ -12,8 +12,11 @@ android {
         targetSdk 34
         // The TWA that PWABuilder built is versionCode 1. Anything installing
         // over it has to be higher.
-        versionCode 2
-        versionName "2.0"
+        // 3 = סבב 40 — המעטפת הוקשחה (setAllowFileAccess/setAllowContentAccess)
+        // ויושרה ל-javadoc של שלוש האחיות. ⛔ כל שינוי תחת android/ מחייב
+        // קידום כאן, ו-tools/test_round40_gradle.mjs אוכף זאת מול origin/main.
+        versionCode 3
+        versionName "3.0"
     }
 
     buildTypes {

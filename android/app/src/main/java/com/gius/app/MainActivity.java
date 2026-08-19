@@ -18,13 +18,26 @@ import android.widget.Toast;
 /**
  * Native WebView shell for gius — deliberately NOT a Trusted Web Activity.
  *
- * A TWA runs the site inside Chrome, and the content filters installed on the
- * users' devices block Chrome, so the TWA build never opened. A plain WebView
- * renders in-process and is not affected. See CLAUDE.md, "מעטפת ה-APK".
+ * A TWA runs the site inside Chrome, and the content filters installed on the users'
+ * devices block Chrome, so a TWA build never opens. A plain WebView renders in-process
+ * and is not affected. Same reasoning as yoman-avoda and schar-limud — see
+ * android/README.md.
  *
- * The shell loads the live site over the network (not bundled assets), so web
- * releases reach the app the moment GitHub Pages updates — the service worker
- * keeps it working offline afterwards, exactly as in the browser.
+ * <p>The shell loads {@link #APP_URL} over the network. Web releases therefore reach
+ * installed devices the moment GitHub Pages updates, with no new APK — the site's
+ * service worker keeps it working offline afterwards, exactly as it does in a browser.
+ *
+ * <p><b>There are no bundled assets, on purpose.</b> A file:// fallback copy would live
+ * in a <i>different storage origin</i> from the https site, so anything typed into it
+ * offline would land in a localStorage partition the online app never reads — silent
+ * data loss of donors, pledges and transactions. See android/README.md.
+ *
+ * <p><b>There is no native bridge here, on purpose.</b> yoman-avoda's shell carries an
+ * origin-restricted share bridge because its page calls navigator.share with an image;
+ * gius's code has no navigator.share at all, so the bridge — and the reach it
+ * hands to whoever serves the page — is omitted entirely. If a bridge is ever needed,
+ * copy yoman's double-guarded pattern (addWebMessageListener + ALLOWED_ORIGINS);
+ * never a bare addJavascriptInterface on a remotely loaded page.
  */
 public class MainActivity extends Activity {
 
@@ -33,7 +46,7 @@ public class MainActivity extends Activity {
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
-    /** true once any page has painted — keeps a late error from wiping a live app. */
+    /** true once any real page has painted — keeps a late error from wiping a live app. */
     private boolean loadedOnce = false;
 
     @Override
@@ -50,9 +63,11 @@ public class MainActivity extends Activity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMediaPlaybackRequiresUserGesture(false);
-        // The site is https-only, so unlike the yoman-avoda shell (which serves a
-        // file:// page) there is no reason to allow mixed content wholesale.
+        // The site is https-only, so there is no reason to allow mixed content wholesale.
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        // No file:// access is needed — nothing is loaded from disk.
+        s.setAllowFileAccess(false);
+        s.setAllowContentAccess(false);
 
         webView.setWebViewClient(new ShellWebViewClient());
 
