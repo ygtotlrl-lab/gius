@@ -1,9 +1,12 @@
 name: Build APK
 
 # Builds the native WebView shell in android/ (NOT a TWA — see CLAUDE.md) and
-# signs it with the project's permanent key, signing/pwabuilder.keystore, which
-# lives in the repo. No secret, no manual input: there is no way to accidentally
+# signs it with the project's permanent key, signing/gius.keystore, which lives
+# in the repo. No secret, no manual input: there is no way to accidentally
 # produce an APK signed with a different key.
+#
+# ⚠️ המפתח הוחלף ב-2026-08-19 (סבב 39). APK שנבנה כאן ⛔ אינו מתקין על גבי
+# התקנה שנחתמה במפתח הישן (pwabuilder.keystore) — נדרשת הסרה והתקנה מחדש.
 #
 # Signing runs through signing/sign-apk.sh — the same script used by hand — so
 # the fingerprint gate exists in exactly one place.

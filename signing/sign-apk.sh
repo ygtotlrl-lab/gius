@@ -1,22 +1,23 @@
 #!/bin/bash
-# Sign an APK with the PERMANENT gius key — signing/pwabuilder.keystore.
+# Sign an APK with the PERMANENT gius key — signing/gius.keystore.
 #
-# This is the keystore PWABuilder generated when it built the APK, and it is the
-# key every installed copy of gius is signed with. Signing with any other key
-# produces a foreign app: existing users hit INSTALL_FAILED_UPDATE_INCOMPATIBLE
-# and have to uninstall and reinstall. See CLAUDE.md, "חתימת APK".
+# ⚠️ המפתח הוחלף ב-2026-08-19 (סבב 39), בהחלטת המנהל. הטביעה הישנה
+# (DA:61:B1:4D…, pwabuilder.keystore) אינה בשימוש עוד, ושני קובצי ה-keystore
+# הקודמים נמחקו. APK שנחתם במפתח החדש ⛔ אינו מתקין על גבי התקנה קיימת —
+# נדרשת הסרה והתקנה מחדש, פעם אחת.
 #
-# signing/gius.keystore is the old hand-made key and is NOT used. Never sign with it.
+# מכאן והלאה זה המפתח היחיד: חתימה בכל מפתח אחר מייצרת אפליקציה זרה, וכל
+# המשתמשים ייתקלו ב-INSTALL_FAILED_UPDATE_INCOMPATIBLE. ר' CLAUDE.md, "חתימת APK".
 #
 # Requires Android build-tools on PATH (zipalign + apksigner).
 # Usage: ./sign-apk.sh <unsigned.apk> [output.apk]
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-KS="$HERE/pwabuilder.keystore"
-ALIAS='my-key-alias'
-PASS='uqNfubfXeOyp'
-EXPECTED_SHA256='DA:61:B1:4D:3E:46:B7:AE:82:8C:E6:D0:77:4A:6E:43:4D:1F:F6:E0:91:B7:0C:7C:EF:29:2D:02:A1:31:FC:4C'
+KS="$HERE/gius.keystore"
+ALIAS='gius'
+PASS='gius123'
+EXPECTED_SHA256='92:33:21:96:75:17:2D:54:91:35:12:1D:64:46:A6:74:E0:E2:0C:24:9F:68:4A:C3:FA:A2:B7:CC:B8:D3:81:7D'
 
 IN="${1:?usage: sign-apk.sh <unsigned.apk> [output.apk]}"
 OUT="${2:-gius-signed.apk}"
@@ -48,7 +49,7 @@ rm -f "$ALIGNED"
 apksigner verify --print-certs "$OUT"
 
 # Verify what actually landed in the APK, not just what we asked for.
-# apksigner prints the digest lowercase and WITHOUT colons ("da61b1…"), while
+# apksigner prints the digest lowercase and WITHOUT colons ("923321…"), while
 # keytool prints it uppercase WITH colons — so both sides get normalised before
 # comparing. Matching the colon form against apksigner output never succeeds.
 normalise() { tr -d ':' | tr 'A-Z' 'a-z'; }
