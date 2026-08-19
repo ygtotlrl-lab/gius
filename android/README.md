@@ -55,10 +55,13 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 `.github/workflows/build-apk.yml`: Actions → **Build APK** → **Run workflow**.
 ה-APK **החתום** יורד כ-artifact בשם `gius-apk`.
 
-החתימה נעשית ב-`signing/sign-apk.sh` מול `signing/pwabuilder.keystore` שבריפו —
+החתימה נעשית ב-`signing/sign-apk.sh` מול `signing/gius.keystore` שבריפו —
 **אין secret ואין קלט ידני**, ולכן אין דרך לבנות בטעות APK במפתח אחר. הסקריפט
-מסרב לחתום אם טביעת האצבע של ה-keystore אינה `DA:61:B1:4D:...:FC:4C`, ואחרי
+מסרב לחתום אם טביעת האצבע של ה-keystore אינה `92:33:21:96:...:81:7D`, ואחרי
 החתימה מוודא שה-APK אכן נושא את התעודה הזו — ה-workflow נכשל בכל אחד מהמקרים.
+
+> ⚠️ **המפתח הוחלף ב-2026-08-19 (סבב 39).** APK חדש ⛔ אינו מתקין על גבי התקנה
+> שנחתמה במפתח הישן — נדרשת הסרה והתקנה מחדש, פעם אחת. ר' CLAUDE.md.
 
 ### בנייה מקומית (דורשת Android SDK)
 
@@ -76,9 +79,9 @@ gradle wrapper --gradle-version 8.7   # פעם אחת
 ../signing/sign-apk.sh app/build/outputs/apk/release/app-release-unsigned.apk gius.apk
 ```
 
-הסקריפט מריץ `zipalign` ואז `apksigner` מול `signing/pwabuilder.keystore`
-(alias `my-key-alias`), ואוכף את טביעת האצבע לפני ואחרי החתימה.
+הסקריפט מריץ `zipalign` ואז `apksigner` מול `signing/gius.keystore`
+(alias `gius`), ואוכף את טביעת האצבע לפני ואחרי החתימה.
 
-> **ה-keystore נמצא בריפו** — `signing/pwabuilder.keystore`, בדיוק כמו
-> `signing/yoman.keystore` ב-yoman-avoda. שים לב ש-`signing/gius.keystore`
-> שלידו הוא המפתח הידני הישן ו**אינו בשימוש** — ההבחנה היא בטביעת האצבע.
+> **ה-keystore נמצא בריפו** — `signing/gius.keystore`, בדיוק כמו
+> `signing/yoman.keystore` ב-yoman-avoda. ⛔ זהו קובץ ה-keystore **היחיד**
+> ב-`signing/` מסבב 39; שני הקבצים הקודמים נמחקו.

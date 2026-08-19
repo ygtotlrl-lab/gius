@@ -217,8 +217,7 @@ tools/test_round35c_cron.mjs  פינוי הגיבויים במסד (pg_cron) —
 tools/test_round37_merge_pending.mjs  הגנת ⏳ במיזוג + חסימת מושבת — זהה בארבעת הריפו
 tools/test_round37_matrix.mjs  אכיפת מטריצת היכולות — זהה בארבעת הריפו
 tools/gen-icons.mjs      מחולל האייקונים — גם של ה-PWA וגם של אייקוני ה-APK
-signing/pwabuilder.keystore  ✅ המפתח הפעיל — לעולם לא להחליף, לא למחוק
-signing/gius.keystore      keystore ידני — 🚫 לא בשימוש. נשמר לתיעוד, לא למחוק.
+signing/gius.keystore      ✅ מפתח החתימה הקבוע (הוחלף בסבב 39) — לא להחליף, לא למחוק
 signing/sign-apk.sh        חתימת APK במפתח הפעיל, עם אימות טביעת אצבע
 ```
 
@@ -389,81 +388,68 @@ WebView. הבנייה היא מ-`android/`, דרך ה-workflow או Gradle מק�
 
 ## חתימת APK — מפתח קבוע (לעולם לא משתנה!)
 
-**המפתח הקבוע של הפרויקט הוא ה-keystore ש-PWABuilder ייצר בבניית ה-APK.** הוא זה
-שחתם את הגרסה שהותקנה בפועל אצל המשתמשים, ולכן הוא — ורק הוא — המפתח של gius מכאן
-והלאה. ה-keystore הידני שיצרנו לפני כן (`signing/gius.keystore`) **אינו בשימוש**.
+### ⚠️⚠️ המפתח הוחלף ב-2026-08-19 (סבב 39) — בהחלטת המנהל
+עד לתאריך הזה ישבו ב-`signing/` **שני** קובצי keystore: `pwabuilder.keystore`
+(הפעיל — זה שחתם את ה-APK המותקן בפועל) ו-`gius.keystore` הישן, שמעולם לא חתם
+דבר. שניהם **נמחקו**, ובמקומם נוצר keystore חדש בשם `gius.keystore` — אותו דפוס
+שם בדיוק כמו בשלוש האחיות (`yoman.keystore` · `hanhala.keystore` ·
+`schar.keystore`).
+
+⛔ **המשמעות המעשית, ואין דרך לעקוף אותה:** APK שנחתם במפתח החדש **אינו מתקין
+על גבי התקנה קיימת** — אנדרואיד מזהה אותו כאפליקציה זרה ונכשל ב-
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE`. נדרשת **הסרה והתקנה מחדש**, פעם אחת.
+⭐ המנהל אישר במפורש: שני מכשירים בשטח, ⛔ ואין בהם נתונים מקומיים שלא סונכרנו.
+⛔ **הטביעה הישנה `DA:61:B1:4D:…` אינה בשימוש עוד**, ואין להחזירה.
 
 | | |
 |---|---|
-| **קובץ** | `signing/pwabuilder.keystore` — **בריפו** |
-| **מקור** | keystore שנוצר ע"י PWABuilder בבניית ה-APK |
+| **קובץ** | `signing/gius.keystore` — **בריפו** |
+| **נוצר** | 2026-08-19 (סבב 39), `keytool -genkeypair` |
 | **Package ID** | `com.gius.app` |
-| **alias** | `my-key-alias` |
-| **storepass** | `uqNfubfXeOyp` |
-| **keypass** | `uqNfubfXeOyp` (זהה ל-storepass) |
-| **SHA256** | `DA:61:B1:4D:3E:46:B7:AE:82:8C:E6:D0:77:4A:6E:43:4D:1F:F6:E0:91:B7:0C:7C:EF:29:2D:02:A1:31:FC:4C` |
-| **SHA1** | `8F:C6:AA:00:FC:F0:64:D7:6F:DF:39:A3:63:80:A0:D4:DD:08:07:9F` |
+| **alias** | `gius` |
+| **storepass** | `gius123` |
+| **keypass** | `gius123` (זהה ל-storepass) |
+| **SHA256** | `92:33:21:96:75:17:2D:54:91:35:12:1D:64:46:A6:74:E0:E2:0C:24:9F:68:4A:C3:FA:A2:B7:CC:B8:D3:81:7D` |
+| **SHA1** | `FA:AA:8E:84:8C:71:95:5B:E0:62:33:13:C5:BB:50:A3:04:E5:86:DE` |
 | **סוג** | PKCS12, RSA 2048, SHA256withRSA |
-| **תוקף** | 07.08.2026 עד 10.05.2081 |
-| **DN** | `CN=גיוס Admin, OU=Engineering, O=גיוס — ניהול גיוס כספים, C=US` |
+| **תוקף** | 10,000 יום — 19.08.2026 עד 04.01.2054 |
+| **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
 
 **המפתח שמור בריפו** — בדיוק כמו `signing/yoman.keystore` ב-`ygtotlrl-lab/yoman-avoda`.
-זה נועד למנוע את התרחיש היחיד שאין ממנו חזרה: אובדן המפתח. הוא לא נשמר רק
-בחבילת ההורדה של PWABuilder, שמתיישנת ונמחקת.
+זה נועד למנוע את התרחיש היחיד שאין ממנו חזרה: אובדן המפתח.
 
 > **⚠️ הריפו ציבורי.** המשמעות: ה-keystore **והסיסמה שלו** גלויים לכל אחד, ולכן כל
-> אחד יכול לחתום APK שאנדרואיד יקבל כעדכון ל-`com.gius.app`. זו החלטה מודעת —
-> אותה החלטה שהתקבלה ב-yoman-avoda — ומקובלת בהקשר של כלי פנימי שמותקן בצד
-> (sideload) ולא מופץ ב-Google Play. **אם gius אי פעם יעלה ל-Google Play, או
+> אחד יכול לחתום APK שאנדרואיד יקבל כעדכון ל-`com.gius.app`. זו החלטה מודעת
+> ומבוקרת — אותה החלטה שהתקבלה בשלוש האחיות — ומקובלת בהקשר של כלי פנימי שמותקן
+> בצד (sideload) ולא מופץ ב-Google Play. **אם gius אי פעם יעלה ל-Google Play, או
 > יחרוג מהצוות הפנימי:** להוציא את המפתח מהריפו, לנקות אותו מההיסטוריה,
 > ולעבור ל-Play App Signing. אחרי דחיפה לריפו ציבורי המפתח נחשב חשוף לצמיתות —
 > אין "ביטול" ע"י מחיקת הקובץ.
 
 **גיבוי:** גם עם המפתח בריפו, כדאי לשמור עותק בגיבוי נפרד. אם הריפו יימחק —
-המפתח נמחק איתו, וכל המשתמשים הקיימים ייאלצו להסיר ולהתקין מחדש.
+המפתח נמחק איתו, וכל המשתמשים הקיימים ייאלצו להסיר ולהתקין מחדש **שוב**.
 
-### 🚫 `signing/gius.keystore` — לא פעיל
-
-| | |
-|---|---|
-| **קובץ** | `signing/gius.keystore` (PKCS12, RSA 2048) |
-| **alias** | `gius` |
-| **storepass / keypass** | `gius123` |
-| **תוקף** | 10,000 יום — 07.08.2026 עד 23.12.2053 |
-| **SHA256** | `74:48:32:F5:58:92:79:95:FA:7B:61:7A:48:3D:BB:4E:9B:B1:72:1B:46:F9:C6:03:B6:7C:DA:8E:18:91:7D:95` |
-| **SHA1** | `FC:DC:62:EC:4C:45:04:E2:F6:99:9B:96:39:8F:95:47:F9:FC:86:13` |
-| **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
-
-הקובץ נוצר לפני שהתברר ש-PWABuilder חותם במפתח משלו. **שום APK מותקן לא נחתם בו.**
-אסור לחתום בו APK חדש — חתימה בו תיצור אפליקציה זרה מול ההתקנות הקיימות.
-**לא למחוק אותו** — הוא נשאר בריפו כתיעוד היסטורי, מסומן כלא-פעיל.
-
-שימו לב לבלבול הצפוי: שני קבצי `.keystore` יושבים זה לצד זה ב-`signing/`.
-**`pwabuilder.keystore` הוא הפעיל. `gius.keystore` הוא לא.** ההבחנה היא בטביעת
-האצבע — רק `DA:61:B1:4D:...` תקפה.
-
-### ⛔ אזהרה — אין להחליף את המפתח לעולם
+### ⛔ אזהרה — מכאן והלאה אין להחליף את המפתח
 
 אנדרואיד מזהה אפליקציה מותקנת לפי **חתימת המפתח**, לא לפי שם הקובץ או מספר הגרסה.
 APK שנחתם במפתח אחר נחשב אפליקציה **זרה**, וההתקנה מעל הקיימת נכשלת בשגיאת
-`INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE`. אין שחזור, אין מיגרציה, ואין "חתימה מחדש
+במפתח הישן" אחרי שהוא נמחק.
 
-**המשמעות המעשית של החלפת מפתח:** כל משתמש שכבר התקין יצטרך **להסיר את האפליקציה
-ולהתקין מחדש** — ואין דרך לעקוף את זה. אין שחזור, אין מיגרציה, אין "חתימה מחדש
-במפתח הישן" אחרי שהוא אבד.
+⚠️ **ההחלפה של סבב 39 הייתה חד-פעמית ובאישור מפורש של המנהל**, אחרי שנמדד
+שהמחיר (הסרה והתקנה בשני מכשירים, בלי אובדן נתונים) נמוך מהתועלת (שם אחיד
+בארבעת הריפו, קובץ אחד ולא שניים). ⛔ אין לגזור מכאן רשות להחליף שוב.
 
 לכן:
-1. **כל בנייה עתידית חייבת להיחתם ב-`signing/pwabuilder.keystore`** (alias
-   `my-key-alias`), גם אם נבנתה בכלי אחר (Bubblewrap, Android Studio).
-   ב-PWABuilder יש לבחור **"Use my existing signing key"** ולהעלות את הקובץ
-   מהריפו — לעולם לא "Create new signing key".
+1. **כל בנייה עתידית חייבת להיחתם ב-`signing/gius.keystore`** (alias `gius`),
+   גם אם נבנתה בכלי אחר (Bubblewrap, Android Studio).
 2. **לעולם לא להריץ `keytool -genkeypair`** עבור הפרויקט הזה.
 3. **ה-Package ID חייב להישאר `com.gius.app`.** גם שינוי שלו יוצר אפליקציה נפרדת.
 4. אחרי חתימה — לאמת שה-SHA256 תואם לטבלה למעלה. גם `signing/sign-apk.sh` וגם
    ה-workflow עושים זאת אוטומטית ונכשלים על אי-התאמה.
 5. **הבנייה ב-GitHub Actions חותמת מהריפו.** `.github/workflows/build-apk.yml`
-   קורא את `signing/pwabuilder.keystore` ישירות — אין secret ואין קלט ידני,
-   ולכן אין דרך לבנות בטעות APK חתום במפתח אחר.
+   קורא את `signing/gius.keystore` ישירות — אין secret ואין קלט ידני, ולכן אין
+   דרך לבנות בטעות APK חתום במפתח אחר.
 
 ### חתימה
 
@@ -473,24 +459,24 @@ APK שנחתם במפתח אחר נחשב אפליקציה **זרה**, וההת�
 
 הסקריפט מריץ `zipalign` ואז `apksigner`, ודורש Android build-tools ב-PATH.
 יש בו שני שערים שנועדו למנוע את התקלה הבלתי הפיכה: הוא **מסרב לחתום** אם טביעת
-האצבע של ה-keystore אינה `DA:61:B1:4D:...`, ואחרי החתימה הוא מוודא שה-APK אכן
+האצבע של ה-keystore אינה `92:33:21:96:...`, ואחרי החתימה הוא מוודא שה-APK אכן
 נושא את התעודה הזו.
 
 חלופה ידנית (apksigner):
 ```bash
-apksigner sign --ks signing/pwabuilder.keystore --ks-key-alias my-key-alias \
-  --ks-pass pass:uqNfubfXeOyp --key-pass pass:uqNfubfXeOyp app.apk
+apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
+  --ks-pass pass:gius123 --key-pass pass:gius123 app.apk
 ```
 
 חלופה ידנית (jarsigner, אם אין apksigner):
 ```bash
-jarsigner -keystore signing/pwabuilder.keystore -storepass uqNfubfXeOyp \
-  -keypass uqNfubfXeOyp app.apk my-key-alias
+jarsigner -keystore signing/gius.keystore -storepass gius123 \
+  -keypass gius123 app.apk gius
 ```
 
 אימות טביעת האצבע — חייב להחזיר את ה-SHA256 מהטבלה:
 ```bash
-keytool -list -v -keystore signing/pwabuilder.keystore -storepass uqNfubfXeOyp
+keytool -list -v -keystore signing/gius.keystore -storepass gius123
 apksigner verify --print-certs app.apk
 ```
 
@@ -3080,3 +3066,33 @@ schar-limud, yoman-avoda, gius), והוא ממשיך את ארבעה-עשר כל
 ### אימותים
 - `node tools/check-js.mjs` עבר מלא.
 - `test_round39_gaps.mjs` — 16 טענות, כולל שמונה מוטציות.
+
+## סבב 39 — השלמה שנייה (2026-08-19): keystore, שלדי md, ואסימטריות אחרונות
+
+### מה נעשה
+- **⭐ gius — keystore חדש בשם אחיד, בהחלטת המנהל.** עד היום ישבו ב-`signing/`
+  **שני** קבצים: `pwabuilder.keystore` (הפעיל — ה-APK המותקן בפועל חתום בו,
+  נמדד ב-2026-08-19) ו-`gius.keystore` הישן, שמעולם לא חתם דבר. שניהם נמחקו,
+  ובמקומם נוצר keystore חדש בשם `gius.keystore` — אותו דפוס שם בדיוק כמו בשלוש
+  האחיות. ⛔ **APK חדש אינו מתקין על גבי התקנה קיימת** — נדרשת הסרה והתקנה
+  מחדש; המנהל אישר במפורש (שני מכשירים, אפס נתונים שלא סונכרנו).
+
+### מה נעשה כאן (gius)
+- **שני ה-keystores נמחקו, ונוצר `signing/gius.keystore`** — PKCS12, RSA 2048,
+  SHA256withRSA, alias `gius`, תוקף 10,000 יום (19.08.2026–04.01.2054),
+  ⛔ storepass ו-keypass זהים. הטביעה, ה-alias, הסוג והתוקף מתועדים בטבלה
+  שבפרק «חתימת APK».
+- **`signing/sign-apk.sh`** — `KS`, `ALIAS`, `PASS` ו-`EXPECTED_SHA256` עודכנו
+  לטביעה החדשה; ⛔ שני שערי הטביעה (לפני החתימה ואחריה) לא נגעו.
+- **`.github/workflows/build-apk.yml`** — ההערה מצביעה על הקובץ החדש ונושאת את
+  אזהרת ההסרה-וההתקנה.
+- **`android/README.md` ופרק «חתימת APK» ב-CLAUDE.md** נכתבו מחדש: הטביעה
+  הישנה (`DA:61:B1:4D…`) מתועדת כ**היסטוריה** בלבד, ⛔ ואינה בשימוש עוד.
+- ⛔ **אין קוד רץ שהשתנה ואין קידום `CACHE_NAME`** — השינוי נוגע לשכבת הבנייה
+  והחתימה בלבד.
+
+### אימותים
+- `keytool -list -v` על הקובץ החדש החזיר טביעה תקפה, והיא זו שנרשמה בטבלה:
+  SHA256 `92:33:21:96:75:17:2D:54:91:35:12:1D:64:46:A6:74:E0:E2:0C:24:9F:68:4A:C3:FA:A2:B7:CC:B8:D3:81:7D`,
+  SHA1 `FA:AA:8E:84:8C:71:95:5B:E0:62:33:13:C5:BB:50:A3:04:E5:86:DE`.
+- `node tools/check-js.mjs` עבר מלא.
