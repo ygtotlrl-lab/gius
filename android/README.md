@@ -53,8 +53,6 @@ WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואי�
 עם `ALLOWED_ORIGINS`, ונפילה-חזרה שמחוברת רק על ה-origin שלנו). **לעולם לא
 `addJavascriptInterface` חשוף.**
 
-⛔ אין FileProvider ואין `androidx.core`: הוסרו בסבב 41 אחרי מדידה (אפס קוראים). אין להחזיר בלי מדידה מחדש.
-
 ## למה אין נכסים מוטבעים
 
 - ⛔ **`file://` הוא origin אחסון אחר.** ה-localStorage של `file://` ושל
