@@ -30,11 +30,5 @@
             </intent-filter>
         </activity>
 
-        <!-- ⛔ אין כאן FileProvider (סבב 41) — הוא הועתק בשעתו מתבנית yoman
-             יחד עם המעטפת, אבל ל-gius אין גשר שיתוף ואין קורא: נמדד ב-2026-08-19
-             אפס `getUriForFile`, אפס `androidx` ואפס `navigator.share` בקוד.
-             ההכרזה, `res/xml/file_paths.xml` ו-`androidx.core:core` הוסרו יחד
-             באותו קומיט — הסרת אחד מהם בלבד שוברת את ה-APK בהתקנה. -->
-
     </application>
 </manifest>

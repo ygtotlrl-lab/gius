@@ -10,6 +10,7 @@
 
 ---
 
+<!-- SHARED:start id="context-grant" -->
 ## ⚠️ Supabase — GRANT חובה לטבלאות חדשות
 
 כל טבלה חדשה שנוצרת ב-`public` schema חייבת לכלול GRANT מפורש — אחרת supabase-js
@@ -21,6 +22,7 @@ grant select, insert, update on public.TABLE_NAME to anon, authenticated;
 grant all on public.TABLE_NAME to service_role;
 alter table public.TABLE_NAME enable row level security;
 ```
+<!-- SHARED:end -->
 
 ⚠️ **הסיבה:** `GRANT` הוא **אדיטיבי בלבד ואינו מסיר דבר**, ופרויקט Supabase
 סטנדרטי מגיע עם `alter default privileges … grant all on tables` — כלומר
@@ -34,7 +36,7 @@ alter table public.TABLE_NAME enable row level security;
 
 ## כללים קריטיים לפיתוח
 
-1. **`node tools/check-js.mjs` לפני כל push** — חובה מוחלטת. הוא מחלץ את ה-JS
+1. **`node tools/check-js.mjs` לפני כל push** — חובה מוחלטת. השער מחלץ את ה-JS
    המוטבע מ-`index.html`, מריץ `node --check` עליו ועל `sw.js`, ומריץ את כל
    שערי האחידות ואת חבילות בדיקות הסבבים.
 2. **קידום `CACHE_NAME` ב-`sw.js`** בכל שינוי קוד — בלי זה העדכון לא מגיע
@@ -86,6 +88,7 @@ gius יושבת ב-`zrftjkghhjhqzopvdzou`. לכן `kv_backup` ו-`sync_log` נו
 ## פרטי מערכת
 - ⛔ **לעולם לא TWA ולא PWABuilder** — TWA מריץ את האתר בתוך כרום, וסינון התוכן
   במכשירי המשתמשים חוסם את כרום. זה נמדד: ה-TWA הראשון של gius פשוט לא נפתח.
+- חתימה: `signing/gius.keystore` (alias `gius`) — ⛔ המפתח הקבוע
 - סנכרון: משיכה ← מיזוג ← דחיפת מה שמקומי-וחדש-יותר. ⛔ אין תור יוצא
   (`g_outbox` הוסר בסבב 12 שלב 3 ולא ייבנה מחדש).
 - RLS פתוח (`using (true)`) — החלטה מודעת ומתועדת; ההרשאות נאכפות בשכבת

@@ -1,7 +1,7 @@
 package com.gius.app;
 
 /**
- * The gius shell — identity only.
+ * The app shell — identity only.
  *
  * <p>All of the behaviour lives in {@link ShellActivity}, which is byte-for-byte
  * identical in the organisation's four repos; this class supplies the three
@@ -10,10 +10,8 @@ package com.gius.app;
  * מה שנחוץ לכולן נכנס ל-`ShellActivity`, ומה שנחוץ לאחת עובר דרך
  * `installBridge()`/`onShellNavigation()` ונרשם כחריגה מנומקת.
  *
- * <p>אין כאן גשר מקורי: בקוד של גיוס אין `navigator.share`. ⚠️ קישורי `tel:`
- * של התורמים נמסרים למערכת דרך `shouldOverrideUrlLoading` שבליבה.
- */
-public class MainActivity extends ShellActivity {
+ * <p>אין כאן גשר מקורי: בקוד של האפליקציה הזו אין `navigator.share`.
+ */public class MainActivity extends ShellActivity {
 
     @Override
     protected String appUrl() { return "https://ygtotlrl-lab.github.io/gius/"; }

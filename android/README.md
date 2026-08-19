@@ -8,16 +8,18 @@ https://ygtotlrl-lab.github.io/gius/
 
 ## Why WebView and never a TWA
 
-ה-APK הקודם נבנה ב-PWABuilder כ-**TWA** (Trusted Web Activity). TWA אינו דפדפן
-בפני עצמו — הוא מריץ את האתר **בתוך כרום**, ומשתמש רק בממשק ללא שורת כתובת.
-לכן **סינון התוכן שמותקן במכשירים של המשתמשים חוסם אותו**: הסינון חוסם את כרום,
-וה-TWA נופל יחד איתו.
+<!-- SHARED:start id="android-why-twa" -->
+**Do not rebuild this as a TWA, and do not use PWABuilder** (it only produces
+TWAs). A TWA is not a standalone component — it runs the site *inside Chrome*
+and merely hides the address bar. The content filtering installed on the users'
+devices blocks Chrome, so a TWA build never opens at all. A WebView renders
+in-process and never goes through Chrome, so the filter does not touch it.
+<!-- SHARED:end -->
 
-WebView הוא רכיב רינדור בתוך התהליך של האפליקציה עצמה, ואינו עובר דרך כרום —
-ולכן הסינון לא נוגע בו. זה בדיוק ההבדל בין `yoman-avoda` ו-`hanhala` (שתיהן
-WebView ועובדות) לבין gius (TWA, נחסמה).
-
-**אין להחזיר את המעטפת ל-TWA ואין לבנות מחדש ב-PWABuilder** — זה יחזיר את התקלה.
+⚠️ **וכאן זה נמדד על הבשר, ולא בתיאוריה:** ה-APK הראשון של gius נבנה ב-PWABuilder
+כ-TWA ופשוט **לא נפתח** אצל המשתמשים, בעוד ש-`yoman-avoda` ו-`hanhala` — שתיהן
+WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואין לבנות מחדש ב-PWABuilder** —
+זה יחזיר את התקלה.
 
 ## מה בפנים
 
@@ -33,9 +35,11 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 | **בורר קבצים** | `WebChromeClient.onShowFileChooser` מחובר ל-`<input type=file>` |
 | **אופליין** | ה-service worker של האתר. המעטפת מציגה דף שגיאה בעברית רק בהפעלה ראשונה בלי רשת |
 
-**עדכוני קוד web לא מצריכים APK חדש.** האפליקציה טוענת את האתר, ולכן כל דחיפה
-ל-`main` מגיעה למכשירים דרך אותו מנגנון service worker + באנר "גרסה חדשה זמינה"
-שכבר עובד בדפדפן. APK חדש נדרש רק כששינוי נוגע במעטפת עצמה (הקובץ הזה).
+<!-- SHARED:start id="android-web-update" -->
+**עדכוני קוד web לא מצריכים APK חדש.** כל דחיפה ל-`main` מגיעה למכשירים דרך
+אותו מנגנון service worker + באנר "גרסה חדשה זמינה" שכבר עובד בדפדפן. APK חדש
+נדרש רק כששינוי נוגע במעטפת עצמה.
+<!-- SHARED:end -->
 
 ## ⛔ אין גשר שיתוף — וזה ההבדל היחיד מהתבנית של יומן
 
@@ -48,6 +52,8 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 גשר — מעתיקים את הדפוס הכפול-נעילה של יומן (`WebViewCompat.addWebMessageListener`
 עם `ALLOWED_ORIGINS`, ונפילה-חזרה שמחוברת רק על ה-origin שלנו). **לעולם לא
 `addJavascriptInterface` חשוף.**
+
+⛔ אין FileProvider ואין `androidx.core`: הוסרו בסבב 41 אחרי מדידה (אפס קוראים). אין להחזיר בלי מדידה מחדש.
 
 ## למה אין נכסים מוטבעים
 
@@ -75,12 +81,12 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 ⚠️ **פרק פרטי ל-gius** — היא האפליקציה היחידה מהארבע שמחוללת את האייקונים
 בסקריפט (`tools/gen-icons.mjs`, חריגה מנומקת ב-`check-structure.mjs`).
 
-
 נוצרים אוטומטית ע"י `node tools/gen-icons.mjs` בשורש הריפו — אותו סקריפט
 שמייצר את אייקוני ה-PWA, מאותה מתמטיקת פיקסלים. **לא לערוך ידנית** את
 `res/mipmap-*/`. הרקע של ה-adaptive icon הוא `res/drawable/ic_launcher_background.xml`
 (טורקיז המותג `#0F766E`).
 
+<!-- SHARED:start id="android-shell-split" -->
 ## המעטפת — ליבה משותפת ומעטפת פר-אפליקציה (סבב 41)
 
 `MainActivity.java` היה עד סבב 41 **ארבעה עותקים חופשיים** של אותה מעטפת:
@@ -104,6 +110,7 @@ hanhala ו-schar כמעט זהות בית-לבית, gius נבדלת בניסוח
 נושאת חתימה אחת בארבעתן (`d8efd10bc6d47354`), ורק המעטפת של yoman נבדלת.
 `tools/test_round40_shell.mjs` אוכף את שתי החתימות, ו⛔ **נכשל אם נמצא גשר
 בליבה** — גשר שם היה מגיע לארבע האפליקציות בבת אחת.
+<!-- SHARED:end -->
 
 ## Build
 
@@ -142,3 +149,6 @@ gradle wrapper --gradle-version 8.7   # פעם אחת
 > **ה-keystore נמצא בריפו** — `signing/gius.keystore`, בדיוק כמו
 > `signing/yoman.keystore` ב-yoman-avoda. ⛔ זהו קובץ ה-keystore **היחיד**
 > ב-`signing/` מסבב 39; שני הקבצים הקודמים נמחקו.
+
+או ידנית — ר' הפרק "חתימת APK" ב-CLAUDE.md (מפתח `signing/gius.keystore`,
+alias `gius`). אחרי חתימה מאמתים שה-SHA256 תואם לטבלה שם.

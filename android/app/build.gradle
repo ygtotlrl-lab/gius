@@ -33,8 +33,7 @@ android {
     }
 }
 
-// ⛔ אין תלויות, בכוונה (סבב 41): `androidx.core` ישבה כאן רק בשביל
-// ה-FileProvider שהועתק מתבנית yoman — ונמדד שאין לו אף קורא (אפס
-// `getUriForFile`, אפס `androidx` ב-MainActivity, ואין `navigator.share`
-// בדף). ההכרזה, `file_paths.xml` והתלות הוסרו יחד. ⚠️ ליומן לבדה יש
-// `androidx.webkit`+`androidx.core`, מפני שרק לה יש גשר שיתוף חי.
+// No dependencies, on purpose: yoman's shell needs androidx.webkit + androidx.core for
+// its origin-restricted share bridge (navigator.share → FileProvider). gius's
+// page has no navigator.share, the bridge is omitted entirely, and nothing androidx
+// is used. See MainActivity.java.
