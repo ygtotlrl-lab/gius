@@ -19,13 +19,16 @@ import vm from 'node:vm';
 /* ── APP — הדבר היחיד שנבדל בין הריפו (gius) ───────────────────────────── */
 const APP = {
   app: 'gius',
-  names: ['rowTs', 'findRow', 'mergeRows'],
+  names: ['rowTs', 'findRow', '_mergePick', 'mergeCore', 'mergeRows'],
   vars: [],
   globals: {},
   offlineFn: 'gVerifyOffline',
-  mutFn: 'mergeRows',
-  guard: /\(isPending && isPending\(k\)\) \|\| rowTs\(l\) > rowTs\(r\)/,
-  mutate: (fn) => fn.replace('(isPending && isPending(k)) || rowTs(l) > rowTs(r)', 'rowTs(l) > rowTs(r)'),
+  // ⭐ סבב 38 — כלל ההכרעה עבר לליבה המשותפת, ולכן גם המוטציה מכוונת
+  //    לשם. ⛔ הטענה לא נחלשה: היא עדיין דורשת שהסרת סעיף ה-⏳ תפיל את
+  //    טענת הבסיס — רק שעכשיו זה קורה **בארבע האפליקציות בבת אחת**.
+  mutFn: '_mergePick',
+  guard: /isPend \|\| tsOf\(loc\) > tsOf\(rem\)/,
+  mutate: (fn) => fn.replace('isPend || tsOf(loc) > tsOf(rem)', 'tsOf(loc) > tsOf(rem)'),
   rec: (id, ts, tag) => ({ id: id, updated_at: new Date(ts * 1000).toISOString(), name: tag }),
   keyOf: (r) => r.id,
   tag: (r) => r && r.name,
