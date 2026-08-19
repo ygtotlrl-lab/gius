@@ -2495,18 +2495,38 @@ function uniqSorted(list) {
    ⛔ ומזהה שכבר יושב במכשיר אינו משתנה לעולם (סבב 38) — הוא המפתח שלפיו
    קוראים את היומן אחורה, והחלפתו הייתה מנתקת רישומים קיימים מהמקור שלהם.
    ══════════════════════════════════════════════════════════════════════════ */
-// localStorage זורק כשהאחסון חסום (WebView מוקשח / גלישה פרטית). בלי העטיפה
-// הזו כל קורא של getDeviceId מפיל את הפונקציה שקראה לו.
+/* ── DEV_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
+var DEV_CFG = { key: 'g_device_id' };
+
+/* ═══ מזהה מכשיר — מודול משותף (סבב 40) ═══════════════════════════════════
+   ⭐ **מזהה בן שמונה תווים שנוצר במכשיר**, ומזהה אותו ב-`sync_log`
+   וב-`kv_backup`. עד סבב 40 הוא חי בארבע האפליקציות **מחוץ לכל בלוק
+   משותף**: `_randDeviceId` היה זהה בית-לבית בארבעתן (אומת ב-md5),
+   `getDeviceId` נבדלה במפתח האחסון בלבד — ⛔ ולא הייתה לו שום חתימה.
+   זו בדיוק הצורה שכלל ברזל 14 אוסר: קוד זהה שאיש אינו שומר עליו הוא קוד
+   שייסחף, ו-gius הוכיחה זאת בסבב 38 — שם `BK_CFG.device` קראה
+   ל-`getDeviceId` שלא הייתה מוגדרת כלל, ה-`try/catch` בלע את השגיאה,
+   וכל שורה ביומן ירדה **בלי מזהה מכשיר**, בשקט.
+   ⛔ **הכתיבה היא `lsSetRaw` ולא `lsSet` (סבב 40)** — זהו החריג היחיד
+   והמתועד של כלל ברזל 1. מזהה מכשיר שלא נשמר הוא חסר-נזק: הוא נוצר מחדש
+   בזיכרון ומשמש לאבחון בלבד, והוא נכתב ב**כל עליית דף** — באחסון חסום
+   `lsSet` היה מרים באנר אדום קבוע כבר בעלייה ומאמן את המשתמש להתעלם
+   ממנו, בדיוק כשההודעה הזו הכי חשובה.
+   ⛔ **ומזהה שכבר יושב במכשיר אינו משתנה לעולם (סבב 40)** — הוא המפתח
+   שלפיו קוראים את היומן אחורה, והחלפתו מנתקת רישומים קיימים מהמקור שלהם.
+   ⛔ **ומזהה מכשיר אינו מזהה רשומה (סבב 40)** — זהות של **מכשיר** ולא של
+   נתון: הוא אינו מפתח מיזוג, אינו חייב להיות uuid, ו⛔ אינו עובר דרך
+   `newClientId()`. זו הסיבה שהוא שורה נפרדת במטריצה (26) ולא הרחבה של 25.
+   ⚠️ **והעטיפה אינה קישוט:** `localStorage` זורק באחסון חסום (WebView
+   מוקשח / גלישה פרטית), ובלעדיה כל קורא של `getDeviceId` מפיל את
+   הפונקציה שקראה לו.
+   ═══════════════════════════════════════════════════════════════════════ */
 var _deviceIdMem = null;
 function getDeviceId() {
-  // ⚠️ החריג היחיד ל-`lsSet` באפליקציה, ובכוונה: `lsSetRaw` הוא אותו עוזר
-  // מוקשח בלי הבאנר האדום. מזהה מכשיר שלא נשמר הוא חסר-נזק, והוא נכתב בכל
-  // עליית דף — באחסון חסום הוא היה מרים באנר קבוע כבר על מסך הכניסה ומאמן
-  // את המשתמש להתעלם ממנו. **אין להשתמש ב-`lsSetRaw` לשום נתון של המשתמש.**
-  var id = lsGet('g_device_id', null);
+  var id = lsGet(DEV_CFG.key, null);
   if (!id) {
     id = _deviceIdMem || _randDeviceId();
-    lsSetRaw('g_device_id', id);
+    lsSetRaw(DEV_CFG.key, id);
   }
   _deviceIdMem = id;
   return id;
@@ -2516,6 +2536,7 @@ function _randDeviceId() {
   for (var i = 0; i < 8; i++) id += c.charAt(Math.floor(Math.random() * c.length));
   return id;
 }
+/* ═══════════════ סוף מודול מזהה המכשיר ═════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════════════════
    מצב האפליקציה — אובייקט יחיד בזיכרון
@@ -2970,7 +2991,7 @@ function writeUser(id, row) {
     .catch(function (e) {
       // נפילה-חזרה לחלון שבין דחיפת הקוד להרצת `0003_pass_fp.sql`: בלי זה
       // **כל** שמירת משתמש הייתה נכשלת עד שהעמודות ייווצרו. המשתמש נשמר,
-      // והכניסה האופליין שלו תושלם ע"י `gBackfillPassFp` אחרי המיגרציה.
+      // והכניסה האופליין שלו תיפתח כשתיווצר לו טביעה בשינוי הסיסמה הבא.
       if (!gIsMissingFpCol(e)) throw e;
       var b2 = Object.assign({}, body);
       delete b2.pass_salt; delete b2.pass_fp;
@@ -2995,11 +3016,20 @@ function writeUser(id, row) {
 // ⛔ **כישלון גזירה מאפס את שני השדות ולא רק מדלג על הכתיבה** (סבב 23) — טביעה ישנה
 //    שנשארת הייתה ממשיכה לפתוח את הכניסה האופליין עם הסיסמה **הקודמת**,
 //    לנצח — כלומר שינוי סיסמה שאינו משנה כלום מבחינת מי שמחזיק את המכשיר.
+/* ⛔ נתיב-החזרה של הסיסמה הגלויה (סבב 40) — `g_users.password` היא
+   `NOT NULL` במסד, ולכן קוד שיפסיק לכתוב אליה **לפני** שהמיגרציה רצה
+   יפיל כל יצירת משתמש. הדגל הוא אותו דפוס בדיוק כמו `TB_KV_LEGACY_WRITE`
+   ביומן: כל עוד הוא `true` העמודה עדיין נכתבת, וכיבויו הוא הצעד שאחרי
+   `migrations/0007`. ⛔ **האימות כבר אינו נשען עליה בשום מסלול** — היא
+   נכתבת ואינה נקראת, וזה מה שהופך את המחיקה לבטוחה. */
+var G_PLAINTEXT_LEGACY_WRITE = true;
+
 function passFields(pass) {
   return gMakePassFp(pass).then(function (made) {
-    return made
-      ? { password: pass, pass_salt: made.salt, pass_fp: made.fp }
-      : { password: pass, pass_salt: null, pass_fp: null };
+    var out = made ? { pass_salt: made.salt, pass_fp: made.fp }
+                   : { pass_salt: null, pass_fp: null };
+    if (G_PLAINTEXT_LEGACY_WRITE) out.password = pass;
+    return out;
   });
 }
 
@@ -3521,39 +3551,13 @@ function mirrorUserByName(username) {
 // גזירת טביעה מהסיסמה שכבר יושבת בענן.
 // ⚠️ טבלה בלי העמודות (המיגרציה טרם הורצה) מחזירה שגיאה שנבלעת — זהו אחד
 // ממסלולי הדילוג השקטים המכוונים.
-var _gFpBackfillDone = false;
-function gBackfillPassFp() {
-  if (_gFpBackfillDone) return Promise.resolve(0);
-  if (!sb || !navigator.onLine) return Promise.resolve(0);
-  if (!state.user || state.user.role !== 'owner') return Promise.resolve(0);
-  _gFpBackfillDone = true;
-  return withTimeout(sb.from('g_users').select('id,password').is('pass_fp', null))
-    .then(function (res) {
-      if (!res || res.error || !Array.isArray(res.data) || !res.data.length) return 0;
-      var rows = res.data, i = 0, done = 0;
-      function step() {
-        if (i >= rows.length) return Promise.resolve(done);
-        var r = rows[i++];
-        if (!r || !r.password) return step();
-        return gMakePassFp(r.password).then(function (made) {
-          if (!made) return done;          // אין crypto — אין טעם להמשיך בלולאה
-          return withTimeout(sb.from('g_users')
-            .update({ pass_salt: made.salt, pass_fp: made.fp }).eq('id', r.id))
-            .then(function (up) {
-              if (up && up.error) console.warn('[pass-fp] עדכון נכשל למשתמש', r.id, up.error.message);
-              else done++;
-              return step();
-            });
-        });
-      }
-      return step();
-    })
-    .then(function (n) {
-      if (n) { console.log('[pass-fp] הושלמו טביעות ל-' + n + ' משתמשים'); syncNow(); }
-      return n;
-    })
-    .catch(function (e) { console.warn('[pass-fp] השלמה נכשלה:', e && e.message); return 0; });
-}
+// ---- ⛔ השלמת הטביעות הוסרה (סבב 40) ----
+// `gBackfillPassFp` גזרה טביעה למשתמש שאין לו אחת, מתוך הסיסמה הגלויה
+// שבענן. ⛔ היא הוסרה מפני ש**אין לה עוד מה לעשות**, וזה נמדד ולא הונח:
+// המשתמש היחיד ב-`g_users` מחזיק `pass_salt` ו-`pass_fp` באורך 64 (נמדד
+// ב-`SELECT` בלבד, 2026-08-19). ⛔ ומעבר לכך היא הייתה **הקורא האחרון של
+// הסיסמה הגלויה לצורך גזירה** — המסלול היחיד שהיה נשבר ברגע שהעמודה
+// תימחק. משתמש חדש מקבל טביעה ב-`writeUser`, ליד הסיסמה.
 
 function markSVG(cls) {
   return '<svg class="' + cls + '" viewBox="0 0 100 100" aria-hidden="true">' +
@@ -3607,8 +3611,20 @@ function doLogin() {
     .then(ok)
     .then(function (rows) {
       var u = rows && rows[0];
-      if (!u || String(u.password) !== String(password)) throw new Error('bad');
+      if (!u) throw new Error('bad');
       if (!u.active) throw new Error('inactive');
+      // ⭐ סבב 40 — ההשוואה היא מול **הטביעה** ולא מול הטקסט הגלוי. עד
+      // הסבב הזה ישב כאן `String(u.password) !== String(password)`, כלומר
+      // `g_users.password` הייתה **המפתח שפותח את הכניסה** — וה-RLS כאן
+      // הוא `using (true)` ומפתח ה-anon יושב ב-`index.html` הציבורי.
+      // ⛔ ההחלטה «סיסמה גלויה בענן» בוטלה ב-2026-08-19 בהחלטת המנהל.
+      return gVerifyOffline(u, password).then(function (v) {
+        if (v === 'no-crypto') throw new Error('no-crypto');
+        if (v !== 'ok') throw new Error('bad');
+        return u;
+      });
+    })
+    .then(function (u) {
       state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
       lsSet(SESSION_KEY, JSON.stringify(state.user));
       // ⭐ סבב 26 — הנתיב החלקי. השורה הזו כבר בידינו מהכניסה, ולכן אין
@@ -3618,8 +3634,6 @@ function doLogin() {
       // ⛔ `u` מכיל `password` (ה-`select` הוא `*`) — `usersCacheSave`
       // מסננת אותו, וזו בדיוק הסיבה שהיא הנתיב היחיד.
       try { usersCacheSave(u); } catch (e) { console.warn('[users] cache', e); }
-      // השלמת טביעות למשתמשים קיימים — מקוון, ובעלים בלבד. מדלג בשקט אחרת.
-      try { gBackfillPassFp(); } catch (e) { console.warn('[pass-fp]', e); }
       return boot();
     })
     .catch(function (e) {
@@ -4866,12 +4880,16 @@ var ACTIONS = {
     // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
     //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
     runSave(el, function () {
-      return withTimeout(sb.from('g_users').select('id,password').eq('id', state.user.id).limit(1))
+      // ⭐ סבב 40 — אימות הסיסמה הנוכחית מול הטביעה; הטקסט הגלוי אינו נשלף.
+      return withTimeout(sb.from('g_users').select('id,active,pass_salt,pass_fp').eq('id', state.user.id).limit(1))
         .then(function (res) {
           if (res && res.error) throw res.error;
           var u = res && Array.isArray(res.data) && res.data[0];
-          if (!u || String(u.password) !== String(cur)) throw new Error('הסיסמה הנוכחית שגויה');
-          return passFields(p1);
+          if (!u) throw new Error('הסיסמה הנוכחית שגויה');
+          return gVerifyOffline(u, cur).then(function (v) {
+            if (v !== 'ok') throw new Error('הסיסמה הנוכחית שגויה');
+            return passFields(p1);
+          });
         })
         .then(function (pf) { return writeUser(state.user.id, pf).then(warnIfNoFp); });
     }, 'הסיסמה עודכנה');
