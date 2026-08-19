@@ -27,9 +27,7 @@ import { fileURLToPath } from 'node:url';
 const APP = {
   app: 'gius',
   /* חריגות מנומקות — קובץ/תיקייה שקיימים כאן ולא באחיות, עם הסיבה. */
-  rootExtra: {
-    '.nojekyll': 'הגשת קבצים שמתחילים בנקודה ב-GitHub Pages — חסר-נזק, נשאר גם אחרי הסרת .well-known בסבב 33',
-  },
+  rootExtra: {},
   toolsExtra: {
     'gen-icons.mjs': 'מחולל האייקונים (PWA + APK) — פרטי ל-gius; באחיות האייקונים נגזרים מקובצי מאסטר גרפיים',
   },
@@ -41,7 +39,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /* הסט הקנוני המשותף — זהה בארבעת הריפו. */
 const DIRS = ['.github', 'android', 'icons', 'migrations', 'signing', 'tools'];
-const ROOT_FILES = ['CLAUDE.md', 'CONTEXT.md', 'README.md',
+const ROOT_FILES = ['.nojekyll', 'CLAUDE.md', 'CONTEXT.md', 'README.md',
                     'index.html', 'manifest.json', 'sw.js'];
 const CHECKERS = ['check-js.mjs', 'check-structure.mjs', 'check-status-area.mjs',
                   'check-docs.mjs', 'check-comments.mjs', 'check-capabilities.mjs',
