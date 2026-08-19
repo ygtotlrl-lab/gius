@@ -13,10 +13,12 @@ android {
         // The TWA that PWABuilder built is versionCode 1. Anything installing
         // over it has to be higher.
         // 3 = סבב 40 — המעטפת הוקשחה (setAllowFileAccess/setAllowContentAccess)
-        // ויושרה ל-javadoc של שלוש האחיות. ⛔ כל שינוי תחת android/ מחייב
-        // קידום כאן, ו-tools/test_round40_gradle.mjs אוכף זאת מול origin/main.
-        versionCode 3
-        versionName "3.0"
+        // ויושרה ל-javadoc של שלוש האחיות.
+        // 4 = סבב 41 — הסרת ה-FileProvider היתום וחילוץ המעטפת לתבנית משותפת.
+        // ⛔ כל שינוי תחת android/ מחייב קידום כאן, ו-tools/test_round40_gradle.mjs
+        // אוכף זאת מול origin/main.
+        versionCode 4
+        versionName "4.0"
     }
 
     buildTypes {
@@ -31,6 +33,8 @@ android {
     }
 }
 
-dependencies {
-    implementation 'androidx.core:core:1.13.1'
-}
+// ⛔ אין תלויות, בכוונה (סבב 41): `androidx.core` ישבה כאן רק בשביל
+// ה-FileProvider שהועתק מתבנית yoman — ונמדד שאין לו אף קורא (אפס
+// `getUriForFile`, אפס `androidx` ב-MainActivity, ואין `navigator.share`
+// בדף). ההכרזה, `file_paths.xml` והתלות הוסרו יחד. ⚠️ ליומן לבדה יש
+// `androidx.webkit`+`androidx.core`, מפני שרק לה יש גשר שיתוף חי.

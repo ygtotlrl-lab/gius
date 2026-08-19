@@ -26,7 +26,7 @@ WebView ועובדות) לבין gius (TWA, נחסמה).
 | **Package ID** | `com.gius.app` — זהה ל-TWA שהוא מחליף (חובה, אחרת זו אפליקציה נפרדת) |
 | **שם** | גיוס |
 | **טוען** | `https://ygtotlrl-lab.github.io/gius/` — מהרשת, לא מנכסים מוטבעים |
-| **versionCode** | 2 (ה-TWA היה 1; חייב להיות גבוה יותר כדי להתקין מעליו) |
+| **versionCode** | 4 — קודם בסבב 41. 3 = סבב 40, 2 = המעטפת הראשונה של WebView; ה-TWA היה 1, וכל התקנה מעליו חייבת להיות גבוהה יותר |
 | **minSdk / targetSdk** | 21 / 34 |
 | **WebView** | JavaScript, DOM storage (localStorage — שם יושב ה-session), DB |
 | **קישורי `tel:`** | נמסרים למערכת (חיוג לתורם). כל `http`/`https` נשאר בתוך המעטפת |

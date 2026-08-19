@@ -30,15 +30,11 @@
             </intent-filter>
         </activity>
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
+        <!-- ⛔ אין כאן FileProvider (סבב 41) — הוא הועתק בשעתו מתבנית yoman
+             יחד עם המעטפת, אבל ל-gius אין גשר שיתוף ואין קורא: נמדד ב-2026-08-19
+             אפס `getUriForFile`, אפס `androidx` ואפס `navigator.share` בקוד.
+             ההכרזה, `res/xml/file_paths.xml` ו-`androidx.core:core` הוסרו יחד
+             באותו קומיט — הסרת אחד מהם בלבד שוברת את ה-APK בהתקנה. -->
 
     </application>
 </manifest>
