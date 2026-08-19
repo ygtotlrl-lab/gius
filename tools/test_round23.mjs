@@ -65,7 +65,9 @@ const NAMES_FN = [
 ];
 const NAMES_VAR = [
   'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_PREFIX',
-  'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE'
+  'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE',
+  /* ⛔ דגל נתיב-החזרה של הסיסמה הגלויה (סבב 40). */
+  'G_PLAINTEXT_LEGACY_WRITE'
 ];
 
 /* ── הרתמה ─────────────────────────────────────────────────────────────── */
@@ -338,8 +340,17 @@ console.log('\n▶ ח. אינווריאנטות במקור עצמו');
   const WU_CODE = WU.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   ok('writeUser אינו מסמן ⏳ — מה שכבר בענן אינו ממתין', !/markLocal|pendMark/.test(WU_CODE));
   ok('writeUser נכשל ברעש בלי רשת', /!navigator\.onLine\) return Promise\.reject/.test(WU));
-  ok('gBackfillPassFp מותנית ב-owner', /_gFpBackfillDone[\s\S]{0,400}?role !== 'owner'/.test(SRC));
-  ok('gBackfillPassFp מותנית ברשת', /_gFpBackfillDone[\s\S]{0,400}?navigator\.onLine/.test(SRC));
+  /*  ⚠️ **שתי הטענות האלה התהפכו בסבב 40, במכוון.** עד אז הן אכפו
+   *  ש-`gBackfillPassFp` מותנית ב-owner וברשת; מסבב 40 הן אוכפות
+   *  ש**היא אינה קיימת**. ⛔ זו אינה ריכוך אלא הפוכה: כל עוד הפונקציה
+   *  בקוד, יש מסלול ששולף את `g_users.password` כדי לגזור ממנה טביעה —
+   *  כלומר הקורא האחרון של הסיסמה הגלויה, וזה שהיה נשבר ברגע שהעמודה
+   *  תימחק. ⚠️ ההסרה נשענת על מדידה: המשתמש היחיד בטבלה מחזיק
+   *  `pass_salt` ו-`pass_fp` (`SELECT` בלבד, 2026-08-19).            */
+  ok('⛔ gBackfillPassFp הוסרה (סבב 40)', !/function\s+gBackfillPassFp/.test(SRC));
+  ok('⛔ ואין לה אף אתר קריאה', !/gBackfillPassFp\s*\(/.test(SRC));
+  ok('⛔ ואין יותר שאילתה ששולפת את הסיסמה כדי לגזור ממנה טביעה',
+     SRC.indexOf("select('id,password')") === -1);
   // ⚠️ **תבנית ולא מספר קבוע** (תוקן בסבב 26). הטענה המקורית קיבעה
   // `gius-v11`, ולכן היא הייתה **נכשלת על כל קידום עתידי** — כלומר
   // חוסמת בדיוק את מה שכלל ברזל 9 מחייב. זו אותה תקלה שכבר נמדדה כאן

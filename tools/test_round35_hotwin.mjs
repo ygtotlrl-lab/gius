@@ -26,9 +26,13 @@ const APP = {
     [/if \(!PASS_SIX_RE\.test\(p1\)\) \{ toast\(MSG_PASS_SIX, 'bad'\); return; \}/, 'שש ספרות נאכפות על הסיסמה החדשה בלבד'],
   ],
   mutations: [
-    ["if (!u || String(u.password) !== String(cur)) throw new Error('הסיסמה הנוכחית שגויה');",
+    /*  ⭐ סבב 40 — המוטציה כוונה מחדש. עד אז היא ביטלה השוואה מול
+     *  `u.password` (הטקסט הגלוי); מסבב 40 האימות הוא מול הטביעה, ולכן
+     *  היא מבטלת את הכרעת `gVerifyOffline`. ⛔ אותה טענה בדיוק — «ביטול
+     *  אימות הסיסמה הנוכחית נתפס» — רק שהמנגנון שמתחתיה הוחלף.       */
+    ["if (v !== 'ok') throw new Error('הסיסמה הנוכחית שגויה');",
      "if (false) throw new Error('הסיסמה הנוכחית שגויה');",
-     /if \(!u \|\| String\(u\.password\) !== String\(cur\)\) throw new Error/,
+     /if \(v !== 'ok'\) throw new Error\('הסיסמה הנוכחית שגויה'\)/,
      'מוטציה שמבטלת את אימות הסיסמה הנוכחית נתפסת'],
   ],
 };
