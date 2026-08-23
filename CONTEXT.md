@@ -94,4 +94,41 @@ gius יושבת ב-`zrftjkghhjhqzopvdzou`. לכן `kv_backup` ו-`sync_log` נו
 - RLS פתוח (`using (true)`) — החלטה מודעת ומתועדת; ההרשאות נאכפות בשכבת
   האפליקציה. ר' כלל ברזל 7 שב-CLAUDE.md.
 
+<!-- SHARED:start id="context-smali-scope" -->
+## תיקון URL ב-APK קיים ובנוי (בלי מקור) — smali בלבד
+
+⚠️ **הפרק הזה רלוונטי רק ל-APK ישן שנבנה לפני `android/`.** בנייה רגילה היום
+היא מ-`android/` דרך `.github/workflows/build-apk.yml`, והמעטפת טוענת מהרשת —
+ולכן אין בה URL שצריך לתקן.
+⛔ **smali בלבד — לא binary patch.** עריכה בינארית של ה-APK שוברת את החתימה
+ואינה ניתנת לאימות, ⛔ והחתימה מחדש היא במפתח הקבוע של הריפו בלבד — ר' הפרק
+«חתימת APK» ב-CLAUDE.md.
+<!-- SHARED:end -->
+
+```bash
+apktool d <app>.apk -o /tmp/gius_work -f
+# תקן את ה-URL ב-MainActivity.smali ו-MainActivity$2.smali
+rm -rf /tmp/gius_work/build          # חובה לפני בנייה חוזרת
+apktool b /tmp/gius_work -o built.apk
+zipalign -f 4 built.apk aligned.apk
+apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
+  --ks-pass pass:gius123 --key-pass pass:gius123 --out output.apk aligned.apk
+```
+
+⚠️ **ה-APK הישן כאן היה TWA** שנבנה ב-PWABuilder, ⛔ ואין לבנות אותו מחדש
+(ר' «מעטפת ה-APK» ב-CLAUDE.md). ⭐ וה-keystore הוחלף בסבב 39 — כל חתימה היא
+ב-`signing/gius.keystore` בלבד.
+
+<!-- SHARED:start id="context-cache-apk" -->
+### ⚠️ Cache APK — כלל זהב
+
+שם קובץ חוזר נתפס במטמון — של הדפדפן, של מנהל ההורדות ושל המכשיר — והמשתמש
+מתקין שוב את הבנייה **הקודמת** בלי לדעת. ⛔ **תמיד שם חדש בכל בנייה**, עם
+חותמת זמן:
+<!-- SHARED:end -->
+
+```bash
+TS=$(date +%s) && apksigner sign ... --out gius-${TS}.apk
+```
+
 הכללים המחייבים והתיעוד המלא — ב-[CLAUDE.md](CLAUDE.md).
