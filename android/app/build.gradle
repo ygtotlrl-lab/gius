@@ -17,8 +17,10 @@ android {
         // 4 = סבב 41 — הסרת ה-FileProvider היתום וחילוץ המעטפת לתבנית משותפת.
         // ⛔ כל שינוי תחת android/ מחייב קידום כאן, ו-tools/test_round40_gradle.mjs
         // אוכף זאת מול origin/main.
-        versionCode 4
-        versionName "4.0"
+        // 5 = סבב 45 — יישור `AndroidManifest.xml` (`configChanges` לסופרסט, והסרת ה-`<queries>` היתום)
+        // ואכיפת חתימה על החלק המשותף של המניפסט ושל קובץ הבנייה.
+        versionCode 5
+        versionName "5.0"
     }
 
     buildTypes {
