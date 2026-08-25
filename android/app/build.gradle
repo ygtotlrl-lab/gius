@@ -7,11 +7,11 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.gius.app"   // must stay identical to the PWABuilder TWA it replaces
+        applicationId "com.gius.app"   // ⛔ אין לשנות (סבב 46ב) — מזהה אחר הוא אפליקציה אחרת
         minSdk 21
         targetSdk 34
-        // The TWA that PWABuilder built is versionCode 1. Anything installing
-        // over it has to be higher.
+        // ⛔ versionCode לעולם אינו יורד (סבב 46ב) — מספר נמוך ממה
+        // שמותקן במכשיר חוסם את העדכון.
         // 3 = סבב 40 — המעטפת הוקשחה (setAllowFileAccess/setAllowContentAccess)
         // ויושרה ל-javadoc של שלוש האחיות.
         // 4 = סבב 41 — הסרת ה-FileProvider היתום וחילוץ המעטפת לתבנית משותפת.
@@ -19,8 +19,10 @@ android {
         // אוכף זאת מול origin/main.
         // 5 = סבב 45 — יישור `AndroidManifest.xml` (`configChanges` לסופרסט, והסרת ה-`<queries>` היתום)
         // ואכיפת חתימה על החלק המשותף של המניפסט ושל קובץ הבנייה.
-        versionCode 5
-        versionName "5.0"
+        // 6 = סבב 46ב — היפוך ברירת המחדל בקובצי התצורה: חתימה חסרת-גשר
+        // על המניפסט ועל קובץ הבנייה, וחתימה אחת לשני ה-workflows.
+        versionCode 6
+        versionName "6.0"
     }
 
     buildTypes {
