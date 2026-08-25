@@ -1345,7 +1345,10 @@ window.techInfoMount = techInfoMount;
 /* ── SYNC_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
 var SYNC_CFG = {
   // `_lastPullOk` נכתב אחרי משיכה מלאה מוצלחת של כל שבע הטבלאות.
-  lastSync: function () { return _lastPullOk || 0; },
+  // ⚠️ סבב 51 — חותמת **תצוגה**: הגדולה מבין «משיכה מלאה שהצליחה» לבין
+  //    «שיחה מוצלחת עם הענן» (קריאת החותמת בפולינג). ⛔ עֵד הפינוי נשאר
+  //    `_lastPullOk` לבדו (סבב 51) — ר' `PL_CFG.ok`.
+  lastSync: function () { return Math.max(_lastPullOk || 0, _lastSeenOk || 0); },
   // כאן הסנכרון גם מרנדר מחדש: מסך ההגדרות של gius נבנה מהמצב שבזיכרון.
   sync: function () { return syncNow().then(function () { render(); }); }
 };
@@ -2245,6 +2248,143 @@ function rtyBoot() {
 }
 /* ═══════════════ סוף מודול הניסיון החוזר ════════════════════════════════ */
 
+/* ── PL_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────────── */
+/* ⚠️ בגיוס החותמת היא שורת `g_config` שמפתחה `G_STAMP_KEY`. היא **מוחרגת
+   מהמראה** ב-`stripRows` — שורת מטא אינה רשימה, ⛔ ודחיפת-מצב שלה
+   (סבב 51) הייתה מחזירה לענן חותמת ישנה שיושבת במכשיר הזה.
+   ⚠️ `every` הוא 5,000 ולא 3,000 — זה המרווח שנמדד כאן (`FLUSH_MS` הישן),
+   ⛔ ואין ליישר אותו לשלוש האחיות (סבב 51): המרווח הוא פרמטר מדוד.
+   ⚠️ `ok()` **אינו** נוגע ב-`_lastPullOk`: הוא עֵד המשיכה המלאה, והוא
+   שנכתב ל-`SYNCED_KEY` ומשמש את הפינוי. ⛔ הזנתו משיחה מוצלחת שאינה
+   משיכה (סבב 51) הייתה הופכת חותמת תצוגה לעֵד פינוי. */
+var PL_CFG = {
+  every:  5000,
+  active: function () { return !!(state && state.user && sb); },
+  seen:   function () { return _gSeenTs; },
+  note:   function (ts) { _gSeenTs = ts; },
+  ok:     function () { _lastSeenOk = Date.now(); },
+  stamp:  function (ts) {
+    return sb.from('g_config').upsert({ key: G_STAMP_KEY, value: ts }, { onConflict: 'key' });
+  },
+  pull:   function () { return syncNow(); },
+  remote: function () {
+    return withTimeout(sb.from('g_config').select('value').eq('key', G_STAMP_KEY).maybeSingle())
+      .then(function (r) {
+        if (!r || r.error) return { ok: false, ts: null };
+        return { ok: true, ts: r.data ? plNum(r.data.value) : null };
+      }, function () { return { ok: false, ts: null }; });
+  },
+};
+/* ═══ מנגנון המשיכה — מודול משותף (סבב 51) ════════════════════════════════
+   ⭐ **המשיכה מותנית בחותמת שינוי אחת, ואינה רצה בכל תקתוק.** הפולינג
+   קורא שורה אחת מהענן, ומושך את הנתונים **רק כשהיא התקדמה** מעבר למה
+   שהמכשיר כבר ראה.
+   ⚠️ **הרקע נמדד בסבב 46ב:** yoman ו-hanhala כבר עבדו כך, ואילו schar
+   משכה **ארבע טבלאות ב-`select('*')` בכל תקתוק** (כל שלוש שניות) ו-gius
+   משכה משיכה מלאה כל עשרים שניות — עלות שגדלה עם הנתונים ואינה קונה
+   דבר, מפני שברוב התקתוקים אין שום שינוי בענן.
+   ⛔ **החותמת נכתבת בכל מסלול שמשנה נתונים בענן (סבב 51) — אחרת השינוי
+   נשאר בלתי-נראה למכשירים האחרים לנצח.** זו הנקודה השברירית היחידה
+   כאן: מסלול כתיבה חדש שאינו מקדם את החותמת יוצר עדכון שקט שאיש אינו
+   רואה, ולכן הקידום יושב במשפך הכתיבה שכבר קיים בכל אפליקציה.
+   ⛔ **נפילה-חזרה כשאין חותמת בענן (סבב 51) — `PL_FALLBACK_MS`.** התקנה
+   טרייה, או מסד שמעולם לא נכתבה אליו חותמת, מחזירים `ts === null`;
+   במצב כזה מושכים מלא אחת לדקה ולא נעצרים. שער שנשען על שורה שאינה
+   קיימת הוא שער שמפסיק לסנכרן בשקט.
+   ⛔ **כשל בקריאת החותמת אינו ראיה לכלום (סבב 51)** — אין רשת, השאילתה
+   זרקה או החזירה שגיאה ⇒ לא מושכים, ולא מקדמים את «מה שכבר נראה».
+   משיכה או דילוג על סמך כשל הם הסקה ולא ראיה (כלל ברזל 6).
+   ⛔ **אין ריצה כפולה (סבב 51)** — `_plBusy` חוסם תקתוק חדש כל עוד הקודם
+   רץ. בלעדיו רשת איטית הייתה ערמת משיכות מלאות זו על זו.
+   ⚠️ **המצב «מה כבר נראה» חי באפליקציה ולא במודול** (`PL_CFG.seen`
+   ו-`PL_CFG.note`) — לכל אחת מהארבע יש כבר משתנה כזה, שנכתב גם ממסלולי
+   הכתיבה שלה. ⛔ עותק שני שלו במודול (סבב 51) היה יוצא מסנכרון מול
+   המקור בשקט, וזה בדיוק «מקור אמת שני».
+   ⛔ **המרווח הוא פרמטר ולא קבוע (סבב 51)** — `PL_CFG.every` נמדד מכל
+   אפליקציה ואינו נבחר כאן: 3,000 מ״ש בשלוש, 5,000 ב-gius.
+   ⛔ **נקודת ההפעלה היחידה היא `plBoot()` מפונקציית העלייה (סבב 51)** —
+   זו שקוראת גם ל-`lsBoot()`, ל-`pendBoot()`, ל-`bkBoot()` ול-`rtyBoot()`.
+   מנגנון שתלוי במסלול אחר נעצר בדיוק כשהמסלול ההוא אינו רץ (כלל ברזל 12).
+   ה-API: `plBoot`/`plStop` · `plTick` · `plTouch` · `plNum` · `plBusy` ·
+   `plState`. מעליו `PL_CFG` — הדבר היחיד שנבדל בין האפליקציות.
+   ═══════════════════════════════════════════════════════════════════════ */
+var PL_FALLBACK_MS = 60000;   // אין שורת חותמת בענן ⇒ משיכה מלאה אחת לדקה
+var _plTimer = null, _plBusy = false, _plFullAt = 0, _plWired = false;
+
+/* חותמת מהענן: מספר, מחרוזת JSON של מספר, או כל דבר אחר ⇒ 0. */
+function plNum(v) {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === 'number') return Math.floor(v) || 0;
+  try { var p = JSON.parse(v); if (typeof p === 'number') return Math.floor(p) || 0; } catch (e) { }
+  return parseInt(v, 10) || 0;
+}
+
+function plBusy() { return _plBusy; }
+function _plSeen() { try { return plNum(PL_CFG.seen()); } catch (e) { return 0; } }
+function plState() { return { busy: _plBusy, armed: !!_plTimer, fullAt: _plFullAt, seen: _plSeen() }; }
+
+/* ⭐ נקראת אחרי כל כתיבה מוצלחת לענן. היא מקדמת קודם את «מה שכבר נראה»
+   מקומית — כדי שהתקתוק הבא לא ימשוך מלא בגלל השינוי של המכשיר הזה
+   עצמו — ורק אז כותבת את החותמת לענן. ⛔ כשל בכתיבת החותמת אינו מפיל
+   את הכתיבה שקדמה לה (סבב 51) — הנתון כבר בענן, והמכשירים האחרים
+   יראו אותו בשינוי הבא או בנפילה-חזרה. */
+function plTouch(ts) {
+  var t = plNum(ts) || Date.now();
+  try { PL_CFG.note(t); } catch (e) { }
+  try {
+    return Promise.resolve(PL_CFG.stamp(t)).then(function () { return t; }, function () { return t; });
+  } catch (e) { return Promise.resolve(t); }
+}
+
+function _plFull() {
+  var done = function (v) { _plBusy = false; return v; };
+  try {
+    return Promise.resolve(PL_CFG.pull()).then(
+      function () { _plFullAt = Date.now(); return done(true); },
+      function () { return done(false); });
+  } catch (e) { return Promise.resolve(done(false)); }
+}
+
+function plTick() {
+  if (_plBusy) return Promise.resolve(false);
+  var live; try { live = !!PL_CFG.active(); } catch (e) { live = false; }
+  if (!live) return Promise.resolve(false);
+  _plBusy = true;
+  var done = function (v) { _plBusy = false; return v; };
+  var p;
+  try { p = Promise.resolve(PL_CFG.remote()); } catch (e) { p = Promise.reject(e); }
+  return p.then(function (r) {
+    if (!r || !r.ok) return done(false);
+    try { PL_CFG.ok(); } catch (e) { }
+    if (r.ts === null || r.ts === undefined) {
+      if (Date.now() - _plFullAt >= PL_FALLBACK_MS) return _plFull();
+      return done(false);
+    }
+    var ts = plNum(r.ts);
+    if (ts > _plSeen()) { try { PL_CFG.note(ts); } catch (e) { } return _plFull(); }
+    return done(false);
+  }, function () { return done(false); });
+}
+
+function plStop() { if (_plTimer) { clearInterval(_plTimer); _plTimer = null; } }
+
+function plBoot() {
+  if (!_plWired) {
+    _plWired = true;
+    try { window.addEventListener('online', function () { plTick(); }); }
+    catch (e) { console.warn('[pl] wiring', e); }
+  }
+  if (_plTimer) return false;
+  var ms = 0;
+  try { ms = parseInt(PL_CFG.every, 10) || 0; } catch (e) { ms = 0; }
+  if (!ms) ms = 3000;
+  _plTimer = setInterval(function () { plTick(); }, ms);
+  plTick();
+  return true;
+}
+/* ═══════════════ סוף מנגנון המשיכה ══════════════════════════════════════ */
+
+
 
 /* ── HW_CFG — הדבר היחיד שנבדל בין האפליקציות ───────────────────────────── */
 // ⭐ גבול השנה אומץ מ-schar-limud (סבב 35) — ספטמבר–אוגוסט, אותה נוסחה
@@ -2708,8 +2848,9 @@ function ok(res) {
 var MIRROR_PREFIX = 'g_mirror_';
 var OUTBOX_KEY = 'g_outbox';
 var SYNCED_KEY = 'g_synced_at';
-var PULL_MS = 20000;     // משיכה מלאה
-var FLUSH_MS = 5000;     // ריקון התור (לא נוגע ברשת כשהתור ריק)
+// ⛔ `PULL_MS` ו-`FLUSH_MS` הוסרו (סבב 51) — הם היו המרווחים של הפולינג
+//    שמשך מלא ודחף, ואין להם יותר אף קורא (נמדד בארבעת הריפו). המרווח
+//    היחיד שנשאר הוא `PL_CFG.every`, והוא 5,000 — אותו ערך שנמדד כאן.
 
 // `strip` — עמודות שלא נשמרות במראה. הסיסמאות של **כל** המשתמשים בטקסט גלוי
 // ב-localStorage של כל מכשיר הן חשיפה חדשה וגרועה יותר מזו שכבר מתועדת
@@ -2732,8 +2873,13 @@ function tableMeta(t) {
 }
 
 var MIRROR = {};
-var _syncTimer = null, _flushTimer = null, _pulling = false;
+var _syncWired = false, _flushTimer = null, _pulling = false;
 var _netWarned = false, _lastPullOk = 0;
+// ⭐ סבב 51 — מצב מנגנון המשיכה. `_gSeenTs` היא החותמת האחרונה שהמכשיר
+//    ראה, ו-`_lastSeenOk` היא חותמת **תצוגה** בלבד (שיחה מוצלחת עם הענן).
+//    ⛔ אין להזין מהן את עֵד הפינוי (סבב 51) — ר' `PL_CFG` ו-`SYNCED_KEY`.
+var _gSeenTs = 0, _lastSeenOk = 0;
+var G_STAMP_KEY = 'g_last_changed';
 
 /* ------------------------------------------------------------- מזהים */
 // מזהה נוצר בצד הלקוח כדי שהכתיבה תעבוד בלי רשת. הסכימה משתמשת ב-uuid
@@ -2777,6 +2923,11 @@ function stripCols(t, row) {
 }
 function stripRows(t, rows) {
   var m = tableMeta(t);
+  // ⭐ סבב 51 — שורת החותמת (`G_STAMP_KEY`) אינה רשימה ואינה יורדת למראה.
+  //    ⛔ אין לוותר על הסינון הזה (סבב 51) — שורה שנכנסת למראה נדחפת
+  //    חזרה ע"י `pushTable`, והמכשיר היה כותב לענן חותמת ישנה משלו
+  //    ומשתיק בכך שינוי אמיתי שמכשיר אחר הרגע דחף.
+  if (t === 'g_config') rows = (rows || []).filter(function (r) { return !(r && String(r.key) === G_STAMP_KEY); });
   if (!m.strip) return rows;
   return (rows || []).map(function (r) { return stripCols(t, r); });
 }
@@ -3116,6 +3267,10 @@ function writeUser(id, row) {
       var saved = (res && Array.isArray(res.data) && res.data[0]) || body;
       usersCacheSave(saved);
       applyMirrorToState();
+      // ⭐ סבב 51 — `g_users` היא אחת משבע הטבלאות שנמשכות, ולכן גם כתיבה
+      //    אליה חייבת לקדם את החותמת. ⛔ אחרת משתמש חדש (סבב 51) לא היה
+      //    מגיע למכשיר אחר עד לשינוי נתונים אחר לגמרי.
+      plTouch();
       // "ללא טביעה" משני מקורות: העמודות עדיין לא קיימות (`_noFp`), או
       // שהגזירה עצמה נכשלה ולכן `pass_fp` נכתב `null` לצד סיסמה חדשה.
       var noFp = !!(res && res._noFp) ||
@@ -3184,12 +3339,17 @@ function pushRow(t, row) {
 function pushTable(t, remoteByKey) {
   var rows = dirtyRows(t, remoteByKey);
   if (!rows.length) return Promise.resolve([]);
+  // ⭐ סבב 51 — «באמת נכתב משהו לענן» נמדד כאן: שורה שנדחפה בהצלחה מקדמת
+  //    את החותמת. ⛔ בלי הקידום (סבב 51) הדחיפה נשארת בלתי-נראית לכל
+  //    מכשיר אחר לנצח — הם מושכים רק כשהיא מתקדמת.
+  var wrote = false;
   var still = [], i = 0;
   function step() {
     if (i >= rows.length) return Promise.resolve(still);
     var row = rows[i++], pk = rowPendingKey(t, row);
     return pushRow(t, row).then(function () {
       pendClear(pk);
+      wrote = true;
       return step();
     }, function (e) {
       // כשל רשת אינו ראיה לכלום ⇒ נשאר מסומן וננסה שוב. כשל סמכותי
@@ -3200,7 +3360,7 @@ function pushTable(t, remoteByKey) {
       return step();
     });
   }
-  return step();
+  return step().then(function (res) { if (wrote) plTouch(); return res; });
 }
 
 function pushDirty(remote) {
@@ -3372,18 +3532,16 @@ function schedulePush() {
   if (_flushTimer) return;
   _flushTimer = setTimeout(function () { _flushTimer = null; syncNow(); }, 400);
 }
+// ⛔ **אין כאן יותר פולינג שדוחף ואין משיכה מלאה תקופתית** (סבב 51) — עד
+//    כאן רץ `setInterval` שמשך את שבע הטבלאות כל עשרים שניות ודחף בכל
+//    פעם שהיה משהו ממתין, בלי שום ראיה שמשהו בענן השתנה.
+//    מה שמכסה את זה במלואו: הדחיפה **מונעת-האירוע** (`schedulePush()`
+//    אחרי כל כתיבה מקומית, ו-`online` כאן), מודול הניסיון החוזר של
+//    סבב 44 שנדרך מ-`rtyNote()` ורץ רק כשהתור אינו ריק, והמשיכה
+//    המותנית של `plBoot()` — שקוראת שורה אחת ומושכת רק כשהיא התקדמה.
 function startSync() {
-  if (_syncTimer) return;
-  _syncTimer = setInterval(function () {
-    if (!state.user) return;
-    // ⚠️ הפולינג כאן **דוחף** ולא רק מושך, ולכן הוא עובר דרך `rtyGate()`
-    //    (סבב 44): בזמן נסיגה אחרי כישלון חוזר הוא מדלג, והמודול הוא
-    //    שמחליט מתי לנסות שוב. ⛔ בלי השער הזה הנסיגה הייתה חסרת משמעות —
-    //    הפולינג היה מציף את השרת כל חמש שניות בדיוק כשהוא נפל.
-    if (rtyGate()) return;
-    // יש משהו שממתין ⇒ מסנכרנים מיד; אחרת מספיקה משיכה תקופתית.
-    if (pendCount() > 0 || Date.now() - _lastPullOk >= PULL_MS) syncNow();
-  }, FLUSH_MS);
+  if (_syncWired) return;
+  _syncWired = true;
   window.addEventListener('online', function () { syncNow(); });
 }
 
@@ -5188,6 +5346,8 @@ function start() {
   try { bkBoot(); } catch (e) { console.warn('[bk] bkBoot', e); }
   // ניסיון חוזר בסנכרון (סבב 44) — נקודת ההפעלה היחידה של המודול.
   try { rtyBoot(); } catch (e) { console.warn('[rty] rtyBoot', e); }
+  // מנגנון המשיכה (סבב 51) — נקודת ההפעלה היחידה של המודול.
+  try { plBoot(); } catch (e) { console.warn('[pl] plBoot', e); }
   try { hwBoot(); } catch (e) { console.warn('[hw] hwBoot', e); }
 
   var saved = null;
