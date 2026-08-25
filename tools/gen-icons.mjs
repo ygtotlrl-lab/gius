@@ -130,7 +130,6 @@ const files = [
   ['icon-512.png', 512, 0],
   ['icon-maskable-512.png', 512, 0.2],
   ['apple-touch-icon.png', 180, 0],
-  ['favicon-64.png', 64, 0],
 ];
 for (const [name, size, pad] of files) {
   writeFileSync(join(OUT, name), drawIcon(size, pad));
