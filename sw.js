@@ -5,7 +5,7 @@
  *  ⚠️ מסבב 42ג כל הלוגיקה יושבת במודול המשותף שלמטה — זהה בית-לבית
  *  בארבע האפליקציות. ⛔ מה שנבדל יושב ב-SW_CFG בלבד.
  */
-const CACHE_NAME = 'gius-v27';
+const CACHE_NAME = 'gius-v28';
 
 // קבצים מקומיים.
 var CORE = [
@@ -14,7 +14,6 @@ var CORE = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/favicon-64.png'
 ];
 
 // ⚠️ גרסאות נעוצות במדויק — ⛔ לעולם לא major צף (כלל קריטי 2).
