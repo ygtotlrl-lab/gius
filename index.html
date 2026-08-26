@@ -508,7 +508,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 var SUPABASE_URL = 'https://zrftjkghhjhqzopvdzou.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnRqa2doaGpocXpvcHZkem91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDc4MzQsImV4cCI6MjEwMDg4MzgzNH0.DWcW3o4Y9Is3jGx1frHkrUz7cc045aH1m1uKsrwRhIA';
 
-var SESSION_KEY = 'gius.session';
 var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
 var STAGE_COLOR = { 'הכנה': 'var(--muted)', 'הרצה': 'var(--brand)', 'השלמה': 'var(--ok)', 'חסומה': 'var(--bad)' };
 var EPS = 0.005;
@@ -2248,6 +2247,236 @@ function rtyBoot() {
 }
 /* ═══════════════ סוף מודול הניסיון החוזר ════════════════════════════════ */
 
+/* ── LK_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────────── */
+/* ⚠️ `active()` הוא «יש משתמש מחובר», ו-`lock()` הוא מסלול היציאה של
+   האפליקציה. ⛔ אין להוסיף כאן הודעה משלה (סבב 52) — חלון האזהרה של
+   הליבה הוא ההודעה, ותוספת פר-אפליקציה הייתה מחזירה בדיוק את ההפרש
+   שהסבב הזה סגר. */
+var LK_CFG = {
+  active: function () { return sessActive(); },
+  lock:   function () { logout(); },
+};
+/* ═══ נעילת חוסר-פעילות — מודול משותף (סבב 52) ════════════════════════════
+   ⭐ **מה נשמר כאן:** משתמש שהתחבר ואינו נוגע במסך מקבל אחרי ארבע דקות
+   חלון אזהרה, ואחרי חמש הוא מוצא החוצה. זו שכבת ההגנה על מכשיר משותף
+   שנשאר פתוח על שולחן — לא על גניבת סיסמה.
+
+   ⛔ **הערכים אינם ברירת מחדל אלא מדידה (סבב 52)** — חמש וארבע הדקות
+   נמדדו ב-hanhala-ruchanit, שם המנגנון חי מאז ההקמה, וסבב 52 העתיק
+   אותם כלשונם. ⛔ אין לשנות אותם באפליקציה אחת בלבד: מנגנון שהוכרז
+   משותף ונבדל בערך הוא בדיוק «קיים רק באחת, בשקט» (כלל ברזל 14).
+
+   ⛔ **חלון האזהרה נבנה כאן ולא במסמך (סבב 52)** — עד הסבב הזה הוא היה
+   סימון HTML+CSS פר-אפליקציה, כלומר שלוש גרסאות של אותו רכיב. הליבה
+   בונה אותו בעצמה, בדיוק כמו סרגל ה-⏳, וזה מה שמאפשר לה להישאר זהה
+   בית-לבית בשלוש האפליקציות שיש בהן כניסה.
+
+   ⚠️ **`lkReset()` היא הידית שקוד האפליקציה רשאי לקרוא לה** — מסלול
+   הכניסה המוצלחת, שם המשתמש מתחיל להיות פעיל. מאזיני הפעילות שבתוך
+   הליבה קוראים לה מעצמם, ולכן אין צורך לפזר קריאות נוספות.
+   ⛔ **נקודת ההפעלה היחידה היא `lkBoot()` מפונקציית העלייה (סבב 52)** —
+   זו שקוראת גם ל-`lsBoot()` ול-`pendBoot()`. מנגנון בטיחות שתלוי במסלול
+   אחר נעצר בדיוק כשהמסלול ההוא אינו רץ (כלל ברזל 12).
+
+   ⚠️ **הנעילה אינה תפוגת סשן** — היא נמדדת מהפעולה האחרונה ולא מרגע
+   הכניסה, ולכן משתמש שעובד ברציפות אינו מוצא החוצה באמצע עבודה.
+
+   ה-API: `lkBoot` · `lkReset` · `lkStop` · `lkShown` · `lkState`.
+   מעליו `LK_CFG` — הדבר היחיד שנבדל בין האפליקציות.
+   ═══════════════════════════════════════════════════════════════════════ */
+var LK_LOCK_MS = 5 * 60 * 1000;   // נעילה אחרי חמש דקות ללא פעילות
+var LK_WARN_MS = 4 * 60 * 1000;   // אזהרה דקה לפניה
+var LK_EVENTS  = ['touchstart', 'click', 'keydown', 'scroll'];
+var _lkLockT = null, _lkWarnT = null, _lkWired = false;
+
+function _lkActive() {
+  try { return !!(typeof LK_CFG === 'object' && LK_CFG && LK_CFG.active && LK_CFG.active()); }
+  catch (e) { return false; }
+}
+function _lkStyle() {
+  if (typeof document === 'undefined' || document.getElementById('lk-css')) return;
+  var s = document.createElement('style');
+  s.id = 'lk-css';
+  s.textContent =
+    '#lk-warn{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9998;' +
+    'display:flex;align-items:center;justify-content:center;font:inherit}' +
+    '#lk-warn.lk-hidden{display:none}' +
+    '#lk-warn .lk-box{background:#fff;color:#1a2340;border-radius:14px;' +
+    'padding:28px 24px;text-align:center;max-width:280px;width:90%}' +
+    '#lk-warn .lk-ico{font-size:2rem;margin-bottom:6px}' +
+    '#lk-warn .lk-ttl{font-weight:700;font-size:1.05rem;margin-bottom:8px}' +
+    '#lk-warn .lk-txt{font-size:.88rem;opacity:.75;margin-bottom:18px;line-height:1.6}' +
+    '#lk-warn button{width:100%;border:0;border-radius:10px;padding:11px 16px;' +
+    'font:inherit;font-weight:600;cursor:pointer;background:#1a3a6b;color:#fff}';
+  (document.head || document.documentElement).appendChild(s);
+}
+function _lkWarnEl() {
+  if (typeof document === 'undefined' || !document.body) return null;
+  var el = document.getElementById('lk-warn');
+  if (el) return el;
+  _lkStyle();
+  el = document.createElement('div');
+  el.id = 'lk-warn';
+  el.className = 'lk-hidden';
+  var box = document.createElement('div');
+  box.className = 'lk-box';
+  var ico = document.createElement('div');
+  ico.className = 'lk-ico';
+  ico.textContent = '⚠️';
+  var ttl = document.createElement('div');
+  ttl.className = 'lk-ttl';
+  ttl.textContent = 'האפליקציה תינעל';
+  var txt = document.createElement('div');
+  txt.className = 'lk-txt';
+  txt.textContent = 'דקה של חוסר פעילות נותרה. לחץ להמשך.';
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'אני כאן ✋';
+  btn.onclick = function () { lkReset(); };
+  box.appendChild(ico); box.appendChild(ttl); box.appendChild(txt); box.appendChild(btn);
+  el.appendChild(box);
+  document.body.appendChild(el);
+  return el;
+}
+function lkShown() {
+  var el = (typeof document !== 'undefined') ? document.getElementById('lk-warn') : null;
+  return !!(el && el.className.indexOf('lk-hidden') < 0);
+}
+function _lkHide() { var el = _lkWarnEl(); if (el) el.className = 'lk-hidden'; }
+function _lkShow() { var el = _lkWarnEl(); if (el) el.className = ''; }
+
+// איפוס המונה. ⛔ הסדר קבוע: מסתירים, מנקים, ורק אז דורכים מחדש — דריכה
+// לפני הניקוי הייתה משאירה טיימר ישן חי ונועלת מוקדם.
+function lkReset() {
+  _lkHide();
+  if (_lkLockT) { clearTimeout(_lkLockT); _lkLockT = null; }
+  if (_lkWarnT) { clearTimeout(_lkWarnT); _lkWarnT = null; }
+  if (!_lkActive()) return false;
+  _lkWarnT = setTimeout(function () { _lkShow(); }, LK_WARN_MS);
+  _lkLockT = setTimeout(function () {
+    _lkHide();
+    try { if (typeof LK_CFG === 'object' && LK_CFG && LK_CFG.lock) LK_CFG.lock(); }
+    catch (e) { console.warn('[lk] lock', e); }
+  }, LK_LOCK_MS);
+  return true;
+}
+
+// עצירה מלאה — מסלול היציאה. ⛔ אינה מסתמכת על `lkReset` (סבב 52): שם
+// הדריכה מחדש מותנית ב-`LK_CFG.active()`, ומסלול יציאה שמנקה את המשתמש
+// **אחרי** הקריאה היה נשאר עם טיימר דרוך שנועל את מסך הכניסה.
+function lkStop() {
+  if (_lkLockT) { clearTimeout(_lkLockT); _lkLockT = null; }
+  if (_lkWarnT) { clearTimeout(_lkWarnT); _lkWarnT = null; }
+  _lkHide();
+}
+
+function lkBoot() {
+  if (!_lkWired) {
+    _lkWired = true;
+    try {
+      for (var i = 0; i < LK_EVENTS.length; i++) {
+        document.addEventListener(LK_EVENTS[i], function () {
+          if (_lkActive()) lkReset();
+        }, { passive: true });
+      }
+    } catch (e) { console.warn('[lk] wiring', e); }
+  }
+  return lkReset();
+}
+
+function lkState() {
+  return { armed: !!_lkLockT, warned: !!_lkWarnT, shown: lkShown(),
+           lockMs: LK_LOCK_MS, warnMs: LK_WARN_MS };
+}
+/* ═══════════════ סוף מודול נעילת חוסר-הפעילות ═══════════════════════════ */
+
+/* ── SESS_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
+/* ⚠️ `legacy` הוא רשימת מפתחות ה-localStorage שהאפליקציה **שמרה בהם סשן
+   עד סבב 53** ואינה שומרת בהם עוד. ⛔ אין למחוק שם מהרשימה גם אחרי
+   שהמנגנון הישן ירד מהקוד (סבב 53) — המפתח עצמו עדיין יושב על הדיסק של
+   כל מכשיר שכבר נכנסו בו פעם, והוא מחזיק `id`, `username` ו-`role`. */
+var SESS_CFG = {
+  legacy: ['gius.session'],
+};
+
+/* ═══ מודל הסשן — מודול משותף (סבב 53) ════════════════════════════════════
+   ⭐ **המשתמש המחובר חי בזיכרון בלבד, ואינו יורד לדיסק לעולם.** כלומר כל
+   טעינה מחדש של הדף דורשת כניסה. זו הכרעת המנהל מ-2026-08-26, והיא יישרה
+   את שלוש האפליקציות שיש בהן כניסה לדפוס שכבר היה ב-hanhala-ruchanit
+   מאז ההקמה.
+
+   ⛔ **אין לשמור את המשתמש ב-localStorage (סבב 53)** — סשן שנשמר בלי
+   תפוגה הוא כניסה קבועה על מכשיר משותף: מי שמחזיק את המכשיר מחזיק את
+   החשבון, גם חודש אחרי. ⚠️ ולא זו בלבד — סשן ששמר גם `role` הפך את
+   ההרשאה עצמה לערך שיושב על הדיסק וניתן לעריכה ביד.
+
+   ⚠️ **וזו אינה כפילות של נעילת חוסר-הפעילות (סבב 52).** הנעילה נמדדת
+   מהפעולה האחרונה ומוציאה החוצה משתמש ששכח את המסך פתוח; ⛔ היא אינה
+   עוזרת למי שסגר את הלשונית וחזר אליה מחר, מפני שהטיימר מת יחד עם הדף.
+   המודול הזה סוגר בדיוק את החור ההוא.
+
+   ⚠️ **הכניסה האופליין אינה נשענת על המודול הזה** — היא מוכרעת מול
+   `pass_fp` שבמראת המשתמשים (כלל ברזל 10 סעיף 4). ⛔ ולכן הסרת שמירת
+   הסשן אינה פוגעת בה: מי שנכנס בלי רשת ממשיך להיכנס בלי רשת, והשינוי
+   היחיד הוא שהוא מקליד סיסמה גם אחרי רענון.
+
+   ⛔ **`sessBoot()` מנקה את שרידי הסשן הישנים מהמכשיר (סבב 53)** — מפתח
+   שנכתב בגרסה קודמת אינו נעלם מאליו, והוא נשאר קריא בדפדפן לנצח. הניקוי
+   אידמפוטנטי, נכשל-סגור באחסון חסום, ונרשם ביומן הפינוי רק כשנמחק משהו
+   בפועל.
+
+   ה-API: `sessBoot` · `sessSet`/`sessGet`/`sessClear` · `sessActive` ·
+   `sessState`. מעליו `SESS_CFG` — הדבר היחיד שנבדל בין האפליקציות.
+   ═══════════════════════════════════════════════════════════════════════ */
+var _sessUser = null;
+var _sessBooted = false;
+
+function sessSet(u) { _sessUser = u || null; return _sessUser; }
+function sessGet() { return _sessUser; }
+function sessClear() { _sessUser = null; }
+function sessActive() { return !!_sessUser; }
+
+/*  רשימת מפתחות השריד, נכשלת-סגור על תצורה חסרה. */
+function _sessLegacy() {
+  try {
+    var k = (typeof SESS_CFG === 'object' && SESS_CFG && SESS_CFG.legacy) || [];
+    return Object.prototype.toString.call(k) === '[object Array]' ? k : [];
+  } catch (e) { return []; }
+}
+
+/*  ניקוי שרידי הסשן; מחזירה את מספר המפתחות שנמחקו בפועל.
+    ⚠️ הקריאה קודמת למחיקה בכוונה — כדי שהיומן יירשם רק כשבאמת היה שם
+    משהו, ולא בכל עלייה של כל מכשיר. */
+function _sessPurge() {
+  var keys = _sessLegacy(), gone = [];
+  for (var i = 0; i < keys.length; i++) {
+    try {
+      if (lsGet(keys[i], null) === null) continue;
+      lsRemove(keys[i]);
+      gone.push(keys[i]);
+    } catch (e) { /* אחסון חסום — לא נוגעים, וננסה שוב בעלייה הבאה */ }
+  }
+  if (gone.length) { try { lsLog('sess-purge', gone.join(',')); } catch (e) { } }
+  return gone.length;
+}
+
+/*  מצב המודול — לבדיקות ולאבחון. ⛔ אינו מחזיר את אובייקט המשתמש עצמו
+    (סבב 53) — צרכן שהיה מקבל אותו יכול היה לכתוב אותו לדיסק, וזה בדיוק
+    מה שהמודול בא למנוע. */
+function sessState() {
+  return { active: !!_sessUser, booted: _sessBooted, legacy: _sessLegacy().slice() };
+}
+
+/*  ⛔ נקודת ההפעלה היחידה — פונקציית העלייה של האפליקציה (כלל ברזל 12),
+    זו שקוראת גם ל-`lsBoot()` ול-`pendBoot()`. */
+function sessBoot() {
+  if (_sessBooted) return 0;
+  _sessBooted = true;
+  return _sessPurge();
+}
+/* ═══════════════ סוף מודול הסשן ═════════════════════════════════════════ */
+
+
 /* ── PL_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────────── */
 /* ⚠️ בגיוס החותמת היא שורת `g_config` שמפתחה `G_STAMP_KEY`. היא **מוחרגת
    מהמראה** ב-`stripRows` — שורת מטא אינה רשימה, ⛔ ודחיפת-מצב שלה
@@ -2259,7 +2488,7 @@ function rtyBoot() {
    משיכה (סבב 51) הייתה הופכת חותמת תצוגה לעֵד פינוי. */
 var PL_CFG = {
   every:  5000,
-  active: function () { return !!(state && state.user && sb); },
+  active: function () { return sessActive() && !!sb; },
   seen:   function () { return _gSeenTs; },
   note:   function (ts) { _gSeenTs = ts; },
   ok:     function () { _lastSeenOk = Date.now(); },
@@ -2800,7 +3029,11 @@ function _randDeviceId() {
    הבא היא נעלמת בלי סימן. הכתיבה עוברת ב-`insert`/`update`/`softDelete`.
    ══════════════════════════════════════════════════════════════════════════ */
 var state = {
-  user: null,
+  /* ⭐ `state.user` הוא מעכשיו חלון אל מודול הסשן המשותף (סבב 53) — הערך
+     עצמו יושב שם, בזיכרון בלבד. ⛔ אין להחזיר כאן שדה רגיל: שדה שכל אחד
+     יכול להציב בו ערך הוא בדיוק המסלול שדרכו הסשן חזר לדיסק. */
+  get user() { return sessGet(); },
+  set user(v) { sessSet(v); },
   screen: 'home',
   month: monthOf(todayISO()),
   config: { categories: [], causes: [], domains: [] },
@@ -3904,7 +4137,6 @@ function doLogin() {
     })
     .then(function (u) {
       state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
-      lsSet(SESSION_KEY, JSON.stringify(state.user));
       // ⭐ סבב 26 — הנתיב החלקי. השורה הזו כבר בידינו מהכניסה, ולכן אין
       // סיבה שהחלפת משתמש במכשיר תמתין למשיכה מלאה מהענן כדי שהוא ייכנס
       // למראה. ⚠️ **אחרי `state.user`, לא לפניו** — התיקון של סבב 23:
@@ -3939,7 +4171,6 @@ function doLoginOffline(username, password, btn) {
     if (verdict === 'no-crypto') { loginError(MSG_OFF_NO_CRYPTO); return; }
     if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
     state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
-    lsSet(SESSION_KEY, JSON.stringify(state.user));
     boot();
     toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', 'ok');
   }, function (e) {
@@ -3950,8 +4181,8 @@ function doLoginOffline(username, password, btn) {
 }
 
 function logout() {
-  lsRemove(SESSION_KEY);
-  state.user = null;
+  lkStop();
+  sessClear();
   state.screen = 'home';
   state.donorId = null;
   renderLogin();
@@ -5291,6 +5522,9 @@ $('#ask').addEventListener('click', function (e) { if (e.target === this) closeA
    שהמסך עולה מהדיסק לפני שנגעו ברשת (כלל ברזל 6, סעיף 2).
    ══════════════════════════════════════════════════════════════════════════ */
 function boot() {
+  // נעילת חוסר-פעילות (סבב 52) — נקודת הדריכה מחדש אחרי כניסה מוצלחת;
+  // שני מסלולי הכניסה (מקוון ואופליין) מגיעים לכאן, ולכן זו נקודה אחת.
+  try { lkReset(); } catch (e) { console.warn('[lk] lkReset', e); }
   $('#app').innerHTML = '<div id="boot"><span class="spin"></span></div>';
   // ⭐ קריאה מהעותק המקומי **ראשונה**, לפני כל נגיעה ברשת. זה כל ההבדל
   //    בין אפליקציה שעובדת אופליין לאחת שרק מציגה ספינר.
@@ -5329,6 +5563,8 @@ function start() {
   // עמידות אחסון (סבב 11): מדידה + פינוי יזום, ואז טעינת המראה — בסדר הזה,
   // כדי שהמשיכה שאחריה תכתוב לאחסון שכבר יש בו מקום.
   try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
+  // מודל הסשן (סבב 53) — נקודת ההפעלה היחידה של המודול.
+  try { sessBoot(); } catch (e) { console.warn('[sess] sessBoot', e); }
   mirrorLoad();
   // סימוני "ממתין לסנכרון" (סבב 12) — נטענים מהדיסק לפני הרינדור הראשון,
   // כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
@@ -5349,41 +5585,20 @@ function start() {
   // מנגנון המשיכה (סבב 51) — נקודת ההפעלה היחידה של המודול.
   try { plBoot(); } catch (e) { console.warn('[pl] plBoot', e); }
   try { hwBoot(); } catch (e) { console.warn('[hw] hwBoot', e); }
+  // נעילת חוסר-פעילות (סבב 52) — נקודת ההפעלה היחידה של המודול.
+  try { lkBoot(); } catch (e) { console.warn('[lk] lkBoot', e); }
 
-  var saved = null;
-  try { saved = JSON.parse(lsGet(SESSION_KEY, 'null')); } catch (_) { saved = null; }
-  // ⚠️ **הסשן אינו מחזיק סיסמה** — רק `id`/`username`/`full_name`/`role`.
-  //    שכפול סיסמה ל-localStorage של כל מכשיר הוא בדיוק מה ש-`strip`
-  //    ו-`pass_fp` באו למנוע. ⛔ אין להוסיף אותה (סבב 23) — «כדי לאמת מחדש מקומית»:
-  //    האימות המקומי הוא מול הטביעה, ב-`gVerifyOffline`.
-  if (saved && saved.id) {
-    state.user = saved;
-    boot();                 // ← לא ממתינים לאימות מהרשת; עולים מיד
-    revalidateSession(saved);
-  } else {
-    renderLogin();
-  }
-}
-
-// אימות הסשן מול הטבלה — ברקע, ואחרי שהאפליקציה כבר עלתה.
-// ⚠️ יציאה מהחשבון **רק על תשובה סמכותית** (המשתמש לא קיים או הושבת). כשל
-//    רשת אינו ראיה לכלום, ואם הוא היה מנתק — האפליקציה הייתה זורקת החוצה כל
-//    משתמש אופליין, כלומר מבטלת את כל העבודה האופליין. אותו כלל בדיוק מתועד
-//    ב-hanhala-ruchanit ("כניסה אופליין", סעיף 7).
-function revalidateSession(saved) {
-  if (!navigator.onLine) return;
-  withTimeout(sb.from('g_users').select('*').eq('id', saved.id).limit(1)).then(ok)
-    .then(function (rows) {
-      var u = rows && rows[0];
-      if (!u || !u.active) { toast('המשתמש הושבת — נדרשת כניסה מחדש', 'bad'); logout(); return; }
-      state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
-      lsSet(SESSION_KEY, JSON.stringify(state.user));
-      // סבב 26: אותו נתיב חלקי, ואחרי קביעת המשתמש הפעיל — כאן זה תופס
-      // גם טביעה שהושלמה בענן מאז הכניסה האחרונה במכשיר הזה.
-      try { usersCacheSave(u); } catch (e) { console.warn('[users] cache', e); }
-      render();
-    })
-    .catch(function (e) { console.warn('[session] אימות נדחה (רשת) — ממשיכים מקומית', e); });
+  // ⛔ **אין כאן שחזור סשן (סבב 53)** — כל עלייה מתחילה במסך הכניסה, גם
+  //    כשהמשתמש נכנס לפני דקה. עד הסבב הזה `gius.session` שוחזר
+  //    מ-localStorage **בלי תפוגה**, כלומר מי שנכנס פעם אחת נשאר מחובר
+  //    לנצח על אותו מכשיר. ⛔ אין להחזיר (סבב 53): על מכשיר משותף זו
+  //    כניסה קבועה, והסשן הוריד לדיסק גם את **ההרשאה** (`role`).
+  //    ⚠️ הכניסה האופליין לא נפגעה — היא מוכרעת ב-`gVerifyOffline` מול
+  //    `pass_fp` שבמראה, ולא מול הסשן.
+  // ⛔ `revalidateSession` ירדה איתו (סבב 53) — היא רצה **רק** מכאן,
+  //    ותפקידה היה לאמת סשן משוחזר. אין סשן משוחזר, אין מה לאמת:
+  //    הכניסה עצמה כבר קוראת את השורה מהענן ומרעננת את המראה.
+  renderLogin();
 }
 
 /* ── service worker + באנר העדכון ──────────────────────────────────────────
@@ -5431,6 +5646,18 @@ function registerSW() {
         if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdate(nw);
       });
     });
+
+    // ⭐ בדיקת עדכון תקופתית (סבב 53) — `reg.update()` כל חצי שעה, בדיוק
+    //    כמו בשלוש האחיות. ⚠️ **בלעדיה לשונית שנשארת פתוחה אינה לומדת
+    //    לעולם שיצאה גרסה חדשה**, מפני שהדפדפן בודק את `sw.js` בניווט
+    //    בלבד — והבאנר שקיים כאן פשוט לא היה מוצג.
+    // ⛔ אין בכך שינוי להכרעה של gius שאין `skipWaiting` (סבב 27): הבדיקה
+    //    רק **מגלה** גרסה חדשה ומציגה את הבאנר; המשתמש עדיין מחליט מתי.
+    function checkForUpdate() {
+      try { reg.update().catch(function () {}); } catch (e) {}
+    }
+    checkForUpdate();
+    setInterval(checkForUpdate, 30 * 60 * 1000);
   }).catch(function (e) { console.warn('SW registration failed', e); });
 }
 

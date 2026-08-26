@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/* ── APP — הדבר היחיד שנבדל בין הריפו (gius) ───────────────────────────── */
+/* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 /* ⭐ gius חיה בפרויקט Supabase **נפרד** (`zrftjkghhjhqzopvdzou`), ולכן יש לה
    מיגרציה משלה — ואין לה אחיות בפרויקט: `sisterKeys` ריקה, והשקילות מול
    `BK_CFG.sources()` היא מלאה ודו-כיוונית. */
@@ -30,6 +30,7 @@ const APP = {
   migration: 'migrations/0005_backup_retention_cron.sql',
   migrationDoc: 'gius/migrations/0005_backup_retention_cron.sql',
 };
+/* ── סוף APP ───────────────────────────────────────────────────────────── */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = readFileSync(join(ROOT, 'index.html'), 'utf8');

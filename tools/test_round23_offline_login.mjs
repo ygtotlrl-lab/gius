@@ -79,8 +79,9 @@ function makeCtx(opts = {}) {
     TextEncoder,
     crypto: opts.noCrypto ? undefined : webcrypto,
     MIRROR: {},
+    /*  ⭐ סבב 53 — המשתמש המחובר חי בזיכרון; הרתמה מדמה את מאפיין הגישה
+     *  שב-`state`, ⛔ ואין כאן `SESSION_KEY` כי אין סשן על הדיסק. */
     state: { user: null },
-    SESSION_KEY: 'gius.session',
     MSG_BAD_LOGIN: '❌ שם משתמש או סיסמה שגויים',
     // חוזה `lsSetArray`/`lsSet` כפי שהמודול המשותף מקיים אותו: מחרוזת
     // JSON תחת מפתח. הבדיקה «אין password בדיסק» סורקת את `store` הזה.
@@ -177,14 +178,13 @@ console.log('\n▶ ג. ⭐ כניסה אופליין למשתמש שאינו ה�
     Object.assign({ _pass: '135790' }, USER_A),
     Object.assign({ _pass: '654321' }, USER_B)
   ]);
-  // הסשן שעל המכשיר הוא של A — B מעולם לא נכנס כאן.
-  h.store['gius.session'] = JSON.stringify(USER_A);
+  // ⭐ סבב 53 — אין סשן על המכשיר; B נכנס מול הטביעה שבמראה בלבד.
   await h.ctx.doLoginOffline('yossi', '654321', null);
   eq('אין הודעת שגיאה', h.calls.loginError.length, 0);
   eq('המשתמש המחובר הוא B', h.ctx.state.user && h.ctx.state.user.id, 'bbb');
   eq('התפקיד נלקח מהמראה', h.ctx.state.user && h.ctx.state.user.role, 'manager');
   eq('boot() נקראה פעם אחת', h.calls.boot, 1);
-  eq('הסשן נכתב מחדש ל-B', JSON.parse(h.store['gius.session']).id, 'bbb');
+  ok('⛔ ואין מפתח סשן על הדיסק (סבב 53)', !('gius.session' in h.store));
   ok('נאמר למשתמש שזו כניסה אופליין', h.calls.toast.some(t => /אופליין/.test(t)), JSON.stringify(h.calls.toast));
 
   // וגם A עצמו ממשיך לעבוד — הכניסה אינה "אחד בלבד" בכיוון ההפוך.
