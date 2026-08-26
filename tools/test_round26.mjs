@@ -75,7 +75,6 @@ function makeCtx(opts = {}) {
     crypto: opts.noCrypto ? undefined : webcrypto,
     MIRROR: {},
     state: { user: null },
-    SESSION_KEY: 'gius.session',
     MSG_BAD_LOGIN: '❌ שם משתמש או סיסמה שגויים',
     lsSetArray(key, arr) { store[key] = JSON.stringify(arr); return true; },
     // ⭐ סבב 35: שער הדיסק של החלון החם עוטף את כתיבות המראה — כאן שקוף
@@ -250,11 +249,11 @@ async function run() {
     ok('⭐ doLogin מרענן את המראה', iCache !== -1);
     ok('⭐ והרענון אחרי קביעת המשתמש הפעיל, לא לפניו', iUser !== -1 && iCache > iUser);
 
-    const reval = body('revalidateSession');
-    const rUser = reval.indexOf('state.user =');
-    const rCache = reval.indexOf('usersCacheSave(');
-    ok('revalidateSession מרענן גם הוא', rCache !== -1);
-    ok('וגם שם — אחרי קביעת המשתמש הפעיל', rUser !== -1 && rCache > rUser);
+    /*  ⭐ סבב 53 — `revalidateSession` ירדה יחד עם שחזור הסשן: היא רצה
+     *  רק ממנו, ואין עוד סשן משוחזר לאמת. ⛔ הטענה הפוכה מעכשיו. */
+    ok('⛔ `revalidateSession` אינה בקוד (סבב 53)',
+      !/function\s+revalidateSession\s*\(/.test(SRC));
+    ok('⛔ ואין קבוע `SESSION_KEY`', !/SESSION_KEY/.test(SRC));
 
     // ⛔ אין נתיב שלישי: כל כתיבה למראת המשתמשים עוברת דרך המודול.
     ok('⛔ writeUser כותב דרך usersCacheSave', body('writeUser').includes('usersCacheSave('));
