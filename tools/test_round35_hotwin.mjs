@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 
-/* ── APP — הדבר היחיד שנבדל בין הריפו (gius) ───────────────────────────── */
+/* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
   checks: [
     [/function gAcadYearOf\(/, 'גבול-השנה של schar אומץ (gAcadYearOf)'],
@@ -36,6 +36,7 @@ const APP = {
      'מוטציה שמבטלת את אימות הסיסמה הנוכחית נתפסת'],
   ],
 };
+/* ── סוף APP ───────────────────────────────────────────────────────────── */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = readFileSync(join(ROOT, 'index.html'), 'utf8');
