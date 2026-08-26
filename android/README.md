@@ -31,7 +31,7 @@ WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואי�
 | **versionCode** | 7 — קודם בסבב 58 (הסרת `FLAG_ACTIVITY_NEW_TASK` ממסירת יעד חיצוני ל-`ACTION_VIEW`). 6 = סבב 46ב (היפוך ברירת המחדל בקובצי התצורה). 5 = סבב 45, 4 = סבב 41, 3 = סבב 40, 2 = המעטפת הראשונה של WebView. ⛔ versionCode לעולם אינו יורד — מספר נמוך ממה שמותקן במכשיר חוסם את העדכון |
 | **minSdk / targetSdk** | 21 / 34 |
 | **WebView** | JavaScript, DOM storage (localStorage — שם יושב ה-session), DB |
-| **קישורי `tel:`** | נמסרים למערכת (חיוג לתורם). כל `http`/`https` נשאר בתוך המעטפת |
+| **סכמות שאינן http** | נמסרות למערכת ב-`ACTION_VIEW`. כל `http`/`https` נשאר בתוך המעטפת |
 | **בורר קבצים** | `WebChromeClient.onShowFileChooser` מחובר ל-`<input type=file>` |
 | **אופליין** | ה-service worker של האתר. המעטפת מציגה דף שגיאה בעברית רק בהפעלה ראשונה בלי רשת |
 
