@@ -4452,7 +4452,6 @@ function viewDonorCard() {
       '<button class="btn sm" data-act="donor-edit" data-id="' + d.id + '">עריכה</button>' +
       '<button class="btn soft sm" data-act="vip-toggle" data-id="' + d.id + '">' +
         (d.is_vip ? '☆ הסרת VIP' : '★ סימון VIP') + '</button>' +
-      (d.phone ? '<a class="btn ghost sm" href="tel:' + esc(d.phone) + '">📞 חיוג</a>' : '') +
       '<button class="btn ghost sm" data-act="txn-new" data-donor="' + d.id + '">＋ תנועה</button>' +
       '<button class="btn ghost sm" data-act="pledge-new" data-donor="' + d.id + '">＋ התחייבות</button>' +
       '<button class="btn danger sm" data-act="donor-del" data-id="' + d.id + '">מחיקה</button>' +
@@ -5464,9 +5463,10 @@ var ACTIONS = {
    `render()`, ומאזין שנקשר לכפתור מת עם הכפתור. יוצא הדופן היחיד הוא
    `wireKanban()` — הגרירה דורשת מאזינים על הכרטיס עצמו — ולכן היא נקראת
    מחדש בכל רינדור של מסך המשימות.
-   ⚠️ `if (el.tagName === 'A') return;` בקליק אינו קישוט: `tel:` של תורם
-   הוא `<a>` בתוך אזור עם `data-act`, ו-`preventDefault` עליו היה הופך את
-   כפתור החיוג לכפתור שאינו עושה כלום. */
+   ⚠️ `if (el.tagName === 'A') return;` בקליק אינו קישוט: `<a>` שיושב בתוך
+   אזור עם `data-act` מקבל `preventDefault` ומאבד את הניווט הטבעי שלו,
+   כלומר הופך לקישור שאינו עושה כלום. ⛔ אין למחוק את השורה כשאין `<a>`
+   כזה בקוד (סבב 58) — היא הגנה שנכשלת-סגור, והעלות שלה אפס. */
 document.addEventListener('click', function (e) {
   var el = e.target.closest('[data-act]');
   if (!el) return;
