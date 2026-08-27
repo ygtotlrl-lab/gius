@@ -385,12 +385,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .filters > *{min-width:0}
 .filters .fld{margin:0}
 .filters .inp{width:100%;min-width:0}
-.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
-.chips button{
-  background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 13px;
-  font-size:13px;font-weight:650;cursor:pointer;color:var(--muted)
-}
-.chips button.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+
 
 /* ================================================================= misc */
 .kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:14px}
@@ -3435,7 +3430,7 @@ function syncPull() {
 
 // ⚠️ **משיכה קודמת לדחיפה** — הפוך מהסדר של התור. בדחיפת-מצב אי אפשר לדעת
 // מה "מקומי וחדש יותר" בלי לראות קודם מה יש בענן, ודחיפה עיוורת הייתה
-// מחזירה לחיים רשומה שנמחקה במכשיר אחר. `_pushT0` נלקח לפני המשיכה: רשומה
+// מחזירה לחיים רשומה שנמחקה במכשיר אחר. `t0` נלקח לפני המשיכה: רשומה
 // שנכתבה תוך כדי הסנכרון לא נבדקה ולא נדחפה, ולכן הסימון שלה חייב להישאר.
 function syncNow() {
   var t0 = Date.now();
@@ -3644,7 +3639,7 @@ function emptyBox(icon, text) {
    כל השאר.
 
    **הפתרון — אותו מנגנון של hanhala-ruchanit (סבב 22 שם).** לכל משתמש
-   נשמרים `pass_salt` + `pass_fp`: טביעת PBKDF2-SHA256 ב-100,000 סיבובים,
+   נשמרים `pass_salt` + `pass_fp`: טביעת PBKDF2-SHA256 ב-`G_PASS_ITER` סיבובים,
    עם **מלח אקראי פר-משתמש**. הטביעה יורדת למכשיר; הסיסמה — לעולם לא.
    מכשיר שאבד חושף טביעות, לא סיסמאות, וההשהיה של 100k היא מה שהופך
    ניחוש-בכוח על העותק שבדיסק ליקר גם מול סיסמה בת שש ספרות (סבב 19).
@@ -3666,7 +3661,7 @@ var G_PASS_ITER = 100000;
 var G_PASS_CTX = 'gius/g_users/v1/';
 
 // 16 בתים אקראיים כ-hex. מחזירה null כשאין crypto — והקורא **נכשל סגור**:
-// לא נשמרת טביעה, ו**גם לא נשארת טביעה ישנה** (ר' `writeUserPass`).
+// לא נשמרת טביעה, ו**גם לא נשארת טביעה ישנה** (ר' `passFields`).
 function gRandSalt() {
   try {
     if (typeof crypto === 'undefined' || !crypto || !crypto.getRandomValues) return null;
