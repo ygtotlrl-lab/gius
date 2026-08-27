@@ -3597,7 +3597,9 @@ function closeAsk(v) {
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
 function selectHTML(name, options, value, placeholder) {
-  var h = '<select class="inp" id="' + name + '">';
+  // ⛔ שם נגיש לכל בורר (סבב 67) — ה-id נגזר מהקורא ואין לו `<label>`
+  //    צמוד, ולכן ה-placeholder הוא מה שמתאר אותו למי שאינו רואה אותו.
+  var h = '<select class="inp" aria-label="' + esc(placeholder || 'בחירה') + '" id="' + name + '">';
   h += '<option value="">' + esc(placeholder || '— ללא —') + '</option>';
   for (var i = 0; i < options.length; i++) {
     var o = options[i];
@@ -4115,7 +4117,7 @@ function viewDonors() {
   var list = donorMatches(state.donorSearch);
   return '<section class="card">' +
     '<div class="addrow" style="margin:0 0 10px">' +
-      '<input class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
+      '<input aria-label="חיפוש לפי שם, טלפון או שגריר" class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
       '<button class="btn" data-act="donor-new">＋ תורם</button>' +
     '</div>' +
     '<h2>🙋 תורמים<span class="cnt">' + list.length + '</span></h2>' +
@@ -4161,7 +4163,7 @@ function viewDonorCard() {
       '<div class="kv"><span>תגיות</span><b>' + ((d.tags && d.tags.length) ? d.tags.map(function (t) { return '<span class="badge">' + esc(t) + '</span>'; }).join(' ') : '—') + '</b></div>' +
     '</div>' +
     '<label class="fld" style="margin-top:12px"><span>הערות</span>' +
-      '<textarea class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
+      '<textarea aria-label="הערות חופשיות על התורם" class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
     '<button class="btn sm" data-act="notes-save" data-id="' + d.id + '">שמירת הערות</button>' +
   '</section>';
 
@@ -4319,7 +4321,7 @@ function viewTasks() {
           (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
         '</div>' +
         '<div class="ft">' +
-          '<select data-inp="stage" data-id="' + t.id + '">' +
+          '<select data-inp="stage" aria-label="שלב המשימה" data-id="' + t.id + '">' +
             STAGES.map(function (s) {
               return '<option value="' + esc(s) + '"' + (s === t.stage ? ' selected' : '') + '>' + esc(s) + '</option>';
             }).join('') +
@@ -4458,7 +4460,7 @@ function viewSettings() {
         '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
     });
     h += '<div class="addrow">' +
-      '<input class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
+      '<input aria-label="ערך חדש" class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
       '<button class="btn sm" data-act="cfg-add" data-key="' + c.key + '">הוספה</button></div>' +
       '</div>';
   });
@@ -4507,7 +4509,7 @@ function pickerHTML(id, donorId) {
       '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
       '<button type="button" class="dp-clear" aria-label="ניקוי">✕</button>' +
     '</div>' +
-    '<input class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
+    '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
     '<div class="dp-results hidden"></div>' +
     '<div class="dp-new hidden">' +
       '<div style="font-weight:700;font-size:13px;margin-bottom:8px">תורם חדש</div>' +
@@ -4728,7 +4730,7 @@ function formTask(existing) {
     '</div>' +
     (t.log ? '<div class="fld"><span>יומן</span><pre class="log">' + esc(t.log) + '</pre></div>' : '') +
     '<label class="fld"><span>הוספה ליומן</span>' +
-      '<textarea class="inp" id="tk-log" placeholder="רישום חדש — יתווסף ליומן עם תאריך ושם…"></textarea></label>' +
+      '<textarea aria-label="רישום חדש — יתווסף ליומן עם תאריך ושם" class="inp" id="tk-log" placeholder="רישום חדש — יתווסף ליומן עם תאריך ושם…"></textarea></label>' +
     datalistHTML('dl-people', people);
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -4816,7 +4818,7 @@ function formUser(existing) {
       '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
       '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
     '</div>' +
-    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="text" inputmode="numeric" maxlength="6"></label>') +
+    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
         '<option value="manager"' + (u.role === 'manager' || !u.role ? ' selected' : '') + '>מנהל</option>' +
@@ -4861,7 +4863,7 @@ function warnIfNoFp(r) {
 
 function formPassword(u) {
   openModal('שינוי סיסמה — ' + u.full_name,
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="pass-save" data-id="' + u.id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
@@ -4876,8 +4878,8 @@ function formPassword(u) {
 function formMyPassword() {
   openModal('🔑 שינוי הסיסמה שלי',
     '<label class="fld"><span>סיסמה נוכחית *</span><input class="inp" id="mp-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>' +
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
-    '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
+    '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="my-pass-save">שמירה</button>');
   var el = $('#mp-cur'); if (el) el.focus();
@@ -5072,6 +5074,13 @@ var ACTIONS = {
     }, 'הסיסמה עודכנה');
   },
   'my-pass': function () { formMyPassword(); },
+  /*  ⛔ מלווה את המעבר ל-`type=password` (סבב 67) — שני השדות שהבעלים
+   *  קובע בהם סיסמה **לאדם אחר** אין להם שדה אימות, ולכן הסתרה בלי דרך
+   *  לראות מה הוקלד הייתה יוצרת נעילה-בחוץ שקטה במקום להסיר סיכון. */
+  'pass-eye': function (el) {
+    var f = $('#' + el.dataset.id);
+    if (f) f.type = (f.type === 'password' ? 'text' : 'password');
+  },
   'my-pass-save': function (el) {
     var cur = $('#mp-cur') ? $('#mp-cur').value : '';
     var p1 = $('#mp-new') ? $('#mp-new').value : '';
