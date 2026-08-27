@@ -87,7 +87,7 @@ function makeCtx(opts = {}) {
     // JSON תחת מפתח. הבדיקה «אין password בדיסק» סורקת את `store` הזה.
     lsSetArray(key, arr) { store[key] = JSON.stringify(arr); return true; },
     // ⭐ סבב 35: שער הדיסק של החלון החם עוטף את כתיבות המראה — כאן שקוף
-    //    בכוונה; בדיקות החלון עצמו יושבות ב-test_round35_hotwin.
+    //    בכוונה; בדיקות החלון עצמו יושבות ב-test_hotwin.
     hwDiskFilter(k, rows) { return rows; },
     hwNoteCloud() {},
     lsSet(key, v) { calls.lsSet.push(key); store[key] = String(v); return true; },
