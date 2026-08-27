@@ -3072,8 +3072,9 @@ var state = {
         לכאן לעולם: המיזוג מחזיר כל רשומה מקומית שאין לה מקבילה מרוחקת.
      2. **קריאה מהעותק בעלייה** — `boot()` מרנדר מהמראה מיד, ורק אחר כך
         מסנכרן. אין יותר ספינר תלוי-רשת.
-     3. **כתיבה מקומית-תחילה** — `insert`/`update`/`softDelete` כותבות למראה
-        ולתור היוצא (`g_outbox`) ומחזירות מיד. הרשת היא עניין של הרקע.
+     3. **כתיבה מקומית-תחילה** — `insert`/`update`/`softDelete` כותבות למראה,
+        מסמנות ⏳ ומחזירות מיד. הרשת היא עניין של הרקע. ⛔ ואין תור יוצא
+        (כלל ברזל 6) — `g_outbox` הוסר בסבב 12, וההגירה ממנו בסבב 63.
      4. **מיזוג ברמת רשומה** — `mergeRows` לפי `updated_at`; הענן מנצח
         בשוויון (דטרמיניסטי). **היעדר רשומה בענן אינו מחיקה.**
 
@@ -3094,7 +3095,6 @@ function ok(res) {
 }
 
 var MIRROR_PREFIX = 'g_mirror_';
-var OUTBOX_KEY = 'g_outbox';
 var SYNCED_KEY = 'g_synced_at';
 // ⛔ `PULL_MS` ו-`FLUSH_MS` הוסרו (סבב 51) — הם היו המרווחים של הפולינג
 //    שמשך מלא ודחף, ואין להם יותר אף קורא (נמדד בארבעת הריפו). המרווח
@@ -3533,7 +3533,7 @@ function writeUser(id, row) {
 //    לנצח — כלומר שינוי סיסמה שאינו משנה כלום מבחינת מי שמחזיק את המכשיר.
 /* ⛔ נתיב-החזרה של הסיסמה הגלויה (סבב 40) — `g_users.password` היא
    `NOT NULL` במסד, ולכן קוד שיפסיק לכתוב אליה **לפני** שהמיגרציה רצה
-   יפיל כל יצירת משתמש. הדגל הוא אותו דפוס בדיוק כמו `TB_KV_LEGACY_WRITE`
+   יפיל כל יצירת משתמש. הדגל הוא אותו דפוס בדיוק כמו דגלי נתיב-החזרה
    ביומן: כל עוד הוא `true` העמודה עדיין נכתבת, וכיבויו הוא הצעד שאחרי
    `migrations/0007`. ⛔ **האימות כבר אינו נשען עליה בשום מסלול** — היא
    נכתבת ואינה נקראת, וזה מה שהופך את המחיקה לבטוחה. */
@@ -3623,49 +3623,6 @@ function pushDirty(remote) {
     });
   }
   return step();
-}
-
-/* ── הגירה חד-פעמית מהתור היוצא ────────────────────────────────────────────
-   ⚠️ **אסור שפעולה שנרשמה אופליין תיעלם במעבר.** כל פעולה בתור כבר הוחלה
-   על המראה בזמן שנרשמה (`insert`/`update` עדכנו אותה מיד), ולכן הנתון עצמו
-   קיים — מה שחסר הוא הידיעה שהוא טרם עלה. לכן ההגירה **ממירה כל פעולה
-   לסימון ⏳**, ודחיפת-המצב הראשונה תעלה אותה.
-
-   שני שערים: רשומה שאיננה במראה (מצב שלא אמור לקרות) **משוחזרת מגוף
-   הפעולה**, והתור נמחק **רק אחרי** שהסימונים נשמרו בהצלחה. אם השמירה
-   נכשלה — התור נשאר במקומו וההגירה תנסה שוב בעלייה הבאה. */
-function migrateOutbox() {
-  var q;
-  try { q = JSON.parse(lsGet(OUTBOX_KEY, '[]')); } catch (e) { q = null; }
-  if (!Array.isArray(q)) { lsRemove(OUTBOX_KEY); return 0; }
-  if (!q.length) { lsRemove(OUTBOX_KEY); return 0; }
-  var n = 0, keys = [];
-  q.forEach(function (op) {
-    if (!op || !op.table || op.id == null) return;
-    var m = tableMeta(op.table), arr = MIRROR[op.table] || (MIRROR[op.table] = []);
-    if (!findRow(arr, m.key, op.id)) {
-      // שחזור מגוף הפעולה — עדיף רשומה חלקית על פני אובדן שקט.
-      // סבב 23: גם כאן דרך `stripCols` — תור ישן עלול להחזיק גוף פעולה עם
-      // `password` גלוי, ושחזור עיוור ממנו היה מחזיר אותו לדיסק.
-      var row = stripCols(op.table, Object.assign({}, (op.op === 'upsert' ? op.row : op.patch) || {}));
-      row[m.key] = op.id;
-      if (!row.updated_at) row.updated_at = new Date(op.ts || Date.now()).toISOString();
-      arr.push(row);
-      mirrorSave(op.table);
-    }
-    keys.push(pendRowKey(op.table, op.id));
-    n++;
-  });
-  if (keys.length) {
-    pendMarkMany(keys);
-    // אימות שהסימונים אכן נשמרו לפני שמוחקים את המקור
-    var okAll = keys.every(function (k) { return pendHas(k); });
-    if (!okAll) { console.warn('[outbox] ההגירה לא הושלמה — התור נשאר'); return 0; }
-  }
-  lsRemove(OUTBOX_KEY);
-  try { lsLog('outbox-migrate', n + ' פעולות מהתור הומרו לסימוני ⏳', 0); } catch (e) { }
-  if (n) toast('☁️ ' + n + ' פעולות שהמתינו בתור הועברו לסנכרון החדש', 'ok');
-  return n;
 }
 
 /* ── ניקוי חד-פעמי של סימוני ⏳ על `g_users` (סבב 23) ──────────────────────
@@ -5584,9 +5541,6 @@ function start() {
   // סימוני "ממתין לסנכרון" (סבב 12) — נטענים מהדיסק לפני הרינדור הראשון,
   // כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
   try { pendBoot(); } catch (e) { console.warn('[pend] pendBoot', e); }
-  // ⚠️ ההגירה מהתור רצה **אחרי** שהמראה נטענה ולפני הסנכרון הראשון —
-  // אחרת פעולה שהמתינה בתור הייתה נעלמת במעבר.
-  try { migrateOutbox(); } catch (e) { console.warn('[outbox] migrate', e); }
   // סבב 23: ניקוי סימוני ⏳ על `g_users` שנוצרו לפני `writeUser` ולא היה
   // מי שידחוף אותם — ר' ההערה על `migrateUserPend`.
   try { migrateUserPend(); } catch (e) { console.warn('[users] pend migrate', e); }
