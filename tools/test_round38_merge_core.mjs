@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
-/* ── APP — הדבר היחיד שנבדל בין הריפו (gius) ────────────────────── */
+/* ── APP — הדבר היחיד שנבדל בין הריפו (gius) ───────────────────────────── */
 const APP = {
   app: 'gius',
   names: ['rowTs', 'findRow', '_mergePick', 'mergeCore', 'mergeRows'],
@@ -103,7 +103,7 @@ assert(sb._mergePick({ t: 20, n: 'l' }, { t: 20, n: 'r' }, 'k', false, ts, null)
     '9 · `mergePair` מקבל את ההכרעה כפרמטר ואת שני הצדדים בסדר (מקומי, ענן)');
 }
 
-/* ── ג. שלושת כללי ברזל 6, דרך המעטפת האמיתית ─────────────────────────── */
+/* ── ג. שלושת כללי ברזל 6, דרך המעטפת האמיתית ──────────────────────────── */
 {
   const out = APP.merge(sb, [APP.rec('a', 5, 'מקומי-ישן')], [APP.rec('a', 9, 'ענן-חדש')], ['a']);
   assert(T(out) === JSON.stringify(['מקומי-ישן']),

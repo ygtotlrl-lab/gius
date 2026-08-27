@@ -96,7 +96,7 @@ function makeCtx(opts = {}) {
   return { ctx, store, calls };
 }
 
-// ⛔ הסריקה שמגדירה את האינווריאנטה: הערך עצמו **וגם** שם העמודה, בכל
+// ⛔ הסריקה שמגדירה את האינווריאנטה — הערך עצמו **וגם** שם העמודה, בכל
 //    מפתח localStorage שהרתמה ראתה. חיפוש הערך לבדו היה מפספס עמודה
 //    שנכתבה ריקה; חיפוש השם לבדו היה מפספס ערך שנכתב תחת שם אחר.
 function diskHas(store, needle) {
@@ -255,7 +255,7 @@ async function run() {
       !/function\s+revalidateSession\s*\(/.test(SRC));
     ok('⛔ ואין קבוע `SESSION_KEY`', !/SESSION_KEY/.test(SRC));
 
-    // ⛔ אין נתיב שלישי: כל כתיבה למראת המשתמשים עוברת דרך המודול.
+    // ⛔ אין נתיב שלישי — כל כתיבה למראת המשתמשים עוברת דרך המודול.
     ok('⛔ writeUser כותב דרך usersCacheSave', body('writeUser').includes('usersCacheSave('));
     ok('⛔ writeUser אינו קורא ל-upsertLocal', !body('writeUser').includes("upsertLocal('g_users'"));
     ok('⛔ אין upsertLocal על g_users בשום מקום',

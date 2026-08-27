@@ -66,7 +66,7 @@ const NAMES_FN = [
 const NAMES_VAR = [
   'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_PREFIX',
   'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE',
-  /* ⛔ דגל נתיב-החזרה של הסיסמה הגלויה (סבב 40). */
+  /* ⛔ דגל נתיב-החזרה של הסיסמה הגלויה (סבב 40) — העמודה `NOT NULL`. */
   'G_PLAINTEXT_LEGACY_WRITE'
 ];
 
