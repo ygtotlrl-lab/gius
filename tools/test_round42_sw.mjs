@@ -53,7 +53,7 @@ const APP = {
     'cdn-cached-online':     'body:CDN-0|status:200',
     'version-probe':         'passthrough',
     'non-get':               'passthrough',
-    'sweep-scope':           'gius-v35,sister-app-v9',
+    'sweep-scope':           'gius-v36,sister-app-v9',
   },
   defectCount: 0,
 };
