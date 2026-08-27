@@ -74,7 +74,7 @@ Content-Type בדף האופליין, סריקת מטמון לפי קידומת,
   `kind:'table'` שאינו מאחורי דגל חייב להופיע ב-`APP.tables`. ⚠️ קורא
   **קבצים** — ⛔ אינו רואה את המסד החי, והרשימה היא הצהרה שאדם מתחזק.
 - **`test_round61_backup_policy.mjs`** — מדיניות הגיבויים (סבב 61, כלל ברזל
-  20): שלושת הערכים (7 · 30 · 14) שב-`gius/migrations/0008_backup_retention_cap.sql`
+  20): שלושת הערכים (7 · 30 · 14) שב-`gius/migrations/008_backup_retention_cap.sql`
   תואמים לטבלה שבפרק. ⚠️ קורא **קבצים** — ⛔ אינו רואה את המסד החי.
 - **`test_round57_bump.mjs`** — שער ה-`versionCode`: הבסיס הוא **קומיט
   הקידום האחרון** ולא `origin/main`. בונה ריפו git סינתטי בתיקייה זמנית,
@@ -193,7 +193,7 @@ https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0/dist/umd/supabase.js
 > סטנדרטי מגיע עם `alter default privileges in schema public grant all on
 > tables to anon, authenticated`, ולכן כל טבלה שנוצרה ב-0001 קיבלה DELETE
 > ו-TRUNCATE אוטומטית, וה-`grant select, insert, update` שבסוף 0001 לא לקח
-> אותם. `migrations/0002_revoke_delete.sql` עושה `REVOKE` מפורש ומתקן את זה.
+> אותם. `migrations/002_revoke_delete.sql` עושה `REVOKE` מפורש ומתקן את זה.
 > **טבלה חדשה תיוולד שוב עם DELETE** — כל מיגרציה שמוסיפה טבלה חייבת לכלול
 > `revoke all` ואז `grant select, insert, update`. לבדיקה:
 >
@@ -904,7 +904,7 @@ schar-limud, yoman-avoda, gius). הם חלים על כל קוד חדש בארג�
 - **האימות — מקוון ואופליין כאחד — הוא מול `pass_fp`**, דרך
   `gVerifyOffline`; כך גם מסך שינוי הסיסמה העצמי.
 - **`password` נכתבת ואינה נקראת**, מנקודה אחת (`passFields`) ומאחורי
-  `G_PLAINTEXT_LEGACY_WRITE` בלבד — נתיב חזרה עד ש-`migrations/0007`
+  `G_PLAINTEXT_LEGACY_WRITE` בלבד — נתיב חזרה עד ש-`migrations/007`
   תורץ.
 - ⛔ **אין להחזיר השוואה מול העמודה בשום מסלול (סבב 40)**, ו⛔ אין לקרוא
   את הנוסח ההיסטורי («טקסט גלוי, בהחלטה») כהוראה בתוקף.
@@ -926,7 +926,7 @@ schar-limud, yoman-avoda, gius). הם חלים על כל קוד חדש בארג�
 - **המחיר המדוד:** «ניהול משתמשים» מציג היום את הסיסמה הנוכחית כל עוד
   הדגל פתוח, ו⛔ **זו היכולת שנעלמת** כשייסגר. **קביעת** סיסמה חדשה
   ממשיכה לעבוד, וכך גם שינוי עצמי (🔑 בכותרת).
-- **הצעד הבא, ובהחלטת המנהל:** `migrations/0007` צעד א (הסרת
+- **הצעד הבא, ובהחלטת המנהל:** `migrations/007` צעד א (הסרת
   `NOT NULL`) ← כיבוי הדגל ופריסה ← ובסבב שאחריו צעד ב (מחיקת העמודה).
   ⛔ הכיבוי והמחיקה בסבבים נפרדים (סבב 30).
 - ⛔ **ומדידה שאין ממנה חזרה:** סיסמאות שישבו בענן בטקסט גלוי מול RLS
@@ -940,7 +940,7 @@ schar-limud, yoman-avoda, gius). הם חלים על כל קוד חדש בארג�
 
 ## כניסה ומשתמשים — טביעה במכשיר, כתיבת משתמשים ברשת (סבבים 19–26)
 **במכשיר:** המראה מחזיקה `pass_salt`+`pass_fp` לכל משתמש
-(`migrations/0003`) — PBKDF2-SHA256, 100,000 סיבובים, מלח
+(`migrations/003`) — PBKDF2-SHA256, 100,000 סיבובים, מלח
 אקראי פר-משתמש עם קידומת ההקשר `G_PASS_CTX`. הטביעה יורדת למכשיר;
 הסיסמה — לעולם לא, וכל משתמש נכנס אופליין בכל מכשיר שסונכרן.
 - **הגזירה נכשלת סגור** (`gRandSalt`/`gPassFp`/`gMakePassFp` מחזירות
@@ -1979,10 +1979,10 @@ schar-limud, yoman-avoda, gius). הם חלים על כל קוד חדש בארג�
 
 ⭐ **שתי משימות ה-cron הורצו ואומתו ב-2026-08-18** —
 `hanhala-ruchanit/migrations/004_backup_retention_cron.sql` (הפרויקט
-המשותף — חלה גם על yoman ועל schar) ו-`gius/migrations/0005_backup_retention_cron.sql`;
+המשותף — חלה גם על yoman ועל schar) ו-`gius/migrations/005_backup_retention_cron.sql`;
 `bk_retention_daily` פעילה בשני הפרויקטים בתזמון `'0 3 * * *'`.
-⛔ **ורשימת-ההיתר עצמה נקראת מהמיגרציה האחרונה שמגדירה אותה מחדש** — היום
-`hanhala-ruchanit/migrations/014_backup_allowlist_drop_wa_phone.sql`; ⛔ מיגרציה
+⛔ **ורשימת-ההיתר עצמה נקראת מהמיגרציה האחרונה שמגדירה אותה מחדש** — בפרויקט
+המשותף `hanhala-ruchanit/migrations/014_backup_allowlist_drop_wa_phone.sql`; ⛔ מיגרציה
 שכבר רצה אינה נערכת, ולכן שינוי ברשימה הוא תמיד קובץ חדש.
 ⚠️ **עובדה ולא הנחה: 57 השורות שהיו בפרויקט המשותף תחת `PRE_*`/`ORPHAN_*`
 נמחקו ב-2026-08-18 ואינן ניתנות לשחזור** — מסלול Free אינו כולל גיבויי
@@ -2057,7 +2057,7 @@ Activity חי. ב-`ShellActivity` הקריאה יוצאת מ-`WebViewClient` פ�
   אינו נשען עליה בשום מסלול, אבל היא `NOT NULL` ולכן עדיין נכתבת,
   מנקודה אחת (`passFields`) ומאחורי `G_PLAINTEXT_LEGACY_WRITE`.
   ⚠️ וכל עוד הדגל פתוח, «ניהול משתמשים» ממשיך להציג את הסיסמה הנוכחית.
-  **הטריגר:** `migrations/0007` צעד א ע"י המנהל ← כיבוי הדגל ופריסה ←
+  **הטריגר:** `migrations/007` צעד א ע"י המנהל ← כיבוי הדגל ופריסה ←
   ובסבב שאחריו צעד ב. ⛔ הכיבוי והמחיקה בסבבים נפרדים (סבב 30).
   [מדיד: code:G_PLAINTEXT_LEGACY_WRITE = true]
 

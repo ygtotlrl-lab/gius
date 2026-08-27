@@ -1,13 +1,9 @@
 #!/bin/bash
 # Sign an APK with the PERMANENT gius key — signing/gius.keystore.
 #
-# ⚠️ המפתח הוחלף ב-2026-08-19 (סבב 39), בהחלטת המנהל. הטביעה הישנה
-# (DA:61:B1:4D…, pwabuilder.keystore) אינה בשימוש עוד, ושני קובצי ה-keystore
-# הקודמים נמחקו. APK שנחתם במפתח החדש ⛔ אינו מתקין על גבי התקנה קיימת —
-# נדרשת הסרה והתקנה מחדש, פעם אחת.
-#
-# מכאן והלאה זה המפתח היחיד: חתימה בכל מפתח אחר מייצרת אפליקציה זרה, וכל
-# המשתמשים ייתקלו ב-INSTALL_FAILED_UPDATE_INCOMPATIBLE. ר' CLAUDE.md, "חתימת APK".
+# ⛔ זה המפתח היחיד: חתימה בכל מפתח אחר מייצרת אפליקציה זרה, וכל המשתמשים
+# ייתקלו ב-INSTALL_FAILED_UPDATE_INCOMPATIBLE בלי שום דרך חזרה.
+# ר' CLAUDE.md, "חתימת APK".
 #
 # Requires Android build-tools on PATH (zipalign + apksigner).
 # Usage: ./sign-apk.sh <unsigned.apk> [output.apk]
@@ -49,9 +45,9 @@ rm -f "$ALIGNED"
 apksigner verify --print-certs "$OUT"
 
 # Verify what actually landed in the APK, not just what we asked for.
-# apksigner prints the digest lowercase and WITHOUT colons ("923321…"), while
-# keytool prints it uppercase WITH colons — so both sides get normalised before
-# comparing. Matching the colon form against apksigner output never succeeds.
+# apksigner prints the digest lowercase and WITHOUT colons, while keytool prints
+# it uppercase WITH colons — so both sides get normalised before comparing.
+# Matching the colon form against apksigner output never succeeds.
 normalise() { tr -d ':' | tr 'A-Z' 'a-z'; }
 WANT="$(printf '%s' "$EXPECTED_SHA256" | normalise)"
 GOT="$(apksigner verify --print-certs "$OUT" \

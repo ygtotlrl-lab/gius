@@ -28,9 +28,9 @@ alter table public.TABLE_NAME enable row level security;
 סטנדרטי מגיע עם `alter default privileges … grant all on tables` — כלומר
 **כל טבלה נולדת עם `DELETE` ו-`TRUNCATE`**. מחיקה בארגון היא תמיד `deleted=true`
 (כלל ברזל 6 סעיף 1), ולכן ההרשאות האלה מיותרות בהגדרה ומסוכנות בפועל: מפתח
-ה-anon יושב גלוי ב-`index.html` הציבורי. ר' `migrations/0002_revoke_delete.sql`.
+ה-anon יושב גלוי ב-`index.html` הציבורי. ר' `migrations/002_revoke_delete.sql`.
 
-מקור האמת המלא לסכימה: `migrations/0001_init.sql` (+`0002`/`0003`/`0004`).
+מקור האמת המלא לסכימה: `migrations/001_init.sql` (+`0002`/`0003`/`0004`).
 
 ---
 

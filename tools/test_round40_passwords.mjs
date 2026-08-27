@@ -39,7 +39,7 @@ const APP = {
   legacyWriteFlag: 'G_PLAINTEXT_LEGACY_WRITE',
   authPaths: [['function doLogin', 'הכניסה המקוונת'],
               ["'my-pass-save'", 'שינוי סיסמה עצמי']],
-  migration: '0007_users_drop_plaintext_password.sql',
+  migration: '007_users_drop_plaintext_password.sql',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 

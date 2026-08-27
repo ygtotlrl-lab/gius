@@ -6,7 +6,7 @@
 
 ## הפעלה ראשונה
 
-1. הריצו את `migrations/0001_init.sql` מול פרויקט ה-Supabase
+1. הריצו את `migrations/001_init.sql` מול פרויקט ה-Supabase
    (`zrftjkghhjhqzopvdzou`) דרך ה-SQL Editor. הקובץ אידמפוטנטי.
 2. צרו את המשתמש הראשון **ידנית** ב-SQL Editor — ⛔ אין משתמש ברירת מחדל
    ואין סיסמה שכתובה בריפו (ר' ההערה בראש בלוק ה-seed שב-`0001_init.sql`).

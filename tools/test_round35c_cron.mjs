@@ -27,8 +27,8 @@ const APP = {
   prefixes: [''],
   legacyKeys: [],
   sisterKeys: [],
-  migration: 'migrations/0005_backup_retention_cron.sql',
-  migrationDoc: 'gius/migrations/0005_backup_retention_cron.sql',
+  migration: 'migrations/005_backup_retention_cron.sql',
+  migrationDoc: 'gius/migrations/005_backup_retention_cron.sql',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 

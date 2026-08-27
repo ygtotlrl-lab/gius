@@ -43,7 +43,7 @@ const APP = {
   /*  ⚠️ אין כאן יכולת משותפת שנעדרת (סבב 52). */
   skipCaps: [],
   offlineLoginFn: 'gVerifyOffline',
-  schemaFile: 'migrations/0001_init.sql',
+  schemaFile: 'migrations/001_init.sql',
   /*  ⛔ אין כאן מסך התקנה (סבב 53) — ההתקנה נעשית מ-`migrations/` בלוח
    *  הבקרה, ולכן «המתנה אוטומטית להרצה» היא מושג שאינו קיים כאן. */
   /*  ⭐ שם משפך ה-`kv` (סבב 56) — `null` כשאין כאן `kv` כלל. */
