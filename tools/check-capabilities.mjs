@@ -37,6 +37,9 @@ import crypto from 'node:crypto';
  *  ומדווח ✅ על בדיוק מה שהשער מפיל. ⚠️ הייבוא שקט — הריצה העצמית שם
  *  מוגנת ב-`SELF`. */
 const { audit: iconAudit } = await import('./test_round66_iconlayer.mjs');
+/*  ⭐ ושורה 47 נמדדת ע"י `audit` של שער סבב 67 — ⛔ אותו נימוק בדיוק:
+ *  מדידה שנייה של אותה שכבה הייתה נסחפת מהראשונה. */
+const { audit: inputAudit } = await import('./test_round67_inputlayer.mjs');
 
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
@@ -56,10 +59,20 @@ const APP = {
   kvFallbackFn: null,
   naRows: [37, 45],
   matrixProbe: {
-    4:  (c) => !!c.fnBody('usersCacheSave'),
+    /*  ⛔ נקודת כניסה חיה ולא קיום פונקציה (כלל ברזל 26ד, סבב 67) —
+     *  «נתיב עדכון חלקי» שאין לו אף קורא הוא קוד מת, ו-✅ עליו נקרא
+     *  כעדות. ⚠️ הספירה היא >1 מפני שההגדרה עצמה נספרת גם היא. */
+    4:  (c) => !!c.fnBody('usersCacheSave')
+             && (c.code.match(/\busersCacheSave\s*\(/g) || []).length > 1,
     // שבע טבלאות `g_` מאז ההקמה — המראה נבנית מהן ישירות.
     15: (c) => c.hasCode(/\bPUSH_TABLES\b/),
-    19: (c) => !!c.fnBody('formMyPassword'),
+    /*  ⛔ נקודת כניסה חיה ולא קיום פונקציה (כלל ברזל 26ד, סבב 67) —
+     *  ⚠️ המסך נבנה כמחרוזת, ולכן העדות היא `data-act` שמנתב אליו
+     *  **וגם** שלושת השדות שהוא קורא מהם. */
+    19: (c) => !!c.fnBody('formMyPassword')
+             && /'my-pass':\s*function/.test(c.src)
+             && /id="mp-cur"/.test(c.src) && /id="mp-new"/.test(c.src)
+             && /id="mp-new2"/.test(c.src),
   },
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
@@ -696,6 +709,12 @@ const MATRIX = [
    *  נותן ✅ גם לאייקון שתופס 32% מהמסגרת בזמן שהאחיות תופסות 44%. */
   { row: 46, name: 'שכבת אייקונים',
     probe: () => iconAudit('.').length === 0 },
+  { row: 47, name: 'שכבת קלט אחידה',
+    probe: () => inputAudit('.').length === 0 },
+  /*  ⛔ שתי נקודות כניסה חיות ולא שתי פונקציות (סבב 67) — כלל ברזל 26ד:
+   *  פונקציה שקיימת בקובץ ואין לה קורא היא קוד מת, ו-✅ עליה נקרא כעדות. */
+  { row: 48, name: 'שכבת כניסה מלאה',
+    probe: () => /'my-pass':\s*function/.test(src) && /'switch-user':\s*function/.test(src) },
 ];
 
 /*  ⭐ אתרי העברת-מזהה (סבב 64) — אופרנד שמשורשר מיד אחרי `('` או `,'`,

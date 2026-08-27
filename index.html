@@ -3908,6 +3908,7 @@ function renderShell() {
       '<nav class="tabbar">' + tabs + '</nav>' +
       '<div class="who"><div style="text-align:end"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isOwner() ? 'בעלים' : 'מנהל') + '</span></div>' +
+        '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
         '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
         '<button class="btn ghost sm" data-act="logout">יציאה</button></div>' +
     '</header>' +
@@ -4885,6 +4886,35 @@ function formMyPassword() {
   var el = $('#mp-cur'); if (el) el.focus();
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   החלפת משתמש — מסך אחד, מול הטביעה
+   ══════════════════════════════════════════════════════════════════════════
+   ⭐ שכבת הכניסה אחידה (סבב 67): שתי האפליקציות שיש בהן ניהול משתמשים
+   מלא — הנהלה וגיוס — מחזיקות **גם** שינוי סיסמה עצמי **וגם** החלפת
+   משתמש. עד הסבב הזה החלפת המשתמש הייתה קיימת בהנהלה בלבד.
+   ⛔ האימות הוא `gVerifyOffline` (סבב 67) — אותה פונקציה בדיוק שמכריעה
+   את הכניסה, מקוונת ואופליין. ⚠️ מסלול אימות שני היה מקום נוסף שבו
+   `active` או הטביעה עלולים להיבדק אחרת, ובדיוק שם נולדים פערים.
+   ⛔ ואין כאן קיצור דרך: החלפה בלי סיסמה הייתה הופכת כל מכשיר פתוח
+   למעבר חופשי לכל זהות שנמצאת במראה.
+   ══════════════════════════════════════════════════════════════════════════ */
+function formSwitchUser() {
+  var others = (MIRROR.g_users || []).filter(function (u) {
+    return u && u.active !== false && String(u.id) !== String(state.user.id);
+  });
+  if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', 'bad'); return; }
+  openModal('👥 החלפת משתמש',
+    '<label class="fld"><span>משתמש</span><select class="inp" id="sw-user" aria-label="המשתמש שאליו עוברים">' +
+      others.map(function (u) {
+        return '<option value="' + esc(u.id) + '">' + esc(u.full_name || u.username) + '</option>';
+      }).join('') +
+    '</select></label>' +
+    '<label class="fld"><span>סיסמה *</span><input class="inp" id="sw-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="switch-confirm">כניסה</button>');
+  var el = $('#sw-pass'); if (el) el.focus();
+}
+
 function formTarget(month) {
   var m = month || state.month;
   var cur = 0;
@@ -4952,6 +4982,31 @@ function findTask(id) {
 
 var ACTIONS = {
   'tab': function (el) { go(el.dataset.tab); },
+  'switch-user': function () { formSwitchUser(); },
+  'switch-confirm': function (el) {
+    var id = $('#sw-user') ? $('#sw-user').value : '';
+    var p  = $('#sw-pass') ? $('#sw-pass').value : '';
+    if (!id || !p) { toast('נא לבחור משתמש ולהזין סיסמה', 'bad'); return; }
+    var cu = null, arr = MIRROR.g_users || [];
+    for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) cu = arr[i];
+    /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן (סבב 67) — «אין במה לאמת»
+     *  אינו «סיסמה שגויה», והודעה מאוחדת שולחת את המשתמש להקליד שוב
+     *  ושוב סיסמה נכונה לחלוטין במקום לומר לו שנדרש חיבור אחד. */
+    if (!cu) { toast(MSG_OFF_UNKNOWN, 'bad'); return; }
+    busy(el, true);
+    gVerifyOffline(cu, p).then(function (v) {
+      busy(el, false);
+      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, 'bad'); return; }
+      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, 'bad'); return; }
+      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, 'bad'); return; }
+      closeModal();
+      state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
+      state.screen = 'home';
+      state.donorId = null;
+      boot();
+      toast('הוחלף ל' + (cu.full_name || cu.username), 'ok');
+    }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, 'bad'); });
+  },
   'logout': function () { logout(); },
   'modal-close': function () { closeModal(); },
   'ask-yes': function () { closeAsk(true); },
