@@ -1,17 +1,17 @@
-// Generates the PWA icons *and* the APK launcher icons from pure pixel math —
-// no image libraries, no binary blobs checked in by hand.
-// Re-run with:  node tools/gen-icons.mjs
+// מחולל את אייקוני ה-PWA **וגם** את אייקוני המשגר של ה-APK מחשבון
+// פיקסלים טהור — בלי ספריות תמונה, ובלי נכסים בינאריים שנדחפים ביד.
+// הרצה מחדש:  node tools/gen-icons.mjs
 //
-// The mark is the same shape the app uses for its month-progress ring: an open
-// ring with a solid centre dot, on the brand teal, in a rounded square.
+// ⭐ הסמל הוא אותה צורה שהאפליקציה משתמשת בה בטבעת ההתקדמות החודשית:
+// טבעת פתוחה עם נקודה מלאה במרכז, על הטורקיז של המותג, בריבוע מעוגל.
 //
-// Outputs:
-//   icons/                                   the PWA / favicon set
-//   android/app/src/main/res/mipmap-*/        the APK launcher icons
-//     ic_launcher.png             legacy square icon (API 25 and below)
-//     ic_launcher_foreground.png  adaptive-icon foreground, transparent, mark only
-//   (the adaptive-icon background is a flat brand-teal shape drawable, checked
-//    in as XML — see res/drawable/ic_launcher_background.xml)
+// פלט:
+//   icons/                                   סט ה-PWA וה-favicon
+//   android/app/src/main/res/mipmap-*/       אייקוני המשגר של ה-APK
+//     ic_launcher.png             אייקון ריבועי ישן (API 25 ומטה)
+//     ic_launcher_foreground.png  חזית adaptive-icon, שקופה, הסמל בלבד
+//   (רקע ה-adaptive-icon הוא shape drawable בטורקיז אחיד, שנשמר כ-XML —
+//    ר' res/drawable/ic_launcher_background.xml)
 
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
