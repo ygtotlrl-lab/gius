@@ -73,7 +73,7 @@ TWA ולא PWABuilder** — TWA מריץ את האתר בתוך כרום, וסי
 
 **11 · מקור אמת יחיד לסכימה** — קובץ אחד בריפו שהוא ההגדרה המלאה של
 המסד. schar-limud: `migrations/000_initial_schema.sql`. gius:
-`migrations/001_init.sql` (+0002/0003 קדימה). yoman-avoda:
+`migrations/001_init.sql` (+002/003 קדימה). yoman-avoda:
 `migrations/000_initial_schema.sql`, שנוצר בסבב 28.
 ✅ **ב-hanhala — הפער נסגר בסבב 32.** קובץ ההתקנה נוצר שם בסבב 28, אבל
 `index.html` המשיך להחזיק **עותק חלקי** של הסכימה בשני מקומות
