@@ -102,6 +102,15 @@ WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואי�
 עריכה ידנית היא גרסה שנייה שתידרס בגזירה הבאה בלי שאיש יידע.
 ⚠️ **המקור עצמו נבדל פר-אפליקציה**, והוא מתועד בשורה שמתחת.
 <!-- SHARED:end -->
+### הסט כאן
+`node tools/gen-icons.mjs` מייצר את כל ה-PNG-ים מחישוב פיקסלים (ללא
+ספריות), לשני יעדים: `icons/` (PWA ופאביקון) ו-`android/app/src/main/res/
+mipmap-*/` — `ic_launcher.png` ו-`ic_launcher_foreground.png` (הסימן בלבד
+על רקע שקוף; הרקע מ-`ic_launcher_background.xml`), עם `pad` שמכניס את
+החזית לאזור הבטוח של 66dp מתוך 108dp.
+⛔ **אין לערוך את הקבצים ידנית** — משנים את הסקריפט ומריצים מחדש. הוא
+דטרמיניסטי: הרצה חוזרת בלי שינוי קוד מייצרת קבצים זהים בית-לבית.
+
 
 ⚠️ **המקור כאן הוא סקריפט ולא קובץ גרפי, וזו חריגה מנומקת** — gius היא
 האפליקציה היחידה מהארבע שמחוללת את האייקונים ב-`node tools/gen-icons.mjs`
@@ -172,5 +181,78 @@ gradle wrapper --gradle-version 8.7   # פעם אחת
 > `signing/yoman.keystore` ב-yoman-avoda. ⛔ זהו קובץ ה-keystore **היחיד**
 > ב-`signing/` מסבב 39; שני הקבצים הקודמים נמחקו.
 
-או ידנית — ר' הפרק "חתימת APK" ב-CLAUDE.md (מפתח `signing/gius.keystore`,
-alias `gius`). אחרי חתימה מאמתים שה-SHA256 תואם לטבלה שם.
+### המפתח הקבוע — ⛔ לעולם לא להחליף
+
+| | |
+|---|---|
+| **קובץ** | `signing/gius.keystore` (PKCS12, RSA 2048, SHA256withRSA) |
+| **נוצר** | 2026-08-19 (סבב 39), `keytool -genkeypair` |
+| **Package ID** | `com.gius.app` |
+| **alias** | `gius` |
+| **storepass / keypass** | `gius123` (זהה לשניהם) |
+| **תוקף** | 10,000 יום — 19.08.2026 עד 04.01.2054 |
+| **SHA256** | `92:33:21:96:75:17:2D:54:91:35:12:1D:64:46:A6:74:E0:E2:0C:24:9F:68:4A:C3:FA:A2:B7:CC:B8:D3:81:7D` |
+| **SHA1** | `FA:AA:8E:84:8C:71:95:5B:E0:62:33:13:C5:BB:50:A3:04:E5:86:DE` |
+| **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
+
+חלופות ידניות, כשאין `sign-apk.sh`:
+
+```bash
+apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
+  --ks-pass pass:gius123 --key-pass pass:gius123 app.apk
+jarsigner -keystore signing/gius.keystore -storepass gius123 \
+  -keypass gius123 app.apk gius
+```
+
+אימות: `keytool -list -v -keystore signing/gius.keystore -storepass gius123`,
+ו-`apksigner verify --print-certs app.apk` אחרי החתימה — שניהם חייבים להחזיר
+את ה-SHA256 שבטבלה. ⚠️ הבנייה ב-Actions חותמת מהריפו: אין secret ואין קלט
+ידני, ולכן אין דרך לבנות בטעות APK חתום במפתח אחר.
+
+⚠️ **המפתח הוחלף פעם אחת, ב-2026-08-19 (סבב 39), באישור מפורש** — שני
+מכשירים בשטח, בלי נתונים מקומיים שלא סונכרנו. ⛔ הטביעה הישנה
+`DA:61:B1:4D:…` אינה בשימוש, ⛔ ואין לגזור מכאן רשות להחליף שוב.
+
+### פרטי המעטפת
+`applicationId` חייב להישאר `com.gius.app`, ו-`versionCode` גבוה מזה של
+ה-TWA שהוחלף (ה-TWA היה 1; המעטפת היא 2).
+
+⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית היא
+ה-workflow שלמעלה. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.
+
+<!-- SHARED:start id="context-smali-scope" -->
+## תיקון URL ב-APK קיים ובנוי (בלי מקור) — smali בלבד
+
+⚠️ **הפרק הזה רלוונטי רק ל-APK ישן שנבנה לפני `android/`.** בנייה רגילה היום
+היא מ-`android/` דרך `.github/workflows/build-apk.yml`, והמעטפת טוענת מהרשת —
+ולכן אין בה URL שצריך לתקן.
+⛔ **smali בלבד — לא binary patch.** עריכה בינארית של ה-APK שוברת את החתימה
+ואינה ניתנת לאימות, ⛔ והחתימה מחדש היא במפתח הקבוע של הריפו בלבד — ר' הפרק
+«חתימת APK» ב-CLAUDE.md.
+<!-- SHARED:end -->
+
+```bash
+apktool d <app>.apk -o /tmp/gius_work -f
+# תקן את ה-URL ב-MainActivity.smali ו-MainActivity$2.smali
+rm -rf /tmp/gius_work/build          # חובה לפני בנייה חוזרת
+apktool b /tmp/gius_work -o built.apk
+zipalign -f 4 built.apk aligned.apk
+apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
+  --ks-pass pass:gius123 --key-pass pass:gius123 --out output.apk aligned.apk
+```
+
+⚠️ **ה-APK הישן כאן היה TWA** שנבנה ב-PWABuilder, ⛔ ואין לבנות אותו מחדש
+(ר' «מעטפת ה-APK» ב-CLAUDE.md). ⭐ וה-keystore הוחלף בסבב 39 — כל חתימה היא
+ב-`signing/gius.keystore` בלבד.
+
+<!-- SHARED:start id="context-cache-apk" -->
+### ⚠️ Cache APK — כלל זהב
+
+שם קובץ חוזר נתפס במטמון — של הדפדפן, של מנהל ההורדות ושל המכשיר — והמשתמש
+מתקין שוב את הבנייה **הקודמת** בלי לדעת. ⛔ **תמיד שם חדש בכל בנייה**, עם
+חותמת זמן:
+<!-- SHARED:end -->
+
+```bash
+TS=$(date +%s) && apksigner sign ... --out gius-${TS}.apk
+```

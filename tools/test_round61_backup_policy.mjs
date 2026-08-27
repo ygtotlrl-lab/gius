@@ -31,8 +31,8 @@ const APP = {
      המשותף מחזיק קובץ אחד, ועותק שני בכל ריפו היה מקור אמת שני (אותו
      כלל של 004). שם נאכף צד התיעוד בלבד, והשקילות מול ה-SQL נאכפת
      בריפו שמחזיק את הקובץ. */
-  migration: 'migrations/0008_backup_retention_cap.sql',
-  migrationDoc: 'gius/migrations/0008_backup_retention_cap.sql',
+  migration: 'migrations/008_backup_retention_cap.sql',
+  migrationDoc: 'gius/migrations/008_backup_retention_cap.sql',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 
@@ -178,7 +178,7 @@ function t4(sql) {
     '4ז · ⛔ והקובץ אינו מעניק `delete` על `kv_backup`');
 }
 
-/* ── 5. מוטציות — ⛔ בזיכרון בלבד ──────────────────────────────────────── */
+/* ── 5. מוטציות — ⛔ בזיכרון בלבד ───────────────────────────────────────── */
 function t5(sql) {
   console.log('\n[5] מוטציות');
   const muts = [

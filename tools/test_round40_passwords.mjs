@@ -39,7 +39,7 @@ const APP = {
   legacyWriteFlag: 'G_PLAINTEXT_LEGACY_WRITE',
   authPaths: [['function doLogin', 'הכניסה המקוונת'],
               ["'my-pass-save'", 'שינוי סיסמה עצמי']],
-  migration: '0007_users_drop_plaintext_password.sql',
+  migration: '007_users_drop_plaintext_password.sql',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 
@@ -84,7 +84,7 @@ const ok = (m) => console.log(`  ok   ${++n} · ${m}`);
 const no = (m) => { bad++; console.error(`  FAIL ${++n} · ${m}`); };
 const is = (c, m) => (c ? ok(m) : no(m));
 
-console.log(`\n── ${APP.app}: מעבר הסיסמאות לגיבוב (סבב 40) ──`);
+console.log(`\n─────────────── ${APP.app}: מעבר הסיסמאות לגיבוב (סבב 40) ──`);
 
 /*  ⚠️ אפליקציה בלי משתמשים אינה «פטורה בשקט» (סבב 40) — היא נבדקת
  *  בכיוון ההפוך: שלא צמח לה בשקט מודל משתמשים או עמודת סיסמה. זה בדיוק

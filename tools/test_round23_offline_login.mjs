@@ -66,7 +66,7 @@ const NAMES_FN = [
 const NAMES_VAR = [
   'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_PREFIX',
   'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE',
-  /* ⛔ דגל נתיב-החזרה של הסיסמה הגלויה (סבב 40). */
+  /* ⛔ דגל נתיב-החזרה של הסיסמה הגלויה (סבב 40) — העמודה `NOT NULL`. */
   'G_PLAINTEXT_LEGACY_WRITE'
 ];
 
@@ -360,10 +360,10 @@ console.log('\n▶ ח. אינווריאנטות במקור עצמו');
     /const CACHE_NAME = 'gius-v\d+';/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')));
   ok('המיגרציה אדיטיבית ואידמפוטנטית',
     /add column if not exists pass_salt text;[\s\S]*add column if not exists pass_fp\s+text;/
-      .test(fs.readFileSync(path.join(ROOT, 'migrations/0003_pass_fp.sql'), 'utf8')));
+      .test(fs.readFileSync(path.join(ROOT, 'migrations/003_pass_fp.sql'), 'utf8')));
   ok('⛔ המיגרציה אינה נוגעת ב-password',
     !/\b(alter|drop|update)\b[^\n]*\bpassword\b/i.test(
-      fs.readFileSync(path.join(ROOT, 'migrations/0003_pass_fp.sql'), 'utf8')
+      fs.readFileSync(path.join(ROOT, 'migrations/003_pass_fp.sql'), 'utf8')
         .split('\n').filter(l => !l.trim().startsWith('--')).join('\n')));
 }
 
