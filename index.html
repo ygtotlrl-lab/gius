@@ -9,11 +9,11 @@
 <title>גיוס — ניהול גיוס כספים</title>
 
 <script>
-// Must run before any relative URL is parsed.
-// The service worker answers deep paths (/gius/anything/here) with this same
-// shell, and at that URL every relative href would resolve one or more levels
-// too deep — manifest.json, sw.js and the icons would all 404, and the worker
-// would register under the wrong scope. Pin a <base> at the app root instead.
+// ⛔ חייב לרוץ לפני שכל כתובת יחסית מפוענחת (נרשם בסבב 67) —
+// ה-service worker מגיש נתיבים עמוקים (/gius/anything/here) עם אותה קליפה,
+// ובכתובת כזו כל href יחסי היה נפתר רמה או שתיים עמוק מדי: manifest.json,
+// sw.js והאייקונים היו מחזירים 404, וה-worker היה נרשם ב-scope שגוי.
+// לכן מקבעים <base> בשורש האפליקציה.
 (function () {
   var p = location.pathname;
   var m = p.match(/^(.*?\/gius\/)/);
@@ -31,7 +31,7 @@
 <meta name="apple-mobile-web-app-title" content="גיוס">
 
 <style>
-/* ============================================================ design tokens */
+/* ========================================================= אסימוני העיצוב */
 :root{
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
   --ink:#12202e; --ink-2:#3b4d61; --muted:#6b7c90;
@@ -61,7 +61,7 @@
   }
 }
 
-/* =================================================================== base */
+/* ==================================================================== בסיס */
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -82,7 +82,7 @@ table{border-collapse:collapse; width:100%}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
 
-/* ================================================================== login */
+/* =================================================================== כניסה */
 .auth{min-height:100dvh;display:grid;place-items:center;padding:24px}
 .auth-card{
   width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);
@@ -98,7 +98,7 @@ table{border-collapse:collapse; width:100%}
 }
 .auth-err.show{display:block}
 
-/* ================================================================== shell */
+/* =================================================================== קליפה */
 .topbar{
   position:sticky;top:0;z-index:40;background:var(--card);
   border-bottom:1px solid var(--line);
@@ -142,7 +142,7 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
   main{padding:20px;padding-bottom:120px}
 }
 
-/* ================================================================== cards */
+/* ================================================================= כרטיסים */
 .card{
   background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:16px;box-shadow:var(--shadow);margin-bottom:14px
@@ -158,9 +158,9 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
 .empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:14px}
 .empty .big{font-size:26px;display:block;margin-bottom:6px;opacity:.65}
 
-/* ============================================================== home ring */
-/* Side by side from 520px up. Below that the ring stacks above the stats so
-   the tiles get the full width — otherwise "100,000 ₪" breaks across lines. */
+/* ============================================================= טבעת הבית */
+/* זה לצד זה מ-520px ומעלה. מתחת לזה הטבעת נערמת מעל המחוונים כדי
+   שהאריחים יקבלו את הרוחב המלא — אחרת "100,000 ₪" נשבר בין שורות. */
 .hero{display:flex;flex-direction:column;gap:16px;align-items:center}
 @media (min-width:520px){.hero{flex-direction:row;gap:18px}}
 .ring{width:132px;height:132px;flex:none}
@@ -188,7 +188,7 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
 .monthnav b{font-size:15px;min-width:130px;text-align:center}
 .monthnav .grow{margin-inline-start:auto}
 
-/* ================================================================ tables */
+/* ================================================================= טבלאות */
 .tw{overflow-x:auto;margin:0 -16px;padding:0 16px}
 th,td{padding:9px 10px;text-align:start;font-size:13.5px;border-bottom:1px solid var(--line-2);white-space:nowrap}
 th{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.2px;
@@ -201,7 +201,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--line);border-bottom:0;backgr
 .bar{height:5px;border-radius:99px;background:var(--line);overflow:hidden;min-width:52px}
 .bar i{display:block;height:100%;background:var(--brand);border-radius:99px}
 
-/* ================================================================== lists */
+/* ================================================================== רשימות */
 .row{
   display:flex;align-items:center;gap:11px;padding:11px 4px;
   border-bottom:1px solid var(--line-2);cursor:pointer
@@ -220,7 +220,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--line);border-bottom:0;backgr
 .row .end{text-align:end;flex:none;font-size:13.5px;font-variant-numeric:tabular-nums}
 .row .end small{display:block;color:var(--muted);font-size:11.5px}
 
-/* ================================================================ badges */
+/* ================================================================== תגיות */
 .badge{
   display:inline-block;font-size:11.5px;font-weight:700;border-radius:99px;
   padding:2px 9px;white-space:nowrap;background:var(--line-2);color:var(--muted)
@@ -231,7 +231,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--line);border-bottom:0;backgr
 .badge.brand{background:var(--brand-soft);color:var(--brand)}
 .badge.gold{background:var(--gold-soft);color:var(--gold)}
 
-/* ============================================================== controls */
+/* ================================================================== פקדים */
 .inp,select.inp,textarea.inp{
   width:100%;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:10px 12px;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s
@@ -242,8 +242,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:12px calc(50% - 2px),17px calc(50% - 2px);
   background-size:5px 5px,5px 5px;background-repeat:no-repeat;
-  /* the chevron is painted at the left edge, so the extra room must be on the
-     left too — padding-inline-start would put it on the right under RTL */
+  /* החץ מצויר בקצה השמאלי, ולכן גם המקום הנוסף חייב להיות משמאל —
+     padding-inline-start היה שם אותו מימין תחת RTL */
   padding-left:32px}
 .fld{display:block;margin-bottom:12px}
 .fld > span{display:block;font-size:12.5px;font-weight:650;color:var(--ink-2);margin-bottom:5px}
@@ -259,7 +259,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;
   white-space:nowrap
 }
-/* input + button on one line; the button keeps its width, the input gives way */
+/* שדה וכפתור בשורה אחת; הכפתור שומר על רוחבו, והשדה מתכווץ */
 .addrow{display:flex;gap:6px;margin-top:10px}
 .addrow .inp{min-width:0}
 .addrow .btn{flex:none}
@@ -275,7 +275,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .btn.icon{padding:8px 11px}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 
-/* ==================================================================== fab */
+/* ========================================================= כפתור ההוספה */
 .fab{
   position:fixed;inset-inline-end:18px;
   bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom));
@@ -287,7 +287,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fab:active{transform:scale(.93)}
 @media (min-width:900px){.fab{bottom:26px}}
 
-/* ================================================================= sheets */
+/* ================================================================= גיליונות */
 .veil{
   position:fixed;inset:0;z-index:60;background:rgba(10,20,30,.5);
   display:none;align-items:flex-end;justify-content:center;
@@ -328,7 +328,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .chooser button .ic{font-size:24px}
 .chooser button small{display:block;font-weight:500;font-size:12.5px;color:var(--muted)}
 
-/* ============================================================ donorpicker */
+/* ============================================================ בורר התורם */
 .picker{position:relative}
 .dp-chosen{
   display:flex;align-items:center;gap:9px;background:var(--brand-soft);color:var(--brand);
@@ -351,7 +351,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .dp-new{border:1px dashed var(--line);border-radius:var(--radius-sm);padding:12px;margin-top:8px;
   background:var(--card-2)}
 
-/* ================================================================= kanban */
+/* =================================================================== קנבן */
 .kb{display:grid;gap:12px}
 @media (min-width:760px){.kb{grid-template-columns:repeat(4,1fr);align-items:start}}
 .kcol{
@@ -377,17 +377,17 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 .kcard .logdot{color:var(--brand);font-size:12px;font-weight:700}
 
-/* ================================================================ filters */
+/* ================================================================== מסננים */
 .filters{display:grid;gap:9px;grid-template-columns:1fr 1fr}
 @media (min-width:760px){.filters{grid-template-columns:repeat(5,1fr)}}
-/* grid items default to min-width:auto, and a date input's intrinsic width is
-   wider than the cell — without this the filter row overflows and misaligns */
+/* פריטי grid מקבלים min-width:auto כברירת מחדל, והרוחב הפנימי של שדה
+   תאריך רחב מהתא — בלי זה שורת המסננים גולשת ומאבדת יישור */
 .filters > *{min-width:0}
 .filters .fld{margin:0}
 .filters .inp{width:100%;min-width:0}
 
 
-/* ================================================================= misc */
+/* ==================================================================== שונות */
 .kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:14px}
 .kv:last-child{border-bottom:0}
 .kv span{color:var(--muted);min-width:82px;font-size:13px}
@@ -400,7 +400,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .back{background:none;border:0;color:var(--brand);font-weight:700;cursor:pointer;
   padding:4px 0;margin-bottom:8px;font-size:14px}
 
-/* ================================================================= toast */
+/* ==================================================================== טוסט */
 #toasts{
   position:fixed;inset-inline:0;z-index:80;display:grid;gap:8px;justify-items:center;
   bottom:calc(var(--tab-h) + 88px + env(safe-area-inset-bottom));pointer-events:none;padding:0 14px
@@ -412,7 +412,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .toast.bad{background:var(--bad);color:#fff}
 .toast.ok{background:var(--ok);color:#fff}
 
-/* ================================================================ updater */
+/* ================================================================= מעדכן */
 #updater{
   position:fixed;inset-inline:0;z-index:70;
   bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));
@@ -430,7 +430,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 @media (min-width:900px){#updater{bottom:16px}}
 
-/* ================================================================ boot */
+/* =================================================================== עלייה */
 #boot{min-height:100dvh;display:grid;place-items:center;gap:12px;color:var(--muted)}
 /* ═══ אזור מצב — CSS משותף (סבב 15/17) ══════════════════════════════════
    זהה בית-לבית בארבע האפליקציות. שני הרכיבים שיושבים בתחתית כל מסך
@@ -496,8 +496,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 'use strict';
 
 /* ==========================================================================
- * gius — single-file fundraising manager.
- * Everything lives here on purpose: one file to deploy, one file to cache.
+ * gius — ניהול גיוס כספים בקובץ אחד.
+ * ⭐ הכול יושב כאן בכוונה: קובץ אחד לפריסה, קובץ אחד למטמון.
  * ======================================================================== */
 
 var SUPABASE_URL = 'https://zrftjkghhjhqzopvdzou.supabase.co';
@@ -507,7 +507,7 @@ var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
 var STAGE_COLOR = { 'הכנה': 'var(--muted)', 'הרצה': 'var(--brand)', 'השלמה': 'var(--ok)', 'חסומה': 'var(--bad)' };
 var EPS = 0.005;
 
-// Fallback only — the real lists live in g_config and are editable in Settings.
+// נפילה-חזרה בלבד — הרשימות האמיתיות יושבות ב-g_config וניתנות לעריכה בהגדרות.
 var DEFAULT_CONFIG = {
   categories: ['תרומה', 'גביה', 'מגביות', 'פרוייקטים', 'הוראות קבע', 'פרנסים ותאריכים'],
   causes: [],
@@ -3564,7 +3564,7 @@ function errToast(e) {
 
 function openModal(title, body, foot) {
   $('#modal-title').textContent = title;
-  $('#modal-body').style.padding = '';   // the chooser zeroes this out — always reset
+  $('#modal-body').style.padding = '';   // הבורר מאפס את זה, ולכן תמיד מחזירים לקדמותו
   $('#modal-body').innerHTML = body;
   $('#modal-foot').innerHTML = foot || '';
   $('#modal').classList.add('open');
@@ -3597,7 +3597,9 @@ function closeAsk(v) {
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
 function selectHTML(name, options, value, placeholder) {
-  var h = '<select class="inp" id="' + name + '">';
+  // ⛔ שם נגיש לכל בורר (סבב 67) — ה-id נגזר מהקורא ואין לו `<label>`
+  //    צמוד, ולכן ה-placeholder הוא מה שמתאר אותו למי שאינו רואה אותו.
+  var h = '<select class="inp" aria-label="' + esc(placeholder || 'בחירה') + '" id="' + name + '">';
   h += '<option value="">' + esc(placeholder || '— ללא —') + '</option>';
   for (var i = 0; i < options.length; i++) {
     var o = options[i];
@@ -3626,7 +3628,7 @@ function emptyBox(icon, text) {
 }
 
 /* ====================================================================== */
-/*  LOGIN                                                                  */
+/*  כניסה                                                                  */
 /* ====================================================================== */
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -3906,6 +3908,7 @@ function renderShell() {
       '<nav class="tabbar">' + tabs + '</nav>' +
       '<div class="who"><div style="text-align:end"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isOwner() ? 'בעלים' : 'מנהל') + '</span></div>' +
+        '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
         '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
         '<button class="btn ghost sm" data-act="logout">יציאה</button></div>' +
     '</header>' +
@@ -4016,7 +4019,7 @@ function viewHome() {
 
   var h = '';
 
-  /* ---- month state card ---- */
+  /* ---- כרטיס מצב החודש ---- */
   h += '<section class="card">' +
     '<div class="monthnav">' +
       '<button class="btn ghost sm" data-act="month" data-d="-1" aria-label="חודש קודם">›</button>' +
@@ -4036,7 +4039,7 @@ function viewHome() {
     '<div class="momentum">' + momentumMsg(target > 0 ? pct : 0) + '</div>' +
   '</section>';
 
-  /* ---- breakdowns ---- */
+  /* ---- פילוחים ---- */
   h += '<div class="grid2">' +
     '<section class="card"><h2>📊 פילוח לפי סעיף</h2>' +
       breakdownTable(groupBy(txns, function (t) { return t.category; }, 'ללא סעיף'), 'סעיף', collected) +
@@ -4046,7 +4049,7 @@ function viewHome() {
     '</section>' +
   '</div>';
 
-  /* ---- my day ---- */
+  /* ---- היום שלי ---- */
   var me = state.user.full_name;
   var myTasks = state.tasks.filter(function (t) { return t.assignee === me && t.stage !== 'השלמה'; });
   var myPledges = state.pledges.filter(function (p) {
@@ -4115,7 +4118,7 @@ function viewDonors() {
   var list = donorMatches(state.donorSearch);
   return '<section class="card">' +
     '<div class="addrow" style="margin:0 0 10px">' +
-      '<input class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
+      '<input aria-label="חיפוש לפי שם, טלפון או שגריר" class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
       '<button class="btn" data-act="donor-new">＋ תורם</button>' +
     '</div>' +
     '<h2>🙋 תורמים<span class="cnt">' + list.length + '</span></h2>' +
@@ -4161,11 +4164,11 @@ function viewDonorCard() {
       '<div class="kv"><span>תגיות</span><b>' + ((d.tags && d.tags.length) ? d.tags.map(function (t) { return '<span class="badge">' + esc(t) + '</span>'; }).join(' ') : '—') + '</b></div>' +
     '</div>' +
     '<label class="fld" style="margin-top:12px"><span>הערות</span>' +
-      '<textarea class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
+      '<textarea aria-label="הערות חופשיות על התורם" class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
     '<button class="btn sm" data-act="notes-save" data-id="' + d.id + '">שמירת הערות</button>' +
   '</section>';
 
-  /* pledges */
+  /* התחייבויות */
   h += '<section class="card"><h2>🤝 התחייבויות<span class="cnt">' + pl.length + '</span></h2>';
   if (!pl.length) h += emptyBox('🤝', 'אין התחייבויות לתורם זה');
   else {
@@ -4185,7 +4188,7 @@ function viewDonorCard() {
   }
   h += '</section>';
 
-  /* transactions */
+  /* תנועות */
   h += '<section class="card"><h2>💰 תנועות<span class="cnt">' + tx.length + '</span></h2>';
   if (!tx.length) h += emptyBox('💰', 'אין תנועות לתורם זה');
   else {
@@ -4319,7 +4322,7 @@ function viewTasks() {
           (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
         '</div>' +
         '<div class="ft">' +
-          '<select data-inp="stage" data-id="' + t.id + '">' +
+          '<select data-inp="stage" aria-label="שלב המשימה" data-id="' + t.id + '">' +
             STAGES.map(function (s) {
               return '<option value="' + esc(s) + '"' + (s === t.stage ? ' selected' : '') + '>' + esc(s) + '</option>';
             }).join('') +
@@ -4426,7 +4429,7 @@ function viewSettings() {
 
   var h = '';
 
-  /* users */
+  /* משתמשים */
   h += '<section class="card"><h2>👥 ניהול משתמשים<span class="cnt">' + state.users.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="user-new">＋ משתמש</button></span></h2>' +
     '<div class="tw"><table><thead><tr><th>שם מלא</th><th>שם משתמש</th><th>תפקיד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
@@ -4441,7 +4444,7 @@ function viewSettings() {
   });
   h += '</tbody></table></div></section>';
 
-  /* lists */
+  /* רשימות */
   h += '<section class="card"><h2>📋 ניהול רשימות</h2>' +
     '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">הרשימות האלו מזינות את כל התפריטים באפליקציה.</div>' +
     '<div class="grid2">';
@@ -4458,13 +4461,13 @@ function viewSettings() {
         '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
     });
     h += '<div class="addrow">' +
-      '<input class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
+      '<input aria-label="ערך חדש" class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
       '<button class="btn sm" data-act="cfg-add" data-key="' + c.key + '">הוספה</button></div>' +
       '</div>';
   });
   h += '</div></section>';
 
-  /* targets */
+  /* יעדים */
   h += '<section class="card"><h2>🎯 יעד חודשי<span class="cnt">' + state.targets.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="target-set">קביעת יעד</button></span></h2>';
   if (!state.targets.length) h += emptyBox('🎯', 'עדיין לא הוגדרו יעדים');
@@ -4507,7 +4510,7 @@ function pickerHTML(id, donorId) {
       '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
       '<button type="button" class="dp-clear" aria-label="ניקוי">✕</button>' +
     '</div>' +
-    '<input class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
+    '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
     '<div class="dp-results hidden"></div>' +
     '<div class="dp-new hidden">' +
       '<div style="font-weight:700;font-size:13px;margin-bottom:8px">תורם חדש</div>' +
@@ -4728,7 +4731,7 @@ function formTask(existing) {
     '</div>' +
     (t.log ? '<div class="fld"><span>יומן</span><pre class="log">' + esc(t.log) + '</pre></div>' : '') +
     '<label class="fld"><span>הוספה ליומן</span>' +
-      '<textarea class="inp" id="tk-log" placeholder="רישום חדש — יתווסף ליומן עם תאריך ושם…"></textarea></label>' +
+      '<textarea aria-label="רישום חדש — יתווסף ליומן עם תאריך ושם" class="inp" id="tk-log" placeholder="רישום חדש — יתווסף ליומן עם תאריך ושם…"></textarea></label>' +
     datalistHTML('dl-people', people);
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -4816,7 +4819,7 @@ function formUser(existing) {
       '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
       '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
     '</div>' +
-    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="text" inputmode="numeric" maxlength="6"></label>') +
+    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
         '<option value="manager"' + (u.role === 'manager' || !u.role ? ' selected' : '') + '>מנהל</option>' +
@@ -4861,7 +4864,7 @@ function warnIfNoFp(r) {
 
 function formPassword(u) {
   openModal('שינוי סיסמה — ' + u.full_name,
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="pass-save" data-id="' + u.id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
@@ -4876,11 +4879,40 @@ function formPassword(u) {
 function formMyPassword() {
   openModal('🔑 שינוי הסיסמה שלי',
     '<label class="fld"><span>סיסמה נוכחית *</span><input class="inp" id="mp-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>' +
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
-    '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="text" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
+    '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="my-pass-save">שמירה</button>');
   var el = $('#mp-cur'); if (el) el.focus();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   החלפת משתמש — מסך אחד, מול הטביעה
+   ══════════════════════════════════════════════════════════════════════════
+   ⭐ שכבת הכניסה אחידה (סבב 67): שתי האפליקציות שיש בהן ניהול משתמשים
+   מלא — הנהלה וגיוס — מחזיקות **גם** שינוי סיסמה עצמי **וגם** החלפת
+   משתמש. עד הסבב הזה החלפת המשתמש הייתה קיימת בהנהלה בלבד.
+   ⛔ האימות הוא `gVerifyOffline` (סבב 67) — אותה פונקציה בדיוק שמכריעה
+   את הכניסה, מקוונת ואופליין. ⚠️ מסלול אימות שני היה מקום נוסף שבו
+   `active` או הטביעה עלולים להיבדק אחרת, ובדיוק שם נולדים פערים.
+   ⛔ ואין כאן קיצור דרך: החלפה בלי סיסמה הייתה הופכת כל מכשיר פתוח
+   למעבר חופשי לכל זהות שנמצאת במראה.
+   ══════════════════════════════════════════════════════════════════════════ */
+function formSwitchUser() {
+  var others = (MIRROR.g_users || []).filter(function (u) {
+    return u && u.active !== false && String(u.id) !== String(state.user.id);
+  });
+  if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', 'bad'); return; }
+  openModal('👥 החלפת משתמש',
+    '<label class="fld"><span>משתמש</span><select class="inp" id="sw-user" aria-label="המשתמש שאליו עוברים">' +
+      others.map(function (u) {
+        return '<option value="' + esc(u.id) + '">' + esc(u.full_name || u.username) + '</option>';
+      }).join('') +
+    '</select></label>' +
+    '<label class="fld"><span>סיסמה *</span><input class="inp" id="sw-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="switch-confirm">כניסה</button>');
+  var el = $('#sw-pass'); if (el) el.focus();
 }
 
 function formTarget(month) {
@@ -4933,7 +4965,7 @@ function runSave(btn, fn, msg) {
   Promise.resolve()
     .then(fn)
     .then(function (r) {
-      if (r === undefined) { busy(btn, false); return; }   // validation stopped it
+      if (r === undefined) { busy(btn, false); return; }   // הוולידציה עצרה את הפעולה
       return afterSave(msg);
     })
     .catch(function (e) { busy(btn, false); errToast(e); });
@@ -4950,6 +4982,31 @@ function findTask(id) {
 
 var ACTIONS = {
   'tab': function (el) { go(el.dataset.tab); },
+  'switch-user': function () { formSwitchUser(); },
+  'switch-confirm': function (el) {
+    var id = $('#sw-user') ? $('#sw-user').value : '';
+    var p  = $('#sw-pass') ? $('#sw-pass').value : '';
+    if (!id || !p) { toast('נא לבחור משתמש ולהזין סיסמה', 'bad'); return; }
+    var cu = null, arr = MIRROR.g_users || [];
+    for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) cu = arr[i];
+    /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן (סבב 67) — «אין במה לאמת»
+     *  אינו «סיסמה שגויה», והודעה מאוחדת שולחת את המשתמש להקליד שוב
+     *  ושוב סיסמה נכונה לחלוטין במקום לומר לו שנדרש חיבור אחד. */
+    if (!cu) { toast(MSG_OFF_UNKNOWN, 'bad'); return; }
+    busy(el, true);
+    gVerifyOffline(cu, p).then(function (v) {
+      busy(el, false);
+      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, 'bad'); return; }
+      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, 'bad'); return; }
+      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, 'bad'); return; }
+      closeModal();
+      state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
+      state.screen = 'home';
+      state.donorId = null;
+      boot();
+      toast('הוחלף ל' + (cu.full_name || cu.username), 'ok');
+    }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, 'bad'); });
+  },
   'logout': function () { logout(); },
   'modal-close': function () { closeModal(); },
   'ask-yes': function () { closeAsk(true); },
@@ -4967,7 +5024,7 @@ var ACTIONS = {
     $('#modal-body').style.padding = '0';
   },
 
-  /* donors */
+  /* תורמים */
   'donor-new': function () { formDonor(null); },
   'donor-edit': function (el) { formDonor(donorById(el.dataset.id)); },
   'donor-save': function (el) { runSave(el, function () { return saveDonor(el.dataset.id); }, 'נשמר'); },
@@ -5013,7 +5070,7 @@ var ACTIONS = {
     });
   },
 
-  /* transactions */
+  /* תנועות */
   'txn-new': function (el) { formTxn(null, el.dataset.donor || ''); },
   'txn-edit': function (el) {
     var t = null;
@@ -5028,7 +5085,7 @@ var ACTIONS = {
     });
   },
 
-  /* pledges */
+  /* התחייבויות */
   'pledge-new': function (el) { formPledge(null, el.dataset.donor || ''); },
   'pledge-edit': function (el) { formPledge(pledgeById(el.dataset.id)); },
   'pledge-save': function (el) { runSave(el, function () { return savePledge(el.dataset.id); }, 'ההתחייבות נשמרה'); },
@@ -5043,7 +5100,7 @@ var ACTIONS = {
     render();
   },
 
-  /* tasks */
+  /* משימות */
   'task-new': function () { formTask(null); },
   'task-open': function (el) { formTask(findTask(el.dataset.id)); },
   'task-save': function (el) { runSave(el, function () { return saveTask(el.dataset.id); }, 'המשימה נשמרה'); },
@@ -5054,7 +5111,7 @@ var ACTIONS = {
     });
   },
 
-  /* settings — users */
+  /* הגדרות — משתמשים */
   'user-new': function () { formUser(null); },
   'user-edit': function (el) { formUser(findUser(el.dataset.id)); },
   'user-save': function (el) { runSave(el, function () { return saveUser(el.dataset.id); }, 'המשתמש נשמר'); },
@@ -5072,6 +5129,13 @@ var ACTIONS = {
     }, 'הסיסמה עודכנה');
   },
   'my-pass': function () { formMyPassword(); },
+  /*  ⛔ מלווה את המעבר ל-`type=password` (סבב 67) — שני השדות שהבעלים
+   *  קובע בהם סיסמה **לאדם אחר** אין להם שדה אימות, ולכן הסתרה בלי דרך
+   *  לראות מה הוקלד הייתה יוצרת נעילה-בחוץ שקטה במקום להסיר סיכון. */
+  'pass-eye': function (el) {
+    var f = $('#' + el.dataset.id);
+    if (f) f.type = (f.type === 'password' ? 'text' : 'password');
+  },
   'my-pass-save': function (el) {
     var cur = $('#mp-cur') ? $('#mp-cur').value : '';
     var p1 = $('#mp-new') ? $('#mp-new').value : '';
@@ -5109,7 +5173,7 @@ var ACTIONS = {
       .catch(errToast);
   },
 
-  /* settings — lists */
+  /* הגדרות — רשימות */
   'cfg-add': function (el) {
     var key = el.dataset.key;
     var input = $('#cfg-add-' + key);
@@ -5148,7 +5212,7 @@ var ACTIONS = {
       });
   },
 
-  /* settings — targets */
+  /* הגדרות — יעדים */
   'target-set': function (el) { formTarget(el.dataset.month || state.month); },
   'target-save': function (el) { runSave(el, saveTarget, 'היעד נשמר'); }
 };
@@ -5321,9 +5385,10 @@ function registerSW() {
 
   var reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', function () {
-    // The very first worker fires this when it calls clients.claim(). Reloading
-    // then would yank the page out from under a first-time visitor, mid-form.
-    // Only an update the user actually asked for may reload.
+    // ה-worker הראשון יורה את זה כשהוא קורא ל-clients.claim(). רענון באותו
+    // רגע היה שומט את הדף מתחת למבקר ראשון, באמצע טופס.
+    // ⛔ רק עדכון שהמשתמש ביקש במפורש רשאי לרענן (נרשם בסבב 67) —
+    // רענון שלא נתבקש שומט את הדף מתחת למי שממלא טופס.
     if (!updateRequested || reloading) return;
     reloading = true;
     location.reload();
