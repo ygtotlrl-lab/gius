@@ -12,17 +12,12 @@ android {
         targetSdk 34
         // ⛔ versionCode לעולם אינו יורד (סבב 46ב) — מספר נמוך ממה
         // שמותקן במכשיר חוסם את העדכון.
-        // 3 = סבב 40 — המעטפת הוקשחה (setAllowFileAccess/setAllowContentAccess)
-        // ויושרה ל-javadoc של שלוש האחיות.
-        // 4 = סבב 41 — הסרת ה-FileProvider היתום וחילוץ המעטפת לתבנית משותפת.
-        // ⛔ כל שינוי תחת android/ מחייב קידום כאן, ו-tools/test_round40_gradle.mjs
-        // אוכף זאת מול origin/main.
-        // 5 = סבב 45 — יישור `AndroidManifest.xml` (`configChanges` לסופרסט, והסרת ה-`<queries>` היתום)
-        // ואכיפת חתימה על החלק המשותף של המניפסט ושל קובץ הבנייה.
-        // 6 = סבב 46ב — היפוך ברירת המחדל בקובצי התצורה: חתימה חסרת-גשר
-        // על המניפסט ועל קובץ הבנייה, וחתימה אחת לשני ה-workflows.
-        versionCode 10
-        versionName "10.0"
+        // ⛔ קדם בכל שינוי ב-`android/` (סבב 68) — ⚠️ ר' טבלת הגרסאות
+        // ב-`android/README.md`, ⛔ שהיא מקור האמת היחיד להיסטוריה
+        // (כלל ברזל 21); `tools/test_gradle.mjs` אוכף את הקידום מול
+        // קומיט הקידום האחרון.
+        versionCode 11
+        versionName "11.0"
     }
 
     buildTypes {
