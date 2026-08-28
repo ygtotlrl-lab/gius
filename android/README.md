@@ -190,7 +190,7 @@ cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRele
 ⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית
 היא ה-workflow. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.
 
-<!-- SHARED:start id="context-smali-scope" -->
+<!-- SHARED:start id="android-smali-scope" -->
 ## תיקון URL ב-APK קיים ובנוי (בלי מקור) — smali בלבד
 
 ⚠️ **הפרק הזה רלוונטי רק ל-APK ישן שנבנה לפני `android/`.** בנייה רגילה היום
@@ -215,7 +215,7 @@ apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
 ⭐ וה-keystore הוחלף בסבב 39 — כל חתימה היא
 ב-`signing/gius.keystore` בלבד.
 
-<!-- SHARED:start id="context-cache-apk" -->
+<!-- SHARED:start id="android-cache-apk" -->
 ### ⚠️ Cache APK — כלל זהב
 
 שם קובץ חוזר נתפס במטמון — של הדפדפן, של מנהל ההורדות ושל המכשיר — והמשתמש
