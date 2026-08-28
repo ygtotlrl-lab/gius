@@ -43,15 +43,11 @@ WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואי�
 
 ## ⛔ אין גשר שיתוף — וזה ההבדל היחיד מהתבנית של יומן
 
-למעטפת של yoman-avoda יש `AndroidShareBridge` (מוגבל-origin, בשני מנעולים) כי הדף
-שלה קורא ל-`navigator.share` עם תמונת דו"ח. **בקוד של gius אין `navigator.share`
-בכלל**, ולכן הגשר הושמט כליל — לא בצד Java, לא בצד הדף, לא ב-manifest ולא
-בתלויות.
-
-גשר מקורי על דף שנטען מהרשת הוא כוח שנמסר למי שמגיש את הדף. אם אי-פעם יידרש כאן
-גשר — מעתיקים את הדפוס הכפול-נעילה של יומן (`WebViewCompat.addWebMessageListener`
-עם `ALLOWED_ORIGINS`, ונפילה-חזרה שמחוברת רק על ה-origin שלנו). **לעולם לא
-`addJavascriptInterface` חשוף.**
+⛔ אין כאן `navigator.share`, ולכן הגשר הושמט כליל — לא בצד Java, לא בצד
+הדף, לא ב-manifest ולא בתלויות. ⚠️ גשר מקורי על דף שנטען מהרשת הוא כוח
+שנמסר למי שמגיש את הדף. ⛔ אם יידרש — בדפוס הכפול-נעילה של יומן
+(`addWebMessageListener` עם `ALLOWED_ORIGINS`), ⛔ ולעולם לא
+`addJavascriptInterface` חשוף.
 
 ## למה אין נכסים מוטבעים
 
@@ -111,7 +107,6 @@ mipmap-*/` — `ic_launcher.png` ו-`ic_launcher_foreground.png` (הסימן ב�
 ⛔ **אין לערוך את הקבצים ידנית** — משנים את הסקריפט ומריצים מחדש. הוא
 דטרמיניסטי: הרצה חוזרת בלי שינוי קוד מייצרת קבצים זהים בית-לבית.
 
-
 ⚠️ **המקור כאן הוא סקריפט ולא קובץ גרפי, וזו חריגה מנומקת** — gius היא
 האפליקציה היחידה מהארבע שמחוללת את האייקונים ב-`node tools/gen-icons.mjs`
 (אותו סקריפט שמייצר גם את אייקוני ה-PWA, מאותה מתמטיקת פיקסלים; חריגה רשומה
@@ -156,16 +151,13 @@ hanhala ו-schar כמעט זהות בית-לבית, gius נבדלת בניסוח
 החתימה מוודא שה-APK אכן נושא את התעודה הזו — ה-workflow נכשל בכל אחד מהמקרים.
 
 > ⚠️ **המפתח הוחלף ב-2026-08-19 (סבב 39).** APK חדש ⛔ אינו מתקין על גבי התקנה
-> שנחתמה במפתח הישן — נדרשת הסרה והתקנה מחדש, פעם אחת. ר' CLAUDE.md.
+> שנחתמה במפתח הישן — נדרשת הסרה והתקנה מחדש, פעם אחת..
 
 ### בנייה מקומית (דורשת Android SDK + Gradle)
 
 ```bash
-cd android
-gradle wrapper --gradle-version 8.7   # פעם אחת
-./gradlew :app:assembleRelease
-# פלט לא חתום:
-#   android/app/build/outputs/apk/release/app-release-unsigned.apk
+cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRelease
+# פלט לא חתום: android/app/build/outputs/apk/release/app-release-unsigned.apk
 ```
 
 ## Sign with the PERMANENT key (required so it installs over previous builds)
@@ -174,12 +166,8 @@ gradle wrapper --gradle-version 8.7   # פעם אחת
 ../signing/sign-apk.sh app/build/outputs/apk/release/app-release-unsigned.apk gius.apk
 ```
 
-הסקריפט מריץ `zipalign` ואז `apksigner` מול `signing/gius.keystore`
-(alias `gius`), ואוכף את טביעת האצבע לפני ואחרי החתימה.
-
-> **ה-keystore נמצא בריפו** — `signing/gius.keystore`, בדיוק כמו
-> `signing/yoman.keystore` ב-yoman-avoda. ⛔ זהו קובץ ה-keystore **היחיד**
-> ב-`signing/` מסבב 39; שני הקבצים הקודמים נמחקו.
+הסקריפט מריץ `zipalign` ואז `apksigner`, ⛔ ואוכף את טביעת האצבע לפני
+ואחרי החתימה.
 
 ### המפתח הקבוע — ⛔ לעולם לא להחליף
 
@@ -195,30 +183,12 @@ gradle wrapper --gradle-version 8.7   # פעם אחת
 | **SHA1** | `FA:AA:8E:84:8C:71:95:5B:E0:62:33:13:C5:BB:50:A3:04:E5:86:DE` |
 | **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
 
-חלופות ידניות, כשאין `sign-apk.sh`:
-
-```bash
-apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
-  --ks-pass pass:gius123 --key-pass pass:gius123 app.apk
-jarsigner -keystore signing/gius.keystore -storepass gius123 \
-  -keypass gius123 app.apk gius
-```
-
-אימות: `keytool -list -v -keystore signing/gius.keystore -storepass gius123`,
-ו-`apksigner verify --print-certs app.apk` אחרי החתימה — שניהם חייבים להחזיר
-את ה-SHA256 שבטבלה. ⚠️ הבנייה ב-Actions חותמת מהריפו: אין secret ואין קלט
-ידני, ולכן אין דרך לבנות בטעות APK חתום במפתח אחר.
-
-⚠️ **המפתח הוחלף פעם אחת, ב-2026-08-19 (סבב 39), באישור מפורש** — שני
-מכשירים בשטח, בלי נתונים מקומיים שלא סונכרנו. ⛔ הטביעה הישנה
-`DA:61:B1:4D:…` אינה בשימוש, ⛔ ואין לגזור מכאן רשות להחליף שוב.
-
 ### פרטי המעטפת
 `applicationId` חייב להישאר `com.gius.app`, ו-`versionCode` גבוה מזה של
 ה-TWA שהוחלף (ה-TWA היה 1; המעטפת היא 2).
 
-⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית היא
-ה-workflow שלמעלה. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.
+⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית
+היא ה-workflow. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.
 
 <!-- SHARED:start id="context-smali-scope" -->
 ## תיקון URL ב-APK קיים ובנוי (בלי מקור) — smali בלבד
@@ -228,7 +198,7 @@ jarsigner -keystore signing/gius.keystore -storepass gius123 \
 ולכן אין בה URL שצריך לתקן.
 ⛔ **smali בלבד — לא binary patch.** עריכה בינארית של ה-APK שוברת את החתימה
 ואינה ניתנת לאימות, ⛔ והחתימה מחדש היא במפתח הקבוע של הריפו בלבד — ר' הפרק
-«חתימת APK» ב-CLAUDE.md.
+«Sign with the PERMANENT key» שלמעלה.
 <!-- SHARED:end -->
 
 ```bash
@@ -242,7 +212,7 @@ apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
 ```
 
 ⚠️ **ה-APK הישן כאן היה TWA** שנבנה ב-PWABuilder, ⛔ ואין לבנות אותו מחדש
-(ר' «מעטפת ה-APK» ב-CLAUDE.md). ⭐ וה-keystore הוחלף בסבב 39 — כל חתימה היא
+⭐ וה-keystore הוחלף בסבב 39 — כל חתימה היא
 ב-`signing/gius.keystore` בלבד.
 
 <!-- SHARED:start id="context-cache-apk" -->
