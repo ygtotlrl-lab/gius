@@ -3564,7 +3564,7 @@ function errToast(e) {
 
 function openModal(title, body, foot) {
   $('#modal-title').textContent = title;
-  $('#modal-body').style.padding = '';   // the chooser zeroes this out — always reset
+  $('#modal-body').style.padding = '';   // הבורר מאפס את זה, ולכן תמיד מחזירים לקדמותו
   $('#modal-body').innerHTML = body;
   $('#modal-foot').innerHTML = foot || '';
   $('#modal').classList.add('open');
@@ -4965,7 +4965,7 @@ function runSave(btn, fn, msg) {
   Promise.resolve()
     .then(fn)
     .then(function (r) {
-      if (r === undefined) { busy(btn, false); return; }   // validation stopped it
+      if (r === undefined) { busy(btn, false); return; }   // הוולידציה עצרה את הפעולה
       return afterSave(msg);
     })
     .catch(function (e) { busy(btn, false); errToast(e); });
