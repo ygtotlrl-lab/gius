@@ -28,7 +28,7 @@ WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואי�
 | **Package ID** | `com.gius.app` — זהה ל-TWA שהוא מחליף (חובה, אחרת זו אפליקציה נפרדת) |
 | **שם** | גיוס |
 | **טוען** | `https://ygtotlrl-lab.github.io/gius/` — מהרשת, לא מנכסים מוטבעים |
-| **versionCode** | 11 — קודם בסבב 68 (היסטוריית הגרסאות ירדה מהערות `build.gradle` — מקור אמת שני; ⛔ הטבלה הזו היא ההיסטוריה). 10 — קודם בסבב 66 (עשרת קובצי ה-mipmap הוחלפו). 8 — קודם בתיקון שאחרי סבב 60 (קיצור ההערה המשותפת ב-`ShellActivity`, שנעשה בסבב 60 בלי קידום). 7 — קודם בסבב 58 (הסרת `FLAG_ACTIVITY_NEW_TASK` ממסירת יעד חיצוני ל-`ACTION_VIEW`). 6 = סבב 46ב (היפוך ברירת המחדל בקובצי התצורה). 5 = סבב 45, 4 = סבב 41, 3 = סבב 40, 2 = המעטפת הראשונה של WebView. ⛔ versionCode לעולם אינו יורד — מספר נמוך ממה שמותקן במכשיר חוסם את העדכון |
+| **versionCode** | 14 — קודם בסבב 71 (כל נכסי האייקון נוצרו מחדש ע"י `tools/gen-icons.mjs`, שהוא מעכשיו מקור האמת היחיד להם). 13 — קודם בסבב 71 (ה-`ic_launcher_foreground` בגיוס נגזר מחדש אנליטית: הרדיוס החיצוני הוא בדיוק חצי מצלע התוכן, והשוליים אינם יושבים על סף האלפא). 12 — קודם בסבב 71 (חמשת קובצי `ic_launcher_foreground` נגזרו מחדש לצלע תוכן 48/72/96/144/192 בדיוק, בהכפלה מוקדמת באלפא). 11 — קודם בסבב 68 (היסטוריית הגרסאות ירדה מהערות `build.gradle` — מקור אמת שני; ⛔ הטבלה הזו היא ההיסטוריה). 10 — קודם בסבב 66 (עשרת קובצי ה-mipmap הוחלפו). 8 — קודם בתיקון שאחרי סבב 60 (קיצור ההערה המשותפת ב-`ShellActivity`, שנעשה בסבב 60 בלי קידום). 7 — קודם בסבב 58 (הסרת `FLAG_ACTIVITY_NEW_TASK` ממסירת יעד חיצוני ל-`ACTION_VIEW`). 6 = סבב 46ב (היפוך ברירת המחדל בקובצי התצורה). 5 = סבב 45, 4 = סבב 41, 3 = סבב 40, 2 = המעטפת הראשונה של WebView. ⛔ versionCode לעולם אינו יורד — מספר נמוך ממה שמותקן במכשיר חוסם את העדכון |
 | **minSdk / targetSdk** | 21 / 34 |
 | **WebView** | JavaScript, DOM storage (localStorage — שם יושב ה-session), DB |
 | **סכמות שאינן http** | נמסרות למערכת ב-`ACTION_VIEW`. כל `http`/`https` נשאר בתוך המעטפת |
@@ -190,7 +190,7 @@ cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRele
 ⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית
 היא ה-workflow. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.
 
-<!-- SHARED:start id="context-smali-scope" -->
+<!-- SHARED:start id="android-smali-scope" -->
 ## תיקון URL ב-APK קיים ובנוי (בלי מקור) — smali בלבד
 
 ⚠️ **הפרק הזה רלוונטי רק ל-APK ישן שנבנה לפני `android/`.** בנייה רגילה היום
@@ -215,7 +215,7 @@ apksigner sign --ks signing/gius.keystore --ks-key-alias gius \
 ⭐ וה-keystore הוחלף בסבב 39 — כל חתימה היא
 ב-`signing/gius.keystore` בלבד.
 
-<!-- SHARED:start id="context-cache-apk" -->
+<!-- SHARED:start id="android-cache-apk" -->
 ### ⚠️ Cache APK — כלל זהב
 
 שם קובץ חוזר נתפס במטמון — של הדפדפן, של מנהל ההורדות ושל המכשיר — והמשתמש
