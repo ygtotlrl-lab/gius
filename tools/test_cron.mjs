@@ -32,6 +32,10 @@ const APP = {
   sisterKeys: [],
   migration: 'migrations/005_backup_retention_cron.sql',
   migrationDoc: 'gius/migrations/005_backup_retention_cron.sql',
+  /*  ⛔ המסלול שדורש את השדות האלה אינו רץ באפליקציה הזו (סבב 72) —
+      ⚠️ והם מוצהרים ריקים ⛔ ואינם נשמטים: ⭐ שדה חסר נקרא «לא נשאל»,
+      וריק נקרא «נמדד ואין», ⛔ וטענה שמשווה מול חסר עוברת תמיד. */
+  allowlistMigration: null,
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 
