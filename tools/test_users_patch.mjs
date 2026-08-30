@@ -22,6 +22,10 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { webcrypto } from 'node:crypto';
 
+
+/*  ⛔ הקובץ הזה אינו אוכף שורה בטבלת התשתית (סבב 72) — ⚠️ הצהרה ריקה
+ *  ולא היעדר: ⛔ שער בלי הצהרה אינו נבדל משער שההצהרה שלו נשמטה. */
+export const ROWS = [];
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
