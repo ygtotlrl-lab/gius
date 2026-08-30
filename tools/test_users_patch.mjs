@@ -181,6 +181,7 @@ async function run() {
     ]);
     eq('שני המשתמשים נשמרו', h.ctx.MIRROR.g_users.length, 2);
     ok('⛔ אין `password` באף רשומה בזיכרון',
+      h.ctx.MIRROR.g_users.length > 0 &&
       h.ctx.MIRROR.g_users.every((u) => !('password' in u)));
     ok('⛔ אף ערך סיסמה אינו על הדיסק',
       !diskHas(h.store, 'סוד-א') && !diskHas(h.store, 'סוד-ב'));
