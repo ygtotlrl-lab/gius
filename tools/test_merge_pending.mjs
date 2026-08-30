@@ -28,7 +28,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
-/* ── APP — הדבר היחיד שנבדל בין הריפו (gius) ───────────────────────────── */
+/* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
   app: 'gius',
   names: ['rowTs', 'findRow', '_mergePick', 'mergeCore', 'mergeRows'],
