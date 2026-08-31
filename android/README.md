@@ -6,21 +6,6 @@
 https://ygtotlrl-lab.github.io/gius/
 ```
 
-## Why WebView and never a TWA
-
-<!-- SHARED:start id="android-why-twa" -->
-**Do not rebuild this as a TWA, and do not use PWABuilder** (it only produces
-TWAs). A TWA is not a standalone component — it runs the site *inside Chrome*
-and merely hides the address bar. The content filtering installed on the users'
-devices blocks Chrome, so a TWA build never opens at all. A WebView renders
-in-process and never goes through Chrome, so the filter does not touch it.
-<!-- SHARED:end -->
-
-⚠️ **וכאן זה נמדד על הבשר, ולא בתיאוריה:** ה-APK הראשון של gius נבנה ב-PWABuilder
-כ-TWA ופשוט **לא נפתח** אצל המשתמשים, בעוד ש-`yoman-avoda` ו-`hanhala` — שתיהן
-WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואין לבנות מחדש ב-PWABuilder** —
-זה יחזיר את התקלה.
-
 ## מה בפנים
 
 | | |
@@ -40,27 +25,6 @@ WebView — עבדו. ⛔ **אין להחזיר את המעטפת ל-TWA ואי�
 אותו מנגנון service worker + באנר "גרסה חדשה זמינה" שכבר עובד בדפדפן. APK חדש
 נדרש רק כששינוי נוגע במעטפת עצמה.
 <!-- SHARED:end -->
-
-## ⛔ אין גשר שיתוף — וזה ההבדל היחיד מהתבנית של יומן
-
-⛔ אין כאן `navigator.share`, ולכן הגשר הושמט כליל — לא בצד Java, לא בצד
-הדף, לא ב-manifest ולא בתלויות. ⚠️ גשר מקורי על דף שנטען מהרשת הוא כוח
-שנמסר למי שמגיש את הדף. ⛔ אם יידרש — בדפוס הכפול-נעילה של יומן
-(`addWebMessageListener` עם `ALLOWED_ORIGINS`), ⛔ ולעולם לא
-`addJavascriptInterface` חשוף.
-
-## למה אין נכסים מוטבעים
-
-- ⛔ **`file://` הוא origin אחסון אחר.** ה-localStorage של `file://` ושל
-  `https://ygtotlrl-lab.github.io` הן שתי מחיצות נפרדות לחלוטין. תנועה שנרשמה
-  לעותק מוטבע בעלייה ראשונה **לא נראית לאפליקציה האמיתית לעולם** — והיא גם לא
-  תסונכרן, כי הסנכרון רץ בדף השני.
-- **זה מקור אמת שני** — בדיוק מה שכלל קריטי 1 של הריפו אוסר (קובץ ראשי יחיד).
-  הוא מתיישן בכל שחרור.
-- **מה שהוא אמור לפתור כבר פתור**: אחרי עלייה מוצלחת אחת, ה-service worker מגיש
-  הכול אופליין ושכבת ה-MIRROR עובדת בלי רשת. המקרה היחיד שנשאר הוא **התקנה
-  והפעלה ראשונה בלי רשת בכלל** — ולהתקנת APK ממילא צריך רשת, ואז המעטפת מציגה
-  דף שגיאה בעברית עם כפתור «נסה שוב».
 
 <!-- SHARED:start id="android-origin-switch" -->
 ## ⚠️ מעבר-origin חד-פעמי — ולפני כל הפצת APK
@@ -169,7 +133,7 @@ cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRele
 הסקריפט מריץ `zipalign` ואז `apksigner`, ⛔ ואוכף את טביעת האצבע לפני
 ואחרי החתימה.
 
-### המפתח הקבוע — ⛔ לעולם לא להחליף
+### פרטי המפתח הקבוע
 
 | | |
 |---|---|
@@ -199,11 +163,13 @@ cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRele
 ⛔ **smali בלבד — לא binary patch.** עריכה בינארית של ה-APK שוברת את החתימה
 ואינה ניתנת לאימות, ⛔ והחתימה מחדש היא במפתח הקבוע של הריפו בלבד — ר' הפרק
 «Sign with the PERMANENT key» שלמעלה.
+⭐ **שני הקבצים שנושאים את ה-URL הם `MainActivity.smali` ו-`MainActivity$2.smali`**
+— ⛔ וההוראה זהה בארבעת הריפו; הכתובת עצמה, שם תיקיית העבודה והמפתח הם
+פר-אפליקציה, ⛔ ויושבים בבלוק שמתחת.
 <!-- SHARED:end -->
 
 ```bash
 apktool d <app>.apk -o /tmp/gius_work -f
-# תקן את ה-URL ב-MainActivity.smali ו-MainActivity$2.smali
 rm -rf /tmp/gius_work/build          # חובה לפני בנייה חוזרת
 apktool b /tmp/gius_work -o built.apk
 zipalign -f 4 built.apk aligned.apk

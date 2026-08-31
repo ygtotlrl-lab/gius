@@ -22,6 +22,10 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { webcrypto } from 'node:crypto';
 
+
+/*  ⛔ הקובץ הזה אינו אוכף שורה בטבלת התשתית (סבב 72) — ⚠️ הצהרה ריקה
+ *  ולא היעדר: ⛔ שער בלי הצהרה אינו נבדל משער שההצהרה שלו נשמטה. */
+export const ROWS = [];
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
@@ -177,6 +181,7 @@ async function run() {
     ]);
     eq('שני המשתמשים נשמרו', h.ctx.MIRROR.g_users.length, 2);
     ok('⛔ אין `password` באף רשומה בזיכרון',
+      h.ctx.MIRROR.g_users.length > 0 &&
       h.ctx.MIRROR.g_users.every((u) => !('password' in u)));
     ok('⛔ אף ערך סיסמה אינו על הדיסק',
       !diskHas(h.store, 'סוד-א') && !diskHas(h.store, 'סוד-ב'));
@@ -271,6 +276,26 @@ async function run() {
 
     ok('CACHE_NAME בתבנית gius-v<N>',
       /const CACHE_NAME = 'gius-v\d+';/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')));
+  }
+
+  /* ── מוטציות — ⛔ על עותק בזיכרון, ⛔ ולא על העץ (סבב 72) ──────────────── */
+  /*  ⚠️ עד סבב 72 הקובץ הזה נמדד «יש בו מוטציה» מפני שהמילה הופיעה
+   *  ב**באנר** — ⛔ ולא רצה כאן אף מוטציה. ⭐ שתי אלה מודדות את המסנן
+   *  עצמו: הסרת `strip: ['password']` חייבת להפיל טענה, ⛔ ותוספת עמודה
+   *  שאינה סוד חייבת **לעבור**. */
+  sect('מוטציות');
+  {
+    const stripRe = /\{[^}]*t:\s*'g_users'[^}]*strip:\s*\[\s*'password'\s*\][^}]*\}/;
+    /*  ⛔ ההחלפה מכוונת לאובייקט התצורה עצמו (סבב 72) — ⚠️ המחרוזת
+     *  `strip: ['password']` מופיעה גם בשתי הערות, והחלפה גלובלית
+     *  הייתה מודדת אותן ולא את הקוד. */
+    const dropped = SRC.replace(stripRe, (m) => m.replace(/strip:\s*\[\s*'password'\s*\]/, 'strip: []'));
+    ok('⛔ מוטציה: הסרת `password` מ-strip מפילה את טענת המסנן — expectFail: `strip: [password]` עדיין מוגדר על g_users',
+       dropped !== SRC && !stripRe.test(dropped));
+
+    const extra = SRC.replace("t: 'g_users'", "t: 'g_users', note: 'הערה שנוספה במוטציית-הנגד'");
+    ok('⭐ מוטציית-נגד: שדה שאינו `strip` ⛔ אינו מפיל — נמדד המסנן, לא הצורה',
+       extra !== SRC && stripRe.test(extra));
   }
 
   console.log('\n' + (fail ? '❌' : '✅') + `  ${pass} עברו, ${fail} נכשלו`);
