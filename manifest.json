@@ -1,10 +1,11 @@
 {
-  "name": "גיוס — ניהול גיוס כספים",
+  "name": "גיוס",
   "short_name": "גיוס",
   "description": "ניהול תורמים, התחייבויות, תנועות ומשימות גיוס כספים.",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "./",
+  "id": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
