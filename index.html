@@ -2671,7 +2671,6 @@ function sum(arr, pick) {
 // רינדור טבלה, ובניית `Intl.NumberFormat` יקרה בהרבה מהעיצוב עצמו.
 var ilsFmt = new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 });
 function ils(n) { return ilsFmt.format(Math.round(num(n))); }
-function nis(n) { return new Intl.NumberFormat('he-IL', { maximumFractionDigits: 0 }).format(Math.round(num(n))); }
 
 // ⚠️ **שעון מקומי במכוון, ולא `toISOString().slice(0,10)`.** ה-UTC מקדים או
 // מאחר את התאריך המקומי בשעות הקצה, ולכן תנועה שנרשמת בערב הייתה נופלת
