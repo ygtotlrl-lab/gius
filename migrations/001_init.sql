@@ -1,57 +1,17 @@
 -- ============================================================================
--- gius — ניהול גיוס כספים
--- Migration 0001 — initial schema
---
--- Project ref : zrftjkghhjhqzopvdzou   (dedicated project, not shared)
--- Prefix      : g_
---
--- Design rules encoded here (see CLAUDE.md for the full contract):
---   1. Soft delete only. Every entity table carries deleted + deleted_at, and
---      the anon role is deliberately NOT granted DELETE — physical deletion is
---      impossible through the application.
---   2. Every row has updated_at, maintained by trigger. This is the basis for
---      a future merge engine, so it must be reliable server-side and not
---      depend on the client sending it.
---   3. g_txns.donor_id and g_pledges.donor_id reference g_donors
---      ON DELETE RESTRICT.
---   4. RLS is ENABLED on every table with fully open policies, plus explicit
---      GRANTs to anon. This is a conscious, documented decision: the app is an
---      internal tool with its own login table (g_users); authorization lives in
---      the application layer, not in Postgres. Anyone holding the anon key can
---      read and write all rows.
---   5. No stored computed money. "נגבה", "נותר" and pledge status are always
---      derived at runtime from g_txns.
---
--- Run this once against the project. It is idempotent.
---
--- ⛔ WHAT "IDEMPOTENT" HAS TO MEAN HERE (round 27)
---   `create table if not exists` SKIPS an existing table entirely. So a file
---   that only creates tables is idempotent in the trivial sense — running it
---   twice does no harm — and useless in the sense that matters: an older
---   installation that re-runs it does NOT receive any structural change made
---   after it was first created. It silently keeps a schema the running code
---   no longer matches.
---
---   Therefore: **every structural change made since the first install needs
---   its own convergence statement here**, next to the table it belongs to —
---   `add column if not exists`, `alter column … drop default`,
---   `create index if not exists`, `drop trigger if exists` + `create trigger`,
---   `drop policy if exists` + `create policy`, and an explicit `revoke` before
---   any `grant` (a GRANT is additive and can never take a privilege away).
---   ⛔ Never touch data. Structure only.
---
---   Convergence statements already here: `pass_salt`/`pass_fp` (0003),
---   `role drop default` (round 26 completion), and the `revoke all` in the
---   grants loop (0002). The upgrade migrations stay in the repo as the record
---   of what changed and why — this file is what makes a stale install catch up.
+-- 001_init.sql — ניהול גיוס כספים
 -- ============================================================================
+--
+-- ⛔ **רץ במסד.** ⛔ מיגרציה שכבר רצה אינה נערכת — ⚠️ המסד החיל אותה,
+--    ועריכה שלה יוצרת מצב שבו הקובץ מתאר משהו אחר ממה שרץ; ⛔ שינוי מבני
+--    נעשה בקובץ הבא בתור.
 
 begin;
 
 create extension if not exists pgcrypto;
 
 -- ---------------------------------------------------------------------------
--- updated_at trigger helper
+-- עוזר הטריגר של `updated_at`
 -- ---------------------------------------------------------------------------
 create or replace function g_touch_updated_at() returns trigger
 language plpgsql as $$
@@ -62,8 +22,8 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- g_users — application login accounts
---   Users are never deleted; `active` is their soft-delete.
+-- `g_users` — חשבונות הכניסה לאפליקציה
+--   ⛔ משתמש אינו נמחק לעולם — ⚠️ `active` היא המחיקה הרכה שלו.
 --
 -- ⛔ `role` has NO DEFAULT (round 26 completion). Creating a user without an
 --    explicit role fails in the database, and that is the intended behaviour:
@@ -89,10 +49,10 @@ create table if not exists g_users (
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
--- Upgrade path for an installation created before the round-26 completion.
--- Idempotent, and a no-op on a fresh install: `create table` above already
--- declares the column without a default. ⚠️ Touches no data — it only removes
--- the column default, so existing rows keep the role they already hold.
+-- ⭐ מסלול השדרוג להתקנה שנוצרה לפני שהעמודה איבדה את ברירת המחדל.
+-- ⚠️ אידמפוטנטי, ובהתקנה טרייה אינו עושה דבר: ה-`create table` שלמעלה כבר
+--    מצהיר את העמודה בלי ברירת מחדל. ⛔ ואינו נוגע בנתונים — ⚠️ הוא מסיר
+--    את ברירת המחדל בלבד, ושורות קיימות שומרות את התפקיד שכבר יש להן.
 alter table g_users alter column role drop default;
 
 -- Upgrade path for an installation created before 0003_pass_fp.sql (round 23).
@@ -205,7 +165,7 @@ create table if not exists g_config (
 );
 
 -- ---------------------------------------------------------------------------
--- Indexes
+-- אינדקסים
 -- ---------------------------------------------------------------------------
 create index if not exists g_donors_live_idx   on g_donors  (deleted, name);
 create index if not exists g_pledges_donor_idx on g_pledges (donor_id) where deleted = false;
@@ -216,7 +176,7 @@ create index if not exists g_txns_date_idx     on g_txns    (deleted, txn_date);
 create index if not exists g_tasks_stage_idx   on g_tasks   (deleted, stage);
 
 -- ---------------------------------------------------------------------------
--- updated_at triggers
+-- טריגרי `updated_at`
 -- ---------------------------------------------------------------------------
 do $$
 declare t text;
@@ -231,9 +191,9 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- RLS + GRANTs
---   Open policies by design (internal tool). DELETE is intentionally withheld
---   from anon so that soft-delete cannot be bypassed from the client.
+-- RLS וההרשאות
+--   ⭐ פוליסות פתוחות בהחלטה — כלי פנימי. ⛔ ו-`delete` נמנע מ-`anon`
+--   בכוונה — ⚠️ אחרת אפשר לעקוף את המחיקה הרכה מהלקוח.
 --
 -- ⛔ THE `revoke all` IS LOAD-BEARING — do not "simplify" it away (0002).
 --   A GRANT is additive only: it can add a privilege, never remove one. A stock
@@ -265,16 +225,17 @@ end $$;
 
 grant usage on schema public to anon, authenticated;
 
--- Keep a table added by a FUTURE migration from inheriting DELETE as well (0002).
--- ⚠️ ALTER DEFAULT PRIVILEGES only affects defaults owned by the role running
---    it. If Supabase's defaults were set by another role this is a no-op, and a
---    new table still needs its own `revoke all` — see the trap in CLAUDE.md §4.
+-- ⛔ גם טבלה שתיווסף במיגרציה עתידית לא תירש `delete` — ⚠️ ירושה שקטה היא
+--    בדיוק מה שאין לו סימן.
+-- ⚠️ `alter default privileges` משפיע רק על ברירות מחדל שבבעלות התפקיד
+--    שמריץ אותו. אם ברירות המחדל נקבעו ע"י תפקיד אחר — זהו no-op, ⛔ וטבלה
+--    חדשה עדיין צריכה `revoke all` משלה.
 alter default privileges in schema public
   revoke delete, truncate on tables from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- Seed — the editable lists only.
--- Nothing else is seeded: the app ships empty of business data.
+-- זריעה — הרשימות הניתנות לעריכה בלבד.
+-- ⛔ ותו לא — ⚠️ האפליקציה נשלחת ריקה מנתוני לקוח.
 --
 -- ⛔ NO USER IS SEEDED HERE, AND NONE MAY BE ADDED.
 -- Until round 24 this file carried an `insert into g_users` with a REAL
