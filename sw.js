@@ -5,7 +5,7 @@
  *  ⚠️ מסבב 42ג כל הלוגיקה יושבת במודול המשותף שלמטה — זהה בית-לבית
  *  בארבע האפליקציות. ⛔ מה שנבדל יושב ב-SW_CFG בלבד.
  */
-const CACHE_NAME = 'gius-v44';
+const CACHE_NAME = 'gius-v45';
 
 // קבצים מקומיים.
 var CORE = [
@@ -69,7 +69,7 @@ var SW_OFFLINE_HTML = `<!doctype html>
  *  ⚠️ ו-`skipWaiting: false` נעדר **בכוונה**: הדף מציג באנר «🔄 גרסה
  *  חדשה זמינה» והמשתמש מחליט מתי לעדכן. ⛔ אין ליישר בלי החלטת מנהל. */
 var SW_CFG = {
-  prefix: 'gius-',
+  prefix: 'gius-v1',
   skipHosts: [],
   cdnHosts: ['cdn.jsdelivr.net'],
   scoped: true,
