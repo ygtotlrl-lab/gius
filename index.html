@@ -3479,7 +3479,7 @@ window.addEventListener('offline', syncBarRender);
    מסכים עם הנתונים שעל המסך.
    ══════════════════════════════════════════════════════════════════════════ */
 function donorById(id) {
-  for (var i = 0; i < state.donors.length; i++) if (state.donors[i].id === id) return state.donors[i];
+  for (var i = 0; i < state.donors.length; i++) if (idEq(state.donors[i].id, id)) return state.donors[i];
   return null;
 }
 // תורם שאינו במצב החי — נמחק רכות, או טרם הגיע במשיכה. מציגים מציין מקום
@@ -3487,7 +3487,7 @@ function donorById(id) {
 // שהכסף עדיין רשום ומחושב.
 function donorName(id) { var d = donorById(id); return d ? d.name : '— תורם שנמחק —'; }
 function pledgeById(id) {
-  for (var i = 0; i < state.pledges.length; i++) if (state.pledges[i].id === id) return state.pledges[i];
+  for (var i = 0; i < state.pledges.length; i++) if (idEq(state.pledges[i].id, id)) return state.pledges[i];
   return null;
 }
 function txnsOfDonor(id) { return state.txns.filter(function (t) { return t.donor_id === id; }); }
@@ -4349,7 +4349,7 @@ function wireKanban() {
 // היה משקר על משהו ששום שכבה לא שמרה.
 function moveTask(id, stage) {
   var t = null;
-  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) t = state.tasks[i];
+  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) t = state.tasks[i];
   if (!t || t.stage === stage) return;
   var prev = t.stage;
   t.stage = stage;
@@ -4727,7 +4727,7 @@ function saveTask(id) {
   var title = val('tk-title');
   if (!title) { toast('נא למלא כותרת', 'bad'); return Promise.resolve(); }
   var existing = null;
-  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) existing = state.tasks[i];
+  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) existing = state.tasks[i];
 
   var row = {
     title: title,
@@ -4918,9 +4918,9 @@ function saveTarget() {
 /* ══════════════════════════════════════════════════════════════════════════
    פעולות — מפת `data-act` אחת, האזנה מואצלת אחת
    ══════════════════════════════════════════════════════════════════════════
-   כל כפתור באפליקציה נושא `data-act="<שם>"`, ומאזין יחיד על `document`
-   מוצא את הפונקציה ב-`ACTIONS`. ⛔ **אין `onclick` עם קוד JS בתוך מאפיין
-   HTML** — כל המסכים נבנים כמחרוזות, וקוד בתוך מאפיין נשבר מכל גרש בשם
+   כל כפתור באפליקציה נושא את שם הפעולה במאפיין `data-act`, ומאזין יחיד
+   על `document` מוצא את הפונקציה ב-`ACTIONS`. ⛔ **אין `onclick` עם קוד JS
+   בתוך מאפיין HTML** — כל המסכים נבנים כמחרוזות, וקוד בתוך מאפיין נשבר מכל גרש בשם
    תורם והופך הזרקה לביצוע. אותו לקח נמדד ותוקן ב-schar-limud (סבב 6)
    וב-hanhala-ruchanit (סבב 8). ערכים נמסרים ב-`data-*` ונקראים מ-`dataset`.
    ══════════════════════════════════════════════════════════════════════════ */
@@ -4952,11 +4952,11 @@ function runSave(btn, fn, msg) {
 }
 
 function findUser(id) {
-  for (var i = 0; i < state.users.length; i++) if (state.users[i].id === id) return state.users[i];
+  for (var i = 0; i < state.users.length; i++) if (idEq(state.users[i].id, id)) return state.users[i];
   return null;
 }
 function findTask(id) {
-  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].id === id) return state.tasks[i];
+  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) return state.tasks[i];
   return null;
 }
 
@@ -5054,7 +5054,7 @@ var ACTIONS = {
   'txn-new': function (el) { formTxn(null, el.dataset.donor || ''); },
   'txn-edit': function (el) {
     var t = null;
-    for (var i = 0; i < state.txns.length; i++) if (state.txns[i].id === el.dataset.id) t = state.txns[i];
+    for (var i = 0; i < state.txns.length; i++) if (idEq(state.txns[i].id, el.dataset.id)) t = state.txns[i];
     if (t) formTxn(t);
   },
   'txn-save': function (el) { runSave(el, function () { return saveTxn(el.dataset.id); }, 'התנועה נשמרה'); },
@@ -5144,7 +5144,7 @@ var ACTIONS = {
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;
-    if (u.id === state.user.id && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', 'bad'); return; }
+    if (idEq(u.id, state.user.id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', 'bad'); return; }
     if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
     // ⚠️ ההשבתה חייבת להגיע לענן: משתמש שהושבת ונשאר במראה של מכשיר אחר
     //    היה נשאר בר-כניסה אופליין. המשיכה הבאה מורידה אותו משם.
