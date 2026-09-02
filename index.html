@@ -2754,6 +2754,14 @@ function $$(sel, root) { return Array.prototype.slice.call((root || document).qu
 // כל מסכי האפליקציה נבנים כמחרוזות HTML (`viewHome`/`viewDonors`/…), ולכן
 // שם תורם, הערה או ערך רשימה שמכיל `<` הוא הזרקה — לא תקלת תצוגה. אין כאן
 // שכבת תבניות שתעשה זאת במקומנו. אותו כלל בדיוק בשלוש האחיות.
+/*  ⛔ משווה אחד ברמת המודול (סבב 85) — ⚠️ `localeCompare` בונה משווה חדש
+ *  בכל קריאה, ⛔ ובתוך `.sort()` זה קורה O(n log n) פעמים: ⭐ אובייקט יקר
+ *  נבנה **פעם אחת**, ⛔ ולא בגוף פונקציה שנקראת יותר מפעם אחת.
+ *  ⚠️ ובדפדפן שאין בו `Intl.Collator` — נפילה-חזרה ל-`localeCompare` עם
+ *  אותו `he` מפורש, ⛔ שהיא בדיוק ההתנהגות שהייתה כאן עד היום. */
+var _heColl = null;
+try { _heColl = new Intl.Collator('he'); } catch (e) { _heColl = null; }
+var HE = _heColl || { compare: function (a, b) { return String(a).localeCompare(String(b), 'he'); } };
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -2805,7 +2813,7 @@ function initials(name) {
   var parts = String(name || '?').trim().split(/\s+/);
   return (parts[0] || '?').charAt(0) + (parts[1] ? parts[1].charAt(0) : '');
 }
-function byName(a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'he'); }
+function byName(a, b) { return HE.compare(a.name || '', b.name || ''); }
 function uniqSorted(list) {
   var seen = {}, out = [];
   for (var i = 0; i < list.length; i++) {
@@ -2813,7 +2821,7 @@ function uniqSorted(list) {
     if (!v || seen[v]) continue;
     seen[v] = 1; out.push(v);
   }
-  return out.sort(function (a, b) { return a.localeCompare(b, 'he'); });
+  return out.sort(function (a, b) { return HE.compare(a, b); });
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -3162,7 +3170,7 @@ function sortRows(t, arr) {
     if (xe && ye) return 0;
     if (xe) return 1;                    // nullsFirst:false — ריקים בסוף, תמיד
     if (ye) return -1;
-    if (m.order === 'name') return String(x).localeCompare(String(y), 'he') * dir;
+    if (m.order === 'name') return HE.compare(x, y) * dir;
     return (x < y ? -1 : x > y ? 1 : 0) * dir;
   });
 }
@@ -4204,7 +4212,7 @@ function viewDonorCard() {
   if (!d) { state.donorId = null; return viewDonors(); }
 
   var pl = pledgesOfDonor(d.id);
-  var tx = txnsOfDonor(d.id).slice().sort(function (a, b) { return String(b.txn_date).localeCompare(String(a.txn_date)); });
+  var tx = txnsOfDonor(d.id).slice().sort(function (a, b) { return HE.compare(b.txn_date, a.txn_date); });
   var pledged = sum(pl, function (p) { return p.amount; });
   var given = sum(tx, function (t) { return t.amount; });
   var left = Math.max(0, pledged - given);
