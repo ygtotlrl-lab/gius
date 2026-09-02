@@ -1232,9 +1232,9 @@ function lsStatusHTML() {
   }
 
   h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
-       '<button type="button" onclick="window.lsSweepNow()">🧹 פנה מקום עכשיו</button>' +
-       '<button type="button" onclick="window.lsRefreshStatus()">↻ רענן</button>';
-  if (hz.length) h += '<button type="button" onclick="window.lsRestoreAll()">☁️ טען הכל מחדש מהענן</button>';
+       '<button type="button" data-act="ls-sweep-now">🧹 פנה מקום עכשיו</button>' +
+       '<button type="button" data-act="ls-refresh-status">↻ רענן</button>';
+  if (hz.length) h += '<button type="button" data-act="ls-restore-all">☁️ טען הכל מחדש מהענן</button>';
   h += '</div></div>';
   return h;
 }
@@ -1350,7 +1350,7 @@ function syncLineHTML() {
     '<div>מצב חיבור: <b>' + (navigator.onLine ? 'מחובר' : 'מנותק') + '</b></div>' +
     '<div>סנכרון אחרון: <b>' + (t ? esc(syncFmtTime(t)) : '— טרם הסתנכרן —') + '</b></div>' +
     '<div class="sync-act"><button type="button"' + (_syncNowBusy ? ' disabled' : '') +
-    ' onclick="window.syncNowFromStatus&&window.syncNowFromStatus()">' +
+    ' data-act="sync-now-status">' +
     (_syncNowBusy ? 'מסנכרן…' : '🔄 סנכרן עכשיו') + '</button></div>' +
     '</div>';
 }
@@ -2593,7 +2593,7 @@ async function hwPastLoad(key, filter) {
 var _hwRestoreArmed = 0;
 function hwRestoreHTML() {
   return '<div class="sync-line hw-restore-line"><button type="button" ' +
-    'onclick="window.hwRestoreClick&&window.hwRestoreClick(this)">' +
+    'data-act="hw-restore">' +
     '☁️ שחזר הכול מהענן</button></div>';
 }
 function hwRestoreMount() {
@@ -5194,7 +5194,13 @@ var ACTIONS = {
 
   /* הגדרות — יעדים */
   'target-set': function (el) { formTarget(el.dataset.month || state.month); },
-  'target-save': function (el) { runSave(el, saveTarget, 'היעד נשמר'); }
+  'target-save': function (el) { runSave(el, saveTarget, 'היעד נשמר'); },
+  'ls-sweep-now':      function () { lsSweepNow(); },
+  'ls-refresh-status': function () { lsRefreshStatus(); },
+  'ls-restore-all':    function () { lsRestoreAll(); },
+  'sync-now-status':   function () { syncNowFromStatus(); },
+  'hw-restore':        function (el) { hwRestoreClick(el); },
+  'reload':            function () { location.reload(); },
 };
 
 /* ── מאזינים גלובליים ──────────────────────────────────────────────────────
@@ -5283,7 +5289,7 @@ function boot() {
     $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
       '<h1>שגיאת טעינה</h1><div class="sub">אין עדיין עותק מקומי של הנתונים, ולא הצלחנו לטעון מהשרת. ' +
       'התחברו לרשת פעם אחת — מכאן והלאה האפליקציה תעבוד גם בלעדיה.</div>' +
-      '<button class="btn block" style="margin-top:14px" onclick="location.reload()">רענון</button>' +
+      '<button class="btn block" style="margin-top:14px" data-act="reload">רענון</button>' +
       '</div></div>';
   });
 }
@@ -5292,7 +5298,7 @@ function start() {
   if (!window.supabase || !window.supabase.createClient) {
     $('#app').innerHTML = '<div class="auth"><div class="auth-card"><h1>שגיאת טעינה</h1>' +
       '<div class="sub">ספריית Supabase לא נטענה. בדקו את החיבור לאינטרנט ורעננו.</div>' +
-      '<button class="btn block" onclick="location.reload()">רענון</button></div></div>';
+      '<button class="btn block" data-act="reload">רענון</button></div></div>';
     return;
   }
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
