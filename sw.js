@@ -69,7 +69,7 @@ var SW_OFFLINE_HTML = `<!doctype html>
  *  ⚠️ ו-`skipWaiting: false` נעדר **בכוונה**: הדף מציג באנר «🔄 גרסה
  *  חדשה זמינה» והמשתמש מחליט מתי לעדכן. ⛔ אין ליישר בלי החלטת מנהל. */
 var SW_CFG = {
-  prefix: 'gius-v1',
+  prefix: 'gius-',
   skipHosts: [],
   cdnHosts: ['cdn.jsdelivr.net'],
   scoped: true,
