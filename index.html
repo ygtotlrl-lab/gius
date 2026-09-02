@@ -3619,6 +3619,26 @@ function agentPool() {
 }
 function isOwner() { return state.user && state.user.role === 'owner'; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   רכיבי ממשק בסיסיים — טוסט, מודאל, אישור, שדות
+   ══════════════════════════════════════════════════════════════════════════ */
+function toast(msg, kind) {
+  // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
+  if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
+  var el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(function () {
+    el.style.transition = 'opacity .25s'; el.style.opacity = '0';
+    setTimeout(function () { el.remove(); }, 260);
+  }, 2600);
+}
+function errToast(e) {
+  console.error(e);
+  toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', 'bad');
+}
+
 /* ── LS_TOAST — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
 /*  ⛔ הארגומנט השני של `toast` נבדל בין הריפו — ⚠️ בשלוש הוא **משך** בזמן,
  *  ⛔ ובגיוס הוא **שם מחלקה**: ⭐ ולכן הערך יושב כאן, ⛔ וגוף `lsToast` זהה
@@ -3626,7 +3646,7 @@ function isOwner() { return state.user && state.user.role === 'owner'; }
 /*  ⚠️ כאן `dur` נבלע בכוונה — ⛔ הטוסט של גיוס אינו מקבל משך, ⭐ וכל
  *  קריאות המודול המשותף עוברות בכל זאת את אותה חתימה. */
 var LS_TOAST = { arg: function (dur) { return 'bad'; } };
-/* ═══ שכבת המודאל ועוזרי הממשק — מודול משותף (סבב 86) ═════════════════════
+/* ═══ שכבת המודאל — מודול משותף (סבב 86) ══════════════════════════════════
    ⛔ שכבת המודאל ושלושת העוזרים ישבו **מחוץ** לכל בלוק חתום ⛔ ונסחפו:
       ⚠️ `esc` לשלוש צורות — והיא הגנת ה-HTML היחידה שיש; `openModal` לשלוש,
       ⛔ ובאחת מהן נעדרה נעילת הגלילה לגמרי; ו-`lsToast` לשתיים.
@@ -3679,7 +3699,7 @@ function closeAsk(v) {
   if (askResolve) { askResolve(v); askResolve = null; }
 }
 function lsToast(msg, dur) { try { toast(msg, LS_TOAST.arg(dur)); } catch (e) {} }
-/* ═══════════════ סוף מודול שכבת המודאל ועוזרי הממשק ══════════════════════ */
+/* ═══════════════ סוף מודול שכבת המודאל ═════════════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
