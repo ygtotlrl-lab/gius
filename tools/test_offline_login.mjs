@@ -78,9 +78,7 @@ const NAMES_FN = [
 ];
 const NAMES_VAR = [
   'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_PREFIX',
-  'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE',
-  /* ⛔ דגל נתיב-החזרה של הסיסמה הגלויה (סבב 40) — העמודה `NOT NULL`. */
-  'G_PLAINTEXT_LEGACY_WRITE'
+  'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE'
 ];
 
 /* ── הרתמה ─────────────────────────────────────────────────────────────── */
@@ -171,7 +169,10 @@ console.log('\n▶ ב. כישלון גזירה **מאפס** את שני השדו
 {
   const h = makeCtx({ noCrypto: true });
   const pf = await h.ctx.passFields('999999');
-  eq('הסיסמה עדיין נשלחת לענן', pf.password, '999999');
+  /*  ⛔ צעד ב — הסיסמה הגלויה **אינה** נשלחת עוד: ⚠️ השדה אינו קיים
+   *  באובייקט כלל, ⭐ ולא «קיים וריק». */
+  ok('⛔ הסיסמה הגלויה אינה נשלחת לענן — השדה כלל אינו באובייקט',
+    !Object.prototype.hasOwnProperty.call(pf, 'password'));
   eq('pass_salt מאופס ל-null ולא מושמט', pf.pass_salt, null);
   eq('pass_fp מאופס ל-null ולא מושמט', pf.pass_fp, null);
   ok('שני המפתחות קיימים באובייקט — כלומר ייכתבו ויידרסו בענן',
