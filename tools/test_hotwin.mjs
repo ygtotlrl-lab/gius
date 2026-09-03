@@ -32,7 +32,7 @@ const APP = {
     [/function formMyPassword\(\)/, 'מסך שינוי סיסמה עצמי קיים (formMyPassword)'],
     [/'my-pass': function \(\) \{ formMyPassword\(\); \}/, 'פעולת my-pass מחווטת'],
     [/data-act="my-pass"/, 'כפתור 🔑 קיים בכותרת'],
-    [/if \(!PASS_SIX_RE\.test\(p1\)\) \{ toast\(MSG_PASS_SIX, 'bad'\); return; \}/, 'שש ספרות נאכפות על הסיסמה החדשה בלבד'],
+    [/if \(!PASS_SIX_RE\.test\(p1\)\) \{ toast\(MSG_PASS_SIX, null, 'bad'\); return; \}/, 'שש ספרות נאכפות על הסיסמה החדשה בלבד'],
   ],
   mutations: [
     /*  ⭐ סבב 40 — המוטציה כוונה מחדש. עד אז היא ביטלה השוואה מול

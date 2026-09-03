@@ -33,6 +33,10 @@
 <style>
 /* ========================================================= אסימוני העיצוב */
 :root{
+  /*  ⛔ מרחק הטוסט מתחתית המסך — ⚠️ הערך היחיד שנבדל בשכבת הטוסט:
+   *  סרגל לשוניות תחתון, ⛔ ומעליו סרגל הפעולה. */
+  --toast-bottom:150px;
+
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
   --ink:#12202e; --ink-2:#3b4d61; --muted:#6b7c90;
   --line:#e3e8ef; --line-2:#eef2f7;
@@ -403,16 +407,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   padding:4px 0;margin-bottom:8px;font-size:14px}
 
 /* ==================================================================== טוסט */
-#toasts{
-  position:fixed;inset-inline:0;z-index:80;display:grid;gap:8px;justify-items:center;
-  bottom:calc(var(--tab-h) + 88px + env(safe-area-inset-bottom));pointer-events:none;padding:0 14px
-}
-.toast{
-  background:var(--ink);color:var(--bg);border-radius:99px;padding:10px 20px;
-  font-size:14px;font-weight:650;box-shadow:var(--shadow-lg);animation:up .2s;max-width:92vw
-}
-.toast.bad{background:var(--bad);color:#fff}
-.toast.ok{background:var(--ok);color:#fff}
 
 /* ================================================================= מעדכן */
 #updater{
@@ -434,6 +428,20 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 /* =================================================================== עלייה */
 #boot{min-height:100dvh;display:grid;place-items:center;gap:12px;color:var(--muted)}
+/* ═══ שכבת הטוסט — CSS משותף (סבב 87ב) ════════════════════════════════════
+   זהה בית-לבית בארבע האפליקציות. ⛔ הכללים אינם נשענים על משתני-הצבע של
+   אף אפליקציה — ⚠️ הם נבדלים ביניהן, ⭐ ולכן הצבעים כתובים במפורש.
+   ⛔ מיכל אחד ובתוכו `div` לכל הודעה — ⚠️ הנימוק המדוד: בשלוש מהן היה
+      אלמנט **קבוע** אחד, ⛔ והודעה שנייה דרסה את הראשונה: ⭐ «נשמר»
+      ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד.
+   ⛔ ו-`--toast-bottom` הוא הערך היחיד שנבדל — ⚠️ לשתיים מהן יש סרגל
+      תחתון קבוע, ⭐ ולטוסט שיושב מתחתיו אין מי שיראה אותו. */
+#toasts{position:fixed;inset-inline:0;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom));z-index:999;display:grid;gap:8px;justify-items:center;pointer-events:none;padding:0 14px}
+.toast{background:#1a1a1a;color:#fff;border-radius:99px;padding:10px 20px;font-size:.86rem;font-weight:600;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.22);max-width:92vw;text-align:center;animation:toastUp .2s ease-out}
+.toast.bad{background:#b91c1c;color:#fff}
+.toast.good{background:#15803d;color:#fff}
+@keyframes toastUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ═══ סוף CSS שכבת הטוסט ════════════════════════════════════════════════ */
 /* ═══ אזור מצב — CSS משותף (סבב 15/17) ══════════════════════════════════
    זהה בית-לבית בארבע האפליקציות. שני הרכיבים שיושבים בתחתית כל מסך
    הגדרות: בלוק "☁️ סנכרון" ורכיב "מידע טכני ›". הכללים לא נשענים על
@@ -567,6 +575,47 @@ function errMsg(e) {
   return isNetErr(e) ? MSG_OFFLINE : ('שגיאה: ' + ((e && (e.message || e.code)) || e));
 }
 /* ═══════════════ סוף מודול עוזרי הרשת ══════════════════════════════════ */
+/* ═══ משיכה מסוננת בשרת — מודול משותף (סבב 87) ════════════════════════════
+   ⛔ מסך מושך **רק את החלון שהוא מציג** — ⚠️ הנימוק המדוד: מסך ההשגחה מציג
+      חודש עברי אחד ⛔ ומשך **18,085 סימונים** בכל כניסה אליו, ⭐ ואת כולם
+      סינן בדפדפן. ⛔ סינון שרץ אחרי ההורדה אינו חוסך דבר — ⚠️ הרשת כבר
+      שילמה, ⭐ והמסך ממתין לה.
+   ⛔ שלושה מסלולים מושכים **מלא**, ⛔ ואין לצמצם אותם — ⚠️ הסנכרון והמיזוג,
+      שמנוע ההכרעה שלו חייב את כל הרשומות ⛔ אחרת «אין אצלי» נקרא «נמחקה» ·
+      הגיבוי היומי, ⛔ שמגבה טבלה ולא חלון · והחלון החם, ⚠️ שהוא מנגנון
+      פינוי נפרד. ⭐ ולכן `win` הוא פרמטר **אופציונלי** — ⛔ מי שאינו מעביר
+      אותו מקבל בדיוק את ההתנהגות הקודמת.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
+   ⛔ `mkQuery` היא פונקציה ⛔ ולא בונה מוכן — ⚠️ בונה PostgREST נצרך בשליחה,
+      ⭐ וכל עמוד חייב אחד טרי משלו.
+   ⛔ שליפה בעמודים ולא בבקשה אחת — ⚠️ גוף תשובה שגדל עם הנתונים נחתך,
+      ⛔ ו-PostgREST יודע להגביל את מספר השורות (`db-max-rows`): ⭐ ביום
+      שיוגדר, התשובה תיחתך **בשקט**. ⛔ ותשובה חלקית שנראית שלמה גרועה
+      מ«אין ראיה» — ⚠️ ולכן עמוד שנכשל מחזיר `null` ⛔ ולא את מה שהספיק.
+   ⛔ ותקרת בטיחות ללולאה שתלויה בגודל התשובה — ⚠️ מסד שמחזיר עמוד מלא
+      לנצח תולה את הדף.
+   ═══════════════════════════════════════════════════════════════════════ */
+var YS_ROWS_PAGE = 1000;
+var YS_ROWS_CAP = 500000;
+async function _ysRowsPaged(mkQuery, order, win) {
+  var out = [], from = 0;
+  for (;;) {
+    var q = mkQuery();
+    if (win && win.col) {
+      if (win.from) q = q.gte(win.col, win.from);
+      if (win.to) q = q.lte(win.col, win.to);
+    }
+    if (order) q = q.order(order, { ascending: true });
+    var res = await withTimeout(q.range(from, from + YS_ROWS_PAGE - 1));
+    if (!res || res.error || !Array.isArray(res.data)) return null;
+    out = out.concat(res.data);
+    if (res.data.length < YS_ROWS_PAGE) return out;
+    from += YS_ROWS_PAGE;
+    if (from > YS_ROWS_CAP) return out;
+  }
+}
+/* ═══════════════ סוף מודול משיכה מסוננת בשרת ═══════════════════════════ */
 
 // ═══ עמידות אחסון מקומי (סבב 11) ═══
 // ── מדיניות האחסון המקומי של האפליקציה הזו ─────────────────────────────
@@ -1496,13 +1545,14 @@ var BK_CFG = {
   secrets: [],
   sources: function () {
     return [
-      { kind: 'table', name: 'g_donors' },
-      { kind: 'table', name: 'g_pledges' },
-      { kind: 'table', name: 'g_txns' },
-      { kind: 'table', name: 'g_tasks' },
-      { kind: 'table', name: 'g_targets' },
-      { kind: 'table', name: 'g_config' },
-      { kind: 'table', name: 'g_users', cols: 'id,username,full_name,role,active,created_at,updated_at' }
+      { kind: 'table', name: 'g_donors',  order: 'id',  ts: 'updated_at' },
+      { kind: 'table', name: 'g_pledges', order: 'id',  ts: 'updated_at' },
+      { kind: 'table', name: 'g_txns',    order: 'id',  ts: 'updated_at' },
+      { kind: 'table', name: 'g_tasks',   order: 'id',  ts: 'updated_at' },
+      { kind: 'table', name: 'g_targets', order: 'id',  ts: 'updated_at' },
+      { kind: 'table', name: 'g_config',  order: 'key' },
+      { kind: 'table', name: 'g_users',   order: 'id',  ts: 'updated_at',
+        cols: 'id,username,full_name,role,active,created_at,updated_at' }
     ];
   }
 };
@@ -1614,6 +1664,73 @@ async function logFlush() {
   return sent;
 }
 
+/*  ⛔⛔ שלוש שכבות הגיבוי (סבב 87ג) — ⭐ **עוגן** מלא אחת לשבוע, ⚠️ **דיפ**
+ *  בכל שאר הימים (רק שורות שהחותמת שלהן חדשה מהעוגן), ⛔ **והפינוי הקיים**
+ *  אוכף את התקרות. ⚠️ הנימוק המדוד: גיבוי מלא בכל לילה של טבלה בת עשרות
+ *  אלפי שורות הוא מגה-בייטים ביום, ⭐ ועוגן שבועי ודיפים קטנים נותנים את
+ *  אותה יכולת שחזור בשבריר. */
+var BK_ANCHOR_MS = 7 * 24 * 60 * 60 * 1000;
+var BK_ANCHOR_PREFIX = 'ANCHOR:';
+var BK_DIFF_PREFIX = 'DIFF:';
+/*  ⛔ חותמת המים של העוגן — ⚠️ נשמרת כמחרוזת, ⭐ ומושווית בשרת בטיפוס
+ *  העמודה: ⛔ `bigint` ו-`timestamptz` שניהם עוברים ב-`gte` כמות שהם. */
+function _bkMarkKey(bkey) { return 'bk_wm_' + bkey; }
+function _bkSetMark(bkey, v) {
+  if (v == null) return;
+  lsSet(_bkMarkKey(bkey), String(v));
+  lsSet('bk_anch_' + bkey, String(Date.now()));
+}
+/*  ⛔ המקסימום נגזר מהשורות ⛔ ואינו נשאל מהשרת — ⚠️ מספר מושווה מספרית
+ *  ומחרוזת לקסיקוגרפית: ⭐ חותמת ISO ממוינת נכון כמחרוזת, ⛔ ו-`bigint`
+ *  היה נשבר בהשוואת מחרוזות. */
+function _bkMaxTs(rows, col) {
+  var mx = null;
+  for (var i = 0; i < rows.length; i++) {
+    var v = rows[i] ? rows[i][col] : null;
+    if (v == null) continue;
+    if (mx === null) { mx = v; continue; }
+    if (typeof v === 'number' ? v > mx : String(v) > String(mx)) mx = v;
+  }
+  return mx;
+}
+/*  ⛔ איזו שכבה רצה היום — ⚠️ עוגן כשאין חותמת מים, כשאין חותמת עוגן,
+ *  או כשעברו שבעה ימים; ⭐ ובכל שאר הימים דיפ מעל חותמת המים. */
+function _bkLayer(bkey, s) {
+  var wm = lsGet(_bkMarkKey(bkey), '');
+  var at = parseInt(lsGet('bk_anch_' + bkey, '0'), 10) || 0;
+  if (!s || !s.ts || !wm || !at || (Date.now() - at) >= BK_ANCHOR_MS)
+    return { diff: false, prefix: BK_ANCHOR_PREFIX, key: bkey, win: null };
+  return { diff: true, prefix: BK_DIFF_PREFIX, key: bkey,
+           win: { col: s.ts, from: wm } };
+}
+/*  ⛔⛔ הקריאה בעימוד, ⛔ ואימות מול מונה השרת — ⚠️ תשובה שנחתכה נראית
+ *  בדיוק כמו תשובה שלמה, ⭐ והדרך היחידה לדעת היא לשאול את השרת כמה שורות
+ *  יש: ⛔ אי-התאמה מחזירה `null` ⛔ ונכשלת בקול, ⚠️ ואינה שומרת חצי גיבוי. */
+async function _bkReadRows(c, s, win) {
+  var sel = s.cols || '*';
+  var rows = await _ysRowsPaged(function () {
+    var q = c.from(s.name).select(sel);
+    if (s.eq) q = q.eq(s.eq[0], s.eq[1]);
+    return q;
+  }, s.order || null, win);
+  if (!rows) return null;
+  try {
+    var cq = c.from(s.name).select(sel, { count: 'exact', head: true });
+    if (s.eq) cq = cq.eq(s.eq[0], s.eq[1]);
+    if (win && win.col) {
+      if (win.from) cq = cq.gte(win.col, win.from);
+      if (win.to) cq = cq.lte(win.col, win.to);
+    }
+    var cr = await withTimeout(cq);
+    if (!cr || cr.error || typeof cr.count !== 'number') return null;
+    if (cr.count !== rows.length) {
+      console.error('[bk] הגיבוי נחתך — ' + s.name + ': נמדדו ' + rows.length +
+                    ' שורות והשרת מדווח ' + cr.count);
+      return null;
+    }
+  } catch (e) { return null; }
+  return rows;
+}
 /* ── הגיבוי היומי ──────────────────────────────────────────────────────── */
 // מחזירה true רק כשכל המקורות גובו (או דולגו כבלתי-משתנים) בהצלחה.
 async function bkMaybeDaily() {
@@ -1641,6 +1758,13 @@ async function bkMaybeDaily() {
       //    כאן היא רשימת-ההיתר של הגריעה — בלי תלות בהצלחת המקור.
       var bkey = pre + (s.key || s.name);
       dailyKeys.push(bkey);
+      /*  ⛔ שתי השכבות נכנסות לרשימת-ההיתר של הגריעה (סבב 87ג) — ⚠️ מפתח
+       *  שאינו שם אינו מתפנה לעולם, ⭐ ו-`ANCHOR:`/`DIFF:` הם מפתחות
+       *  חדשים: ⛔ בלעדיהם הם היו נצברים בלי גבול. */
+      if (s.kind !== 'kv') {
+        dailyKeys.push(BK_ANCHOR_PREFIX + bkey);
+        dailyKeys.push(BK_DIFF_PREFIX + bkey);
+      }
       /* ⭐ דגל-יום פר-מקור (סבב 62) — מקור שכבר גובה היום מדולג, גם
          כשהדגל הגלובלי לא נכתב. ⛔ בלעדיו מקור אחד שנכשל החזיק את כל
          השאר בלולאה: הדגל הגלובלי נכתב רק כשכולם הצליחו, ולכן כל עלייה
@@ -1654,24 +1778,26 @@ async function bkMaybeDaily() {
         if (!res || res.error) { ok = false; failed.push(bkey); continue; }
         val = (res.data && res.data.value != null) ? String(res.data.value) : null;
       } else {
-        // ⛔ `cols` ולא `*` בטבלאות שיש בהן סוד (סבב 30) — `kv_backup`
-        //    קריאה ל-`anon`, וגיבוי גורף של טבלת משתמשים היה מעתיק לשם
-        //    סיסמאות וטביעות. מי שאין לו סוד מגדיר `cols` ריק ומקבל `*`.
-        var q = c.from(s.name).select(s.cols || '*');
-        // ⭐ `eq`/`order` פר-מקור (סבב 35) — סינון פר-מוסד וסדר דטרמיניסטי,
-        //    כדי שהחתימה הדיפרנציאלית לא תוטרד משינוי סדר-שורות אקראי.
-        if (s.eq) q = q.eq(s.eq[0], s.eq[1]);
-        if (s.order) q = q.order(s.order);
-        var rt = await q;
-        if (!rt || rt.error || !Array.isArray(rt.data)) { ok = false; failed.push(bkey); continue; }
-        var rows = rt.data;
+        /*  ⛔⛔ שכבת הגיבוי — עוגן שבועי מלא, ודיפרנציאלי בכל שאר הימים
+         *  (סבב 87ג): ⚠️ הנימוק המדוד — הקריאה הייתה בקשה **אחת** בלי
+         *  עימוד, ⛔ ו-Supabase מחזיר 1,000 שורות כברירת מחדל **בלי
+         *  שגיאה**: ⭐ `ys_marks_rows` גובתה 1,000 מתוך 18,085, ⛔ כלומר
+         *  94.5% ממנה מעולם לא גובו — ⚠️ והכשל היה שקט לחלוטין. */
+        var layer = _bkLayer(bkey, s);
+        var rows = await _bkReadRows(c, s, layer.win);
+        if (rows === null) { ok = false; failed.push(bkey); continue; }
+        bkey = layer.prefix + bkey;
         // ⛔ שדה-סוד בשורות טבלה מסונן לפני הסריאליזציה (השלמת סבב 35) —
         //    שורה שמפתחה (`secretField`, ברירת מחדל `key`) ברשימת הסודות
         //    אינה מגיעה לגיבוי, גם כשהיא עדיין קיימת במקור.
         if (secrets.length) rows = rows.filter(function (r) {
           return secrets.indexOf(r && r[s.secretField || 'key']) === -1;
         });
+        /*  ⛔ דיפרנציאלי ריק אינו נכתב ⛔ ואינו כישלון — ⚠️ יום שלא השתנה
+         *  בו דבר הוא המצב הרגיל, ⭐ ועותק ריק בכל לילה מציף את הפינוי. */
+        if (layer.diff && !rows.length) { same++; continue; }
         val = JSON.stringify(rows);
+        if (!layer.diff && s.ts) _bkSetMark(layer.key, _bkMaxTs(rows, s.ts));
       }
       // מקור שאין לו ערך בענן — אין מה לגבות, וזה אינו כישלון.
       if (val == null) continue;
@@ -3460,8 +3586,15 @@ function syncPull() {
   return Promise.all(TABLES.map(function (m) {
     // ⚠️ בלי `.eq('deleted', false)` — חייבים גם את ה-tombstones, אחרת מחיקה
     //    שנעשתה במכשיר אחר לא תגיע לכאן לעולם. הסינון ב-`liveRows()`.
-    return withTimeout(sb.from(m.t).select('*'))
-      .then(function (res) { return { m: m, res: res }; },
+    /*  ⛔ המשיכה **מלאה** ⛔ ואין לה חלון — ⚠️ מנוע ההכרעה חייב את כל
+     *  הרשומות, ⭐ ורשומה שלא נמשכה נקראת «נמחקה». ⚠️ מה שכן נוסף הוא
+     *  **העימוד** — ⛔ עד כאן `select('*')` הביא את הטבלה בבקשה אחת,
+     *  ⭐ וביום ש-`db-max-rows` יוגדר היא הייתה נחתכת **בשקט**.
+     *  ⛔ והסדר הוא `m.key` ⛔ ולא `m.order` — ⚠️ `m.order` הוא סדר
+     *  **תצוגה** שעשוי להיות ריק, ⭐ והעימוד דורש מפתח יציב וייחודי. */
+    return _ysRowsPaged(function () { return sb.from(m.t).select('*'); }, m.key, null)
+      .then(function (rows) { return { m: m, res: rows ? { data: rows, error: null }
+                                                       : { data: null, error: { message: 'rows:' + m.t } } }; },
             function (e) { return { m: m, res: { error: e } }; });
   })).then(function (list) {
     var errs = [];
@@ -3490,12 +3623,12 @@ function syncPull() {
       // עֵד הפינוי: כל מה שגילו קטן מהמשיכה המלאה המוצלחת האחרונה, **וכשהתור
       // ריק**, כבר נמצא בענן. שני התנאים נבדקים ב-LS_CFG.
       lsSet(SYNCED_KEY, String(_lastPullOk));
-      if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, 'ok'); }
+      if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, null, 'good'); }
     } else {
       console.warn('[sync] נכשלו:', errs.join(', '));
       if (!_netWarned) {
         _netWarned = true;
-        toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', 'bad');
+        toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', null, 'bad');
       }
     }
     return { ok: !errs.length, remote: remoteMaps };
@@ -3622,30 +3755,20 @@ function isOwner() { return state.user && state.user.role === 'owner'; }
 /* ══════════════════════════════════════════════════════════════════════════
    רכיבי ממשק בסיסיים — טוסט, מודאל, אישור, שדות
    ══════════════════════════════════════════════════════════════════════════ */
-function toast(msg, kind) {
-  // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
-  if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
-  var el = document.createElement('div');
-  el.className = 'toast' + (kind ? ' ' + kind : '');
-  el.textContent = msg;
-  $('#toasts').appendChild(el);
-  setTimeout(function () {
-    el.style.transition = 'opacity .25s'; el.style.opacity = '0';
-    setTimeout(function () { el.remove(); }, 260);
-  }, 2600);
-}
+/*  ⚠️ המשך התצוגה נבדל בין הארבע — ⭐ והוא ערך פרטי, ⛔ לא מנגנון. */
+var TOAST_DEFAULT_MS = 2600;
 function errToast(e) {
   console.error(e);
-  toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', 'bad');
+  toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', null, 'bad');
 }
 
 /* ── LS_TOAST — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
-/*  ⛔ הארגומנט השני של `toast` נבדל בין הריפו — ⚠️ בשלוש הוא **משך** בזמן,
- *  ⛔ ובגיוס הוא **שם מחלקה**: ⭐ ולכן הערך יושב כאן, ⛔ וגוף `lsToast` זהה
- *  בית-לבית בארבעתן. */
-/*  ⚠️ כאן `dur` נבלע בכוונה — ⛔ הטוסט של גיוס אינו מקבל משך, ⭐ וכל
- *  קריאות המודול המשותף עוברות בכל זאת את אותה חתימה. */
-var LS_TOAST = { arg: function (dur) { return 'bad'; } };
+/*  ⛔ החתימה `toast(msg, dur, kind)` זהה בארבעתן (סבב 87) — ⚠️ ומה שנשאר
+ *  נבדל הוא **שם המחלקה** בלבד: ⭐ המשך הוא ערך משותף שיושב בבלוק, ⛔ ולכן
+ *  גוף `lsToast` זהה בית-לבית בארבעתן. */
+/*  ⚠️ בגיוס לטוסט יש מחלקות צבע — ⛔ ובשלוש האחרות אין, ⭐ ולכן שם המחלקה
+ *  ריק שם: ⛔ ריק נקרא «נמדד ואין», ⚠️ ושדה חסר היה נקרא «לא נשאלתי». */
+var LS_TOAST = { kind: 'bad' };
 /* ═══ שכבת המודאל — מודול משותף (סבב 86) ══════════════════════════════════
    ⛔ שכבת המודאל ושלושת העוזרים ישבו **מחוץ** לכל בלוק חתום ⛔ ונסחפו:
       ⚠️ `esc` לשלוש צורות — והיא הגנת ה-HTML היחידה שיש; `openModal` לשלוש,
@@ -3698,7 +3821,29 @@ function closeAsk(v) {
   if (!document.getElementById('modal').classList.contains('open')) document.body.classList.remove('locked');
   if (askResolve) { askResolve(v); askResolve = null; }
 }
-function lsToast(msg, dur) { try { toast(msg, LS_TOAST.arg(dur)); } catch (e) {} }
+/*  ⛔ `div` לכל הודעה, ⛔ ולא אלמנט קבוע אחד — ⚠️ הנימוק המדוד: בשלוש
+ *  מהן הטוסט היה אלמנט יחיד, ⭐ והודעה שנייה דרסה את הראשונה: ⛔ «נשמר»
+ *  ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד, ⚠️ ומי שקרא את המסך לא ידע
+ *  שהייתה שנייה. ⛔ `kind` הוא שם מחלקה ⛔ ולא משך — ⚠️ ומי שאין לו ערך
+ *  מוסר `null`; ⭐ והמשך יושב ב-`TOAST_DEFAULT_MS`, ⛔ הערך היחיד שנבדל. */
+function toast(msg, dur, kind) {
+  // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
+  if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
+  var box = document.getElementById('toasts');
+  if (!box) return;
+  var el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(function () {
+    el.style.transition = 'opacity .25s'; el.style.opacity = '0';
+    setTimeout(function () { el.remove(); }, 260);
+  }, dur || TOAST_DEFAULT_MS);
+}
+/*  ⛔ משך הודעת האחסון ⛔ ואינו ברירת המחדל של הטוסט — ⚠️ היא מדווחת על
+   כשל כתיבה, ⭐ והקורא חייב זמן לקרוא אותה. */
+var LS_TOAST_MS = 5000;
+function lsToast(msg, dur) { try { toast(msg, dur || LS_TOAST_MS, LS_TOAST.kind); } catch (e) {} }
 /* ═══════════════ סוף מודול שכבת המודאל ═════════════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
@@ -3975,7 +4120,7 @@ function doLoginOffline(username, password, btn) {
     if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
     state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
     boot();
-    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', 'ok');
+    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'good');
   }, function (e) {
     busy(btn, false);
     console.warn('[login] אימות אופליין נכשל', e);
@@ -4051,7 +4196,7 @@ var lastViewKey = '';
 // אותה החלטה בדיוק תועדה ב-hanhala-ruchanit (סבב 6 שם).
 function go(screen) {
   if (screen === 'settings' && !isOwner()) {
-    toast('אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', 'bad');
+    toast('אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', null, 'bad');
     return;
   }
   state.screen = screen;
@@ -4688,7 +4833,7 @@ function wirePicker(id, onChange) {
     var btn = this;
     var name = $('.dp-n-name', box).value.trim();
     var phone = $('.dp-n-phone', box).value.trim();
-    if (!name) { toast('נא למלא שם תורם', 'bad'); return; }
+    if (!name) { toast('נא למלא שם תורם', null, 'bad'); return; }
     busy(btn, true);
     insert('g_donors', { name: name, phone: phone || null })
       .then(function (d) {
@@ -4697,7 +4842,7 @@ function wirePicker(id, onChange) {
         $('.dp-n-name', box).value = '';
         $('.dp-n-phone', box).value = '';
         setDonor(d);
-        toast('התורם נוצר', 'ok');
+        toast('התורם נוצר', null, 'good');
       })
       .catch(function (e) { busy(btn, false); errToast(e); });
   });
@@ -4762,9 +4907,9 @@ function formTxn(existing, presetDonor) {
 
 function saveTxn(id) {
   var donorId = pickerValue('txn-donor');
-  if (!donorId) { toast('נא לבחור תורם', 'bad'); return Promise.resolve(); }
+  if (!donorId) { toast('נא לבחור תורם', null, 'bad'); return Promise.resolve(); }
   var amount = num(val('txn-amount'));
-  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', 'bad'); return Promise.resolve(); }
+  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
   var row = {
     donor_id: donorId,
     pledge_id: nullable(val('txn-pledge')),
@@ -4806,9 +4951,9 @@ function formPledge(existing, presetDonor) {
 
 function savePledge(id) {
   var donorId = pickerValue('pl-donor');
-  if (!donorId) { toast('נא לבחור תורם', 'bad'); return Promise.resolve(); }
+  if (!donorId) { toast('נא לבחור תורם', null, 'bad'); return Promise.resolve(); }
   var amount = num(val('pl-amount'));
-  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', 'bad'); return Promise.resolve(); }
+  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
   var row = {
     donor_id: donorId,
     amount: amount,
@@ -4851,7 +4996,7 @@ function formTask(existing) {
 
 function saveTask(id) {
   var title = val('tk-title');
-  if (!title) { toast('נא למלא כותרת', 'bad'); return Promise.resolve(); }
+  if (!title) { toast('נא למלא כותרת', null, 'bad'); return Promise.resolve(); }
   var existing = null;
   for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) existing = state.tasks[i];
 
@@ -4898,7 +5043,7 @@ function formDonor(existing) {
 
 function saveDonor(id) {
   var name = val('dn-name');
-  if (!name) { toast('נא למלא שם', 'bad'); return Promise.resolve(); }
+  if (!name) { toast('נא למלא שם', null, 'bad'); return Promise.resolve(); }
   var tags = val('dn-tags').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
   var row = {
     name: name,
@@ -4940,7 +5085,7 @@ function formUser(existing) {
 
 function saveUser(id) {
   var full = val('us-full'), uname = val('us-name');
-  if (!full || !uname) { toast('נא למלא שם מלא ושם משתמש', 'bad'); return Promise.resolve(); }
+  if (!full || !uname) { toast('נא למלא שם מלא ושם משתמש', null, 'bad'); return Promise.resolve(); }
   var row = {
     full_name: full, username: uname,
     role: val('us-role') || 'manager',
@@ -4948,11 +5093,11 @@ function saveUser(id) {
   };
   // סבב 23: כתיבת משתמש דורשת רשת (`writeUser`), כי היא חייבת להגיע לענן
   // כדי שהטביעה תגיע לשאר המכשירים. בלי רשת — נכשל ברעש.
-  if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return Promise.resolve(); }
+  if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return Promise.resolve(); }
   if (!id) {
     var p = $('#us-pass') ? $('#us-pass').value : '';
-    if (!p) { toast('נא להזין סיסמה', 'bad'); return Promise.resolve(); }
-    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, 'bad'); return Promise.resolve(); }
+    if (!p) { toast('נא להזין סיסמה', null, 'bad'); return Promise.resolve(); }
+    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return Promise.resolve(); }
     return passFields(p).then(function (pf) {
       return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp);
     });
@@ -4964,7 +5109,7 @@ function saveUser(id) {
 // ⚠️ שמירה שהצליחה **בלי** טביעה אינה «נשמר בהצלחה»: המשתמש נשמר, אבל
 // הכניסה האופליין שלו לא תעבוד. אומרים את זה, לא בולעים.
 function warnIfNoFp(r) {
-  if (r && r.noFp) toast('⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת', 'bad');
+  if (r && r.noFp) toast('⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת', null, 'bad');
   return r;
 }
 
@@ -5008,7 +5153,7 @@ function formSwitchUser() {
   var others = (MIRROR.g_users || []).filter(function (u) {
     return u && u.active !== false && String(u.id) !== String(state.user.id);
   });
-  if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', 'bad'); return; }
+  if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', null, 'bad'); return; }
   openModal('👥 החלפת משתמש',
     '<label class="fld"><span>משתמש</span><select class="inp" id="sw-user" aria-label="המשתמש שאליו עוברים">' +
       others.map(function (u) {
@@ -5036,7 +5181,7 @@ function formTarget(month) {
 
 function saveTarget() {
   var m = val('tg-month');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('נא לבחור חודש תקין', 'bad'); return Promise.resolve(); }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('נא לבחור חודש תקין', null, 'bad'); return Promise.resolve(); }
   var amount = num(val('tg-amount'));
   return upsertBy('g_targets', 'month', { month: m, amount: amount });
 }
@@ -5058,7 +5203,7 @@ function afterSave(msg) {
   render();
   syncBarRender();
   // בלי רשת ההודעה חייבת לומר את האמת: נשמר **במכשיר**, לא בענן.
-  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, 'ok');
+  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, null, 'good');
   schedulePush();
   return Promise.resolve();
 }
@@ -5092,26 +5237,26 @@ var ACTIONS = {
   'switch-confirm': function (el) {
     var id = $('#sw-user') ? $('#sw-user').value : '';
     var p  = $('#sw-pass') ? $('#sw-pass').value : '';
-    if (!id || !p) { toast('נא לבחור משתמש ולהזין סיסמה', 'bad'); return; }
+    if (!id || !p) { toast('נא לבחור משתמש ולהזין סיסמה', null, 'bad'); return; }
     var cu = null, arr = MIRROR.g_users || [];
     for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) cu = arr[i];
     /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן (סבב 67) — «אין במה לאמת»
      *  אינו «סיסמה שגויה», והודעה מאוחדת שולחת את המשתמש להקליד שוב
      *  ושוב סיסמה נכונה לחלוטין במקום לומר לו שנדרש חיבור אחד. */
-    if (!cu) { toast(MSG_OFF_UNKNOWN, 'bad'); return; }
+    if (!cu) { toast(MSG_OFF_UNKNOWN, null, 'bad'); return; }
     busy(el, true);
     gVerifyOffline(cu, p).then(function (v) {
       busy(el, false);
-      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, 'bad'); return; }
-      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, 'bad'); return; }
-      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, 'bad'); return; }
+      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, null, 'bad'); return; }
+      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
+      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, null, 'bad'); return; }
       closeModal();
       state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
       state.screen = 'home';
       state.donorId = null;
       boot();
-      toast('הוחלף ל' + (cu.full_name || cu.username), 'ok');
-    }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, 'bad'); });
+      toast('הוחלף ל' + (cu.full_name || cu.username), null, 'good');
+    }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
   },
   'logout': function () { logout(); },
   'modal-close': function () { closeModal(); },
@@ -5154,7 +5299,7 @@ var ACTIONS = {
         var d = donorById(el.dataset.id);
         if (d) d.notes = notes;
         busy(el, false);
-        toast('ההערות נשמרו', 'ok');
+        toast('ההערות נשמרו', null, 'good');
       })
       .catch(function (e) { busy(el, false); errToast(e); });
   },
@@ -5223,9 +5368,9 @@ var ACTIONS = {
   'user-pass': function (el) { var u = findUser(el.dataset.id); if (u) formPassword(u); },
   'pass-save': function (el) {
     var p = $('#pw-new') ? $('#pw-new').value : '';
-    if (!p) { toast('נא להזין סיסמה', 'bad'); return; }
-    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, 'bad'); return; }
-    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    if (!p) { toast('נא להזין סיסמה', null, 'bad'); return; }
+    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
+    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // סבב 23: הטביעה נגזרת בכל שינוי סיסמה, לצד הסיסמה עצמה.
     runSave(el, function () {
       return passFields(p).then(function (pf) {
@@ -5245,10 +5390,10 @@ var ACTIONS = {
     var cur = $('#mp-cur') ? $('#mp-cur').value : '';
     var p1 = $('#mp-new') ? $('#mp-new').value : '';
     var p2 = $('#mp-new2') ? $('#mp-new2').value : '';
-    if (!cur || !p1 || !p2) { toast('נא למלא את כל השדות', 'bad'); return; }
-    if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, 'bad'); return; }
-    if (p1 !== p2) { toast('הסיסמאות החדשות אינן זהות', 'bad'); return; }
-    if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    if (!cur || !p1 || !p2) { toast('נא למלא את כל השדות', null, 'bad'); return; }
+    if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
+    if (p1 !== p2) { toast('הסיסמאות החדשות אינן זהות', null, 'bad'); return; }
+    if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
     //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
     runSave(el, function () {
@@ -5269,12 +5414,12 @@ var ACTIONS = {
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;
-    if (idEq(u.id, state.user.id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', 'bad'); return; }
-    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    if (idEq(u.id, state.user.id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', null, 'bad'); return; }
+    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⚠️ ההשבתה חייבת להגיע לענן: משתמש שהושבת ונשאר במראה של מכשיר אחר
     //    היה נשאר בר-כניסה אופליין. המשיכה הבאה מורידה אותו משם.
     writeUser(u.id, { active: !u.active })
-      .then(function () { render(); toast('עודכן', 'ok'); })
+      .then(function () { render(); toast('עודכן', null, 'good'); })
       .catch(errToast);
   },
 
@@ -5283,9 +5428,9 @@ var ACTIONS = {
     var key = el.dataset.key;
     var input = $('#cfg-add-' + key);
     var v = input ? input.value.trim() : '';
-    if (!v) { toast('נא להזין ערך', 'bad'); return; }
+    if (!v) { toast('נא להזין ערך', null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
-    if (list.indexOf(v) >= 0) { toast('הערך כבר קיים', 'bad'); return; }
+    if (list.indexOf(v) >= 0) { toast('הערך כבר קיים', null, 'bad'); return; }
     list.push(v);
     runSave(el, function () { return saveConfigList(key, list); }, 'נוסף');
   },
@@ -5301,7 +5446,7 @@ var ACTIONS = {
   'cfg-edit-save': function (el) {
     var key = el.dataset.key, i = +el.dataset.i;
     var v = val('cfg-v');
-    if (!v) { toast('נא להזין ערך', 'bad'); return; }
+    if (!v) { toast('נא להזין ערך', null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
     list[i] = v;
     runSave(el, function () { return saveConfigList(key, list); }, 'נשמר');
