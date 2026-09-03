@@ -314,11 +314,13 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   cursor:pointer;padding:2px 6px;border-radius:8px}
 .sheet-hd .x:hover{background:var(--line-2)}
 .sheet-bd{padding:16px 18px}
+/* ⛔ הצבע עבר מהמחרוזת ל-CSS — ⚠️ גוף `ask` הוא `textContent` בכל ארבעתן, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד היה שובר את הזהות בית-לבית */
+#ask-body{color:var(--ink-2)}
 .sheet-ft{padding:12px 18px 18px;display:flex;gap:9px}
 .sheet-ft:empty{display:none}
 .sheet-ft .btn{flex:1}
 
-.chooser{padding:14px 18px 22px;display:grid;gap:10px}
+.chooser{margin:-16px -18px;padding:14px 18px 22px;display:grid;gap:10px} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ עד כאן הבורר איפס אותו בזמן ריצה, ⛔ ו-`openModal` היה חייב להחזירו: ⭐ שני מסלולים על אותה תכונה, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
 .chooser button{
   display:flex;align-items:center;gap:13px;text-align:start;width:100%;cursor:pointer;
   background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
@@ -606,8 +608,6 @@ var LS_CFG = {
      נשארות בחוץ מהסיבות שכתובות מעליהן, שאין להן שום קשר לראיה. */
   syncedThrough: function () { var v = parseInt(lsGet('g_synced_at', '0'), 10); return isFinite(v) ? v : 0; }
 };
-// מתאם הטוסט — ⚠️ החתימה כאן היא toast(msg, kind) ולא toast(msg, dur).
-function lsToast(msg) { try { toast(msg, 'bad'); } catch (e) {} }
 
 /* ══════════════════════════════════════════════════════════════════════════
    עמידות אחסון מקומי — מודול משותף (סבב 11).
@@ -2762,11 +2762,6 @@ function $$(sel, root) { return Array.prototype.slice.call((root || document).qu
 var _heColl = null;
 try { _heColl = new Intl.Collator('he'); } catch (e) { _heColl = null; }
 var HE = _heColl || { compare: function (a, b) { return String(a).localeCompare(String(b), 'he'); } };
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-  });
-}
 function num(v) {
   if (typeof v === 'number') return isFinite(v) ? v : 0;
   var n = parseFloat(String(v == null ? '' : v).replace(/[^\d.\-]/g, ''));
@@ -3644,37 +3639,67 @@ function errToast(e) {
   toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', 'bad');
 }
 
+/* ── LS_TOAST — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
+/*  ⛔ הארגומנט השני של `toast` נבדל בין הריפו — ⚠️ בשלוש הוא **משך** בזמן,
+ *  ⛔ ובגיוס הוא **שם מחלקה**: ⭐ ולכן הערך יושב כאן, ⛔ וגוף `lsToast` זהה
+ *  בית-לבית בארבעתן. */
+/*  ⚠️ כאן `dur` נבלע בכוונה — ⛔ הטוסט של גיוס אינו מקבל משך, ⭐ וכל
+ *  קריאות המודול המשותף עוברות בכל זאת את אותה חתימה. */
+var LS_TOAST = { arg: function (dur) { return 'bad'; } };
+/* ═══ שכבת המודאל — מודול משותף (סבב 86) ══════════════════════════════════
+   ⛔ שכבת המודאל ושלושת העוזרים ישבו **מחוץ** לכל בלוק חתום ⛔ ונסחפו:
+      ⚠️ `esc` לשלוש צורות — והיא הגנת ה-HTML היחידה שיש; `openModal` לשלוש,
+      ⛔ ובאחת מהן נעדרה נעילת הגלילה לגמרי; ו-`lsToast` לשתיים.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
+   ⛔ מיכל אחד ומסלול סגירה יחיד — ⚠️ מסלול נפרד לכל דיאלוג הוא בדיוק מה
+      שנשבר בשקט; ⭐ והכותרת ב-`textContent` ⛔ ולא ב-HTML, מפני שהיא מגיעה
+      גם משם שהמשתמש הקליד. ⛔ וגוף `ask` ב-`textContent` אף הוא — ⚠️ דיאלוג
+      שדורש HTML עובר ב-`openModal`.
+   ⛔ ו-`locked` על ה-`body` אינה קישוט — ⚠️ בלעדיה הדף שמאחורי המודאל נגלל
+      מתחתיו, ⭐ והמשתמש מאבד את מקומו ברשימה שממנה פתח אותו; ⛔ וההסרה
+      מותנית בכך שהדיאלוג השני סגור — ⚠️ אחרת סגירת אחד משחררת את השני.
+   ⚠️ `askResolve` יחיד — ⛔ אין תמיכה בשני דיאלוגי אישור פתוחים בו-זמנית,
+      וגם אין בכך צורך: `#ask` הוא אלמנט יחיד ב-DOM.
+   ═══════════════════════════════════════════════════════════════════════ */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
 function openModal(title, body, foot) {
-  $('#modal-title').textContent = title;
-  $('#modal-body').style.padding = '';   // הבורר מאפס את זה, ולכן תמיד מחזירים לקדמותו
-  $('#modal-body').innerHTML = body;
-  $('#modal-foot').innerHTML = foot || '';
-  $('#modal').classList.add('open');
+  var ttl = document.getElementById('modal-title');
+  if (!ttl) return;
+  ttl.textContent = title || '';
+  document.getElementById('modal-body').innerHTML = body || '';
+  document.getElementById('modal-foot').innerHTML = foot || '';
+  document.getElementById('modal').classList.add('open');
   document.body.classList.add('locked');
 }
 function closeModal() {
-  $('#modal').classList.remove('open');
-  $('#modal-body').innerHTML = '';
-  $('#modal-foot').innerHTML = '';
-  if (!$('#ask').classList.contains('open')) document.body.classList.remove('locked');
+  var m = document.getElementById('modal');
+  if (!m) return;
+  m.classList.remove('open');
+  document.getElementById('modal-body').innerHTML = '';
+  document.getElementById('modal-foot').innerHTML = '';
+  if (!document.getElementById('ask').classList.contains('open')) document.body.classList.remove('locked');
 }
-// אישור כ-Promise: המודאל אינו חוסם, ולכן הפעולה שאחריו חייבת להמתין לו.
-// ⚠️ `askResolve` יחיד — אין תמיכה בשני דיאלוגי אישור פתוחים בו-זמנית, וגם
-// אין בכך צורך: `#ask` הוא אלמנט יחיד ב-DOM.
 var askResolve = null;
 function ask(title, text, yesLabel) {
-  $('#ask-title').textContent = title;
-  $('#ask-body').innerHTML = '<p style="margin:0;color:var(--ink-2)">' + esc(text) + '</p>';
-  $('#ask-yes').textContent = yesLabel || 'אישור';
-  $('#ask').classList.add('open');
+  document.getElementById('ask-title').textContent = title || '';
+  document.getElementById('ask-body').textContent = text || '';
+  document.getElementById('ask-yes').textContent = yesLabel || 'אישור';
+  document.getElementById('ask').classList.add('open');
   document.body.classList.add('locked');
   return new Promise(function (res) { askResolve = res; });
 }
 function closeAsk(v) {
-  $('#ask').classList.remove('open');
-  if (!$('#modal').classList.contains('open')) document.body.classList.remove('locked');
+  document.getElementById('ask').classList.remove('open');
+  if (!document.getElementById('modal').classList.contains('open')) document.body.classList.remove('locked');
   if (askResolve) { askResolve(v); askResolve = null; }
 }
+function lsToast(msg, dur) { try { toast(msg, LS_TOAST.arg(dur)); } catch (e) {} }
+/* ═══════════════ סוף מודול שכבת המודאל ═════════════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
@@ -5102,7 +5127,6 @@ var ACTIONS = {
         '<button data-act="task-new"><span class="ic">📋</span><span>משימה<small>מטלה לקנבן</small></span></button>' +
         '<button data-act="pledge-new"><span class="ic">🤝</span><span>התחייבות<small>הבטחת תרומה</small></span></button>' +
       '</div>', '');
-    $('#modal-body').style.padding = '0';
   },
 
   /* תורמים */
