@@ -33,6 +33,10 @@
 <style>
 /* ========================================================= אסימוני העיצוב */
 :root{
+  /*  ⛔ מרחק הטוסט מתחתית המסך — ⚠️ הערך היחיד שנבדל בשכבת הטוסט:
+   *  סרגל לשוניות תחתון, ⛔ ומעליו סרגל הפעולה. */
+  --toast-bottom:150px;
+
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
   --ink:#12202e; --ink-2:#3b4d61; --muted:#6b7c90;
   --line:#e3e8ef; --line-2:#eef2f7;
@@ -403,16 +407,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   padding:4px 0;margin-bottom:8px;font-size:14px}
 
 /* ==================================================================== טוסט */
-#toasts{
-  position:fixed;inset-inline:0;z-index:80;display:grid;gap:8px;justify-items:center;
-  bottom:calc(var(--tab-h) + 88px + env(safe-area-inset-bottom));pointer-events:none;padding:0 14px
-}
-.toast{
-  background:var(--ink);color:var(--bg);border-radius:99px;padding:10px 20px;
-  font-size:14px;font-weight:650;box-shadow:var(--shadow-lg);animation:up .2s;max-width:92vw
-}
-.toast.bad{background:var(--bad);color:#fff}
-.toast.ok{background:var(--ok);color:#fff}
 
 /* ================================================================= מעדכן */
 #updater{
@@ -434,6 +428,20 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 /* =================================================================== עלייה */
 #boot{min-height:100dvh;display:grid;place-items:center;gap:12px;color:var(--muted)}
+/* ═══ שכבת הטוסט — CSS משותף (סבב 87ב) ════════════════════════════════════
+   זהה בית-לבית בארבע האפליקציות. ⛔ הכללים אינם נשענים על משתני-הצבע של
+   אף אפליקציה — ⚠️ הם נבדלים ביניהן, ⭐ ולכן הצבעים כתובים במפורש.
+   ⛔ מיכל אחד ובתוכו `div` לכל הודעה — ⚠️ הנימוק המדוד: בשלוש מהן היה
+      אלמנט **קבוע** אחד, ⛔ והודעה שנייה דרסה את הראשונה: ⭐ «נשמר»
+      ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד.
+   ⛔ ו-`--toast-bottom` הוא הערך היחיד שנבדל — ⚠️ לשתיים מהן יש סרגל
+      תחתון קבוע, ⭐ ולטוסט שיושב מתחתיו אין מי שיראה אותו. */
+#toasts{position:fixed;inset-inline:0;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom));z-index:999;display:grid;gap:8px;justify-items:center;pointer-events:none;padding:0 14px}
+.toast{background:#1a1a1a;color:#fff;border-radius:99px;padding:10px 20px;font-size:.86rem;font-weight:600;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.22);max-width:92vw;text-align:center;animation:toastUp .2s ease-out}
+.toast.bad{background:#b91c1c;color:#fff}
+.toast.good{background:#15803d;color:#fff}
+@keyframes toastUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ═══ סוף CSS שכבת הטוסט ════════════════════════════════════════════════ */
 /* ═══ אזור מצב — CSS משותף (סבב 15/17) ══════════════════════════════════
    זהה בית-לבית בארבע האפליקציות. שני הרכיבים שיושבים בתחתית כל מסך
    הגדרות: בלוק "☁️ סנכרון" ורכיב "מידע טכני ›". הכללים לא נשענים על
@@ -3538,7 +3546,7 @@ function syncPull() {
       // עֵד הפינוי: כל מה שגילו קטן מהמשיכה המלאה המוצלחת האחרונה, **וכשהתור
       // ריק**, כבר נמצא בענן. שני התנאים נבדקים ב-LS_CFG.
       lsSet(SYNCED_KEY, String(_lastPullOk));
-      if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, null, 'ok'); }
+      if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, null, 'good'); }
     } else {
       console.warn('[sync] נכשלו:', errs.join(', '));
       if (!_netWarned) {
@@ -3672,24 +3680,6 @@ function isOwner() { return state.user && state.user.role === 'owner'; }
    ══════════════════════════════════════════════════════════════════════════ */
 /*  ⚠️ המשך התצוגה נבדל בין הארבע — ⭐ והוא ערך פרטי, ⛔ לא מנגנון. */
 var TOAST_DEFAULT_MS = 2600;
-/*  ⛔ חתימה אחת בארבע האפליקציות — `toast(msg, dur, kind)` — ⚠️ הנימוק
- *  המדוד: עד כאן הארגומנט השני היה **משך** בשלוש ו**שם מחלקה** בגיוס,
- *  ⛔ ואותה שורה משותפת בדיוק — `toast(MSG_STALE_CODE, 6000)` — פעלה
- *  בשלוש ⭐ ובגיוס ייצרה `class="toast 6000"`: ⚠️ בלי מחלקת צבע, ובלי
- *  ששת השניות. ⛔ `kind` הוא שם מחלקה ⛔ ולא משך — ⚠️ ומי שאין לו ערך
- *  מוסר `null`. */
-function toast(msg, dur, kind) {
-  // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
-  if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
-  var el = document.createElement('div');
-  el.className = 'toast' + (kind ? ' ' + kind : '');
-  el.textContent = msg;
-  $('#toasts').appendChild(el);
-  setTimeout(function () {
-    el.style.transition = 'opacity .25s'; el.style.opacity = '0';
-    setTimeout(function () { el.remove(); }, 260);
-  }, dur || TOAST_DEFAULT_MS);
-}
 function errToast(e) {
   console.error(e);
   toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', null, 'bad');
@@ -3753,6 +3743,25 @@ function closeAsk(v) {
   document.getElementById('ask').classList.remove('open');
   if (!document.getElementById('modal').classList.contains('open')) document.body.classList.remove('locked');
   if (askResolve) { askResolve(v); askResolve = null; }
+}
+/*  ⛔ `div` לכל הודעה, ⛔ ולא אלמנט קבוע אחד — ⚠️ הנימוק המדוד: בשלוש
+ *  מהן הטוסט היה אלמנט יחיד, ⭐ והודעה שנייה דרסה את הראשונה: ⛔ «נשמר»
+ *  ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד, ⚠️ ומי שקרא את המסך לא ידע
+ *  שהייתה שנייה. ⛔ `kind` הוא שם מחלקה ⛔ ולא משך — ⚠️ ומי שאין לו ערך
+ *  מוסר `null`; ⭐ והמשך יושב ב-`TOAST_DEFAULT_MS`, ⛔ הערך היחיד שנבדל. */
+function toast(msg, dur, kind) {
+  // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
+  if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
+  var box = document.getElementById('toasts');
+  if (!box) return;
+  var el = document.createElement('div');
+  el.className = 'toast' + (kind ? ' ' + kind : '');
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(function () {
+    el.style.transition = 'opacity .25s'; el.style.opacity = '0';
+    setTimeout(function () { el.remove(); }, 260);
+  }, dur || TOAST_DEFAULT_MS);
 }
 /*  ⛔ משך הודעת האחסון ⛔ ואינו ברירת המחדל של הטוסט — ⚠️ היא מדווחת על
    כשל כתיבה, ⭐ והקורא חייב זמן לקרוא אותה. */
@@ -4034,7 +4043,7 @@ function doLoginOffline(username, password, btn) {
     if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
     state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
     boot();
-    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'ok');
+    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'good');
   }, function (e) {
     busy(btn, false);
     console.warn('[login] אימות אופליין נכשל', e);
@@ -4756,7 +4765,7 @@ function wirePicker(id, onChange) {
         $('.dp-n-name', box).value = '';
         $('.dp-n-phone', box).value = '';
         setDonor(d);
-        toast('התורם נוצר', null, 'ok');
+        toast('התורם נוצר', null, 'good');
       })
       .catch(function (e) { busy(btn, false); errToast(e); });
   });
@@ -5117,7 +5126,7 @@ function afterSave(msg) {
   render();
   syncBarRender();
   // בלי רשת ההודעה חייבת לומר את האמת: נשמר **במכשיר**, לא בענן.
-  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, null, 'ok');
+  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, null, 'good');
   schedulePush();
   return Promise.resolve();
 }
@@ -5169,7 +5178,7 @@ var ACTIONS = {
       state.screen = 'home';
       state.donorId = null;
       boot();
-      toast('הוחלף ל' + (cu.full_name || cu.username), null, 'ok');
+      toast('הוחלף ל' + (cu.full_name || cu.username), null, 'good');
     }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
   },
   'logout': function () { logout(); },
@@ -5213,7 +5222,7 @@ var ACTIONS = {
         var d = donorById(el.dataset.id);
         if (d) d.notes = notes;
         busy(el, false);
-        toast('ההערות נשמרו', null, 'ok');
+        toast('ההערות נשמרו', null, 'good');
       })
       .catch(function (e) { busy(el, false); errToast(e); });
   },
@@ -5333,7 +5342,7 @@ var ACTIONS = {
     // ⚠️ ההשבתה חייבת להגיע לענן: משתמש שהושבת ונשאר במראה של מכשיר אחר
     //    היה נשאר בר-כניסה אופליין. המשיכה הבאה מורידה אותו משם.
     writeUser(u.id, { active: !u.active })
-      .then(function () { render(); toast('עודכן', null, 'ok'); })
+      .then(function () { render(); toast('עודכן', null, 'good'); })
       .catch(errToast);
   },
 
