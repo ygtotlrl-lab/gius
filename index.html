@@ -3538,12 +3538,12 @@ function syncPull() {
       // עֵד הפינוי: כל מה שגילו קטן מהמשיכה המלאה המוצלחת האחרונה, **וכשהתור
       // ריק**, כבר נמצא בענן. שני התנאים נבדקים ב-LS_CFG.
       lsSet(SYNCED_KEY, String(_lastPullOk));
-      if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, 'ok'); }
+      if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, null, 'ok'); }
     } else {
       console.warn('[sync] נכשלו:', errs.join(', '));
       if (!_netWarned) {
         _netWarned = true;
-        toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', 'bad');
+        toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', null, 'bad');
       }
     }
     return { ok: !errs.length, remote: remoteMaps };
@@ -3670,7 +3670,15 @@ function isOwner() { return state.user && state.user.role === 'owner'; }
 /* ══════════════════════════════════════════════════════════════════════════
    רכיבי ממשק בסיסיים — טוסט, מודאל, אישור, שדות
    ══════════════════════════════════════════════════════════════════════════ */
-function toast(msg, kind) {
+/*  ⚠️ המשך התצוגה נבדל בין הארבע — ⭐ והוא ערך פרטי, ⛔ לא מנגנון. */
+var TOAST_DEFAULT_MS = 2600;
+/*  ⛔ חתימה אחת בארבע האפליקציות — `toast(msg, dur, kind)` — ⚠️ הנימוק
+ *  המדוד: עד כאן הארגומנט השני היה **משך** בשלוש ו**שם מחלקה** בגיוס,
+ *  ⛔ ואותה שורה משותפת בדיוק — `toast(MSG_STALE_CODE, 6000)` — פעלה
+ *  בשלוש ⭐ ובגיוס ייצרה `class="toast 6000"`: ⚠️ בלי מחלקת צבע, ובלי
+ *  ששת השניות. ⛔ `kind` הוא שם מחלקה ⛔ ולא משך — ⚠️ ומי שאין לו ערך
+ *  מוסר `null`. */
+function toast(msg, dur, kind) {
   // שער סבב 11 — אין טוסט הצלחה אחרי כישלון שמירה מקומית. אין להסיר.
   if (typeof lsGuardToast === 'function' && !lsGuardToast(msg)) return;
   var el = document.createElement('div');
@@ -3680,20 +3688,20 @@ function toast(msg, kind) {
   setTimeout(function () {
     el.style.transition = 'opacity .25s'; el.style.opacity = '0';
     setTimeout(function () { el.remove(); }, 260);
-  }, 2600);
+  }, dur || TOAST_DEFAULT_MS);
 }
 function errToast(e) {
   console.error(e);
-  toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', 'bad');
+  toast((e && (e.message || e.error_description)) || 'שגיאה בשמירה', null, 'bad');
 }
 
 /* ── LS_TOAST — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
-/*  ⛔ הארגומנט השני של `toast` נבדל בין הריפו — ⚠️ בשלוש הוא **משך** בזמן,
- *  ⛔ ובגיוס הוא **שם מחלקה**: ⭐ ולכן הערך יושב כאן, ⛔ וגוף `lsToast` זהה
- *  בית-לבית בארבעתן. */
-/*  ⚠️ כאן `dur` נבלע בכוונה — ⛔ הטוסט של גיוס אינו מקבל משך, ⭐ וכל
- *  קריאות המודול המשותף עוברות בכל זאת את אותה חתימה. */
-var LS_TOAST = { arg: function (dur) { return 'bad'; } };
+/*  ⛔ החתימה `toast(msg, dur, kind)` זהה בארבעתן (סבב 87) — ⚠️ ומה שנשאר
+ *  נבדל הוא **שם המחלקה** בלבד: ⭐ המשך הוא ערך משותף שיושב בבלוק, ⛔ ולכן
+ *  גוף `lsToast` זהה בית-לבית בארבעתן. */
+/*  ⚠️ בגיוס לטוסט יש מחלקות צבע — ⛔ ובשלוש האחרות אין, ⭐ ולכן שם המחלקה
+ *  ריק שם: ⛔ ריק נקרא «נמדד ואין», ⚠️ ושדה חסר היה נקרא «לא נשאלתי». */
+var LS_TOAST = { kind: 'bad' };
 /* ═══ שכבת המודאל — מודול משותף (סבב 86) ══════════════════════════════════
    ⛔ שכבת המודאל ושלושת העוזרים ישבו **מחוץ** לכל בלוק חתום ⛔ ונסחפו:
       ⚠️ `esc` לשלוש צורות — והיא הגנת ה-HTML היחידה שיש; `openModal` לשלוש,
@@ -3746,7 +3754,10 @@ function closeAsk(v) {
   if (!document.getElementById('modal').classList.contains('open')) document.body.classList.remove('locked');
   if (askResolve) { askResolve(v); askResolve = null; }
 }
-function lsToast(msg, dur) { try { toast(msg, LS_TOAST.arg(dur)); } catch (e) {} }
+/*  ⛔ משך הודעת האחסון ⛔ ואינו ברירת המחדל של הטוסט — ⚠️ היא מדווחת על
+   כשל כתיבה, ⭐ והקורא חייב זמן לקרוא אותה. */
+var LS_TOAST_MS = 5000;
+function lsToast(msg, dur) { try { toast(msg, dur || LS_TOAST_MS, LS_TOAST.kind); } catch (e) {} }
 /* ═══════════════ סוף מודול שכבת המודאל ═════════════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
@@ -4023,7 +4034,7 @@ function doLoginOffline(username, password, btn) {
     if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
     state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
     boot();
-    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', 'ok');
+    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'ok');
   }, function (e) {
     busy(btn, false);
     console.warn('[login] אימות אופליין נכשל', e);
@@ -4099,7 +4110,7 @@ var lastViewKey = '';
 // אותה החלטה בדיוק תועדה ב-hanhala-ruchanit (סבב 6 שם).
 function go(screen) {
   if (screen === 'settings' && !isOwner()) {
-    toast('אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', 'bad');
+    toast('אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', null, 'bad');
     return;
   }
   state.screen = screen;
@@ -4736,7 +4747,7 @@ function wirePicker(id, onChange) {
     var btn = this;
     var name = $('.dp-n-name', box).value.trim();
     var phone = $('.dp-n-phone', box).value.trim();
-    if (!name) { toast('נא למלא שם תורם', 'bad'); return; }
+    if (!name) { toast('נא למלא שם תורם', null, 'bad'); return; }
     busy(btn, true);
     insert('g_donors', { name: name, phone: phone || null })
       .then(function (d) {
@@ -4745,7 +4756,7 @@ function wirePicker(id, onChange) {
         $('.dp-n-name', box).value = '';
         $('.dp-n-phone', box).value = '';
         setDonor(d);
-        toast('התורם נוצר', 'ok');
+        toast('התורם נוצר', null, 'ok');
       })
       .catch(function (e) { busy(btn, false); errToast(e); });
   });
@@ -4810,9 +4821,9 @@ function formTxn(existing, presetDonor) {
 
 function saveTxn(id) {
   var donorId = pickerValue('txn-donor');
-  if (!donorId) { toast('נא לבחור תורם', 'bad'); return Promise.resolve(); }
+  if (!donorId) { toast('נא לבחור תורם', null, 'bad'); return Promise.resolve(); }
   var amount = num(val('txn-amount'));
-  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', 'bad'); return Promise.resolve(); }
+  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
   var row = {
     donor_id: donorId,
     pledge_id: nullable(val('txn-pledge')),
@@ -4854,9 +4865,9 @@ function formPledge(existing, presetDonor) {
 
 function savePledge(id) {
   var donorId = pickerValue('pl-donor');
-  if (!donorId) { toast('נא לבחור תורם', 'bad'); return Promise.resolve(); }
+  if (!donorId) { toast('נא לבחור תורם', null, 'bad'); return Promise.resolve(); }
   var amount = num(val('pl-amount'));
-  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', 'bad'); return Promise.resolve(); }
+  if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
   var row = {
     donor_id: donorId,
     amount: amount,
@@ -4899,7 +4910,7 @@ function formTask(existing) {
 
 function saveTask(id) {
   var title = val('tk-title');
-  if (!title) { toast('נא למלא כותרת', 'bad'); return Promise.resolve(); }
+  if (!title) { toast('נא למלא כותרת', null, 'bad'); return Promise.resolve(); }
   var existing = null;
   for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) existing = state.tasks[i];
 
@@ -4946,7 +4957,7 @@ function formDonor(existing) {
 
 function saveDonor(id) {
   var name = val('dn-name');
-  if (!name) { toast('נא למלא שם', 'bad'); return Promise.resolve(); }
+  if (!name) { toast('נא למלא שם', null, 'bad'); return Promise.resolve(); }
   var tags = val('dn-tags').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
   var row = {
     name: name,
@@ -4988,7 +4999,7 @@ function formUser(existing) {
 
 function saveUser(id) {
   var full = val('us-full'), uname = val('us-name');
-  if (!full || !uname) { toast('נא למלא שם מלא ושם משתמש', 'bad'); return Promise.resolve(); }
+  if (!full || !uname) { toast('נא למלא שם מלא ושם משתמש', null, 'bad'); return Promise.resolve(); }
   var row = {
     full_name: full, username: uname,
     role: val('us-role') || 'manager',
@@ -4996,11 +5007,11 @@ function saveUser(id) {
   };
   // סבב 23: כתיבת משתמש דורשת רשת (`writeUser`), כי היא חייבת להגיע לענן
   // כדי שהטביעה תגיע לשאר המכשירים. בלי רשת — נכשל ברעש.
-  if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return Promise.resolve(); }
+  if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return Promise.resolve(); }
   if (!id) {
     var p = $('#us-pass') ? $('#us-pass').value : '';
-    if (!p) { toast('נא להזין סיסמה', 'bad'); return Promise.resolve(); }
-    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, 'bad'); return Promise.resolve(); }
+    if (!p) { toast('נא להזין סיסמה', null, 'bad'); return Promise.resolve(); }
+    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return Promise.resolve(); }
     return passFields(p).then(function (pf) {
       return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp);
     });
@@ -5012,7 +5023,7 @@ function saveUser(id) {
 // ⚠️ שמירה שהצליחה **בלי** טביעה אינה «נשמר בהצלחה»: המשתמש נשמר, אבל
 // הכניסה האופליין שלו לא תעבוד. אומרים את זה, לא בולעים.
 function warnIfNoFp(r) {
-  if (r && r.noFp) toast('⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת', 'bad');
+  if (r && r.noFp) toast('⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת', null, 'bad');
   return r;
 }
 
@@ -5056,7 +5067,7 @@ function formSwitchUser() {
   var others = (MIRROR.g_users || []).filter(function (u) {
     return u && u.active !== false && String(u.id) !== String(state.user.id);
   });
-  if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', 'bad'); return; }
+  if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', null, 'bad'); return; }
   openModal('👥 החלפת משתמש',
     '<label class="fld"><span>משתמש</span><select class="inp" id="sw-user" aria-label="המשתמש שאליו עוברים">' +
       others.map(function (u) {
@@ -5084,7 +5095,7 @@ function formTarget(month) {
 
 function saveTarget() {
   var m = val('tg-month');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('נא לבחור חודש תקין', 'bad'); return Promise.resolve(); }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('נא לבחור חודש תקין', null, 'bad'); return Promise.resolve(); }
   var amount = num(val('tg-amount'));
   return upsertBy('g_targets', 'month', { month: m, amount: amount });
 }
@@ -5106,7 +5117,7 @@ function afterSave(msg) {
   render();
   syncBarRender();
   // בלי רשת ההודעה חייבת לומר את האמת: נשמר **במכשיר**, לא בענן.
-  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, 'ok');
+  if (msg) toast(navigator.onLine ? msg : MSG_SAVED_LOCAL, null, 'ok');
   schedulePush();
   return Promise.resolve();
 }
@@ -5140,26 +5151,26 @@ var ACTIONS = {
   'switch-confirm': function (el) {
     var id = $('#sw-user') ? $('#sw-user').value : '';
     var p  = $('#sw-pass') ? $('#sw-pass').value : '';
-    if (!id || !p) { toast('נא לבחור משתמש ולהזין סיסמה', 'bad'); return; }
+    if (!id || !p) { toast('נא לבחור משתמש ולהזין סיסמה', null, 'bad'); return; }
     var cu = null, arr = MIRROR.g_users || [];
     for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) cu = arr[i];
     /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן (סבב 67) — «אין במה לאמת»
      *  אינו «סיסמה שגויה», והודעה מאוחדת שולחת את המשתמש להקליד שוב
      *  ושוב סיסמה נכונה לחלוטין במקום לומר לו שנדרש חיבור אחד. */
-    if (!cu) { toast(MSG_OFF_UNKNOWN, 'bad'); return; }
+    if (!cu) { toast(MSG_OFF_UNKNOWN, null, 'bad'); return; }
     busy(el, true);
     gVerifyOffline(cu, p).then(function (v) {
       busy(el, false);
-      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, 'bad'); return; }
-      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, 'bad'); return; }
-      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, 'bad'); return; }
+      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, null, 'bad'); return; }
+      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
+      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, null, 'bad'); return; }
       closeModal();
       state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
       state.screen = 'home';
       state.donorId = null;
       boot();
-      toast('הוחלף ל' + (cu.full_name || cu.username), 'ok');
-    }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, 'bad'); });
+      toast('הוחלף ל' + (cu.full_name || cu.username), null, 'ok');
+    }, function (e) { busy(el, false); console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
   },
   'logout': function () { logout(); },
   'modal-close': function () { closeModal(); },
@@ -5202,7 +5213,7 @@ var ACTIONS = {
         var d = donorById(el.dataset.id);
         if (d) d.notes = notes;
         busy(el, false);
-        toast('ההערות נשמרו', 'ok');
+        toast('ההערות נשמרו', null, 'ok');
       })
       .catch(function (e) { busy(el, false); errToast(e); });
   },
@@ -5271,9 +5282,9 @@ var ACTIONS = {
   'user-pass': function (el) { var u = findUser(el.dataset.id); if (u) formPassword(u); },
   'pass-save': function (el) {
     var p = $('#pw-new') ? $('#pw-new').value : '';
-    if (!p) { toast('נא להזין סיסמה', 'bad'); return; }
-    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, 'bad'); return; }
-    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    if (!p) { toast('נא להזין סיסמה', null, 'bad'); return; }
+    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
+    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // סבב 23: הטביעה נגזרת בכל שינוי סיסמה, לצד הסיסמה עצמה.
     runSave(el, function () {
       return passFields(p).then(function (pf) {
@@ -5293,10 +5304,10 @@ var ACTIONS = {
     var cur = $('#mp-cur') ? $('#mp-cur').value : '';
     var p1 = $('#mp-new') ? $('#mp-new').value : '';
     var p2 = $('#mp-new2') ? $('#mp-new2').value : '';
-    if (!cur || !p1 || !p2) { toast('נא למלא את כל השדות', 'bad'); return; }
-    if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, 'bad'); return; }
-    if (p1 !== p2) { toast('הסיסמאות החדשות אינן זהות', 'bad'); return; }
-    if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    if (!cur || !p1 || !p2) { toast('נא למלא את כל השדות', null, 'bad'); return; }
+    if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
+    if (p1 !== p2) { toast('הסיסמאות החדשות אינן זהות', null, 'bad'); return; }
+    if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
     //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
     runSave(el, function () {
@@ -5317,12 +5328,12 @@ var ACTIONS = {
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;
-    if (idEq(u.id, state.user.id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', 'bad'); return; }
-    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, 'bad'); return; }
+    if (idEq(u.id, state.user.id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', null, 'bad'); return; }
+    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⚠️ ההשבתה חייבת להגיע לענן: משתמש שהושבת ונשאר במראה של מכשיר אחר
     //    היה נשאר בר-כניסה אופליין. המשיכה הבאה מורידה אותו משם.
     writeUser(u.id, { active: !u.active })
-      .then(function () { render(); toast('עודכן', 'ok'); })
+      .then(function () { render(); toast('עודכן', null, 'ok'); })
       .catch(errToast);
   },
 
@@ -5331,9 +5342,9 @@ var ACTIONS = {
     var key = el.dataset.key;
     var input = $('#cfg-add-' + key);
     var v = input ? input.value.trim() : '';
-    if (!v) { toast('נא להזין ערך', 'bad'); return; }
+    if (!v) { toast('נא להזין ערך', null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
-    if (list.indexOf(v) >= 0) { toast('הערך כבר קיים', 'bad'); return; }
+    if (list.indexOf(v) >= 0) { toast('הערך כבר קיים', null, 'bad'); return; }
     list.push(v);
     runSave(el, function () { return saveConfigList(key, list); }, 'נוסף');
   },
@@ -5349,7 +5360,7 @@ var ACTIONS = {
   'cfg-edit-save': function (el) {
     var key = el.dataset.key, i = +el.dataset.i;
     var v = val('cfg-v');
-    if (!v) { toast('נא להזין ערך', 'bad'); return; }
+    if (!v) { toast('נא להזין ערך', null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
     list[i] = v;
     runSave(el, function () { return saveConfigList(key, list); }, 'נשמר');
