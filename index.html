@@ -5677,6 +5677,7 @@ function registerSW() {
   });
 
   navigator.serviceWorker.register('sw.js').then(function (reg) {
+    console.log('[sw] registered:', reg.scope);
     if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
     reg.addEventListener('updatefound', function () {
       var nw = reg.installing;
@@ -5697,7 +5698,7 @@ function registerSW() {
     }
     checkForUpdate();
     setInterval(checkForUpdate, 30 * 60 * 1000);
-  }).catch(function (e) { console.warn('SW registration failed', e); });
+  }).catch(function (err) { console.warn('[sw] registration failed:', err); });
 }
 
 window.addEventListener('load', registerSW);
