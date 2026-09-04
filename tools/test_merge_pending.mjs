@@ -31,8 +31,8 @@ import vm from 'node:vm';
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
   app: 'gius',
-  names: ['rowTs', 'findRow', '_mergePick', 'mergeCore', 'mergeRows'],
-  vars: [],
+  names: ['rowTs', 'findRow', 'tombStamp', 'prunePastTombstones', 'tombPruneMerged', '_mergePick', 'mergeCore', 'mergeRows'],
+  vars: ['var TOMBSTONE_TTL_MS = ', 'var _tombPrunePending = '],
   globals: {},
   offlineFn: 'gVerifyOffline',
   // ⭐ סבב 38 — כלל ההכרעה עבר לליבה המשותפת, ולכן גם המוטציה מכוונת
@@ -50,7 +50,8 @@ const APP = {
    *  מאלה שמעליהם, ⛔ ולכן הם יושבים בקבוצה משלהם ואינם מתמזגים בהם. */
   core: {
     app: 'gius',
-    names: ['rowTs', 'findRow', '_mergePick', 'mergeCore', 'mergeRows'],
+    names: ['rowTs', 'findRow', 'tombStamp', 'prunePastTombstones', 'tombPruneMerged', '_mergePick', 'mergeCore', 'mergeRows'],
+    vars: ['var TOMBSTONE_TTL_MS = ', 'var _tombPrunePending = '],
     globals: {},
     wrapFn: 'mergeRows',
     // ⛔ `dedupe: false` — אותו נימוק כמו בשכר לימוד: כפילות נשארת גלויה.
@@ -251,6 +252,11 @@ function coreBuild(src) {
   const ctx = Object.assign({ console, Number, String, Array, Object, isFinite, Date, JSON, Math },
                             C.globals || {});
   vm.createContext(ctx);
+  /*  ⛔ ההצהרות קודמות לפונקציות (סבב 93) — ⚠️ מודול גריעת ה-tombstones
+   *  נשען על דגל ברמת הקובץ, ⭐ ופונקציה שנחתכת בלעדיו זורקת
+   *  `ReferenceError` בתוך הרתמה: ⛔ הכשל נראה כשבירה של מנוע המיזוג
+   *  ⚠️ ואינו כזה. */
+  for (const v of (C.vars || [])) vm.runInContext(cutVar(v, src), ctx);
   vm.runInContext(C.names.map((x) => cut(x, src)).join('\n'), ctx);
   return ctx;
 }
