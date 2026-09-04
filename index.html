@@ -1340,9 +1340,7 @@ window.lsSweepVerified = lsSweepVerified;
 /* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
 
 var MSG_STALE_CODE = '⚠️ הגרסה הזו מיושנת — יש לעדכן';
-/* ══════════════════════════════════════════════════════════════════════════
-   קוד מיושן מול סכימה שהשתנתה
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ═══ האזנת הסכימה — מודול משותף (סבב 91) ═════════════════════════════════
 /*  ⛔ **שלוש תשובות מסד מעידות שהקוד ישן מהסכימה** — טבלה שאינה קיימת
  *  (`42P01`) · עמודה שאינה קיימת (`42703`) · ו-404 על טבלה: ⚠️ שלושתן
  *  **אינן שגיאת רשת**, ⛔ וניסיון חוזר עליהן אינו יכול להצליח לעולם.
@@ -1415,9 +1413,9 @@ function sbWatch(c) {
   };
   return c;
 }
-/* ══ סוף קוד מיושן ═════════════════════════════════════════════════════ */
+/* ═══════════════ סוף מודול האזנת הסכימה ════════════════════════════════ */
 
-/* ═══ "מידע טכני" — קיפול מסכי האחסון (תצוגה בלבד, סבב 15) ═══════════════
+/* ═══ מידע טכני — מודול משותף (סבב 91) ════════════════════════════════════
    המודול המשותף של סבב 14 לא נגוע: הרכיב הזה רק עוטף את lsStatusHTML
    בשורה מקופלת אחת בתחתית ההגדרות, סגורה כברירת מחדל. כפתורי הפינוי
    הידני אינם מוצגים (מוסתרים ב-CSS — .tech-info .ls-status button);
@@ -1466,7 +1464,7 @@ function techInfoMount() {
 }
 window.techInfoToggle = techInfoToggle;
 window.techInfoMount = techInfoMount;
-/* ═══ סוף רכיב "מידע טכני" ═══════════════════════════════════════════════ */
+/* ═══════════════ סוף מודול מידע טכני ═══════════════════════════════════ */
 /* ── SYNC_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
 var SYNC_CFG = {
   // `_lastPullOk` נכתב אחרי משיכה מלאה מוצלחת של כל שבע הטבלאות.
@@ -5677,6 +5675,7 @@ function registerSW() {
   });
 
   navigator.serviceWorker.register('sw.js').then(function (reg) {
+    console.log('[sw] registered:', reg.scope);
     if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
     reg.addEventListener('updatefound', function () {
       var nw = reg.installing;
@@ -5697,7 +5696,7 @@ function registerSW() {
     }
     checkForUpdate();
     setInterval(checkForUpdate, 30 * 60 * 1000);
-  }).catch(function (e) { console.warn('SW registration failed', e); });
+  }).catch(function (err) { console.warn('[sw] registration failed:', err); });
 }
 
 window.addEventListener('load', registerSW);
