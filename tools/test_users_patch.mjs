@@ -29,6 +29,11 @@ import { webcrypto } from 'node:crypto';
 /*  ⛔ הקובץ הזה אינו אוכף שורה בטבלת התשתית (סבב 72) — ⚠️ הצהרה ריקה
  *  ולא היעדר: ⛔ שער בלי הצהרה אינו נבדל משער שההצהרה שלו נשמטה. */
 export const ROWS = [];
+
+/*  ⛔ המוטציות אינן ברירת המחדל (סבב 92) — ⚠️ כל מוטציה היא שינוי ⟵ הרצה
+ *  ⟵ שחזור, ⭐ ושני שערים לבדם היו 70% מזמן הסט: ⛔ הן רצות ברמה המלאה
+ *  (`--full`), בסוף הסבב ולפני מיזוג, ⚠️ ולא בכל הרצה בזמן העבודה. */
+const RUN_MUT = process.env.GATE_MUT === '1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
@@ -286,6 +291,11 @@ async function run() {
    *  ב**באנר** — ⛔ ולא רצה כאן אף מוטציה. ⭐ שתי אלה מודדות את המסנן
    *  עצמו: הסרת `strip: ['password']` חייבת להפיל טענה, ⛔ ותוספת עמודה
    *  שאינה סוד חייבת **לעבור**. */
+  /*  ⛔ מכאן ולמטה מוטציות (סבב 92) — ⚠️ הן רצות ברמה המלאה בלבד. */
+  if (!RUN_MUT) {
+    console.log('\n⏭ test_users_patch: המוטציות רצות ברמה המלאה (--full)');
+    process.exit(fail ? 1 : 0);
+  }
   sect('מוטציות');
   {
     const stripRe = /\{[^}]*t:\s*'g_users'[^}]*strip:\s*\[\s*'password'\s*\][^}]*\}/;
