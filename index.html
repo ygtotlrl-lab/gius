@@ -636,27 +636,58 @@ var LS_CFG = {
   // ⚠️ `g_mirror_donors` **אינה** כאן: התורמים הם אבות המפתח הזר של התנועות
   //    וההתחייבויות, והם קטנים. פינוי שלהם היה משאיר תנועות בלי שם מוצג.
   //    רצפת 400 יום על הכסף — שנה שלמה אחורה נשארת זמינה גם בלי רשת.
+  // ⚠️ לכל מפתח **עֵד דחיפה משלו** (`_gPushedAt`) ולא החותמת הגלובלית,
+  //    ובנוסף `idOf`/`verify` למסלול האימות מול הענן — בדיוק כמו ב-yoman
+  //    וב-hanhala. ר' ההערה מתחת ל-LS_CFG.
   tier2: [
-    { key: 'g_mirror_txns',    label: 'תנועות',      ts: rowTs, minAgeMs: 400 * 86400000 },
-    { key: 'g_mirror_pledges', label: 'התחייבויות',  ts: rowTs, minAgeMs: 400 * 86400000 },
-    { key: 'g_mirror_tasks',   label: 'משימות',      ts: rowTs, minAgeMs: 180 * 86400000 }
+    { key: 'g_mirror_txns',    label: 'תנועות',      ts: rowTs, minAgeMs: 400 * 86400000,
+      idOf: _gRecId, syncedThrough: _gPushedFor('g_txns'),    verify: _gVerify('g_txns') },
+    { key: 'g_mirror_pledges', label: 'התחייבויות',  ts: rowTs, minAgeMs: 400 * 86400000,
+      idOf: _gRecId, syncedThrough: _gPushedFor('g_pledges'), verify: _gVerify('g_pledges') },
+    { key: 'g_mirror_tasks',   label: 'משימות',      ts: rowTs, minAgeMs: 180 * 86400000,
+      idOf: _gRecId, syncedThrough: _gPushedFor('g_tasks'),   verify: _gVerify('g_tasks') }
   ],
 
   // כלל ג: כל עוד יש פעולה בתור היוצא — לא מפנים כלום.
   pending: function () { try { return pendCount() > 0; } catch (e) { return true; } },
 
-  /* עֵד הסנכרון: חותמת המשיכה המלאה המוצלחת האחרונה.
-     ⚠️ סבב 14 — למה **אין כאן `idOf`/`verify`**, בניגוד ל-yoman ול-hanhala:
-     שם העֵד הוא חותמת **דחיפה** (`_tbPushedAt` / `_ysPushedAt`), ולכן בדפדפן
-     שרק קורא הוא נשאר 0 לנצח ושלב ב לא מפנה דבר — הבאג שסבב 14 בא לתקן.
-     כאן `g_synced_at` נכתב אחרי **משיכה מלאה מוצלחת של כל שבע הטבלאות**,
-     ובשילוב עם `pending()` (התור ריק) הוא כבר עדות מהענן עצמו: כל רשומה
-     שגילה קודם לה נראתה בענן במפורש. כלומר **הוא נכתב גם במכשיר שרק קורא**,
-     והמסלול החלופי מיותר כאן. ⛔ ומעבר לכך: אימות מול הענן אינו סיבה
-     להוסיף מראות נוספות ל-`tier1`/`tier2` — `g_mirror_donors` ו-`g_mirror_users`
-     נשארות בחוץ מהסיבות שכתובות מעליהן, שאין להן שום קשר לראיה. */
-  syncedThrough: function () { var v = parseInt(lsGet('g_synced_at', '0'), 10); return isFinite(v) ? v : 0; }
+  /* ⚠️ **0 בכוונה.** כאן ישבה חותמת המשיכה המלאה (`g_synced_at`), והיא אינה
+     עֵד דחיפה: משיכה אומרת «ראיתי את מצב הענן» ⛔ ולא «מה שאצלי עלה לשם»,
+     ולכן פינוי שנשען עליה היה יכול למחוק מהדיסק רשומה שמעולם לא עלתה.
+     כל מפתח ב-tier2 מביא עֵד דחיפה משלו (`_gPushedAt`), בדיוק כמו
+     `_tbPushedAt` ב-yoman ו-`_ysPushedAt` ב-hanhala. ⛔ **אין להחזיר לכאן
+     את `g_synced_at`** — הוא נשאר חותמת תצוגה בלבד. */
+  syncedThrough: function () { return 0; }
 };
+
+/* ── עֵד הדחיפה פר-מפתח (סבב 96) ────────────────────────────────────────
+   נכתב **רק** אחרי מעבר דחיפה של אותה טבלה שלא נשארה בו אף שורה בכשל רשת
+   (`still.length === 0`) — והדחיפה עצמה רצה אך ורק אחרי משיכה מלאה
+   שהצליחה. כלומר: הענן נראה, וכל מה שהיה מקומי-וחדש-יותר נכתב אליו.
+   ⭐ ומכשיר שרק קורא מקבל אותו אף הוא — אין לו שורות מלוכלכות, ולכן
+   המעבר מסתיים ריק ומסמן. ⛔ אין לגזור אותו ממשיכה לבדה. */
+var _gPushedAt = {};
+function _gMarkPushed(tbl) { _gPushedAt[tbl] = Date.now(); }
+function _gPushedThrough(tbl) { return _gPushedAt[tbl] || 0; }
+function _gPushedFor(tbl) { return function () { return _gPushedThrough(tbl); }; }
+// מזהה רשומה לצורך אימות מול הענן. שלוש הטבלאות שב-tier2 — כולן `id`.
+function _gRecId(r) { return (r && r.id != null) ? r.id : null; }
+/* ── עדות סנכרון חלופית: אימות מול הענן (סבב 96) ──────────────────────────
+   מכשיר שאיבד את העֵד באמצע סשן (טעינה מחדש בלי סנכרון מוצלח) נשאר בלי
+   חותמת, ושלב ב היה מדולג לגמרי. במקום להסיק «זה בענן», שואלים את הענן:
+   מושכים את הטבלה ומאמתים פר-רשומה.
+   **נכשל סגור:** אין רשת, `_ysRowsPaged` החזירה `null`, או שהמשיכה זרקה ⇒
+   `ok:false` ⇒ לא מפנים דבר. */
+function _gVerify(tbl) {
+  return function () {
+    if (!sb) return Promise.resolve({ ok: false, rows: [] });
+    var m = tableMeta(tbl);
+    return _ysRowsPaged(function () { return sb.from(tbl).select('*'); }, m.key, null)
+      .then(function (rows) {
+        return Array.isArray(rows) ? { ok: true, rows: rows } : { ok: false, rows: [] };
+      }, function () { return { ok: false, rows: [] }; });
+  };
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    עמידות אחסון מקומי — מודול משותף (סבב 11).
@@ -2517,9 +2548,9 @@ function sessBoot() {
    (סבב 51) הייתה מחזירה לענן חותמת ישנה שיושבת במכשיר הזה.
    ⚠️ `every` הוא 5,000 ולא 3,000 — זה המרווח שנמדד כאן (`FLUSH_MS` הישן),
    ⛔ ואין ליישר אותו לשלוש האחיות (סבב 51): המרווח הוא פרמטר מדוד.
-   ⚠️ `ok()` **אינו** נוגע ב-`_lastPullOk`: הוא עֵד המשיכה המלאה, והוא
-   שנכתב ל-`SYNCED_KEY` ומשמש את הפינוי. ⛔ הזנתו משיחה מוצלחת שאינה
-   משיכה (סבב 51) הייתה הופכת חותמת תצוגה לעֵד פינוי. */
+   ⚠️ `ok()` **אינו** נוגע ב-`_lastPullOk`: הוא עֵד המשיכה המלאה, והוא מה
+   שמזין את חיווי «סונכרן לאחרונה». ⛔ הזנתו משיחה מוצלחת שאינה משיכה
+   (סבב 51) הייתה הופכת חותמת תצוגה לעדות על מצב הענן. */
 var PL_CFG = {
   every:  5000,
   active: function () { return sessActive() && !!sb; },
@@ -3041,7 +3072,6 @@ function ok(res) {
 }
 
 var MIRROR_PREFIX = 'g_mirror_';
-var SYNCED_KEY = 'g_synced_at';
 // ⛔ `PULL_MS` ו-`FLUSH_MS` הוסרו (סבב 51) — הם היו המרווחים של הפולינג
 //    שמשך מלא ודחף, ואין להם יותר אף קורא (נמדד בארבעת הריפו). המרווח
 //    היחיד שנשאר הוא `PL_CFG.every`, והוא 5,000 — אותו ערך שנמדד כאן.
@@ -3071,7 +3101,7 @@ var _syncWired = false, _flushTimer = null, _pulling = false;
 var _netWarned = false, _lastPullOk = 0;
 // ⭐ סבב 51 — מצב מנגנון המשיכה. `_gSeenTs` היא החותמת האחרונה שהמכשיר
 //    ראה, ו-`_lastSeenOk` היא חותמת **תצוגה** בלבד (שיחה מוצלחת עם הענן).
-//    ⛔ אין להזין מהן את עֵד הפינוי (סבב 51) — ר' `PL_CFG` ו-`SYNCED_KEY`.
+//    ⛔ אין להזין מהן את עֵד הפינוי (סבב 51) — ר' `_gPushedAt`.
 var _gSeenTs = 0, _lastSeenOk = 0;
 var G_STAMP_KEY = 'g_last_changed';
 
@@ -3575,7 +3605,10 @@ function pushRow(t, row) {
 // ותנועות) נשמר ע"י סדר `PUSH_TABLES` — הוא מה ששומר על המפתח הזר.
 function pushTable(t, remoteByKey) {
   var rows = dirtyRows(t, remoteByKey);
-  if (!rows.length) return Promise.resolve([]);
+  /* ⛔ אין מה לדחוף ⇒ **העֵד מסומן** (סבב 96) — ⚠️ המשיכה הצליחה ואין שורה
+   *  מקומית שחדשה מהענן: ⭐ זה בדיוק מצבו של מכשיר שרק קורא, ⛔ ובלי
+   *  הסימון כאן שלב ב היה מדולג בו לנצח. */
+  if (!rows.length) { _gMarkPushed(t); return Promise.resolve([]); }
   // ⭐ סבב 51 — «באמת נכתב משהו לענן» נמדד כאן: שורה שנדחפה בהצלחה מקדמת
   //    את החותמת. ⛔ בלי הקידום (סבב 51) הדחיפה נשארת בלתי-נראית לכל
   //    מכשיר אחר לנצח — הם מושכים רק כשהיא מתקדמת.
@@ -3597,7 +3630,14 @@ function pushTable(t, remoteByKey) {
       return step();
     });
   }
-  return step().then(function (res) { if (wrote) plTouch(); return res; });
+  return step().then(function (res) {
+    if (wrote) plTouch();
+    /* ⭐ עֵד הפינוי פר-מפתח (סבב 96) — ⛔ רק כשלא נשארה שורה בכשל רשת:
+     *  ⚠️ «עברנו על כל המלוכלכות והענן קיבל את כולן» הוא בדיוק התנאי
+     *  שמתיר לפנות מהדיסק רשומה ישנה של אותה טבלה. */
+    if (!res.length) _gMarkPushed(t);
+    return res;
+  });
 }
 
 function pushDirty(remote) {
@@ -3683,9 +3723,10 @@ function syncPull() {
       //    ההפעלה היא `bkBoot()` ב-`start()`. ⚠️ ריקון תור היומן כן נשאר:
       //    הוא ריקון חוזר, וכאן יש ראיה טרייה שהרשת עובדת.
       try { logFlush(); } catch (eB) { }
-      // עֵד הפינוי: כל מה שגילו קטן מהמשיכה המלאה המוצלחת האחרונה, **וכשהתור
-      // ריק**, כבר נמצא בענן. שני התנאים נבדקים ב-LS_CFG.
-      lsSet(SYNCED_KEY, String(_lastPullOk));
+      /* ⛔ **אין כאן כתיבת עֵד פינוי** (סבב 96) — ⚠️ עד כאן נכתבה מכאן
+       *  `g_synced_at`, והיא חותמת **משיכה**: «ראיתי את מצב הענן» אינו
+       *  «מה שאצלי עלה לשם». ⭐ העֵד הוא `_gPushedAt` פר-טבלה, והוא
+       *  מסומן בסוף מעבר הדחיפה של אותה טבלה. */
       if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, null, 'good'); }
     } else {
       console.warn('[sync] נכשלו:', errs.join(', '));
