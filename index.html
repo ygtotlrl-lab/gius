@@ -630,7 +630,9 @@ var LS_CFG = {
   // (`pass_fp`); אין בה סיסמאות (ר' `strip` ב-TABLES). ⚠️ פינוי שלה עולה
   // **כניסה אופליין עד המשיכה הבאה** — לא נתון, ולכן היא נשארת בשלב א.
   // שאר המראות הן הנתונים עצמם ולכן שלב ב.
-  tier1: ['g_mirror_users'],
+  // ⚠️ ולה **עֵד דחיפה משלה** — `writeUser` כותבת לענן ורק אז למראה,
+  //    ולכן ההצלחה שם היא הראיה שהתוכן שעל הדיסק כבר שם.
+  tier1: [{ key: 'g_mirror_users', syncedThrough: _gPushedFor('g_users') }],
 
   // שלב ב — רשומות ישנות שכבר מסונכרנות, הישן ביותר קודם.
   // ⚠️ `g_mirror_donors` **אינה** כאן: התורמים הם אבות המפתח הזר של התנועות
@@ -967,10 +969,17 @@ function lsSweep(reason, needBytes) {
   }
 
   // ── שלב א: מטמונים שניתן לשחזר מהענן ──
+  // ⛔ העֵד נבדק **פר-פריט**, בתוך המערך (סבב 96ד) — ⚠️ ולא בכניסה
+  // לרשימה: שלב א מוחק מפתח **שלם**, ומפתח שנכתב מקומית-תחילה ולא נדחף
+  // אינו חוזר משום מקום. ⭐ ולכן כל פריט נושא `syncedThrough` משלו, בדיוק
+  // כמו ב-tier2, ⛔ ומחסום `pending()` שלמעלה אינו מחליף אותו: «התור ריק»
+  // הוא ראיה על **התור** ⛔ ולא על המפתח.
+  var through = lsGlobalWitness();
   var sized = [];
-  (LS_CFG.tier1 || []).forEach(function (k) {
-    var v = lsGet(k, null);
-    if (v != null) sized.push({ k: k, b: lsEntryBytes(k, v) });
+  (LS_CFG.tier1 || []).forEach(function (spec) {
+    if (!lsSpecWitness(spec, through)) return;
+    var v = lsGet(spec.key, null);
+    if (v != null) sized.push({ k: spec.key, b: lsEntryBytes(spec.key, v) });
   });
   sized.sort(function (a, b) { return b.b - a.b; });   // הגדול קודם — מפנה מהר
   var hit = [];
@@ -982,7 +991,6 @@ function lsSweep(reason, needBytes) {
   if (need && freed >= need) return freed;
 
   // ── שלב ב: רשומות ישנות מסונכרנות ──
-  var through = lsGlobalWitness();
   var specs = (LS_CFG.tier2 || []).slice();
   // מפתח בלי עֵד מקומי אך עם מסלול אימות מול הענן אינו מפונה כאן — האימות
   // אסינכרוני ולכן הוא רץ ב-`lsBootDeferred`, אחרי העלייה. מדווח כדי
@@ -3539,6 +3547,8 @@ function writeUser(id, row) {
       //    **אין `markLocal`** — מה שכבר בענן אינו ממתין לכלום.
       var saved = (res && Array.isArray(res.data) && res.data[0]) || body;
       usersCacheSave(saved);
+      // ⛔ העֵד נכתב כאן ולא במשיכה — ⚠️ זו כתיבה לענן שחזרה בהצלחה.
+      _gMarkPushed('g_users');
       applyMirrorToState();
       // ⭐ סבב 51 — `g_users` היא אחת משבע הטבלאות שנמשכות, ולכן גם כתיבה
       //    אליה חייבת לקדם את החותמת. ⛔ אחרת משתמש חדש (סבב 51) לא היה
