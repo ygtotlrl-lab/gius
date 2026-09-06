@@ -274,7 +274,7 @@ console.log('\n▶ ו. ⛔ `password` אינו מגיע לאף מפתח localSto
   // 1) כתיבה מקומית של משתמש עם סיסמה — הנתיב שהדליף עד סבב 23.
   h.ctx.upsertLocal('g_users', {
     id: 'ccc', username: 'nir', full_name: 'ניר', role: 'manager', active: true,
-    password: SECRET, pass_salt: 'ff00', pass_fp: 'ab12', updated_at: new Date(0).toISOString()
+    password: SECRET, pass_salt: 'ff00', pass_fp: 'ab12', updated_at: 0
   });
   // 2) שורות שהגיעו מהענן — הנתיב של `syncPull`.
   const remote = h.ctx.stripRows('g_users', [
