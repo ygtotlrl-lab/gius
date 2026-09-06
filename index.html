@@ -685,8 +685,9 @@ var _gPushedAt = {};
 function _gMarkPushed(tbl) { _gPushedAt[tbl] = Date.now(); }
 function _gPushedThrough(tbl) { return _gPushedAt[tbl] || 0; }
 function _gPushedFor(tbl) { return function () { return _gPushedThrough(tbl); }; }
-// מזהה רשומה לצורך אימות מול הענן. שלוש הטבלאות שב-tier2 — כולן `id`.
-function _gRecId(r) { return (r && r.id != null) ? r.id : null; }
+// מזהה רשומה לצורך אימות מול הענן — ⛔ והוא `client_id` בכל הטבלאות,
+// ⚠️ שהוא המפתח הראשי שלהן מאז שהמזהה הוסב.
+function _gRecId(r) { return (r && r.client_id != null) ? r.client_id : null; }
 /* ── עדות סנכרון חלופית: אימות מול הענן (סבב 96) ──────────────────────────
    מכשיר שאיבד את העֵד באמצע סשן (טעינה מחדש בלי סנכרון מוצלח) נשאר בלי
    חותמת, ושלב ב היה מדולג לגמרי. במקום להסיק «זה בענן», שואלים את הענן:
@@ -1598,11 +1599,11 @@ var BK_CFG = {
   secrets: [],
   sources: function () {
     return [
-      { kind: 'table', name: 'g_donors',  order: 'id',  ts: 'updated_at' },
-      { kind: 'table', name: 'g_pledges', order: 'id',  ts: 'updated_at' },
-      { kind: 'table', name: 'g_txns',    order: 'id',  ts: 'updated_at' },
-      { kind: 'table', name: 'g_tasks',   order: 'id',  ts: 'updated_at' },
-      { kind: 'table', name: 'g_targets', order: 'id',  ts: 'updated_at' },
+      { kind: 'table', name: 'g_donors',  order: 'client_id', ts: 'updated_at' },
+      { kind: 'table', name: 'g_pledges', order: 'client_id', ts: 'updated_at' },
+      { kind: 'table', name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
+      { kind: 'table', name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
+      { kind: 'table', name: 'g_targets', order: 'client_id', ts: 'updated_at' },
       { kind: 'table', name: 'g_config',  order: 'key' },
       { kind: 'table', name: 'g_users',   order: 'client_id', ts: 'updated_at',
         cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
@@ -2582,14 +2583,15 @@ var PL_CFG = {
   note:   function (ts) { _gSeenTs = ts; },
   ok:     function () { _lastSeenOk = Date.now(); },
   stamp:  function (ts) {
-    return sb.from('g_config').upsert({ key: G_STAMP_KEY, value: ts }, { onConflict: 'key' });
+    return sb.from('g_config').upsert({ key: G_STAMP_KEY, value: JSON.stringify(ts), updated_at: Date.now() },
+                                      { onConflict: 'key' });
   },
   pull:   function () { return syncNow(); },
   remote: function () {
     return withTimeout(sb.from('g_config').select('value').eq('key', G_STAMP_KEY).maybeSingle())
       .then(function (r) {
         if (!r || r.error) return { ok: false, ts: null };
-        return { ok: true, ts: r.data ? plNum(r.data.value) : null };
+        return { ok: true, ts: r.data ? plNum(JSON.parse(r.data.value)) : null };
       }, function () { return { ok: false, ts: null }; });
   },
 };
@@ -2827,7 +2829,7 @@ var HW_CFG = {
       if (!isFinite(y)) return true;
       return y >= gAcadYearOf(todayISO());
     },
-    idOf: function (r) { return r && r.id; },
+    idOf: function (r) { return r && r.client_id; },
     ts: function (r) { return rowTs(r); },
     isPending: function (r) { return pendHas(rowPendingKey('g_txns', r)); },
     fetch: async function () {
@@ -3234,17 +3236,17 @@ var MIRROR_PREFIX = 'g_mirror_';
 // ⛔ **אין להוסיף `password` בחזרה, ואין להוסיף `pass_salt`/`pass_fp` ל-`strip`**:
 //    הראשון הוא הסוד עצמו, והשניים הם כל מה שמאפשר כניסה בלי רשת.
 var TABLES = [
-  { t: 'g_donors',  key: 'id',  soft: true,  order: 'name' },
-  { t: 'g_pledges', key: 'id',  soft: true,  order: 'due_date' },
-  { t: 'g_txns',    key: 'id',  soft: true,  order: 'txn_date', desc: true },
-  { t: 'g_tasks',   key: 'id',  soft: true,  order: 'due_date' },
-  { t: 'g_targets', key: 'id',  soft: false, order: 'month', desc: true, conflict: 'month' },
+  { t: 'g_donors',  key: 'client_id', soft: true,  order: 'name' },
+  { t: 'g_pledges', key: 'client_id', soft: true,  order: 'due_date' },
+  { t: 'g_txns',    key: 'client_id', soft: true,  order: 'txn_date', desc: true },
+  { t: 'g_tasks',   key: 'client_id', soft: true,  order: 'due_date' },
+  { t: 'g_targets', key: 'client_id', soft: true,  order: 'month', desc: true, conflict: 'month' },
   { t: 'g_users',   key: 'client_id', soft: false, order: 'created_at', strip: ['password'] },
   { t: 'g_config',  key: 'key', soft: false, conflict: 'key' }
 ];
 function tableMeta(t) {
   for (var i = 0; i < TABLES.length; i++) if (TABLES[i].t === t) return TABLES[i];
-  return { t: t, key: 'id', soft: false };
+  return { t: t, key: 'client_id', soft: false };
 }
 
 var MIRROR = {};
@@ -3284,7 +3286,23 @@ function mirrorLoad() {
     try { var raw = lsGet(MIRROR_PREFIX + m.t, null); v = raw == null ? null : JSON.parse(raw); }
     catch (e) { console.warn('[mirror] ' + m.t + ' פגום — נטען ריק', e); v = null; }
     MIRROR[m.t] = Array.isArray(v) ? v.filter(function (r) { return r && typeof r === 'object'; }) : [];
+    MIRROR[m.t].forEach(adoptLegacyId);
   });
+}
+/*  ⛔ מראה שנכתבה לפני שהמזהה הוסב נושאת `id` ⛔ ואינה נושאת `client_id` —
+ *  ⚠️ **וזו נקודת ההסבה האחת**: ⭐ המיגרציה שמרה את הערך (`id::text`),
+ *  ⛔ ובלי ההסבה כאן אותה שורה בדיוק הייתה מקבלת שני מפתחות — ⚠️ אחד
+ *  מהדיסק ואחד מהענן, ⭐ והמיזוג היה מכפיל אותה.
+ *  ⚠️ ההסבה מוחקת את השם הישן — ⛔ שדה שאינו קיים בסכימה הוא מקור זהות
+ *  שני שנסחף בשקט. */
+function adoptLegacyId(r) {
+  if (!r || typeof r !== 'object') return r;
+  [['id', 'client_id'], ['donor_id', 'donor_client_id'], ['pledge_id', 'pledge_client_id']]
+    .forEach(function (p) {
+      if (r[p[1]] == null && r[p[0]] != null) r[p[1]] = String(r[p[0]]);
+      delete r[p[0]];
+    });
+  return r;
 }
 // ⛔ **`strip` נאכף בשלוש נקודות, לא באחת** (סבב 23). עד הסבב הזה הוא היה
 // במשיכה בלבד — ולכן `insert('g_users', {password: …})` היה כותב את הסיסמה
@@ -3542,11 +3560,19 @@ function sortRows(t, arr) {
   });
 }
 
+/*  ⛔ `value` הוא **טקסט** בטבלה ⛔ ואינו `jsonb` — ⚠️ הלקוח ממיר אותו
+ *  בעצמו: ⭐ ממיר בצד השרת הוא מנתח שני לאותו ערך, ⛔ ושני מנתחים
+ *  נסחפים זה מזה בשקט. ⚠️ וערך פגום נקרא כשורה חסרה ⛔ ולא מפיל מסך. */
+function gCfgParse(v) {
+  if (Array.isArray(v)) return v;
+  try { var p = JSON.parse(v); return Array.isArray(p) ? p : null; } catch (e) { return null; }
+}
 function configFromMirror() {
   var cfg = { categories: [], causes: [], domains: [] }, seen = {};
   (MIRROR.g_config || []).forEach(function (row) {
-    if (!Array.isArray(row.value)) return;
-    cfg[row.key] = row.value.slice();
+    var list = gCfgParse(row.value);
+    if (!list) return;
+    cfg[row.key] = list.slice();
     seen[row.key] = true;
   });
   // ברירות מחדל רק כשהשורה חסרה לגמרי. בעלים שרוקן רשימה חייב לקבל רשימה
@@ -3635,7 +3661,9 @@ function upsertBy(table, conflict, row) {
   return Promise.resolve(cur || full);
 }
 
-function saveConfigList(key, list) { return upsertBy('g_config', 'key', { key: key, value: list }); }
+function saveConfigList(key, list) {
+  return upsertBy('g_config', 'key', { key: key, value: JSON.stringify(list) });
+}
 
 /*  ⛔ הדבר היחיד שנבדל בין שלוש האפליקציות שיש בהן כניסה — ⚠️ הלקוח,
  *  שם הטבלה, הודעת הניתוק, ומה נעשה **אחרי** שהתשובה חזרה: ⭐ הכתיבה
@@ -3910,7 +3938,7 @@ window.addEventListener('offline', syncBarRender);
    מסכים עם הנתונים שעל המסך.
    ══════════════════════════════════════════════════════════════════════════ */
 function donorById(id) {
-  for (var i = 0; i < state.donors.length; i++) if (idEq(state.donors[i].id, id)) return state.donors[i];
+  for (var i = 0; i < state.donors.length; i++) if (idEq(state.donors[i].client_id, id)) return state.donors[i];
   return null;
 }
 // תורם שאינו במצב החי — נמחק רכות, או טרם הגיע במשיכה. מציגים מציין מקום
@@ -3918,19 +3946,19 @@ function donorById(id) {
 // שהכסף עדיין רשום ומחושב.
 function donorName(id) { var d = donorById(id); return d ? d.name : '— תורם שנמחק —'; }
 function pledgeById(id) {
-  for (var i = 0; i < state.pledges.length; i++) if (idEq(state.pledges[i].id, id)) return state.pledges[i];
+  for (var i = 0; i < state.pledges.length; i++) if (idEq(state.pledges[i].client_id, id)) return state.pledges[i];
   return null;
 }
-function txnsOfDonor(id) { return state.txns.filter(function (t) { return t.donor_id === id; }); }
-function pledgesOfDonor(id) { return state.pledges.filter(function (p) { return p.donor_id === id; }); }
+function txnsOfDonor(id) { return state.txns.filter(function (t) { return t.donor_client_id === id; }); }
+function pledgesOfDonor(id) { return state.pledges.filter(function (p) { return p.donor_client_id === id; }); }
 function collectedForPledge(pid) {
-  return sum(state.txns.filter(function (t) { return t.pledge_id === pid; }), function (t) { return t.amount; });
+  return sum(state.txns.filter(function (t) { return t.pledge_client_id === pid; }), function (t) { return t.amount; });
 }
 // ⚠️ **`EPS` אינו קישוט.** הסכומים הם `numeric(14,2)` שחוזרים כ-float, וסכום
 // של כמה תנועות מצטבר לשגיאת ייצוג זעירה. בלי הסבילות, התחייבות שנגבתה
 // במלואה הייתה מוצגת «חלקי» בהפרש של אגורה שאינו קיים בכסף עצמו.
 function pledgeStatus(p) {
-  var c = collectedForPledge(p.id);
+  var c = collectedForPledge(p.client_id);
   if (c <= EPS) return 'לא בוצע';
   if (c + EPS < num(p.amount)) return 'חלקי';
   return 'בוצע';
@@ -4558,7 +4586,7 @@ function viewHome() {
   var me = state.user.full_name;
   var myTasks = state.tasks.filter(function (t) { return t.assignee === me && t.stage !== 'השלמה'; });
   var myPledges = state.pledges.filter(function (p) {
-    return p.agent === me && collectedForPledge(p.id) + EPS < num(p.amount);
+    return p.agent === me && collectedForPledge(p.client_id) + EPS < num(p.amount);
   });
 
   h += '<section class="card"><h2>☀️ מה שלי היום<span class="cnt">' + (myTasks.length + myPledges.length) + '</span></h2>';
@@ -4569,7 +4597,7 @@ function viewHome() {
       h += '<div style="font-size:12.5px;font-weight:700;color:var(--muted);margin:2px 0 4px">משימות פתוחות</div>';
       myTasks.forEach(function (t) {
         var late = t.due_date && t.due_date < todayISO();
-        h += '<div class="row" data-act="task-open" data-id="' + t.id + '">' +
+        h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
           '<div class="av">🗂️</div><div class="main"><b>' + esc(t.title) + '</b>' +
           '<small>' + esc(t.domain || 'ללא תחום') + ' · ' + esc(t.stage) + '</small></div>' +
           '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + heDate(t.due_date) + '</span></div></div>';
@@ -4578,10 +4606,10 @@ function viewHome() {
     if (myPledges.length) {
       h += '<div style="font-size:12.5px;font-weight:700;color:var(--muted);margin:12px 0 4px">התחייבויות שטרם נגבו במלואן</div>';
       myPledges.forEach(function (p) {
-        var c = collectedForPledge(p.id);
+        var c = collectedForPledge(p.client_id);
         var left = Math.max(0, num(p.amount) - c);
-        h += '<div class="row" data-act="donor-open" data-id="' + p.donor_id + '">' +
-          '<div class="av">🤝</div><div class="main"><b>' + esc(donorName(p.donor_id)) + '</b>' +
+        h += '<div class="row" data-act="donor-open" data-id="' + p.donor_client_id + '">' +
+          '<div class="av">🤝</div><div class="main"><b>' + esc(donorName(p.donor_client_id)) + '</b>' +
           '<small>' + esc(p.cause || 'ללא עילה') + ' · ' + ils(p.amount) + '</small></div>' +
           '<div class="end">' + ils(left) + '<small>נותר</small></div></div>';
       });
@@ -4610,10 +4638,10 @@ function donorMatches(q) {
 function donorRowsHTML(list) {
   if (!list.length) return emptyBox('🙋', state.donors.length ? 'אין תורם התואם את החיפוש' : 'עדיין אין תורמים');
   return list.map(function (d) {
-    var given = sum(txnsOfDonor(d.id), function (t) { return t.amount; });
-    return '<div class="row" data-act="donor-open" data-id="' + d.id + '">' +
+    var given = sum(txnsOfDonor(d.client_id), function (t) { return t.amount; });
+    return '<div class="row" data-act="donor-open" data-id="' + d.client_id + '">' +
       '<div class="av' + (d.is_vip ? ' vip' : '') + '">' + esc(initials(d.name)) + '</div>' +
-      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + pendTag(pendRowKey('g_donors', d.id)) + '</b>' +
+      '<div class="main"><b>' + esc(d.name) + (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
       '<small>' + esc(d.phone || 'ללא טלפון') + (d.agent ? ' · ' + esc(d.agent) : '') + '</small></div>' +
       '<div class="end">' + ils(given) + '<small>נתן</small></div></div>';
   }).join('');
@@ -4635,8 +4663,8 @@ function viewDonorCard() {
   var d = donorById(state.donorId);
   if (!d) { state.donorId = null; return viewDonors(); }
 
-  var pl = pledgesOfDonor(d.id);
-  var tx = txnsOfDonor(d.id).slice().sort(function (a, b) { return HE.compare(b.txn_date, a.txn_date); });
+  var pl = pledgesOfDonor(d.client_id);
+  var tx = txnsOfDonor(d.client_id).slice().sort(function (a, b) { return HE.compare(b.txn_date, a.txn_date); });
   var pledged = sum(pl, function (p) { return p.amount; });
   var given = sum(tx, function (t) { return t.amount; });
   var left = Math.max(0, pledged - given);
@@ -4652,12 +4680,12 @@ function viewDonorCard() {
         '<div style="color:var(--muted);font-size:13.5px">' + esc(d.phone || 'ללא טלפון') + '</div></div>' +
     '</div>' +
     '<div class="btnrow" style="margin-bottom:12px">' +
-      '<button class="btn sm" data-act="donor-edit" data-id="' + d.id + '">עריכה</button>' +
-      '<button class="btn soft sm" data-act="vip-toggle" data-id="' + d.id + '">' +
+      '<button class="btn sm" data-act="donor-edit" data-id="' + d.client_id + '">עריכה</button>' +
+      '<button class="btn soft sm" data-act="vip-toggle" data-id="' + d.client_id + '">' +
         (d.is_vip ? '☆ הסרת VIP' : '★ סימון VIP') + '</button>' +
-      '<button class="btn ghost sm" data-act="txn-new" data-donor="' + d.id + '">＋ תנועה</button>' +
-      '<button class="btn ghost sm" data-act="pledge-new" data-donor="' + d.id + '">＋ התחייבות</button>' +
-      '<button class="btn danger sm" data-act="donor-del" data-id="' + d.id + '">מחיקה</button>' +
+      '<button class="btn ghost sm" data-act="txn-new" data-donor="' + d.client_id + '">＋ תנועה</button>' +
+      '<button class="btn ghost sm" data-act="pledge-new" data-donor="' + d.client_id + '">＋ התחייבות</button>' +
+      '<button class="btn danger sm" data-act="donor-del" data-id="' + d.client_id + '">מחיקה</button>' +
     '</div>' +
     '<div class="hero-stats" style="grid-template-columns:repeat(3,1fr)">' +
       '<div class="stat"><span>סה"כ התחייב</span><b>' + ils(pledged) + '</b></div>' +
@@ -4670,7 +4698,7 @@ function viewDonorCard() {
     '</div>' +
     '<label class="fld" style="margin-top:12px"><span>הערות</span>' +
       '<textarea aria-label="הערות חופשיות על התורם" class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
-    '<button class="btn sm" data-act="notes-save" data-id="' + d.id + '">שמירת הערות</button>' +
+    '<button class="btn sm" data-act="notes-save" data-id="' + d.client_id + '">שמירת הערות</button>' +
   '</section>';
 
   /* התחייבויות */
@@ -4680,14 +4708,14 @@ function viewDonorCard() {
     h += '<div class="tw"><table><thead><tr><th>עילה</th><th class="num">סכום</th><th class="num">נגבה</th>' +
       '<th class="num">נותר</th><th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
     pl.forEach(function (p) {
-      var c = collectedForPledge(p.id), st = pledgeStatus(p);
-      h += '<tr><td>' + esc(p.cause || '—') + pendTag(pendRowKey('g_pledges', p.id)) + '</td>' +
+      var c = collectedForPledge(p.client_id), st = pledgeStatus(p);
+      h += '<tr><td>' + esc(p.cause || '—') + pendTag(pendRowKey('g_pledges', p.client_id)) + '</td>' +
         '<td class="num">' + ils(p.amount) + '</td>' +
         '<td class="num">' + ils(c) + '</td>' +
         '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
         '<td>' + heDate(p.due_date) + '</td>' +
         '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
-        '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.id + '">עריכה</button></td></tr>';
+        '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.client_id + '">עריכה</button></td></tr>';
     });
     h += '</tbody></table></div>';
   }
@@ -4700,13 +4728,13 @@ function viewDonorCard() {
     h += '<div class="tw"><table><thead><tr><th>תאריך</th><th class="num">סכום</th><th>סעיף</th>' +
       '<th>שגריר</th><th>מנהל</th><th>נפרע</th><th></th></tr></thead><tbody>';
     tx.forEach(function (t) {
-      h += '<tr><td>' + heDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.id)) + '</td>' +
+      h += '<tr><td>' + heDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.client_id)) + '</td>' +
         '<td class="num">' + ils(t.amount) + '</td>' +
         '<td>' + esc(t.category || '—') + '</td>' +
         '<td>' + esc(t.agent || '—') + '</td>' +
         '<td>' + esc(t.manager || '—') + '</td>' +
         '<td><span class="badge ' + (t.cleared ? 'ok' : 'warn') + '">' + (t.cleared ? 'נפרע' : 'ממתין') + '</span></td>' +
-        '<td><button class="btn ghost xs" data-act="txn-edit" data-id="' + t.id + '">עריכה</button></td></tr>';
+        '<td><button class="btn ghost xs" data-act="txn-edit" data-id="' + t.client_id + '">עריכה</button></td></tr>';
     });
     h += '</tbody></table></div>';
   }
@@ -4735,10 +4763,10 @@ function pledgeTableHTML(list) {
     '<th class="num">סכום</th><th class="num">נגבה</th><th class="num">נותר</th>' +
     '<th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
   list.forEach(function (p) {
-    var c = collectedForPledge(p.id), st = pledgeStatus(p);
+    var c = collectedForPledge(p.client_id), st = pledgeStatus(p);
     var late = p.due_date && p.due_date < todayISO() && st !== 'בוצע';
-    h += '<tr class="click" data-act="donor-open" data-id="' + p.donor_id + '">' +
-      '<td><b>' + esc(donorName(p.donor_id)) + '</b>' + pendTag(pendRowKey('g_pledges', p.id)) + '</td>' +
+    h += '<tr class="click" data-act="donor-open" data-id="' + p.donor_client_id + '">' +
+      '<td><b>' + esc(donorName(p.donor_client_id)) + '</b>' + pendTag(pendRowKey('g_pledges', p.client_id)) + '</td>' +
       '<td>' + esc(p.cause || '—') + '</td>' +
       '<td>' + esc(p.agent || '—') + '</td>' +
       '<td class="num">' + ils(p.amount) + '</td>' +
@@ -4746,8 +4774,8 @@ function pledgeTableHTML(list) {
       '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
       '<td>' + (late ? '<span class="badge bad">' + heDate(p.due_date) + '</span>' : heDate(p.due_date)) + '</td>' +
       '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
-      '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.id + '">עריכה</button> ' +
-        '<button class="btn danger xs" data-act="pledge-del" data-id="' + p.id + '">מחיקה</button></td></tr>';
+      '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.client_id + '">עריכה</button> ' +
+        '<button class="btn danger xs" data-act="pledge-del" data-id="' + p.client_id + '">מחיקה</button></td></tr>';
   });
   h += '</tbody></table></div>';
   return h;
@@ -4755,7 +4783,7 @@ function pledgeTableHTML(list) {
 
 function pledgeTotalsHTML(list) {
   var pledged = sum(list, function (p) { return p.amount; });
-  var got = sum(list, function (p) { return collectedForPledge(p.id); });
+  var got = sum(list, function (p) { return collectedForPledge(p.client_id); });
   return '<div class="hero-stats" style="grid-template-columns:repeat(2,1fr)">' +
     '<div class="stat"><span>סה"כ התחייבויות</span><b>' + ils(pledged) + '</b></div>' +
     '<div class="stat ok"><span>נגבה</span><b>' + ils(got) + '</b></div>' +
@@ -4818,8 +4846,8 @@ function viewTasks() {
     if (!list.length) h += '<div class="empty" style="padding:14px 6px;font-size:13px">אין משימות</div>';
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
-      h += '<div class="kcard" data-id="' + t.id + '">' +
-        '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.id)) +
+      h += '<div class="kcard" data-id="' + t.client_id + '">' +
+        '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.client_id)) +
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
           (t.domain ? '<span class="badge">' + esc(t.domain) + '</span>' : '') +
@@ -4827,12 +4855,12 @@ function viewTasks() {
           (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
         '</div>' +
         '<div class="ft">' +
-          '<select data-inp="stage" aria-label="שלב המשימה" data-id="' + t.id + '">' +
+          '<select data-inp="stage" aria-label="שלב המשימה" data-id="' + t.client_id + '">' +
             STAGES.map(function (s) {
               return '<option value="' + esc(s) + '"' + (s === t.stage ? ' selected' : '') + '>' + esc(s) + '</option>';
             }).join('') +
           '</select>' +
-          '<button class="btn ghost xs" data-act="task-open" data-id="' + t.id + '">פתיחה</button>' +
+          '<button class="btn ghost xs" data-act="task-open" data-id="' + t.client_id + '">פתיחה</button>' +
         '</div>' +
       '</div>';
     });
@@ -5010,7 +5038,7 @@ function viewSettings() {
    ══════════════════════════════════════════════════════════════════════════ */
 function pickerHTML(id, donorId) {
   var d = donorId ? donorById(donorId) : null;
-  return '<div class="picker" id="' + id + '" data-value="' + esc(d ? d.id : '') + '">' +
+  return '<div class="picker" id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
     '<div class="dp-chosen' + (d ? '' : ' hidden') + '">' +
       '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
       '<button type="button" class="dp-clear" aria-label="ניקוי">✕</button>' +
@@ -5038,7 +5066,7 @@ function wirePicker(id, onChange) {
   var chosen = $('.dp-chosen', root);
 
   function setDonor(d) {
-    root.dataset.value = d ? d.id : '';
+    root.dataset.value = d ? d.client_id : '';
     $('.dp-name', chosen).textContent = d ? d.name : '';
     chosen.classList.toggle('hidden', !d);
     q.classList.toggle('hidden', !!d);
@@ -5053,7 +5081,7 @@ function wirePicker(id, onChange) {
     var list = donorMatches(term).slice(0, 30);
     var h = '';
     list.forEach(function (d) {
-      h += '<button type="button" data-id="' + d.id + '">' + esc(d.name) +
+      h += '<button type="button" data-id="' + d.client_id + '">' + esc(d.name) +
         '<small>' + esc(d.phone || 'ללא טלפון') + '</small></button>';
     });
     h += '<button type="button" class="mk" data-new="1">＋ צור תורם חדש' +
@@ -5116,8 +5144,8 @@ function pledgeOptionsFor(donorId) {
   var list = donorId ? pledgesOfDonor(donorId) : [];
   var h = '<option value="">— ללא שיוך —</option>';
   list.forEach(function (p) {
-    var left = Math.max(0, num(p.amount) - collectedForPledge(p.id));
-    h += '<option value="' + p.id + '">' + esc(p.cause || 'התחייבות') + ' · ' + ils(p.amount) +
+    var left = Math.max(0, num(p.amount) - collectedForPledge(p.client_id));
+    h += '<option value="' + p.client_id + '">' + esc(p.cause || 'התחייבות') + ' · ' + ils(p.amount) +
       ' (נותר ' + ils(left) + ')</option>';
   });
   return h;
@@ -5125,7 +5153,7 @@ function pledgeOptionsFor(donorId) {
 
 function formTxn(existing, presetDonor) {
   var t = existing || {};
-  var donorId = t.donor_id || presetDonor || '';
+  var donorId = t.donor_client_id || presetDonor || '';
   var body =
     '<label class="fld"><span>תורם *</span></label>' + pickerHTML('txn-donor', donorId) +
     '<div class="f2" style="margin-top:12px">' +
@@ -5143,20 +5171,20 @@ function formTxn(existing, presetDonor) {
       '<label class="fld"><span>שיוך להתחייבות</span>' +
         '<select class="inp" id="txn-pledge">' + pledgeOptionsFor(donorId) + '</select></label>' +
     '</div>' +
-    '<label class="fld chk"><input type="checkbox" id="txn-cleared"' + (t.id ? (t.cleared ? ' checked' : '') : ' checked') + '><span>נפרע</span></label>' +
+    '<label class="fld chk"><input type="checkbox" id="txn-cleared"' + (t.client_id ? (t.cleared ? ' checked' : '') : ' checked') + '><span>נפרע</span></label>' +
     '<label class="fld"><span>הערה</span><textarea class="inp" id="txn-note">' + esc(t.note || '') + '</textarea></label>' +
     datalistHTML('dl-agents', agentPool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    (t.id ? '<button class="btn danger" data-act="txn-del" data-id="' + t.id + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="txn-save" data-id="' + (t.id || '') + '">שמירה</button>';
+    (t.client_id ? '<button class="btn danger" data-act="txn-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="txn-save" data-id="' + (t.client_id || '') + '">שמירה</button>';
 
-  openModal(t.id ? 'עריכת תנועה' : '💰 תנועה חדשה', body, foot);
+  openModal(t.client_id ? 'עריכת תנועה' : '💰 תנועה חדשה', body, foot);
   wirePicker('txn-donor', function (d) {
     var sel = $('#txn-pledge');
-    if (sel) sel.innerHTML = pledgeOptionsFor(d ? d.id : '');
+    if (sel) sel.innerHTML = pledgeOptionsFor(d ? d.client_id : '');
   });
-  if (t.pledge_id) { var sel = $('#txn-pledge'); if (sel) sel.value = t.pledge_id; }
+  if (t.pledge_client_id) { var sel = $('#txn-pledge'); if (sel) sel.value = t.pledge_client_id; }
 }
 
 function saveTxn(id) {
@@ -5165,8 +5193,8 @@ function saveTxn(id) {
   var amount = num(val('txn-amount'));
   if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
   var row = {
-    donor_id: donorId,
-    pledge_id: nullable(val('txn-pledge')),
+    donor_client_id: donorId,
+    pledge_client_id: nullable(val('txn-pledge')),
     amount: amount,
     txn_date: val('txn-date') || todayISO(),
     category: nullable(val('txn-category')),
@@ -5181,14 +5209,14 @@ function saveTxn(id) {
 function formPledge(existing, presetDonor) {
   var p = existing || {};
   var body =
-    '<label class="fld"><span>תורם *</span></label>' + pickerHTML('pl-donor', p.donor_id || presetDonor || '') +
+    '<label class="fld"><span>תורם *</span></label>' + pickerHTML('pl-donor', p.donor_client_id || presetDonor || '') +
     '<div class="f2" style="margin-top:12px">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="pl-amount" inputmode="decimal" value="' + esc(p.amount != null ? num(p.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="pl-due" value="' + esc(p.due_date || '') + '"></label>' +
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>עילה</span>' + selectHTML('pl-cause', state.config.causes, p.cause, '— ללא עילה —') + '</label>' +
-      '<label class="fld"><span>שגריר</span><input class="inp" id="pl-agent" list="dl-agents" value="' + esc(p.agent || (p.id ? '' : state.user.full_name)) + '"></label>' +
+      '<label class="fld"><span>שגריר</span><input class="inp" id="pl-agent" list="dl-agents" value="' + esc(p.agent || (p.client_id ? '' : state.user.full_name)) + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערה</span><textarea class="inp" id="pl-note">' + esc(p.note || '') + '</textarea></label>' +
     (state.config.causes.length ? '' :
@@ -5196,10 +5224,10 @@ function formPledge(existing, presetDonor) {
     datalistHTML('dl-agents', agentPool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    (p.id ? '<button class="btn danger" data-act="pledge-del" data-id="' + p.id + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="pledge-save" data-id="' + (p.id || '') + '">שמירה</button>';
+    (p.client_id ? '<button class="btn danger" data-act="pledge-del" data-id="' + p.client_id + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="pledge-save" data-id="' + (p.client_id || '') + '">שמירה</button>';
 
-  openModal(p.id ? 'עריכת התחייבות' : '🤝 התחייבות חדשה', body, foot);
+  openModal(p.client_id ? 'עריכת התחייבות' : '🤝 התחייבות חדשה', body, foot);
   wirePicker('pl-donor');
 }
 
@@ -5209,7 +5237,7 @@ function savePledge(id) {
   var amount = num(val('pl-amount'));
   if (!(amount > 0)) { toast('נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
   var row = {
-    donor_id: donorId,
+    donor_client_id: donorId,
     amount: amount,
     cause: nullable(val('pl-cause')),
     agent: nullable(val('pl-agent')),
@@ -5228,7 +5256,7 @@ function formTask(existing) {
     '<div class="f2">' +
       '<label class="fld"><span>שלב</span>' + selectHTML('tk-stage', STAGES, t.stage || 'הכנה', 'הכנה') + '</label>' +
       '<label class="fld"><span>אחראי</span><input class="inp" id="tk-assignee" list="dl-people" value="' +
-        esc(t.assignee != null ? t.assignee : (t.id ? '' : state.user.full_name)) + '"></label>' +
+        esc(t.assignee != null ? t.assignee : (t.client_id ? '' : state.user.full_name)) + '"></label>' +
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>תחום</span>' + selectHTML('tk-domain', state.config.domains, t.domain, '— ללא תחום —') + '</label>' +
@@ -5240,12 +5268,12 @@ function formTask(existing) {
     datalistHTML('dl-people', people);
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    (t.id ? '<button class="btn danger" data-act="task-del" data-id="' + t.id + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="task-save" data-id="' + (t.id || '') + '">שמירה</button>';
+    (t.client_id ? '<button class="btn danger" data-act="task-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="task-save" data-id="' + (t.client_id || '') + '">שמירה</button>';
 
-  openModal(t.id ? 'עריכת משימה' : '📋 משימה חדשה', body, foot);
+  openModal(t.client_id ? 'עריכת משימה' : '📋 משימה חדשה', body, foot);
   var titleEl = $('#tk-title');
-  if (titleEl && !t.id) titleEl.focus();
+  if (titleEl && !t.client_id) titleEl.focus();
 }
 
 function saveTask(id) {
@@ -5290,9 +5318,9 @@ function formDonor(existing) {
     datalistHTML('dl-agents', agentPool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="donor-save" data-id="' + (d.id || '') + '">שמירה</button>';
-  openModal(d.id ? 'עריכת תורם' : '🙋 תורם חדש', body, foot);
-  var n = $('#dn-name'); if (n && !d.id) n.focus();
+    '<button class="btn" data-act="donor-save" data-id="' + (d.client_id || '') + '">שמירה</button>';
+  openModal(d.client_id ? 'עריכת תורם' : '🙋 תורם חדש', body, foot);
+  var n = $('#dn-name'); if (n && !d.client_id) n.focus();
 }
 
 function saveDonor(id) {
@@ -5324,17 +5352,17 @@ function formUser(existing) {
       '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
       '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
     '</div>' +
-    (u.id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>') +
+    (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
         '<option value="manager"' + (u.role === 'manager' || !u.role ? ' selected' : '') + '>מנהל</option>' +
         '<option value="owner"' + (u.role === 'owner' ? ' selected' : '') + '>בעלים</option></select></label>' +
       '<label class="fld chk" style="margin-top:22px"><input type="checkbox" id="us-active"' +
-        (u.id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
+        (u.client_id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
     '</div>';
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="user-save" data-id="' + (u.client_id || '') + '">שמירה</button>';
-  openModal(u.id ? 'עריכת משתמש' : '👤 משתמש חדש', body, foot);
+  openModal(u.client_id ? 'עריכת משתמש' : '👤 משתמש חדש', body, foot);
 }
 
 function saveUser(id) {
@@ -5371,7 +5399,7 @@ function formPassword(u) {
   openModal('שינוי סיסמה — ' + u.full_name,
     '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="pass-save" data-id="' + u.id + '">שמירה</button>');
+    '<button class="btn" data-act="pass-save" data-id="' + u.client_id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
 }
 
@@ -5541,7 +5569,7 @@ var ACTIONS = {
   'vip-toggle': function (el) {
     var d = donorById(el.dataset.id);
     if (!d) return;
-    update('g_donors', d.id, { is_vip: !d.is_vip })
+    update('g_donors', d.client_id, { is_vip: !d.is_vip })
       .then(function () { d.is_vip = !d.is_vip; render(); })
       .catch(errToast);
   },
@@ -5560,7 +5588,7 @@ var ACTIONS = {
   'donor-del': function (el) {
     var d = donorById(el.dataset.id);
     if (!d) return;
-    var hasData = pledgesOfDonor(d.id).length || txnsOfDonor(d.id).length;
+    var hasData = pledgesOfDonor(d.client_id).length || txnsOfDonor(d.client_id).length;
     ask('מחיקת תורם',
       hasData
         ? 'לתורם יש התחייבויות או תנועות. המחיקה היא רכה — הרשומות יישמרו במסד ולא יוצגו.'
@@ -5568,7 +5596,7 @@ var ACTIONS = {
       'מחיקה'
     ).then(function (yes) {
       if (!yes) return;
-      softDelete('g_donors', d.id)
+      softDelete('g_donors', d.client_id)
         .then(function () { state.donorId = null; return afterSave('התורם נמחק'); })
         .catch(errToast);
     });
