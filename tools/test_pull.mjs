@@ -35,7 +35,10 @@ const APP = {
   /*  ⛔ משפכי הכתיבה לענן **שמחוץ לשכבת הדחיפה** — ⚠️ הדחיפה עצמה מקדמת
    *  את החותמת בתוך הבלוק החתום, ⭐ ומדידה נוספת עליה כאן הייתה טענה
    *  כפולה: ⛔ מה שנשאר הוא `writeUser`, ש-`g_users` נמשכת גם היא. */
-  touchFns: ['writeUser'],
+  /*  ⛔ מסלול הכתיבה שמקדם את החותמת הוא **הווו של האפליקציה** — ⚠️ הכתיבה
+   *  עצמה יושבת בבלוק החתום, ⭐ ומה שנעשה אחריה הוא פר-אפליקציה: ⛔ ולכן
+   *  הנמדד הוא `USER_CFG` ⚠️ ולא `writeUser`. */
+  touchFns: ['USER_CFG'],
   every: 3000,
   stampKey: 'g_last_changed',
 };
@@ -136,8 +139,12 @@ function calls(fn) { return (codeOutside.match(new RegExp('\\b' + fn + '\\s*\\('
 if (calls('plBoot') === 1) pass('7. `plBoot()` נקראת פעם אחת בלבד מקוד האפליקציה');
 else fail(`7. \`plBoot()\` נקראת ${calls('plBoot')} פעמים — נקודת ההפעלה חייבת להיות אחת`);
 
+/*  ⛔ הגוף נחתך בהתאמת סוגריים — ⚠️ **גם לאובייקט תצורה ולא רק לפונקציה**:
+ *  ⭐ מסלול הכתיבה הוא לעיתים ווו שיושב באובייקט המוצהר, ⛔ וביטוי שמכיר
+ *  `function X(` בלבד מחזיר מחרוזת ריקה ומפיל טענה על קוד תקין. */
 function fnBody(text, name) {
-  const m = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\(').exec(text);
+  const m = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\(|\\bvar\\s+' +
+                       name + '\\s*=\\s*\\{').exec(text);
   if (!m) return '';
   let i = text.indexOf('{', m.index), d = 0;
   for (let j = i; j < text.length; j++) {

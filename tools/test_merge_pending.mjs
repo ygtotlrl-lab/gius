@@ -41,7 +41,7 @@ const APP = {
   mutFn: '_mergePick',
   guard: /isPend \|\| tsOf\(loc\) > tsOf\(rem\)/,
   mutate: (fn) => fn.replace('isPend || tsOf(loc) > tsOf(rem)', 'tsOf(loc) > tsOf(rem)'),
-  rec: (id, ts, tag) => ({ id: id, updated_at: new Date(ts * 1000).toISOString(), name: tag }),
+  rec: (id, ts, tag) => ({ id: id, updated_at: ts * 1000, name: tag }),
   keyOf: (r) => r.id,
   tag: (r) => r && r.name,
   pendKey: (id) => String(id),
@@ -58,12 +58,12 @@ const APP = {
     // ⚠️ `localPick: 'first'` — `findRow` החזירה את ההתאמה הראשונה.
     knobs: ['dedupe: false', "localPick: 'first'", "keyless: 'drop'"],
     knobFlip: 'dedupe: true',
-    rec: (id, ts, tag) => ({ id: id, updated_at: new Date(ts * 1000).toISOString(), name: tag }),
+    rec: (id, ts, tag) => ({ id: id, updated_at: ts * 1000, name: tag }),
     tag: (r) => r && r.name,
     merge: (sb, local, remote, pend) =>
       sb.mergeRows(local, remote, 'id', (k) => pend.indexOf(String(k)) !== -1),
-    dupCase: { l: [], r: [{ id: 'a', updated_at: new Date(5000).toISOString(), name: 'ראשון' },
-                          { id: 'a', updated_at: new Date(9000).toISOString(), name: 'שני' }] },
+    dupCase: { l: [], r: [{ id: 'a', updated_at: 5000, name: 'ראשון' },
+                          { id: 'a', updated_at: 9000, name: 'שני' }] },
   },
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
