@@ -158,7 +158,7 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
 }
 .card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:13px;color:var(--muted)}
 .grid2{display:grid;gap:14px}
-@media (min-width:820px){.grid2{grid-template-columns:1fr 1fr}}
+@media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
 .empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:14px}
 .empty .big{font-size:26px;display:block;margin-bottom:6px;opacity:.65}
 
@@ -166,7 +166,7 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
 /* זה לצד זה מ-520px ומעלה. מתחת לזה הטבעת נערמת מעל המחוונים כדי
    שהאריחים יקבלו את הרוחב המלא — אחרת "100,000 ₪" נשבר בין שורות. */
 .hero{display:flex;flex-direction:column;gap:16px;align-items:center}
-@media (min-width:520px){.hero{flex-direction:row;gap:18px}}
+@media (min-width:640px){.hero{flex-direction:row;gap:18px}}
 .ring{width:132px;height:132px;flex:none}
 .ring circle{fill:none;stroke-width:11;stroke-linecap:round}
 .ring .bg{stroke:var(--line)}
@@ -179,7 +179,7 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
 .ring-val b{font-size:25px;letter-spacing:-1px;display:block;line-height:1.1}
 .ring-val span{font-size:11px;color:var(--muted);font-weight:600}
 .hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media (min-width:1000px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
+@media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
 .stat{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--radius-sm);padding:9px 11px}
 .stat span{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:1px}
 .stat b{font-size:16.5px;letter-spacing:-.4px;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -255,7 +255,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fld.chk input{width:19px;height:19px;accent-color:var(--brand);flex:none;margin:0}
 .fld.chk > span{margin:0;font-size:14px}
 .f2{display:grid;gap:0 12px}
-@media (min-width:520px){.f2{grid-template-columns:1fr 1fr}}
+@media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
 
 .btn{
   background:var(--brand);color:var(--brand-ink);border:1px solid transparent;
@@ -359,7 +359,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 /* =================================================================== קנבן */
 .kb{display:grid;gap:12px}
-@media (min-width:760px){.kb{grid-template-columns:repeat(4,1fr);align-items:start}}
+@media (min-width:900px){.kb{grid-template-columns:repeat(4,1fr);align-items:start}}
 .kcol{
   background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:12px;min-height:110px;transition:border-color .15s,background .15s
@@ -385,7 +385,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 /* ================================================================== מסננים */
 .filters{display:grid;gap:9px;grid-template-columns:1fr 1fr}
-@media (min-width:760px){.filters{grid-template-columns:repeat(5,1fr)}}
+@media (min-width:900px){.filters{grid-template-columns:repeat(5,1fr)}}
 /* פריטי grid מקבלים min-width:auto כברירת מחדל, והרוחב הפנימי של שדה
    תאריך רחב מהתא — בלי זה שורת המסננים גולשת ומאבדת יישור */
 .filters > *{min-width:0}
@@ -544,6 +544,19 @@ var MSG_SAVED_LOCAL = '✅ נשמר במכשיר — יסונכרן כשתחזו
 var MSG_BAD_LOGIN = '❌ שם משתמש או סיסמה שגויים';
 // סבב 17: נוסח אחיד לארבע האפליקציות.
 var MSG_SYNC_BACK = '☁️ הסנכרון חזר לפעול';
+/* ═══ סולם נקודות השבירה — מודול משותף (סבב 97) ═══════════════════════════
+   ⭐ הסולם הוא מקור האמת היחיד לנקודות השבירה בארבע האפליקציות, ⛔ והוא
+   מוצהר כאן פעם אחת: ⚠️ שאילתה שערכה אינו ברשימה מפילה בשער.
+   ⛔ **וכיוון אחד — `min-width`** — ⚠️ עירוב `min` ו-`max` באותו קובץ
+   מאפשר לשני כללים לחול יחד על אותו רוחב, ⭐ וכלל שנראה מבוטל חל בכל זאת.
+   ⛔ **ומה שמתחת לנקודה הראשונה הוא ברירת המחדל** ⛔ ולא שאילתה —
+   ⚠️ שאילתת `max-width` שמתארת מסך צר היא בסיס שנכתב הפוך.
+   ⛔ **ואין ל-CSS גישה לקבוע** — ⚠️ המספרים חוזרים בשאילתות עצמן,
+   ⭐ והשער הוא מה שמשווה ביניהם לרשימה שכאן: ⛔ הקבוע הוא ההצהרה,
+   ⚠️ והשאילתה היא המימוש. */
+var BP_SCALE = [360, 480, 640, 900, 1200];
+window.BP_SCALE = BP_SCALE;
+/* ═══════════════ סוף מודול סולם נקודות השבירה ═════════════════════════ */
 /* ═══ עוזרי הרשת — מודול משותף (סבב 84) ═══════════════════════════════════
    ⛔ שלוש הפונקציות ישבו **בין** בלוקים חתומים, ⚠️ ולכן אף `sha256` לא מדד
       אותן — ⭐ והן נסחפו בשקט בעוד שהטבלה מצהירה עליהן «זהה בית-לבית»:
