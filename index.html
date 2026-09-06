@@ -4006,6 +4006,34 @@ function toast(msg, dur, kind) {
 var LS_TOAST_MS = 5000;
 function lsToast(msg, dur) { try { toast(msg, dur || LS_TOAST_MS, LS_TOAST.kind); } catch (e) {} }
 /* ═══════════════ סוף מודול שכבת המודאל ═════════════════════════════════ */
+/* ═══ כיווץ רשימת ערכים — מודול משותף (סבב 101) ═══════════════════════════
+   ⛔ שני פריטים באותו ערך הם פריט אחד — ⚠️ **והכיווץ הוא בכתיבה ובמיזוג
+      כאחד**: ⭐ `uniqHas` מונעת את הכפילות שמכאן ואילך, ⛔ ו-`uniqList`
+      מסלקת את מה שכבר נכתב פעמיים.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
+   ⛔ ושתיהן מכריעות לפי **אותה זהות** — ⚠️ שני מימושים לאותה טענה נבדלים
+      בשקט, ⭐ ואז המסך מראה פעמיים את מה שהמיזוג מכווץ לאחד.
+   ⛔ והראשון שורד — ⚠️ הסדר של הצד שניצח הוא סדר המסך, ⭐ ומי שדורש
+      שהחדש ינצח ממיין לפני הקריאה. */
+function uniqKeyOf(v, keyFn) { return String(keyFn ? keyFn(v) : v); }
+function uniqList(list, keyFn) {
+  if (!Array.isArray(list)) return list;
+  var seen = {}, out = [];
+  list.forEach(function (v) {
+    var k = uniqKeyOf(v, keyFn);
+    if (seen[k]) return;
+    seen[k] = 1;
+    out.push(v);
+  });
+  return out;
+}
+function uniqHas(list, val, keyFn) {
+  if (!Array.isArray(list)) return false;
+  var k = uniqKeyOf(val, keyFn);
+  return list.some(function (v) { return uniqKeyOf(v, keyFn) === k; });
+}
+/* ═══════════════ סוף מודול כיווץ רשימת ערכים ═══════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
@@ -5583,7 +5611,7 @@ var ACTIONS = {
     var v = input ? input.value.trim() : '';
     if (!v) { toast('נא להזין ערך', null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
-    if (list.indexOf(v) >= 0) { toast('הערך כבר קיים', null, 'bad'); return; }
+    if (uniqHas(list, v)) { toast('הערך כבר קיים', null, 'bad'); return; }
     list.push(v);
     runSave(el, function () { return saveConfigList(key, list); }, 'נוסף');
   },
