@@ -122,8 +122,8 @@ function makeCtx(opts = {}) {
   return { ctx, store, calls };
 }
 
-const USER_A = { id: 'aaa', username: 'user_a', full_name: 'מענדי פרידמן', role: 'owner', active: true };
-const USER_B = { id: 'bbb', username: 'yossi', full_name: 'יוסי', role: 'manager', active: true };
+const USER_A = { client_id: 'aaa', username: 'user_a', full_name: 'מענדי פרידמן', role: 'owner', active: true };
+const USER_B = { client_id: 'bbb', username: 'yossi', full_name: 'יוסי', role: 'manager', active: true };
 
 async function seedUsers(h, list) {
   h.ctx.MIRROR.g_users = [];
@@ -200,7 +200,7 @@ console.log('\n▶ ג. ⭐ כניסה אופליין למשתמש שאינו ה�
   // ⭐ סבב 53 — אין סשן על המכשיר; B נכנס מול הטביעה שבמראה בלבד.
   await h.ctx.doLoginOffline('yossi', '654321', null);
   eq('אין הודעת שגיאה', h.calls.loginError.length, 0);
-  eq('המשתמש המחובר הוא B', h.ctx.state.user && h.ctx.state.user.id, 'bbb');
+  eq('המשתמש המחובר הוא B', h.ctx.state.user && h.ctx.state.user.client_id, 'bbb');
   eq('התפקיד נלקח מהמראה', h.ctx.state.user && h.ctx.state.user.role, 'manager');
   eq('boot() נקראה פעם אחת', h.calls.boot, 1);
   ok('⛔ ואין מפתח סשן על הדיסק (סבב 53)', !('gius.session' in h.store));
@@ -210,7 +210,7 @@ console.log('\n▶ ג. ⭐ כניסה אופליין למשתמש שאינו ה�
   const h2 = makeCtx();
   await seedUsers(h2, [Object.assign({ _pass: '135790' }, USER_A), Object.assign({ _pass: '654321' }, USER_B)]);
   await h2.ctx.doLoginOffline('user_a', '135790', null);
-  eq('גם A נכנס אופליין', h2.ctx.state.user && h2.ctx.state.user.id, 'aaa');
+  eq('גם A נכנס אופליין', h2.ctx.state.user && h2.ctx.state.user.client_id, 'aaa');
 }
 
 console.log('\n▶ ד. סיסמה שגויה נדחית');
@@ -352,13 +352,21 @@ console.log('\n▶ ח. אינווריאנטות במקור עצמו');
   // ⚠️ `username`/`password`/`full_name` הם `not null` (0001), ו-Postgres בודק
   // NOT NULL לפני ש-ON CONFLICT נכנס לפעולה. `upsert` עם אובייקט חלקי (שינוי
   // סיסמה, השבתה) היה נופל במקום לעדכן — ולכן העריכה חייבת להיות `update`.
-  const WU = /function writeUser\([\s\S]*?\n}/.exec(SRC)[0];
+  /*  ⛔ שני המסלולים נמדדים בשולח שבבלוק החתום — ⚠️ שדות החובה נבדקים על
+   *  השורה המועמדת **לפני** ש-`ON CONFLICT` נכנס לפעולה, ⭐ ולכן `upsert`
+   *  עם אובייקט חלקי היה נופל במקום לעדכן: ⛔ העריכה חייבת להיות `update`. */
+  const WU = /function _writeUserSend\([\s\S]*?\n}/.exec(SRC)[0];
   ok('⭐ writeUser: יצירה ב-upsert, עריכה ב-update (NOT NULL)',
-    /id == null\)\s*\n?\s*\?\s*sb\.from\('g_users'\)\.upsert/.test(WU) &&
-    /:\s*sb\.from\('g_users'\)\.update\(obj\)\.eq\('id', id\)/.test(WU));
-  const WU_CODE = WU.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+    /key == null\s*\n?\s*\?\s*USER_CFG\.from\(\)\.upsert\(body, \{ onConflict: 'client_id' \}\)/.test(WU) &&
+    /:\s*USER_CFG\.from\(\)\.update\(body\)\.eq\('client_id', key\)/.test(WU));
+  const WUF = /function writeUser\([\s\S]*?\n}/.exec(SRC)[0];
+  const WU_CODE = WUF.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   ok('writeUser אינו מסמן ⏳ — מה שכבר בענן אינו ממתין', !/markLocal|pendMark/.test(WU_CODE));
-  ok('writeUser נכשל ברעש בלי רשת', /!navigator\.onLine\) return Promise\.reject/.test(WU));
+  /*  ⛔ הדרישה לרשת עברה לווו של האפליקציה — ⚠️ הבלוק החתום שואל את
+   *  `USER_CFG.ready()`, ⭐ והתשובה עליה היא פר-אפליקציה. */
+  ok('writeUser נכשל ברעש בלי רשת',
+    /!USER_CFG\.ready\(\)\) return Promise\.reject/.test(WUF) &&
+    /ready:\s*function\s*\(\)\s*\{\s*return\s+!!sb\s*&&\s*navigator\.onLine;/.test(SRC));
   /*  ⚠️ **שתי הטענות האלה התהפכו בסבב 40, במכוון.** עד אז הן אכפו
    *  ש-`gBackfillPassFp` מותנית ב-owner וברשת; מסבב 40 הן אוכפות
    *  ש**היא אינה קיימת**. ⛔ זו אינה ריכוך אלא הפוכה: כל עוד הפונקציה

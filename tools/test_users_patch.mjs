@@ -121,9 +121,9 @@ async function seed(h) {
   const a = await h.ctx.gMakePassFp(PASS_A);
   const b = await h.ctx.gMakePassFp(PASS_B);
   h.ctx.MIRROR.g_users = [
-    { id: 'aaa', username: 'user_a', full_name: 'משתמש א', role: 'owner', active: true,
+    { client_id: 'aaa', username: 'user_a', full_name: 'משתמש א', role: 'owner', active: true,
       pass_salt: a.salt, pass_fp: a.fp, updated_at: '2026-08-01T00:00:00.000Z' },
-    { id: 'bbb', username: 'user_b', full_name: 'משתמש ב', role: 'manager', active: true,
+    { client_id: 'bbb', username: 'user_b', full_name: 'משתמש ב', role: 'manager', active: true,
       pass_salt: b.salt, pass_fp: b.fp, updated_at: '2026-08-01T00:00:00.000Z' },
   ];
   h.ctx.mirrorSave('g_users');
@@ -137,9 +137,9 @@ async function run() {
     const h = makeCtx();
     await seed(h);
     // בדיוק מה ש-`doLogin` מקבל מהענן: `select('*')`, כלומר עם הסיסמה.
-    h.ctx.usersCacheSave({ id: 'bbb', username: 'user_b', full_name: 'משתמש ב',
+    h.ctx.usersCacheSave({ client_id: 'bbb', username: 'user_b', full_name: 'משתמש ב',
       role: 'manager', active: true, password: 'סיסמה-גלויה-222222' });
-    const row = h.ctx.MIRROR.g_users.filter((u) => u.id === 'bbb')[0];
+    const row = h.ctx.MIRROR.g_users.filter((u) => u.client_id === 'bbb')[0];
     ok('העדכון נכנס למראה', !!row);
     ok('⛔ אין `password` ברשומה שבזיכרון', !('password' in row));
     ok('⛔ ערך הסיסמה אינו על הדיסק', !diskHas(h.store, 'סיסמה-גלויה-222222'));
@@ -151,14 +151,14 @@ async function run() {
   {
     const h = makeCtx();
     const { a } = await seed(h);
-    h.ctx.usersCacheSave({ id: 'bbb', username: 'user_b', full_name: 'שם חדש',
+    h.ctx.usersCacheSave({ client_id: 'bbb', username: 'user_b', full_name: 'שם חדש',
       role: 'manager', active: true, password: 'x' });
     const users = h.ctx.MIRROR.g_users;
     eq('עדיין שני משתמשים', users.length, 2);
     // ⚠️ `|| {}` בכוונה: מוטציה שמוחקת משתמש מהמראה חייבת להפיל **טענה**,
     //    לא לזרוק — אחרת הריצה נעצרת והפרקים שאחריה לא נבדקים בכלל.
-    const A = users.filter((u) => u.id === 'aaa')[0] || {};
-    const B = users.filter((u) => u.id === 'bbb')[0] || {};
+    const A = users.filter((u) => u.client_id === 'aaa')[0] || {};
+    const B = users.filter((u) => u.client_id === 'bbb')[0] || {};
     eq('משתמש א — המלח שלו לא נגע', A.pass_salt, a.salt);
     eq('משתמש א — הטביעה שלו לא נגעה', A.pass_fp, a.fp);
     eq('משתמש א — שמו לא נגע', A.full_name, 'משתמש א');
@@ -171,9 +171,9 @@ async function run() {
     const h = makeCtx();
     const { b } = await seed(h);
     // תשובת שרת מלפני `0003_pass_fp.sql` — בלי עמודות הטביעה כלל.
-    h.ctx.usersCacheSave({ id: 'bbb', username: 'user_b', full_name: 'משתמש ב',
+    h.ctx.usersCacheSave({ client_id: 'bbb', username: 'user_b', full_name: 'משתמש ב',
       role: 'owner', active: true });
-    const B = h.ctx.MIRROR.g_users.filter((u) => u.id === 'bbb')[0];
+    const B = h.ctx.MIRROR.g_users.filter((u) => u.client_id === 'bbb')[0];
     eq('⭐ הטביעה שרדה עדכון שלא כלל אותה', B.pass_fp, b.fp);
     eq('והמלח שרד גם הוא', B.pass_salt, b.salt);
     eq('והשדה שכן נשלח התעדכן', B.role, 'owner');
@@ -184,8 +184,8 @@ async function run() {
   {
     const h = makeCtx();
     h.ctx.usersCacheSaveAll([
-      { id: 'aaa', username: 'user_a', role: 'owner', active: true, password: 'סוד-א' },
-      { id: 'bbb', username: 'user_b', role: 'manager', active: true, password: 'סוד-ב' },
+      { client_id: 'aaa', username: 'user_a', role: 'owner', active: true, password: 'סוד-א' },
+      { client_id: 'bbb', username: 'user_b', role: 'manager', active: true, password: 'סוד-ב' },
     ]);
     eq('שני המשתמשים נשמרו', h.ctx.MIRROR.g_users.length, 2);
     ok('⛔ אין `password` באף רשומה בזיכרון',
@@ -215,7 +215,7 @@ async function run() {
   {
     const h = makeCtx();
     await seed(h);
-    h.ctx.state.user = { id: 'aaa', username: 'user_a' };   // א' נכנס אחרון
+    h.ctx.state.user = { client_id: 'aaa', username: 'user_a' };   // א' נכנס אחרון
     await h.ctx.doLoginOffline('user_b', PASS_B, null);
     eq('⭐ משתמש ב נכנס', (h.ctx.state.user || {}).username, 'user_b');
     eq('בלי שגיאת כניסה', h.calls.loginError.length, 0);
@@ -227,7 +227,7 @@ async function run() {
     //   הטענה שמחברת בין א', ב' ו-ה': נתיב חדש לא שבר את הישן.
     const h = makeCtx();
     await seed(h);
-    h.ctx.usersCacheSave({ id: 'aaa', username: 'user_a', full_name: 'עודכן',
+    h.ctx.usersCacheSave({ client_id: 'aaa', username: 'user_a', full_name: 'עודכן',
       role: 'owner', active: true, password: 'סוד-א' });
     await h.ctx.doLoginOffline('user_b', PASS_B, null);
     eq('⭐ ב נכנס גם אחרי עדכון חלקי של א', (h.ctx.state.user || {}).username, 'user_b');
@@ -245,7 +245,7 @@ async function run() {
     // ולא «סיסמה שגויה» — ההבחנה של סבב 23, שהנתיב החדש חייב לשמר.
     const h = makeCtx();
     await seed(h);
-    h.ctx.usersCacheSave({ id: 'ccc', username: 'user_c', role: 'manager',
+    h.ctx.usersCacheSave({ client_id: 'ccc', username: 'user_c', role: 'manager',
       active: true, password: 'סוד-ג' });
     await h.ctx.doLoginOffline('user_c', 'סוד-ג', null);
     eq('משתמש בלי טביעה ⇒ MSG_OFF_NO_FP', h.calls.loginError[0], h.ctx.MSG_OFF_NO_FP);
@@ -269,8 +269,10 @@ async function run() {
     ok('⛔ ואין קבוע `SESSION_KEY`', !/SESSION_KEY/.test(SRC));
 
     // ⛔ אין נתיב שלישי — כל כתיבה למראת המשתמשים עוברת דרך המודול.
-    ok('⛔ writeUser כותב דרך usersCacheSave', body('writeUser').includes('usersCacheSave('));
-    ok('⛔ writeUser אינו קורא ל-upsertLocal', !body('writeUser').includes("upsertLocal('g_users'"));
+    /*  ⛔ הכתיבה למראה עברה לווו של האפליקציה — ⚠️ הבלוק החתום כותב לענן
+     *  בלבד, ⭐ ומה שנעשה אחרי התשובה הוא פר-אפליקציה. */
+    ok('⛔ USER_CFG כותב דרך usersCacheSave', decl('USER_CFG').includes('usersCacheSave('));
+    ok('⛔ USER_CFG אינו קורא ל-upsertLocal', !decl('USER_CFG').includes("upsertLocal('g_users'"));
     ok('⛔ אין upsertLocal על g_users בשום מקום',
       SRC.split("upsertLocal('g_users'").length - 1 === 0);
     ok('syncPull שומר את המשתמשים דרך הנתיב המלא',

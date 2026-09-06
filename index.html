@@ -1604,8 +1604,8 @@ var BK_CFG = {
       { kind: 'table', name: 'g_tasks',   order: 'id',  ts: 'updated_at' },
       { kind: 'table', name: 'g_targets', order: 'id',  ts: 'updated_at' },
       { kind: 'table', name: 'g_config',  order: 'key' },
-      { kind: 'table', name: 'g_users',   order: 'id',  ts: 'updated_at',
-        cols: 'id,username,full_name,role,active,created_at,updated_at' }
+      { kind: 'table', name: 'g_users',   order: 'client_id', ts: 'updated_at',
+        cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
     ];
   }
 };
@@ -3239,7 +3239,7 @@ var TABLES = [
   { t: 'g_txns',    key: 'id',  soft: true,  order: 'txn_date', desc: true },
   { t: 'g_tasks',   key: 'id',  soft: true,  order: 'due_date' },
   { t: 'g_targets', key: 'id',  soft: false, order: 'month', desc: true, conflict: 'month' },
-  { t: 'g_users',   key: 'id',  soft: false, order: 'created_at', strip: ['password'] },
+  { t: 'g_users',   key: 'client_id', soft: false, order: 'created_at', strip: ['password'] },
   { t: 'g_config',  key: 'key', soft: false, conflict: 'key' }
 ];
 function tableMeta(t) {
@@ -3273,7 +3273,9 @@ var G_STAMP_KEY = 'g_last_changed';
    ══════════════════════════════════════════════════════════════════════════ */
 function rowTs(r) {
   if (!r || typeof r !== 'object') return 0;
-  var x = Date.parse(r.updated_at || r.created_at || '');
+  /* ⛔ `updated_at` הוא מספר, ⚠️ ו-`created_at` נשאר ISO — ⭐ ולכן שתי
+     הקריאות נבדלות: ⛔ `Date.parse` על מספר מחזיר NaN. */
+  var x = r.updated_at != null ? Number(r.updated_at) : Date.parse(r.created_at || '');
   return isFinite(x) ? x : 0;
 }
 function mirrorLoad() {
@@ -3344,9 +3346,9 @@ function usersCacheSaveAll(rows) {
 // אינה מוחקת ערך שכבר יש במראה.
 function usersCacheSave(row) {
   var clean = usersSanitize(row)[0];
-  if (!clean || clean.id == null) return false;
+  if (!clean || clean.client_id == null) return false;
   var arr = MIRROR.g_users || (MIRROR.g_users = []);
-  var cur = findRow(arr, 'id', clean.id);
+  var cur = findRow(arr, 'client_id', clean.client_id);
   if (cur) Object.keys(clean).forEach(function (k) { cur[k] = clean[k]; });
   else arr.push(clean);
   return mirrorSave('g_users');
@@ -3363,9 +3365,9 @@ function findRow(arr, keyName, k) {
 // מנוע המיזוג. הענן הוא בסיס הסדר ומנצח בשוויון — דטרמיניסטי, ולכן שני
 // מכשירים שממזגים את אותם שני צדדים מגיעים לאותה תוצאה בדיוק.
 // ⚠️ **`isPending` — רשומה מקומית שטרם אושרה בענן מנצחת ללא תלות בחותמת.**
-// הטריגר `g_touch_updated_at` דורס את `updated_at` ב-NOW() בכל UPDATE בצד
-// השרת, ולכן דחיפה של מכשיר אחר נראית "חדשה" מעריכה מקומית שעדיין לא עלתה.
-// בלי הכלל הזה העריכה המקומית הייתה נעלמת בשקט. אותו כלל בדיוק ב-schar-limud.
+// ⛔ אין להסיר את הכלל — ⚠️ חותמת שווה בין שני מכשירים נופלת לענף «הענן
+// מנצח בשוויון», ⭐ ורשומה מקומית שלא אושרה הייתה נדרסת בגרסה שמעולם לא
+// ראתה את העריכה. אותו כלל בדיוק ב-schar-limud.
 /* ═══ מיזוג רשומות — מודול משותף (סבב 38) ════════════════════════════════
    ⛔ שינוי כאן (סבב 65) — ארבע האפליקציות **וארבעת עותקי השער**, באותו
       סבב: אחרת החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
@@ -3593,7 +3595,7 @@ function insert(table, row) {
   var full = Object.assign({}, row);
   if (full[m.key] == null) full[m.key] = newClientId();
   if (!full.created_at) full.created_at = nowISO();
-  full.updated_at = nowISO();
+  full.updated_at = Date.now();
   if (m.soft) { if (full.deleted == null) full.deleted = false; if (full.deleted_at === undefined) full.deleted_at = null; }
   // ה-insert נשלח כ-upsert על המפתח הראשי: ניסיון חוזר אחרי תשובה שאבדה
   // ברשת לא ייכשל על מפתח כפול, ולכן ריקון התור אידמפוטנטי.
@@ -3605,7 +3607,7 @@ function insert(table, row) {
 
 function update(table, id, patch) {
   var m = tableMeta(table);
-  var p = Object.assign({}, patch, { updated_at: nowISO() });
+  var p = Object.assign({}, patch, { updated_at: Date.now() });
   var row = Object.assign({}, p);
   row[m.key] = id;
   var saved = upsertLocal(table, row);
@@ -3621,7 +3623,7 @@ function softDelete(table, id) {
 // upsert לפי עמודה שאינה המפתח הראשי (חודש ביעדים, key ברשימות).
 function upsertBy(table, conflict, row) {
   var m = tableMeta(table);
-  var full = Object.assign({}, row, { updated_at: nowISO() });
+  var full = Object.assign({}, row, { updated_at: Date.now() });
   var arr = MIRROR[table] || (MIRROR[table] = []);
   var cur = findRow(arr, conflict, full[conflict]);
   if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
@@ -3635,75 +3637,87 @@ function upsertBy(table, conflict, row) {
 
 function saveConfigList(key, list) { return upsertBy('g_config', 'key', { key: key, value: list }); }
 
-/* ─────────────────────────── כתיבת משתמשים — דורשת רשת (סבב 23) ──────────
-   ⚠️ **באג שהתגלה בסבב 23 ותוקן כאן.** `g_users` אינה ב-`PUSH_TABLES`
-   (ובצדק — דחיפת-מצב שלה הייתה כותבת סיסמאות ריקות, כי `password` מוסר
-   מהמראה), אבל `saveUser`/`pass-save`/`user-toggle` קראו ל-`insert`/`update`
-   **המקומיים**. התוצאה: משתמש שנוצר או סיסמה ששונתה **לא הגיעו לענן
-   לעולם**, נשארו מסומנים ⏳ לנצח, ומכיוון ש-`mergeRows` נותנת לרשומה
-   מסומנת לנצח את הניצחון — הם גם **הסתירו לצמיתות** את השורה האמיתית
-   שבענן. התיעוד תמיד אמר «כתיבות משתמשים דורשות רשת»; מעכשיו הקוד באמת
-   עושה זאת.
+/*  ⛔ הדבר היחיד שנבדל בין שלוש האפליקציות שיש בהן כניסה — ⚠️ הלקוח,
+ *  שם הטבלה, הודעת הניתוק, ומה נעשה **אחרי** שהתשובה חזרה: ⭐ הכתיבה
+ *  עצמה זהה בית-לבית.
+ *  ⚠️ **וכאן `after` עושה את העבודה הכבדה** — ⛔ הכתיבה נכנסת למראה
+ *  **בלי `pendMark`**: ⭐ מה שכבר בענן אינו ממתין לכלום, ⛔ וסימון ⏳ עליו
+ *  היה נותן לו לנצח במיזוג ולהסתיר את השורה האמיתית שבענן. */
+var USER_CFG = {
+  ready: function () { return !!sb && navigator.onLine; },
+  /*  ⛔ ההודעה נקראת בזמן הקריאה ⛔ ולא בזמן ההשמה — ⚠️ הקבוע מוצהר
+   *  **מתחת** לבלוק הזה, ⭐ וקריאה בהשמה הייתה נותנת `undefined`. */
+  offMsg: function () { return MSG_OFF_USER_WRITE; },
+  from: function () { return sb.from('g_users'); },
+  run: function (q) { return withTimeout(q); },
+  missingFp: gIsMissingFpCol,
+  after: function (res, body) {
+    /*  ⛔ הכשל נזרק כאן ⛔ ולא בבלוק — ⚠️ שלושת הקוראים כאן עובדים
+     *  ב-`catch`, ⭐ ובשתי האחיות הקוראים בודקים `res.error`. */
+    if (!res || res.error) throw ((res && res.error) || new Error('שגיאת שרת'));
+    var saved = (Array.isArray(res.data) && res.data[0]) || body;
+    usersCacheSave(saved);
+    /*  ⛔ העֵד נכתב כאן ⛔ ולא במשיכה — ⚠️ זו כתיבה לענן שחזרה `ok`,
+     *  ⭐ ומשיכה אינה ראיה שהשורה שלנו עלתה. */
+    _gMarkPushed('g_users');
+    applyMirrorToState();
+    /*  ⭐ `g_users` היא אחת משבע הטבלאות שנמשכות, ⛔ ולכן גם כתיבה אליה
+     *  מקדמת את החותמת — ⚠️ אחרת משתמש חדש לא היה מגיע למכשיר אחר עד
+     *  לשינוי נתונים אחר לגמרי. */
+    plTouch();
+    /*  ⛔ «ללא טביעה» משני מקורות: ⚠️ העמודות טרם קיימות, ⛔ או שהגזירה
+     *  עצמה נכשלה ולכן `pass_fp` נכתב ריק לצד סיסמה חדשה. ⭐ הסימן הוא
+     *  **נוכחות השדה** — ⚠️ הוא נכנס ל-`body` אך ורק כשנמסרה סיסמה. */
+    return { noFp: !!res._noFp ||
+      (Object.prototype.hasOwnProperty.call(body, 'pass_fp') && !body.pass_fp) };
+  }
+};
 
-   הכתיבה היא ישירה ל-Supabase, ורק אחריה נכנסת למראה — **בלי `pendMark`**:
-   מה שכבר בענן אינו ממתין לכלום. אין רשת ⇒ נכשל ברעש, ולא «נשמר». */
-function writeUser(id, row) {
-  if (!sb || !navigator.onLine) return Promise.reject(new Error(MSG_OFF_USER_WRITE));
-  var body = Object.assign({}, row);
-  body.updated_at = nowISO();
-  if (id == null) {
-    if (body.id == null) body.id = newClientId();
-    if (!body.created_at) body.created_at = nowISO();
-  } else {
-    body.id = id;
-  }
-  // ⚠️ **`upsert` רק ליצירה, `update` לעריכה — ולא להחליף ביניהם.**
-  // `username`/`password`/`full_name` הם `not null` (0001), ו-Postgres בודק
-  // `NOT NULL` על השורה המועמדת **לפני** שהתנגשות המפתח מפעילה את
-  // `ON CONFLICT`. כלומר `upsert` עם אובייקט חלקי — למשל שינוי סיסמה
-  // שמכיל רק `password` — היה נופל על «null value violates not-null»
-  // במקום לעדכן. היצירה כן משתמשת ב-`upsert`: השורה שם מלאה, וה-`id`
-  // נוצר בצד הלקוח, ולכן ניסיון חוזר אחרי תשובה שאבדה ברשת אידמפוטנטי.
-  function send(obj) {
-    var q = (id == null)
-      ? sb.from('g_users').upsert(obj, { onConflict: 'id' })
-      : sb.from('g_users').update(obj).eq('id', id);
-    return withTimeout(q.select())
-      .then(function (res) { if (res && res.error) throw res.error; return res; });
-  }
-  return send(body)
-    .catch(function (e) {
-      // נפילה-חזרה לחלון שבין דחיפת הקוד להרצת `0003_pass_fp.sql`: בלי זה
-      // **כל** שמירת משתמש הייתה נכשלת עד שהעמודות ייווצרו. המשתמש נשמר,
-      // והכניסה האופליין שלו תיפתח כשתיווצר לו טביעה בשינוי הסיסמה הבא.
-      if (!gIsMissingFpCol(e)) throw e;
-      var b2 = Object.assign({}, body);
-      delete b2.pass_salt; delete b2.pass_fp;
-      return send(b2).then(function (r) { r._noFp = true; return r; });
-    })
-    .then(function (res) {
-      // ⛔ סבב 26: דרך הנתיב החלקי של מראת המשתמשים, כלומר אותו
-      //    `usersSanitize` — ולכן `password` אינו נכנס למראה גם כאן.
-      //    **אין `markLocal`** — מה שכבר בענן אינו ממתין לכלום.
-      var saved = (res && Array.isArray(res.data) && res.data[0]) || body;
-      usersCacheSave(saved);
-      // ⛔ העֵד נכתב כאן ולא במשיכה — ⚠️ זו כתיבה לענן שחזרה בהצלחה.
-      _gMarkPushed('g_users');
-      applyMirrorToState();
-      // ⭐ סבב 51 — `g_users` היא אחת משבע הטבלאות שנמשכות, ולכן גם כתיבה
-      //    אליה חייבת לקדם את החותמת. ⛔ אחרת משתמש חדש (סבב 51) לא היה
-      //    מגיע למכשיר אחר עד לשינוי נתונים אחר לגמרי.
-      plTouch();
-      // "ללא טביעה" משני מקורות: העמודות עדיין לא קיימות (`_noFp`), או
-      // שהגזירה עצמה נכשלה ולכן `pass_fp` נכתב `null` לצד סיסמה חדשה.
-      // ⛔ הסימן הוא **נוכחות השדה** ולא הסיסמה הגלויה שלצידו (צעד ב) —
-      //    ⚠️ `pass_fp` נכנס ל-`body` אך ורק כשנמסרה סיסמה, ⭐ ולכן ערך
-      //    ריק בו הוא בדיוק «נמסרה סיסמה והגזירה נכשלה».
-      var noFp = !!(res && res._noFp) ||
-        (Object.prototype.hasOwnProperty.call(body, 'pass_fp') && !body.pass_fp);
-      return { noFp: noFp };
-    });
+/* ═══ כתיבת משתמש — מודול משותף (סבב 103) ═════════════════════════════════
+   ⛔ שינוי כאן — שלוש האפליקציות שיש בהן כניסה **ושלושת עותקי השער**,
+      באותו סבב: אחרת החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשניים.
+   ⛔ **כל כתיבה לטבלת המשתמשים עוברת כאן** — ⚠️ הטבלה אינה ב-`PUSH_TABLES`,
+      ⭐ שהמראה המקומית מסירה ממנה את הסוד: ⛔ דחיפה גורפת שלה הייתה כותבת
+      אותו חזרה ריק לכל המשתמשים.
+   ⛔ **והכתיבה דורשת רשת** — ⚠️ אין רשת ⇒ נדחה ברעש ⛔ ולא «נשמר»: ⭐ מה
+      שאינו נכתב כאן אינו עולה לענן בשום מסלול אחר.
+   ⛔ **`upsert` ליצירה, `update` לעריכה, ⛔ ואין להחליף ביניהם** — ⚠️ שדות
+      החובה נבדקים על השורה המועמדת **לפני** ש-`ON CONFLICT` מופעל, ⭐ ולכן
+      `upsert` עם אובייקט חלקי נופל על `not null` במקום לעדכן. ⚠️ וביצירה
+      השורה מלאה **והמזהה נוצר במכשיר**, ⛔ ולכן ניסיון חוזר אחרי תשובה
+      שאבדה ברשת מעדכן ⛔ ואינו מכפיל.
+   ⛔ **והתשובה מוחזרת ⛔ ואינה נזרקת** — ⚠️ supabase-js אינו זורק בכשל,
+      ⭐ ו-`USER_CFG.after` הוא שמכריע מה נעשה ב-`res.error`. */
+function _writeUserSend(body, key) {
+  var q = key == null
+    ? USER_CFG.from().upsert(body, { onConflict: 'client_id' })
+    : USER_CFG.from().update(body).eq('client_id', key);
+  /*  ⛔ `.select()` בשני המסלולים — ⚠️ הקורא צריך את השורה **כפי שנשמרה**
+   *  ולא כפי שנשלחה: ⭐ בלעדיה המטמון נכתב מהמטען, ⛔ ועמודה שהמסד מילא
+   *  אינה מגיעה אליו לעולם. */
+  return USER_CFG.run(q.select());
 }
+
+function writeUser(id, row) {
+  if (!USER_CFG.ready()) return Promise.reject(new Error(USER_CFG.offMsg()));
+  var key = (id == null || id === '') ? null : String(id);
+  var body = Object.assign({}, row);
+  body.updated_at = Date.now();
+  body.client_id = (key == null) ? (body.client_id || newClientId()) : key;
+  return _writeUserSend(body, key).then(function (res) {
+    /*  ⛔ נפילה-חזרה לחלון שבין דחיפת הקוד להרצת המיגרציה — ⚠️ בלעדיה
+     *  **כל** שמירת משתמש נכשלת עד שהעמודות ייווצרו: ⭐ המשתמש נשמר,
+     *  והכניסה האופליין שלו תיפתח בשינוי הסיסמה הבא. */
+    if (!(res && res.error && USER_CFG.missingFp(res.error))) return res;
+    var b2 = Object.assign({}, body);
+    delete b2.pass_salt; delete b2.pass_fp;
+    return _writeUserSend(b2, key).then(function (r) {
+      if (r && !r.error) r._noFp = true;
+      return r;
+    });
+  }).then(function (res) { return USER_CFG.after(res, body); });
+}
+/* ═══════════════ סוף מודול כתיבת משתמש ══════════════════════════════════ */
 
 // גוזרת טביעה לסיסמה חדשה ומחזירה את שדות הכתיבה.
 // ⛔ **כישלון גזירה מאפס את שני השדות ולא רק מדלג על הכתיבה** (סבב 23) — טביעה ישנה
@@ -3731,7 +3745,7 @@ function passFields(pass) {
 function rowPendingKey(t, row) { return pendRowKey(t, row[tableMeta(t).key]); }
 
 // מה צריך לעלות: אין מקבילה בענן, מקומי חדש יותר, **או עדיין מסומן ⏳**.
-// הסעיף השלישי אינו ייתור — ר' ההערה ב-mergeRows על הטריגר שדורס updated_at.
+// ⛔ אין להסיר את הסעיף השלישי — ר' ההערה ב-mergeRows על חותמת שווה.
 function dirtyRows(t, remoteByKey) {
   var m = tableMeta(t);
   return (MIRROR[t] || []).filter(function (l) {
@@ -4324,7 +4338,7 @@ function doLogin() {
       });
     })
     .then(function (u) {
-      state.user = { id: u.id, username: u.username, full_name: u.full_name, role: u.role };
+      state.user = { client_id: u.client_id, username: u.username, full_name: u.full_name, role: u.role };
       // ⭐ סבב 26 — הנתיב החלקי. השורה הזו כבר בידינו מהכניסה, ולכן אין
       // סיבה שהחלפת משתמש במכשיר תמתין למשיכה מלאה מהענן כדי שהוא ייכנס
       // למראה. ⚠️ **אחרי `state.user`, לא לפניו** — התיקון של סבב 23:
@@ -4358,7 +4372,7 @@ function doLoginOffline(username, password, btn) {
     if (verdict === 'no-fp')     { loginError(MSG_OFF_NO_FP); return; }
     if (verdict === 'no-crypto') { loginError(MSG_OFF_NO_CRYPTO); return; }
     if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
-    state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
+    state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
     boot();
     toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'good');
   }, function (e) {
@@ -4928,9 +4942,9 @@ function viewSettings() {
     h += '<tr><td><b>' + esc(u.full_name) + '</b></td><td>' + esc(u.username) + '</td>' +
       '<td><span class="badge ' + (u.role === 'owner' ? 'brand' : '') + '">' + (u.role === 'owner' ? 'בעלים' : 'מנהל') + '</span></td>' +
       '<td><span class="badge ' + (u.active ? 'ok' : 'bad') + '">' + (u.active ? 'פעיל' : 'מושבת') + '</span></td>' +
-      '<td><button class="btn ghost xs" data-act="user-edit" data-id="' + u.id + '">עריכה</button> ' +
-        '<button class="btn ghost xs" data-act="user-pass" data-id="' + u.id + '">סיסמה</button> ' +
-        '<button class="btn ' + (u.active ? 'danger' : 'soft') + ' xs" data-act="user-toggle" data-id="' + u.id + '">' +
+      '<td><button class="btn ghost xs" data-act="user-edit" data-id="' + u.client_id + '">עריכה</button> ' +
+        '<button class="btn ghost xs" data-act="user-pass" data-id="' + u.client_id + '">סיסמה</button> ' +
+        '<button class="btn ' + (u.active ? 'danger' : 'soft') + ' xs" data-act="user-toggle" data-id="' + u.client_id + '">' +
           (u.active ? 'השבתה' : 'הפעלה') + '</button></td></tr>';
   });
   h += '</tbody></table></div></section>';
@@ -5319,7 +5333,7 @@ function formUser(existing) {
         (u.id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
     '</div>';
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="user-save" data-id="' + (u.id || '') + '">שמירה</button>';
+    '<button class="btn" data-act="user-save" data-id="' + (u.client_id || '') + '">שמירה</button>';
   openModal(u.id ? 'עריכת משתמש' : '👤 משתמש חדש', body, foot);
 }
 
@@ -5391,13 +5405,13 @@ function formMyPassword() {
    ══════════════════════════════════════════════════════════════════════════ */
 function formSwitchUser() {
   var others = (MIRROR.g_users || []).filter(function (u) {
-    return u && u.active !== false && String(u.id) !== String(state.user.id);
+    return u && u.active !== false && String(u.client_id) !== String(state.user.client_id);
   });
   if (!others.length) { toast('אין משתמש אחר בעותק המקומי של המכשיר', null, 'bad'); return; }
   openModal('👥 החלפת משתמש',
     '<label class="fld"><span>משתמש</span><select class="inp" id="sw-user" aria-label="המשתמש שאליו עוברים">' +
       others.map(function (u) {
-        return '<option value="' + esc(u.id) + '">' + esc(u.full_name || u.username) + '</option>';
+        return '<option value="' + esc(u.client_id) + '">' + esc(u.full_name || u.username) + '</option>';
       }).join('') +
     '</select></label>' +
     '<label class="fld"><span>סיסמה *</span><input class="inp" id="sw-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>',
@@ -5463,7 +5477,7 @@ function runSave(btn, fn, msg) {
 }
 
 function findUser(id) {
-  for (var i = 0; i < state.users.length; i++) if (idEq(state.users[i].id, id)) return state.users[i];
+  for (var i = 0; i < state.users.length; i++) if (idEq(state.users[i].client_id, id)) return state.users[i];
   return null;
 }
 function findTask(id) {
@@ -5491,7 +5505,7 @@ var ACTIONS = {
       if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
       if (v !== 'ok')        { toast(MSG_BAD_LOGIN, null, 'bad'); return; }
       closeModal();
-      state.user = { id: cu.id, username: cu.username, full_name: cu.full_name, role: cu.role };
+      state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
       state.screen = 'home';
       state.donorId = null;
       boot();
@@ -5638,7 +5652,7 @@ var ACTIONS = {
     //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
     runSave(el, function () {
       // ⭐ סבב 40 — אימות הסיסמה הנוכחית מול הטביעה; הטקסט הגלוי אינו נשלף.
-      return withTimeout(sb.from('g_users').select('id,active,pass_salt,pass_fp').eq('id', state.user.id).limit(1))
+      return withTimeout(sb.from('g_users').select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
         .then(function (res) {
           if (res && res.error) throw res.error;
           var u = res && Array.isArray(res.data) && res.data[0];
@@ -5648,17 +5662,17 @@ var ACTIONS = {
             return passFields(p1);
           });
         })
-        .then(function (pf) { return writeUser(state.user.id, pf).then(warnIfNoFp); });
+        .then(function (pf) { return writeUser(state.user.client_id, pf).then(warnIfNoFp); });
     }, 'הסיסמה עודכנה');
   },
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;
-    if (idEq(u.id, state.user.id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', null, 'bad'); return; }
+    if (idEq(u.client_id, state.user.client_id) && u.active) { toast('אי אפשר להשבית את המשתמש המחובר', null, 'bad'); return; }
     if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⚠️ ההשבתה חייבת להגיע לענן: משתמש שהושבת ונשאר במראה של מכשיר אחר
     //    היה נשאר בר-כניסה אופליין. המשיכה הבאה מורידה אותו משם.
-    writeUser(u.id, { active: !u.active })
+    writeUser(u.client_id, { active: !u.active })
       .then(function () { render(); toast('עודכן', null, 'good'); })
       .catch(errToast);
   },
