@@ -26,9 +26,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
+/* ⚠️ פר-אפליקציה — הפרויקט שהאפליקציה חיה בו והבעלות על מיגרציית הגיבוי נבדלים בין הארבע */
 /* ⭐ gius חיה בפרויקט Supabase **נפרד** (`zrftjkghhjhqzopvdzou`), ולכן יש לה
    מיגרציה משלה — ואין לה אחיות בפרויקט: `sisterKeys` ריקה, והשקילות מול
    `BK_CFG.sources()` היא מלאה ודו-כיוונית. */
+/* ⚠️ סוף פר-אפליקציה */
 const APP = {
   name: 'gius',
   keys: ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config', 'g_users'],
