@@ -97,6 +97,13 @@ function makeCtx(opts = {}) {
     loginError(m) { calls.loginError.push(m); },
     busy() {},
     boot() { calls.boot++; },
+    /*  ⛔ שומר ההקשר — ⚠️ הוא חי בבלוק חתום אחר, ⭐ והרתמה מספקת אותו
+     *  כדי שמסלולי הכניסה ייטענו לבדם: ⛔ מונה אמיתי, ⚠️ ולא ערך קבוע
+     *  שאינו יכול להתחלף. */
+    _ctxEpoch: 0,
+    ctxEpoch() { return ctx._ctxEpoch; },
+    ctxSwitch() { return ++ctx._ctxEpoch; },
+    ctxStale(e) { return e !== ctx._ctxEpoch; },
     toast(m) { calls.toast.push(m); },
     applyMirrorToState() {},
     nowISO: () => new Date(0).toISOString(),
