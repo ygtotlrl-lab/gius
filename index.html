@@ -2605,6 +2605,30 @@ var PL_CFG = {
       }, function () { return { ok: false, ts: null }; });
   },
 };
+/* ═══ שומר ההקשר — מודול משותף (סבב 109) ══════════════════════════════════
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
+   ⛔ מחזור «קרא ← מזג ← דחוף» נפתח בהקשר אחד ⛔ ואינו רשאי לכתוב באחר —
+      ⚠️ בין ה-`await` הראשון לאחרון ההקשר יכול להתחלף, ⭐ ומאותו רגע
+      הגלובלים מצביעים על החדש והזיכרון עדיין מחזיק את הישן: ⛔ כל כתיבה
+      שאחריו כותבת את נתוני ההקשר הקודם תחת החדש, ⚠️ וכל רישום הצלחה נזקף
+      לחשבון הלא נכון — ⭐ ועֵד פינוי כזה מתיר למחוק מהדיסק רשומה שמעולם
+      לא עלתה.
+   ⛔ **המונה ⛔ ולא שם ההקשר** — ⚠️ החלפה הלוך-ושוב מחזירה את אותו שם,
+      ⭐ והזיכרון בינתיים כבר הוחלף: ⛔ שוויון שמות אינו שוויון הקשר.
+   ⛔ **ומה נלכד מוצהר פר-אפליקציה** ⛔ ואינו כאן — ⚠️ באפליקציה רב-מוסדית
+      זה המוסד, ⭐ ובשאר המשתמש המחובר: ⛔ המנגנון אחד ⚠️ והנלכד נבדל.
+   ═══════════════════════════════════════════════════════════════════════ */
+var _ctxEpoch = 0;
+function ctxEpoch() { return _ctxEpoch; }
+/*  ⛔ נקודת הקידום היחידה — ⚠️ כל מסלול שמחליף הקשר קורא לה **לפני**
+ *  הטעינה החדשה: ⭐ קידום שאחרי הטעינה משאיר את המחזור שרץ עכשיו סבור
+ *  שהוא עדיין בהקשר שלו, ⛔ והכתיבה שלו נזקפת לחשבון החדש. */
+function ctxSwitch() { _ctxEpoch++; return _ctxEpoch; }
+/*  ⛔ «האם ההקשר התחלף מאז שהתחלתי» — ⚠️ הקורא לוכד את הערך בכניסה
+ *  ⛔ ומוסר אותו כאן, ⭐ ואינו קורא את הגלובלי פעמיים. */
+function ctxStale(ep) { return ep !== _ctxEpoch; }
+/* ═══════════════ סוף שומר ההקשר ═════════════════════════════════════════ */
 /* ═══ מנגנון המשיכה — מודול משותף (סבב 51) ════════════════════════════════
    ⛔ שינוי כאן (סבב 65) — ארבע האפליקציות **וארבעת עותקי השער**, באותו
       סבב: אחרת החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
@@ -2692,17 +2716,20 @@ function plBoot() {
    ⚠️ סדר הטבלאות הוא מה ששומר על המפתח הזר — ⭐ תורמים לפני התחייבויות
    ותנועות. */
 var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config'];
+/*  ⛔ ההקשר שנלכד לפני ההמתנה הראשונה — ⚠️ `mark` רץ אחרי `await`, ⭐ וקריאת
+ *  הגלובלי בו הייתה זוקפת את הצלחת הדחיפה של משתמש אחד לחשבון השני. */
+var _gPushEp = 0;
 var PUSH_CFG = {
   tables: PUSH_TABLES,
   chunk:  500,
   delay:  400,
-  dirty:  function (t, ctx) { return dirtyRows(t, (ctx && ctx[t]) || {}); },
+  dirty:  function (t, ctx) { _gPushEp = ctxEpoch(); return dirtyRows(t, (ctx && ctx[t]) || {}); },
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
     var m = tableMeta(t);
     return withTimeout(sb.from(t).upsert(rows, { onConflict: m.conflict || m.key }));
   },
-  mark:   function (t) { _gMarkPushed(t); },
+  mark:   function (t) { if (!ctxStale(_gPushEp)) _gMarkPushed(t); },
   run:    function () { syncNow(); },
 };
 /* ═══ שכבת הדחיפה — מודול משותף (סבב 102) ═════════════════════════════════
@@ -3830,6 +3857,10 @@ function migrateUserPend() {
 function syncPull() {
   if (_pulling || !sb) return Promise.resolve({ ok: false, remote: {} });
   _pulling = true;
+  /*  ⛔ ההקשר נלכד בכניסה ⛔ ונבדק לפני המיזוג — ⚠️ המחזור מושך, ממזג
+   *  וכותב, ⭐ והמשתמש יכול להתחלף בין המשיכה לכתיבה: ⛔ מה שנמזג עבור
+   *  הקודם היה יורד לדיסק אחרי שהחדש כבר נכנס. */
+  var _ep = ctxEpoch();
   var remoteMaps = {};
   return Promise.all(TABLES.map(function (m) {
     // ⚠️ בלי `.eq('deleted', false)` — חייבים גם את ה-tombstones, אחרת מחיקה
@@ -3845,6 +3876,7 @@ function syncPull() {
                                                        : { data: null, error: { message: 'rows:' + m.t } } }; },
             function (e) { return { m: m, res: { error: e } }; });
   })).then(function (list) {
+    if (ctxStale(_ep)) return { ok: false, remote: {} };
     var errs = [];
     list.forEach(function (x) {
       if (!x.res || x.res.error || !Array.isArray(x.res.data)) { errs.push(x.m.t); return; }
@@ -3893,13 +3925,17 @@ function syncPull() {
 // שנכתבה תוך כדי הסנכרון לא נבדקה ולא נדחפה, ולכן הסימון שלה חייב להישאר.
 function syncNow() {
   var t0 = Date.now();
+  /*  ⛔ הדחיפה נבדקת מול ההקשר שנלכד לפני המשיכה — ⚠️ `res.remote` נמדד
+   *  עבורו, ⭐ ודחיפה מולו אחרי החלפה זוקפת לחדש מה שנמזג לקודם. */
+  var _ep = ctxEpoch();
   return syncPull().then(function (res) {
-    if (!res.ok) { render(); return false; }
+    if (!res.ok || ctxStale(_ep)) { render(); return false; }
     /*  ⛔ שער הרשת יושב כאן ⛔ ולא בשכבת הדחיפה — ⚠️ הוא תלוי בלקוח של
      *  האפליקציה, ⭐ ומעבר ריק היה מסמן את עֵד הפינוי בלי ראיה מהענן. */
     var p = (!sb || !navigator.onLine) ? Promise.resolve({ still: [] })
                                        : pushDirty(res.remote);
     return p.then(function (r) {
+      if (ctxStale(_ep)) { render(); return false; }
       pendReconcile(r.still, t0);
       render();
       return true;
@@ -4403,6 +4439,7 @@ function doLogin() {
       });
     })
     .then(function (u) {
+      ctxSwitch();
       state.user = { client_id: u.client_id, username: u.username, full_name: u.full_name, role: u.role };
       // ⭐ סבב 26 — הנתיב החלקי. השורה הזו כבר בידינו מהכניסה, ולכן אין
       // סיבה שהחלפת משתמש במכשיר תמתין למשיכה מלאה מהענן כדי שהוא ייכנס
@@ -4437,6 +4474,7 @@ function doLoginOffline(username, password, btn) {
     if (verdict === 'no-fp')     { loginError(MSG_OFF_NO_FP); return; }
     if (verdict === 'no-crypto') { loginError(MSG_OFF_NO_CRYPTO); return; }
     if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
+    ctxSwitch();
     state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
     boot();
     toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'good');
@@ -4449,6 +4487,7 @@ function doLoginOffline(username, password, btn) {
 
 function logout() {
   lkStop();
+  ctxSwitch();
   sessClear();
   state.screen = 'home';
   state.donorId = null;
@@ -5570,6 +5609,7 @@ var ACTIONS = {
       if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
       if (v !== 'ok')        { toast(MSG_BAD_LOGIN, null, 'bad'); return; }
       closeModal();
+      ctxSwitch();
       state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
       state.screen = 'home';
       state.donorId = null;
