@@ -648,14 +648,16 @@ async function _ysRowsPaged(mkQuery, order, win) {
 /* ── MIRROR_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────── */
 /*  ⚠️ `tables` היא **פונקציה** ⛔ ולא מערך — ⭐ `TABLES` מוצהר אחרי הבלוק
  *  הזה, ⛔ והצהרה שקוראת אותו כאן הייתה מקבלת `undefined`.
- *  ⛔ ו-`g_users` מוכרזת ב-`noPush` — ⚠️ היא הטבלה היחידה שיש לה מראה
- *  ואינה נדחפת: ⭐ המראה מסירה ממנה את הסיסמה, ⛔ ודחיפת-מצב שלה הייתה
- *  כותבת סיסמה ריקה לכל המשתמשים. */
+ *  ⛔ ומה שאינו נדחף מוכרז ב-`noPush` — ⚠️ **מה נכנס**: שם הטבלה,
+ *  המסלול שדוחף אותה, וסוג התוספת שלו על הלולאה; ⛔ **מה מפיל**: מסלול
+ *  שאין לו גוף, סוג שאינו אחד משלושה, ומסלול שאינו מוסיף דבר.
+ *  ⭐ **ולמה זה קיים**: מסלול שאינו מוסיף על הלולאה הוא לולאה שנכתבה
+ *  פעמיים, ⛔ ושורותיו מסתכנות בכך שלא יעלו כלל. */
 var MIRROR_CFG = {
   prefix: 'g_mirror_',
   app:    'g_',
   tables: function () { return TABLES.map(function (m) { return m.t; }); },
-  noPush: ['g_users'],
+  noPush: [{ t: 'g_users', via: 'writeUser', adds: 'secret' }],
   empty:  function () { return []; },
   ts:     function (r) { return rowTs(r); },
   clean:  function (t, rows) { return stripRows(t, rows); },

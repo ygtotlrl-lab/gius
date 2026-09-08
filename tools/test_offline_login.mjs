@@ -196,7 +196,7 @@ console.log('\n▶ ש. שכבת המראה — מפתח נגזר והגירה ח
   ok('⭐ כל טבלה שנדחפת יש לה מפתח במראה',
     ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config']
       .every((t) => keys.indexOf(t) >= 0), keys.join('|'));
-  eq('⛔ והיחידה שאינה נדחפת מוכרזת', h.ctx.MIRROR_CFG.noPush.join('|'), 'g_users');
+  eq('⛔ והיחידה שאינה נדחפת מוכרזת', h.ctx.MIRROR_CFG.noPush.map(function (r) { return r.t; }).join('|'), 'g_users');
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */
