@@ -645,6 +645,24 @@ async function _ysRowsPaged(mkQuery, order, win) {
 // ═══ עמידות אחסון מקומי (סבב 11) ═══
 // ── מדיניות האחסון המקומי של האפליקציה הזו ─────────────────────────────
 // זו הטבלה **היחידה** שנבדלת בין ארבע האפליקציות; המודול שמתחתיה זהה בכולן.
+/* ── MIRROR_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────── */
+/*  ⚠️ `tables` היא **פונקציה** ⛔ ולא מערך — ⭐ `TABLES` מוצהר אחרי הבלוק
+ *  הזה, ⛔ והצהרה שקוראת אותו כאן הייתה מקבלת `undefined`.
+ *  ⛔ ו-`g_users` מוכרזת ב-`noPush` — ⚠️ היא הטבלה היחידה שיש לה מראה
+ *  ואינה נדחפת: ⭐ המראה מסירה ממנה את הסיסמה, ⛔ ודחיפת-מצב שלה הייתה
+ *  כותבת סיסמה ריקה לכל המשתמשים. */
+var MIRROR_CFG = {
+  prefix: 'g_mirror_',
+  app:    'g_',
+  tables: function () { return TABLES.map(function (m) { return m.t; }); },
+  noPush: ['g_users'],
+  empty:  function () { return []; },
+  ts:     function (r) { return rowTs(r); },
+  clean:  function (t, rows) { return stripRows(t, rows); },
+  adopt:  function (r) { return adoptLegacyId(r); },
+  legacy: function (t) { return MIRROR_CFG.prefix + t; },
+  fail:   function (where, e) { console.error('[mirror] ' + where, e); },
+};
 var LS_CFG = {
   app: 'gius',
   logKey: 'g_ls_log',
@@ -657,7 +675,7 @@ var LS_CFG = {
   // שאר המראות הן הנתונים עצמם ולכן שלב ב.
   // ⚠️ ולה **עֵד דחיפה משלה** — `writeUser` כותבת לענן ורק אז למראה,
   //    ולכן ההצלחה שם היא הראיה שהתוכן שעל הדיסק כבר שם.
-  tier1: [{ key: 'g_mirror_users', syncedThrough: _gPushedFor('g_users') }],
+  tier1: [{ key: mirrorKey('g_users'), syncedThrough: _gPushedFor('g_users') }],
 
   // שלב ב — רשומות ישנות שכבר מסונכרנות, הישן ביותר קודם.
   // ⚠️ `g_mirror_donors` **אינה** כאן: התורמים הם אבות המפתח הזר של התנועות
@@ -667,11 +685,11 @@ var LS_CFG = {
   //    ובנוסף `idOf`/`verify` למסלול האימות מול הענן — בדיוק כמו ב-yoman
   //    וב-hanhala. ר' ההערה מתחת ל-LS_CFG.
   tier2: [
-    { key: 'g_mirror_txns',    label: 'תנועות',      ts: rowTs, minAgeMs: 400 * 86400000,
+    { key: mirrorKey('g_txns'),    label: 'תנועות',      ts: rowTs, minAgeMs: 400 * 86400000,
       idOf: _gRecId, syncedThrough: _gPushedFor('g_txns'),    verify: _gVerify('g_txns') },
-    { key: 'g_mirror_pledges', label: 'התחייבויות',  ts: rowTs, minAgeMs: 400 * 86400000,
+    { key: mirrorKey('g_pledges'), label: 'התחייבויות',  ts: rowTs, minAgeMs: 400 * 86400000,
       idOf: _gRecId, syncedThrough: _gPushedFor('g_pledges'), verify: _gVerify('g_pledges') },
-    { key: 'g_mirror_tasks',   label: 'משימות',      ts: rowTs, minAgeMs: 180 * 86400000,
+    { key: mirrorKey('g_tasks'),   label: 'משימות',      ts: rowTs, minAgeMs: 180 * 86400000,
       idOf: _gRecId, syncedThrough: _gPushedFor('g_tasks'),   verify: _gVerify('g_tasks') }
   ],
 
@@ -2904,7 +2922,7 @@ var HW_CFG = {
   enabled: true,
   admin: function () { return isAdmin(); },
   specs: [{
-    key: 'g_mirror_txns',
+    key: mirrorKey('g_txns'),
     label: 'תנועות שנים סגורות',
     inWindow: function (t) {
       var y = gAcadYearOf(t && t.txn_date);
@@ -2923,9 +2941,7 @@ var HW_CFG = {
       } catch (e) { return { ok: false, rows: [] }; }
     },
     rows: function () { return MIRROR.g_txns; },
-    apply: function (kept) {
-      return lsSetArray(MIRROR_PREFIX + 'g_txns', stripRows('g_txns', kept), rowTs);
-    }
+    apply: function (kept) { return mirrorWrite('g_txns', kept); }
   }]
 };
 /* ═══ חלון חם ושחזור מקומי — מודול משותף (סבב 35) ════════════════════════
@@ -3122,6 +3138,65 @@ function hwBoot() {
 }
 window.hwBoot = hwBoot;
 /* ═══════════════ סוף מודול החלון החם ══════════════════════════════════ */
+/* ═══ שכבת המראה — מודול משותף (סבב 114) ══════════════════════════════════
+   ⛔ העותק המקומי של הענן חי במבנה **אחד** — ⚠️ `MIRROR`, ממופתח בשם
+      הטבלה: ⭐ שם לוגי שני לאותה מראה הוא מיפוי שחי במקום נפרד, ⛔ ומיפוי
+      שחי במקום נפרד מתיישן בשקט.
+   ⛔ **ומפתח האחסון נגזר** ⛔ ואינו מוקלד — ⚠️ מפתח שהוקלד בהצהרת הפינוי
+      ואינו מה שנכתב בפועל אינו מתפנה לעולם, ⭐ והפינוי מדווח «אין מה
+      לפנות» על מפתח שגדל בלי גבול.
+   ⛔ **שער החלון החם יושב ב-`mirrorSave`** — ⚠️ והכתיבה הגולמית היחידה
+      היא `mirrorWrite`, למסלול שכבר סינן: ⭐ סינון שני מודד את התוצאה של
+      עצמו, ⛔ וכתיבה שעוקפת את השער מחזירה לדיסק את מה שהרגע פונה ממנו.
+   ⛔ שינוי כאן — שלוש האפליקציות **ושלושת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשניים.
+   ⚠️ מה שאינו נאכף כאן: **תוכן** השורות ומי שאינו טבלה — ⭐ הניקוי הוא
+      `MIRROR_CFG.clean`, ⛔ והמפתחות השטוחים מוכרזים בשער.
+   ══════════════════════════════════════════════════════════════════════ */
+var MIRROR = {};
+/*  ⛔ תחילית האפליקציה נגרעת משם הטבלה — ⚠️ היא כבר בתוך
+ *  `MIRROR_CFG.prefix`, ⭐ ושמה פעמיים מייצר מפתח שאיש אינו מחפש. */
+function mirrorKey(t) {
+  var s = String(t), p = MIRROR_CFG.app;
+  return MIRROR_CFG.prefix + (p && s.indexOf(p) === 0 ? s.slice(p.length) : s);
+}
+function mirrorTables() { return MIRROR_CFG.tables(); }
+function mirrorLoad() {
+  mirrorTables().forEach(function (t) {
+    var v = null;
+    try { var raw = lsGet(mirrorKey(t), null); v = raw == null ? null : JSON.parse(raw); }
+    catch (e) { console.warn('[mirror] ' + t + ' פגום — נטען ריק', e); v = null; }
+    if (!Array.isArray(v)) { MIRROR[t] = MIRROR_CFG.empty(); return; }
+    MIRROR[t] = v.filter(function (r) { return r && typeof r === 'object'; });
+    MIRROR[t].forEach(MIRROR_CFG.adopt);
+  });
+}
+function mirrorSave(t) {
+  var k = mirrorKey(t);
+  return lsSetArray(k, MIRROR_CFG.clean(t, hwDiskFilter(k, MIRROR[t] || [])), MIRROR_CFG.ts);
+}
+/*  ⛔ **ואינה נוגעת בזיכרון** — ⚠️ הפינוי מצמצם את הדיסק, ⭐ והמסך שפתוח
+ *  ממשיך להציג את מה שכבר נטען. */
+function mirrorWrite(t, rows) {
+  return lsSetArray(mirrorKey(t), MIRROR_CFG.clean(t, rows || []), MIRROR_CFG.ts);
+}
+/*  ⭐ הגירת מפתח חד-פעמית ואידמפוטנטית — ⛔ כותבים לחדש לפני שמוחקים את
+ *  הישן: ⚠️ כתיבה שנכשלה משאירה את הישן במקומו, ⭐ והמכשיר נטען ממנו
+ *  בעלייה הבאה · ⛔ ומפתח חדש שכבר קיים אינו נדרס. */
+function mirrorKeysMigrate() {
+  mirrorTables().forEach(function (t) {
+    var newK = mirrorKey(t), oldK = MIRROR_CFG.legacy(t);
+    if (!oldK || oldK === newK) return;
+    var raw = lsGet(oldK, null);
+    if (raw == null) return;
+    if (lsGet(newK, null) == null && !lsSet(newK, raw)) { MIRROR_CFG.fail('mirrorKeysMigrate', new Error(newK)); return; }
+    try { localStorage.removeItem(oldK); } catch (e) { MIRROR_CFG.fail('mirrorKeysMigrate', e); }
+  });
+}
+/*  ⛔ נקודת ההפעלה האחת — ⚠️ הגירה ואז טעינה: ⭐ טעינה שקדמה להגירה קוראת
+ *  מפתח שהרגע עבר, ⛔ ומקבלת ריק. */
+function mirrorBoot() { mirrorKeysMigrate(); mirrorLoad(); }
+/* ═══════════════ סוף מודול שכבת המראה ═══════════════════════════════════ */
 
 /* ── חיבור gius למודול ────────────────────────────────────────────────────
    מאז שלב 3 הכתיבה היא מקומית-תחילה עם **דחיפת-מצב** (אין תור). האישור
@@ -3306,7 +3381,6 @@ function ok(res) {
   return res ? res.data : null;
 }
 
-var MIRROR_PREFIX = 'g_mirror_';
 // ⛔ `PULL_MS` ו-`FLUSH_MS` הוסרו (סבב 51) — הם היו המרווחים של הפולינג
 //    שמשך מלא ודחף, ואין להם יותר אף קורא (נמדד בארבעת הריפו). המרווח
 //    היחיד שנשאר הוא `PL_CFG.every`, והוא 5,000 — אותו ערך שנמדד כאן.
@@ -3331,7 +3405,6 @@ function tableMeta(t) {
   return { t: t, key: 'client_id', soft: false };
 }
 
-var MIRROR = {};
 var _syncWired = false, _pulling = false;
 var _netWarned = false, _lastPullOk = 0;
 // ⭐ סבב 51 — מצב מנגנון המשיכה. `_gSeenTs` היא החותמת האחרונה שהמכשיר
@@ -3361,15 +3434,6 @@ function rowTs(r) {
      הקריאות נבדלות: ⛔ `Date.parse` על מספר מחזיר NaN. */
   var x = r.updated_at != null ? Number(r.updated_at) : Date.parse(r.created_at || '');
   return isFinite(x) ? x : 0;
-}
-function mirrorLoad() {
-  TABLES.forEach(function (m) {
-    var v = null;
-    try { var raw = lsGet(MIRROR_PREFIX + m.t, null); v = raw == null ? null : JSON.parse(raw); }
-    catch (e) { console.warn('[mirror] ' + m.t + ' פגום — נטען ריק', e); v = null; }
-    MIRROR[m.t] = Array.isArray(v) ? v.filter(function (r) { return r && typeof r === 'object'; }) : [];
-    MIRROR[m.t].forEach(adoptLegacyId);
-  });
 }
 /*  ⛔ מראה שנכתבה לפני שהמזהה הוסב נושאת `id` ⛔ ואינה נושאת `client_id` —
  *  ⚠️ **וזו נקודת ההסבה האחת**: ⭐ המיגרציה שמרה את הערך (`id::text`),
@@ -3407,13 +3471,6 @@ function stripRows(t, rows) {
   if (t === 'g_config') rows = (rows || []).filter(function (r) { return !(r && String(r.key) === G_STAMP_KEY); });
   if (!m.strip) return rows;
   return (rows || []).map(function (r) { return stripCols(t, r); });
-}
-// ⭐ שער החלון החם יושב כאן (סבב 35) — כל כתיבה למראה עוברת דרך
-//    `hwDiskFilter`: תנועה משנה סגורה שראייתה העננית בידינו אינה נכתבת
-//    שוב לדיסק. בלי ראיה — נכתבת כרגיל (המסנן מחזיר את המערך כמו שהוא).
-function mirrorSave(t) {
-  var rows = hwDiskFilter(MIRROR_PREFIX + t, MIRROR[t] || []);
-  return lsSetArray(MIRROR_PREFIX + t, stripRows(t, rows), rowTs);
 }
 
 /* ═══ מראת המשתמשים — שני נתיבי כתיבה, מסנן אחד (סבב 26) ═════════════════
@@ -3926,7 +3983,7 @@ function syncPull() {
     list.forEach(function (x) {
       if (!x.res || x.res.error || !Array.isArray(x.res.data)) { errs.push(x.m.t); return; }
       var rows = stripRows(x.m.t, x.res.data);
-      hwNoteCloud(MIRROR_PREFIX + x.m.t, rows);   // ראיה עננית לשער הדיסק (סבב 35)
+      hwNoteCloud(mirrorKey(x.m.t), rows);   // ראיה עננית לשער הדיסק (סבב 35)
       var map = {};
       rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
       remoteMaps[x.m.t] = map;
@@ -5976,7 +6033,7 @@ function start() {
   try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
   // מודל הסשן (סבב 53) — נקודת ההפעלה היחידה של המודול.
   try { sessBoot(); } catch (e) { console.warn('[sess] sessBoot', e); }
-  mirrorLoad();
+  mirrorBoot();
   // סימוני "ממתין לסנכרון" (סבב 12) — נטענים מהדיסק לפני הרינדור הראשון,
   // כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
   try { pendBoot(); } catch (e) { console.warn('[pend] pendBoot', e); }

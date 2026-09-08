@@ -70,10 +70,10 @@ function decl(name) {
 }
 const body = (name) => fn(name);
 
-const NAMES_VAR = ['G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_PREFIX',
+const NAMES_VAR = ['G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_CFG', 'MIRROR',
   'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO'];
 const NAMES_FN = ['gRandSalt', 'gPassFp', 'gMakePassFp', 'gVerifyOffline',
-  'mirrorUserByName', 'doLoginOffline', 'stripCols', 'stripRows', 'mirrorSave',
+  'mirrorUserByName', 'doLoginOffline', 'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorSave',
   'usersSanitize', 'usersCacheSave', 'usersCacheSaveAll',
   'tableMeta', 'findRow', 'rowTs'];
 
@@ -85,7 +85,6 @@ function makeCtx(opts = {}) {
     console: { log() {}, warn() {}, error() {} },
     TextEncoder,
     crypto: opts.noCrypto ? undefined : webcrypto,
-    MIRROR: {},
     state: { user: null },
     MSG_BAD_LOGIN: '❌ שם משתמש או סיסמה שגויים',
     lsSetArray(key, arr) { store[key] = JSON.stringify(arr); return true; },

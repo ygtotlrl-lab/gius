@@ -79,10 +79,11 @@ function decl(name) {
 const NAMES_FN = [
   'gRandSalt', 'gPassFp', 'gMakePassFp', 'gIsMissingFpCol', 'gVerifyOffline',
   'mirrorUserByName', 'doLoginOffline', 'passFields',
-  'stripCols', 'stripRows', 'mirrorSave', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
+  'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorLoad', 'mirrorSave', 'mirrorWrite',
+  'mirrorKeysMigrate', 'mirrorBoot', 'adoptLegacyId', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
 ];
 const NAMES_VAR = [
-  'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_PREFIX',
+  'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_CFG', 'MIRROR',
   'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE'
 ];
 
@@ -94,7 +95,6 @@ function makeCtx(opts = {}) {
     console,
     TextEncoder,
     crypto: opts.noCrypto ? undefined : webcrypto,
-    MIRROR: {},
     /*  ⭐ סבב 53 — המשתמש המחובר חי בזיכרון; הרתמה מדמה את מאפיין הגישה
      *  שב-`state`, ⛔ ואין כאן `SESSION_KEY` כי אין סשן על הדיסק. */
     state: { user: null },
@@ -107,6 +107,9 @@ function makeCtx(opts = {}) {
     hwDiskFilter(k, rows) { return rows; },
     hwNoteCloud() {},
     lsSet(key, v) { calls.lsSet.push(key); store[key] = String(v); return true; },
+    lsGet(key, d) { return key in store ? store[key] : (d === undefined ? null : d); },
+    localStorage: { removeItem(k) { delete store[k]; } },
+    console: { warn() {}, error() {} },
     loginError(m) { calls.loginError.push(m); },
     busy() {},
     boot() { calls.boot++; },
@@ -144,6 +147,31 @@ async function seedUsers(h, list) {
     h.ctx.MIRROR.g_users.push(row);
   }
   h.ctx.mirrorSave('g_users');
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+console.log('\n▶ ש. שכבת המראה — מפתח נגזר והגירה חד-פעמית (סבב 114)');
+{
+  const h = makeCtx();
+  eq('⭐ מפתח האחסון נגזר משם הטבלה, בלי כפל תחילית',
+    h.ctx.mirrorKey('g_txns'), 'g_mirror_txns');
+  eq('⚠️ וגם מראת המשתמשים — מפתח אחד `<קידומת>_mirror_users`',
+    h.ctx.mirrorKey('g_users'), 'g_mirror_users');
+  const txn = [{ client_id: 't1', amount: 5, updated_at: 3 }];
+  /*  ⚠️ המפתח הישן — ⛔ תחילית כפולה, כפי שנכתב עד הסבב הזה. */
+  h.store['g_mirror_g_txns'] = JSON.stringify(txn);
+  h.ctx.mirrorBoot();
+  eq('⭐ ההגירה כתבה את המפתח החדש', h.store['g_mirror_txns'], JSON.stringify(txn));
+  ok('⛔ ואפס מפתח כפול — הישן ירד', !('g_mirror_g_txns' in h.store));
+  eq('⚠️ הנתונים נקראים מהמראה', (h.ctx.MIRROR.g_txns || []).length, 1);
+  const before = JSON.stringify(h.store);
+  h.ctx.mirrorKeysMigrate();
+  eq('⛔ ריצה שנייה אינה משנה דבר', JSON.stringify(h.store), before);
+  const keys = h.ctx.mirrorTables();
+  ok('⭐ כל טבלה שנדחפת יש לה מפתח במראה',
+    ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config']
+      .every((t) => keys.indexOf(t) >= 0), keys.join('|'));
+  eq('⛔ והיחידה שאינה נדחפת מוכרזת', h.ctx.MIRROR_CFG.noPush.join('|'), 'g_users');
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */
@@ -313,8 +341,8 @@ console.log('\n▶ ו. ⛔ `password` אינו מגיע לאף מפתח localSto
   h.ctx.MIRROR.g_users = [{ id: 'eee', username: 'zvi', password: SECRET, pass_fp: 'cc' }];
   h.ctx.mirrorSave('g_users');
   ok('mirrorSave מסנן גם רשומה שנכנסה ל-MIRROR בעקיפה',
-    h.store['g_mirror_g_users'].indexOf(SECRET) === -1, h.store['g_mirror_g_users']);
-  ok('והטביעה שרדה גם שם', h.store['g_mirror_g_users'].indexOf('pass_fp') !== -1);
+    h.store['g_mirror_users'].indexOf(SECRET) === -1, h.store['g_mirror_users']);
+  ok('והטביעה שרדה גם שם', h.store['g_mirror_users'].indexOf('pass_fp') !== -1);
 }
 {
   // מלח פר-משתמש, לא קבוע: שני משתמשים עם **אותה סיסמה** חייבים לקבל
