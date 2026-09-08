@@ -46,7 +46,7 @@ let pass = 0, fail = 0;
  *  שלא רצו: ⭐ `EXPECTED` הוא רצפה שנמדדה ברמה המהירה, ⛔ ופחות ממנה הוא
  *  כשל — ⚠️ והמאזין על `exit` תופס גם יציאה שקדמה להמתנה. */
 const GATE_ID = new URL(import.meta.url).pathname.split('/').pop();
-const EXPECTED = 79;
+const EXPECTED = 77;
 let RAN = 0;
 /*  ⛔ הדגל נלכד ברישום ⛔ ולא בסגירה — ⚠️ שער שמריץ שער אחר מציב אותו
  *  **אחרי** הרישום, ⭐ ולכן הוא חל על הילד ⛔ ולא על עצמו. */
@@ -106,7 +106,7 @@ const NAMES_FN = [
   'gRandSalt', 'gPassFp', 'gMakePassFp', 'gIsMissingFpCol', 'gVerifyOffline',
   'mirrorUserByName', 'doLoginOffline', 'passFields',
   'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorLoadOne', 'mirrorLoad', 'mirrorSave', 'mirrorWrite',
-  'mirrorKeysMigrate', 'mirrorBoot', 'adoptLegacyId', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
+  'mirrorBoot', 'adoptLegacyId', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
 ];
 const NAMES_VAR = [
   'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_CFG', 'MIRROR',
@@ -184,15 +184,14 @@ console.log('\n▶ ש. שכבת המראה — מפתח נגזר והגירה ח
   eq('⚠️ וגם מראת המשתמשים — מפתח אחד `<קידומת>_mirror_users`',
     h.ctx.mirrorKey('g_users'), 'g_mirror_users');
   const txn = [{ client_id: 't1', amount: 5, updated_at: 3 }];
-  /*  ⚠️ המפתח הישן — ⛔ תחילית כפולה, כפי שנכתב עד הסבב הזה. */
+  h.store['g_mirror_txns'] = JSON.stringify(txn);
+  h.ctx.mirrorBoot();
+  eq('⚠️ הנתונים נקראים מהמראה', (h.ctx.MIRROR.g_txns || []).length, 1);
+  /*  ⛔ ההגירה של סבב 114 ירדה בסבב 116 — ⚠️ המפתח הישן אינו נקרא עוד,
+   *  ⭐ ומכשיר שלא נטען מאז מושך מהענן בטעינה הראשונה. */
   h.store['g_mirror_g_txns'] = JSON.stringify(txn);
   h.ctx.mirrorBoot();
-  eq('⭐ ההגירה כתבה את המפתח החדש', h.store['g_mirror_txns'], JSON.stringify(txn));
-  ok('⛔ ואפס מפתח כפול — הישן ירד', !('g_mirror_g_txns' in h.store));
-  eq('⚠️ הנתונים נקראים מהמראה', (h.ctx.MIRROR.g_txns || []).length, 1);
-  const before = JSON.stringify(h.store);
-  h.ctx.mirrorKeysMigrate();
-  eq('⛔ ריצה שנייה אינה משנה דבר', JSON.stringify(h.store), before);
+  ok('⛔ ואין קורא למפתח הישן', (h.ctx.MIRROR.g_txns || []).length === 1);
   const keys = h.ctx.mirrorTables();
   ok('⭐ כל טבלה שנדחפת יש לה מפתח במראה',
     ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config']
