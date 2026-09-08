@@ -359,7 +359,12 @@ const APP = {
    *  בקוד, ⛔ ושם שיצא משימוש שנשאר בו. ⭐ **ולמה היא קיימת**: שלוש
    *  אפליקציות השוו מול שלושה שמות, ⚠️ ובדיקה שהועתקה ביניהן נכשלת
    *  פתוח. */
-  roles: ['admin', 'manager'],
+  roles: ['admin', 'manager', 'junior'],
+  /*  ⛔ דרגה שקיימת באוצר המילים ואיש אינו נושא אותה (סבב 114) —
+   *  ⚠️ **מה מפיל**: שם שאינו באוצר המילים, ⛔ ושם שהוכרז חסר-נושא
+   *  ויש לו אתר בקוד. ⭐ **ולמה היא קיימת**: אוצר המילים אחד לארבעתן,
+   *  ⛔ ומסך ניהול המשתמשים כאן מציע `admin` ו-`manager` בלבד. */
+  rolesUnused: ['junior'],
   authUser: 'state.user',
   roleMsgs: [],
   roleCmpExempt: {},
@@ -3575,6 +3580,13 @@ function roleModelGaps() {
   for (const r of roles)
     if (!new RegExp("['\"]" + r + "['\"]").test(src) && sql.indexOf("'" + r + "'") < 0)
       out.push('תפקיד מוכרז ואינו בקוד ואינו במיגרציות: ' + r);
+  /*  ⛔ דרגה שהוכרזה חסרת-נושא (סבב 114) — ⚠️ היא חיה באילוץ שבמסד
+   *  ⛔ ואין לה אתר בקוד: ⭐ הצהרה שיש לה אתר היא הצהרה שהתיישנה. */
+  for (const r of (APP.rolesUnused || [])) {
+    if (roles.indexOf(r) < 0) out.push('דרגה מוכרזת חסרת-נושא ואינה באוצר המילים: ' + r);
+    else if (new RegExp("['\"]" + r + "['\"]").test(src))
+      out.push('דרגה שהוכרזה חסרת-נושא ויש לה אתר בקוד: ' + r);
+  }
   const leg = ROLE_LEGACY.exec(src);
   if (leg) out.push('שם תפקיד שיצא משימוש, בקוד: ' + leg[1]);
   const ex = APP.roleCmpExempt || {};
