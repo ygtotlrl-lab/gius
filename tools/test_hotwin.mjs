@@ -28,7 +28,7 @@ const APP = {
   checks: [
     [/function gAcadYearOf\(/, 'גבול-השנה של schar אומץ (gAcadYearOf)'],
     [/HW_CFG = \{\s*\n\s*enabled: true,/, 'החלון החם פעיל (HW_CFG.enabled)'],
-    [/key: 'g_mirror_txns',\s*\n\s*label:/, 'מפרט החלון על g_mirror_txns'],
+    [/key: mirrorKey\('g_txns'\),\s*\n\s*label:/, 'מפרט החלון על מפתח המראה של התנועות'],
     [/function formMyPassword\(\)/, 'מסך שינוי סיסמה עצמי קיים (formMyPassword)'],
     [/'my-pass': function \(\) \{ formMyPassword\(\); \}/, 'פעולת my-pass מחווטת'],
     [/data-act="my-pass"/, 'כפתור 🔑 קיים בכותרת'],
