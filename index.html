@@ -36,6 +36,9 @@
   /*  ⛔ מרחק הטוסט מתחתית המסך — ⚠️ הערך היחיד שנבדל בשכבת הטוסט:
    *  סרגל לשוניות תחתון, ⛔ ומעליו סרגל הפעולה. */
   --toast-bottom:150px;
+  /*  ⛔ גוון האזהרה של אזור המצב — ⚠️ אסימון אחד בשם אחד בארבעתן,
+   *  ⭐ והגוון בלבד נבדל: ⛔ כלל משותף אינו יכול לנקוב בשם פרטי. */
+  --stale-ink:#a3341f;
 
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
   --ink:#12202e; --ink-2:#3b4d61; --muted:#6b7c90;
@@ -52,6 +55,7 @@
 }
 @media (prefers-color-scheme:dark){
   :root{
+    --stale-ink:#ffb4a2;
     --bg:#0d151d; --card:#131e29; --card-2:#18242f;
     --ink:#e8eef5; --ink-2:#c2cfdc; --muted:#93a5b8;
     --line:#24333f; --line-2:#1d2a35;
@@ -444,8 +448,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* ═══ סוף CSS שכבת הטוסט ════════════════════════════════════════════════ */
 /* ═══ אזור מצב — CSS משותף (סבב 15/17) ══════════════════════════════════
    זהה בית-לבית בארבע האפליקציות. שני הרכיבים שיושבים בתחתית כל מסך
-   הגדרות: בלוק "☁️ סנכרון" ורכיב "מידע טכני ›". הכללים לא נשענים על
-   משתני-הצבע של אף אפליקציה (הם נבדלים ביניהן) אלא יורשים צבע וגופן. */
+   הגדרות: בלוק "☁️ סנכרון" ורכיב "מידע טכני ›". הכללים יורשים צבע
+   וגופן, ⛔ ואינם נשענים על אסימוני הגוון של אף אפליקציה — הם נבדלים
+   ביניהן. ⚠️ **החריג היחיד הוא `--stale-ink`** (סבב 113): ⭐ הוא מוגדר
+   בשם אחד בארבעתן, בערכה הבהירה ובכהה, ⛔ ולכן כלל שנשען עליו נשאר
+   זהה בית-לבית. */
 .tech-info{margin-top:22px;font-size:12px;opacity:.7}
 .tech-info>summary{cursor:pointer;list-style:none;display:inline-block;padding:4px 2px}
 .tech-info>summary::-webkit-details-marker{display:none}
@@ -457,6 +464,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sync-line .sync-act{margin-top:8px}
 .sync-line button{font:inherit;font-size:12px;padding:5px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.18);background:rgba(0,0,0,.05);color:inherit;cursor:pointer}
 .sync-line button[disabled]{opacity:.5;cursor:default}
+/*  ⛔ הבאנר «הגיבוי לא רץ N ימים» נושא גוון משלו — ⚠️ שאר הבלוק יורש
+    צבע, ⭐ והוא הודעת אזהרה שחייבת להיקרא כאזהרה. ⛔ והגוון יושב
+    ב-`--stale-ink` ⛔ ולא כערך מוטבע: ⚠️ הוא מוגדר בערכה הבהירה ובכהה
+    בשם אחד, ⭐ ולכן הכלל עצמו זהה בארבע האפליקציות. */
+.bkStale{margin-top:4px;font-weight:700;color:var(--stale-ink)}
 /* ═══ סוף CSS אזור המצב ═════════════════════════════════════════════════ */
 .ls-crit-line{margin-top:18px;font-size:12px;font-weight:600;color:#b3261e}
 </style>
@@ -905,7 +917,7 @@ function lsToastThrottled(msg) {
   var now = Date.now();
   if (now - _lsToastAt < 8000) return;
   _lsToastAt = now;
-  try { lsToast(msg, 6000); } catch (e) { }
+  try { lsToast(msg, 6000, 'bad'); } catch (e) { }
 }
 function lsGet(key, fallback) {
   try {
@@ -1287,9 +1299,9 @@ function lsBootAlert(u) {
     lsAlert(MSG_LS_CRIT + ' (' + lsFmtBytes(u.total) + ' מתוך ' + lsFmtBytes(u.quota) + ')');
   } else if (u.total >= LS_WARN_BYTES) {
     lsLog('⚠️ מעל 3MB', lsFmtBytes(u.total), u.total);
-    try { lsToast(MSG_LS_WARN + ' (' + lsFmtBytes(u.total) + ')', 5000); } catch (e) { }
+    try { lsToast(MSG_LS_WARN + ' (' + lsFmtBytes(u.total) + ')', 5000, 'bad'); } catch (e) { }
   }
-  if (lsHorizonKeys().length) { try { lsToast(MSG_LS_PRUNED, 6000); } catch (e1) { } }
+  if (lsHorizonKeys().length) { try { lsToast(MSG_LS_PRUNED, 6000, 'bad'); } catch (e1) { } }
 }
 
 /* ── שורת המצב בהגדרות ─────────────────────────────────────────────────── */
@@ -1372,7 +1384,12 @@ function lsSweepNow() {
   function finish(extra) {
     freed += Number(extra) || 0;
     lsRenderStatus();
-    try { lsToast(freed > 0 ? ('✅ פונו ' + lsFmtBytes(freed)) : '⚠️ אין מה לפנות — אין נתונים מסונכרנים וישנים דיים', 4000); } catch (e) { }
+    /*  ⛔ שתי הודעות ולא אחת — ⚠️ הסיווג נגזר מהמסלול: ⭐ פינוי שהצליח
+     *  הוא הודעה נייטרלית, ⛔ ו«אין מה לפנות» היא אזהרה. */
+    try {
+      if (freed > 0) lsToast('✅ פונו ' + lsFmtBytes(freed), 4000);
+      else lsToast('⚠️ אין מה לפנות — אין נתונים מסונכרנים וישנים דיים', 4000, 'bad');
+    } catch (e) { }
     return freed;
   }
   return p.then(finish, function () { return finish(0); });
@@ -2575,6 +2592,26 @@ function sessBoot() {
   return _sessPurge();
 }
 /* ═══════════════ סוף מודול הסשן ═════════════════════════════════════════ */
+/* ═══ מודל ההרשאות — מודול משותף (סבב 113) ════════════════════════════════
+   ⛔ ההרשאה נגזרת מ-`role` שבטבלת המשתמשים ⛔ ולא מסיסמת שער — ⚠️ ואוצר
+      המילים אחד בשלוש האפליקציות: `admin` הוא המורשה, `manager` מי שאינו.
+      ⭐ אפליקציה שיש בה מטריצת הרשאות נושאת דרגת ביניים נוספת, ⛔ והיא
+      מוכרזת בשער עם נימוקה.
+   ⛔ **ההשוואה היא ל-`admin` בדיוק ⛔ ולא «שונה מ-manager»** — ⚠️ תפקיד
+      שהוקלד בטעות, או עמודה ריקה, שוללים הרשאה ⛔ ולעולם אינם מעניקים
+      אותה: ⭐ נפילה-חזרה לשם התפקיד הייתה שער שנפתח לכל מקליד.
+   ⛔ **ואין השוואה שנייה מחוץ לבלוק** — ⚠️ שלוש השוואות באותו נושא הן
+      שלוש הזדמנויות לטעות, ⭐ ותיקון באחת משאיר את השתיים סותרות אותה.
+   ⚠️ מקור המשתמש נבדל בין האפליקציות (`AUTH.user` · `state.user`) ⛔ ולכן
+      הוא נלקח כאן מ-`sessGet()`, ⭐ שהוא נקודת המעבר האחת של הסשן
+      בשלושתן; ⛔ והביטוי הפרטי מוצהר בשער.
+   ⛔ שינוי כאן — שלוש האפליקציות **ושלושת עותקי השער**, באותו סבב.
+   ══════════════════════════════════════════════════════════════════════ */
+var ROLE_ADMIN = 'admin';
+function isAdminOf(u) { return !!u && String(u.role) === ROLE_ADMIN; }
+function isAdmin() { return isAdminOf(sessGet()); }
+/* ═══════════════ סוף מודול מודל ההרשאות ═════════════════════════════════ */
+
 
 
 /* ── PL_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────────── */
@@ -2865,7 +2902,7 @@ function gAcadYearOf(iso) {
    ⚠️ תנועה בלי תאריך תקין נשארת חמה — ספק ⇐ לא מפנים. */
 var HW_CFG = {
   enabled: true,
-  admin: function () { return isOwner(); },
+  admin: function () { return isAdmin(); },
   specs: [{
     key: 'g_mirror_txns',
     label: 'תנועות שנים סגורות',
@@ -4040,7 +4077,6 @@ function agentPool() {
       .concat(state.txns.map(function (t) { return t.agent; }))
   );
 }
-function isOwner() { return state.user && state.user.role === 'owner'; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    רכיבי ממשק בסיסיים — טוסט, מודאל, אישור, שדות
@@ -4157,7 +4193,7 @@ function toast(msg, dur, kind) {
 /*  ⛔ משך הודעת האחסון ⛔ ואינו ברירת המחדל של הטוסט — ⚠️ היא מדווחת על
    כשל כתיבה, ⭐ והקורא חייב זמן לקרוא אותה. */
 var LS_TOAST_MS = 5000;
-function lsToast(msg, dur) { try { toast(msg, dur || LS_TOAST_MS); } catch (e) {} }
+function lsToast(msg, dur, kind) { try { toast(msg, dur || LS_TOAST_MS, kind); } catch (e) {} }
 /* ═══════════════ סוף מודול שכבת המודאל ═════════════════════════════════ */
 /* ═══ קריאת ערך מספרי — מודול משותף (סבב 104) ═════════════════════════════
    ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: אחרת
@@ -4517,7 +4553,7 @@ function renderShell() {
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
       '<nav class="tabbar">' + tabs + '</nav>' +
       '<div class="who"><div style="text-align:end"><div class="nm">' + esc(state.user.full_name) + '</div>' +
-        '<span class="role">' + (isOwner() ? 'בעלים' : 'מנהל') + '</span></div>' +
+        '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
         '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
         '<button class="btn ghost sm" data-act="logout">יציאה</button></div>' +
@@ -4554,7 +4590,7 @@ var lastViewKey = '';
 // כשכבה שנייה ב-`viewSettings()` עצמה למקרה שמגיעים למסך בדרך אחרת.
 // אותה החלטה בדיוק תועדה ב-hanhala-ruchanit (סבב 6 שם).
 function go(screen) {
-  if (screen === 'settings' && !isOwner()) {
+  if (screen === 'settings' && !isAdmin()) {
     toast('אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', null, 'bad');
     return;
   }
@@ -4636,7 +4672,7 @@ function viewHome() {
       '<b>' + esc(monthLabel(m)) + '</b>' +
       '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">‹</button>' +
       '<span class="grow"></span>' +
-      (isOwner() ? '<button class="btn soft sm" data-act="target-set" data-month="' + m + '">קביעת יעד</button>' : '') +
+      (isAdmin() ? '<button class="btn soft sm" data-act="target-set" data-month="' + m + '">קביעת יעד</button>' : '') +
     '</div>' +
     '<div class="hero">' + ringHTML(pct) +
       '<div class="hero-stats">' +
@@ -5020,12 +5056,12 @@ function moveTask(id, stage) {
    רלוונטי רק לאחת. הערה שיושבת במקום אחד אינה
    מגינה על הארגון.
 
-   כאן: `viewSettings` / `isOwner` — ההרשאה נגזרת מ-`g_users.role` (`owner` מול
+   כאן: `viewSettings` / `isAdmin` — ההרשאה נגזרת מ-`g_users.role` (`admin` מול
    `manager`), והעמודה היא `text not null` **בלי DEFAULT** (0001). שלוש
    טבלאות המשתמשים בארגון מיושרות בנקודה הזו, ובשלושתן **יצירת משתמש בלי
-   `role` נכשלת במסד**. ⚠️ הערכים עצמם אינם משותפים ואין ליישר אותם:
-   `owner`/`manager` כאן, `admin`/`user` ב-schar, `admin`/`senior`/`junior`
-   בהנהלה. ⚠️ הנפילה-חזרה `val('us-role') || 'manager'` ב-`saveUser`
+   `role` נכשלת במסד**. ⭐ **והערכים מיושרים מסבב 113**: `admin` הוא
+   המורשה ו-`manager` מי שאינו, ⚠️ ודרגת ביניים נוספת מוכרזת בשער עם
+   נימוקה. ⚠️ הנפילה-חזרה `val('us-role') || 'manager'` ב-`saveUser`
    **נשארת** — היא שכבת הגנה בטופס (התפקיד הנמוך), לא ברירת מחדל במסד.
    ═════════════════════════════════════════════════════════════════════ */
 function viewSettings() {
@@ -5033,7 +5069,7 @@ function viewSettings() {
   // ללא תלות בהרשאה הוא מסך שנפתח לכל מי שהגיע אליו בדרך אחרת (רינדור
   // ישיר, `state.screen` שנקבע במקום אחר). ⛔ אין להסיר את הבדיקה הזו (נרשם בסבב 27) —
   // «כי `go` כבר בודק» — שתי השכבות נועדו בדיוק זו לזו.
-  if (!isOwner()) {
+  if (!isAdmin()) {
     return '<section class="card">' + emptyBox('🔒', 'אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד') + '</section>';
   }
 
@@ -5045,7 +5081,7 @@ function viewSettings() {
     '<div class="tw"><table><thead><tr><th>שם מלא</th><th>שם משתמש</th><th>תפקיד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
   state.users.forEach(function (u) {
     h += '<tr><td><b>' + esc(u.full_name) + '</b></td><td>' + esc(u.username) + '</td>' +
-      '<td><span class="badge ' + (u.role === 'owner' ? 'brand' : '') + '">' + (u.role === 'owner' ? 'בעלים' : 'מנהל') + '</span></td>' +
+      '<td><span class="badge ' + (isAdminOf(u) ? 'brand' : '') + '">' + (isAdminOf(u) ? 'בעלים' : 'מנהל') + '</span></td>' +
       '<td><span class="badge ' + (u.active ? 'ok' : 'bad') + '">' + (u.active ? 'פעיל' : 'מושבת') + '</span></td>' +
       '<td><button class="btn ghost xs" data-act="user-edit" data-id="' + u.client_id + '">עריכה</button> ' +
         '<button class="btn ghost xs" data-act="user-pass" data-id="' + u.client_id + '">סיסמה</button> ' +
@@ -5432,8 +5468,8 @@ function formUser(existing) {
     (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
-        '<option value="manager"' + (u.role === 'manager' || !u.role ? ' selected' : '') + '>מנהל</option>' +
-        '<option value="owner"' + (u.role === 'owner' ? ' selected' : '') + '>בעלים</option></select></label>' +
+        '<option value="manager"' + (isAdminOf(u) ? '' : ' selected') + '>מנהל</option>' +
+        '<option value="admin"' + (isAdminOf(u) ? ' selected' : '') + '>בעלים</option></select></label>' +
       '<label class="fld chk" style="margin-top:22px"><input type="checkbox" id="us-active"' +
         (u.client_id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
     '</div>';
