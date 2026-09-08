@@ -105,7 +105,7 @@ function decl(name) {
 const NAMES_FN = [
   'gRandSalt', 'gPassFp', 'gMakePassFp', 'gIsMissingFpCol', 'gVerifyOffline',
   'mirrorUserByName', 'doLoginOffline', 'passFields',
-  'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorLoad', 'mirrorSave', 'mirrorWrite',
+  'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorLoadOne', 'mirrorLoad', 'mirrorSave', 'mirrorWrite',
   'mirrorKeysMigrate', 'mirrorBoot', 'adoptLegacyId', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
 ];
 const NAMES_VAR = [
