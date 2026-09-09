@@ -5,7 +5,7 @@
  *  ⚠️ מסבב 42ג כל הלוגיקה יושבת במודול המשותף שלמטה — זהה בית-לבית
  *  בארבע האפליקציות. ⛔ מה שנבדל יושב ב-SW_CFG בלבד.
  */
-const CACHE_NAME = 'gius-v95';
+const CACHE_NAME = 'gius-v96';
 
 // קבצים מקומיים.
 var CORE = [
@@ -63,22 +63,19 @@ var SW_OFFLINE_HTML = `<!doctype html>
 /*  ⚠️ SW_CFG — הדבר היחיד שנבדל בין ארבע האפליקציות (סבב 42ג). כל ידית
  *  כאן היא התנהגות **שנמדדה** ברתמת קו-הבסיס, ⛔ ולא ברירת מחדל שנפלה
  *  מאליה: שינוי שלה מפיל את `tools/test_sw.mjs`, וזה הרצוי.
- *  ⚠️ ארבע הידיות שנבדלות כאן — `scoped` · `navFallback:'shell'` ·
- *  `subStrategy:'cache-first'` · `subMiss:'504'` · `offlineStatus:200` —
- *  הן ההתנהגות שנמדדה בסבב 40 ונשמרה בסבב 42ג. ⛔ אין ליישר אותן.
- *  ⚠️ ו-`skipWaiting: false` נעדר **בכוונה**: הדף מציג באנר «🔄 גרסה
- *  חדשה זמינה» והמשתמש מחליט מתי לעדכן. ⛔ אין ליישר בלי החלטת מנהל. */
+ *  ⛔ **ושתי ידיות בלבד נבדלות בין הארבע** — ⚠️ `prefix` שהוא זהות
+ *  האפליקציה, ⭐ ו-`cdnHosts` שהוא רשימת המארחים שהיא באמת טוענת:
+ *  ⛔ שאר הידיות זהות בארבעתן, ⚠️ ומי שסוטה בהן מצהיר את **שמה**. */
 var SW_CFG = {
   prefix: 'gius-',
-  skipHosts: [],
   cdnHosts: ['cdn.jsdelivr.net'],
   scoped: true,
   navFallback: 'shell',
-  navIgnoreSearch: false,
+  navIgnoreSearch: true,
   subStrategy: 'cache-first',
   subMiss: '504',
   offlineStatus: 200,
-  skipWaiting: false,
+  skipWaiting: true,
   cdnTimeoutMs: 10000
 };
 
@@ -105,9 +102,6 @@ var SW_SUB_OPTS = { ignoreVary: true };
 function swSkip(url) {
   if (url.indexOf('http') !== 0) return true;
   if (url.indexOf('.supabase.co') !== -1) return true;
-  for (var i = 0; i < SW_CFG.skipHosts.length; i++) {
-    if (url.indexOf(SW_CFG.skipHosts[i]) !== -1) return true;
-  }
   return false;
 }
 
@@ -283,9 +277,9 @@ self.addEventListener('install', function (event) {
     }));
     return Promise.all(jobs);
   }).catch(function () {}));
-  /*  ⚠️ `skipWaiting` הוא ידית שנמדדה: ב-gius הוא נעדר **בכוונה** — הדף
-   *  מציג באנר «🔄 גרסה חדשה זמינה» והמשתמש מחליט מתי לעדכן. ⛔ אין
-   *  ליישר בלי החלטת מנהל (סבב 42ג) — זה משנה מתי גרסה חדשה נכנסת לתוקף. */
+  /*  ⛔ ההשתלטות מיידית בארבעתן — ⚠️ מסלול שמחכה ללחיצה מותיר מכשיר על
+   *  קוד ישן: ⭐ הבאנר נשאר למי שיש לו הקלדה לאבד, ⛔ והוא אינו התנאי
+   *  להשתלטות. */
   if (SW_CFG.skipWaiting) self.skipWaiting();
 });
 

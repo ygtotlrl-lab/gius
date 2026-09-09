@@ -801,7 +801,7 @@ function lsUsage() {
       try { v = localStorage.getItem(k) || ''; } catch (e) { }
       var b = lsEntryBytes(k, v), a = lsAppOf(k);
       out.total += b;
-      out.keys.push({ key: k, bytes: b, app: a.id, appName: a.name });
+      out.keys.push({ key: k, bytes: b, app: a.id });
       if (!byApp[a.id]) byApp[a.id] = { id: a.id, name: a.name, bytes: 0, count: 0 };
       byApp[a.id].bytes += b; byApp[a.id].count++;
     }
@@ -1349,7 +1349,7 @@ function lsStatusHTML() {
   h += '<div style="font-weight:800;margin:10px 0 4px">פילוח לפי מפתח (12 הגדולים)</div><table style="width:100%;border-collapse:collapse">';
   u.keys.slice(0, 12).forEach(function (k) {
     h += '<tr><td style="padding:2px 0;word-break:break-all">' + esc(k.key) +
-         '<span style="opacity:.6"> · ' + esc(k.appName) + '</span></td>' +
+         '<span style="opacity:.6"> · ' + esc(lsAppOf(k.key).name) + '</span></td>' +
          '<td style="text-align:left;padding:2px 0;white-space:nowrap">' + esc(lsFmtBytes(k.bytes)) + '</td></tr>';
   });
   if (!u.keys.length) h += '<tr><td>—</td><td></td></tr>';
@@ -6057,18 +6057,29 @@ function start() {
   renderLogin();
 }
 
-/* ── service worker + באנר העדכון ──────────────────────────────────────────
-   ⛔ **אין `skipWaiting()` ב-install** (נרשם בסבב 27) —
-   החלפת עובד מתחת לדף פתוח מרעננת אותו באמצע טופס. הדף מציג באנר, ורק
-   לחיצה של המשתמש שולחת `SKIP_WAITING`.
-   ⚠️ ובלי `updateRequested`, ה-`controllerchange` של **העובד הראשון**
-   (שקורא `clients.claim()`) היה מרענן מבקר ראשון באמצע עבודה. */
+/* ── service worker + באנר העדכון ────────────────────────────────────────── */
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   var updater = $('#updater');
   var btn = $('#updater-btn');
   var waiting = null;
-  var updateRequested = false;
+  var userAccepted = false;
+
+  /*  ⛔ המשתמש נגע בדף — ⚠️ **מה נכנס**: המגע הראשון בלבד, ⭐ **ומה הוא
+   *  מפיל**: את הרענון האוטומטי שבהשתלטות. ⛔ **ולמה הוא קיים**: רענון
+   *  באמצע הקלדה מאבד את מה שהוקלד, ⚠️ ורענון על דף שאיש לא נגע בו
+   *  אינו מאבד דבר. */
+  var touched = false;
+  function markTouched() { touched = true; }
+  ['pointerdown', 'keydown'].forEach(function (ev) {
+    window.addEventListener(ev, markTouched, { once: true, capture: true });
+  });
+
+  /*  ⛔ ההשתלטות הראשונה אינה עדכון — ⚠️ בביקור ראשון אין מבקר,
+   *  ⭐ וה-`clients.claim()` של העובד הראשון יורה `controllerchange`
+   *  על דף שכבר מריץ את הקוד החדש: ⛔ רענון שם הוא טעינה שנייה
+   *  שאינה משנה דבר. */
+  var hadController = !!navigator.serviceWorker.controller;
 
   /*  ⛔ שם אחד שמתפרסם החוצה — ⚠️ המימוש פרטי, ⭐ והקורא היחיד
    *  מבחוץ הוא זיהוי הקוד המיושן. */
@@ -6079,25 +6090,24 @@ function registerSW() {
   }
 
   btn.addEventListener('click', function () {
-    updateRequested = true;
+    userAccepted = true;
     if (!waiting) { location.reload(); return; }
     btn.disabled = true;
     btn.textContent = 'מעדכן…';
     waiting.postMessage({ type: 'SKIP_WAITING' });
   });
 
+  /*  ⛔ ההשתלטות אינה שלמה בלי הרענון — ⚠️ **הנימוק המדוד**: `skipWaiting`
+   *  ו-`clients.claim()` שניהם רצים, ⭐ וה-service worker אכן מתחלף
+   *  ומכניס `index.html` חדש למטמון — ⛔ אבל הלשונית ממשיכה להריץ את
+   *  ה-JS **שכבר בזיכרון**: ⚠️ המכשיר קיבל את הקוד החדש והמשיך להריץ
+   *  את הישן, ⭐ עד שמישהו יילחץ על הבאנר. ⛔ **ודף שאיש לא נגע בו
+   *  נטען מחדש מיד** — ⚠️ ואחרי מגע חוזרים לבאנר, ⭐ שרענון באמצע
+   *  עבודה מאבד אותה. */
   var reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', function () {
-    // ה-worker הראשון יורה את זה כשהוא קורא ל-clients.claim(). רענון באותו
-    // רגע היה שומט את הדף מתחת למבקר ראשון, באמצע טופס.
-    // ⛔ רק עדכון שהמשתמש ביקש במפורש רשאי לרענן (נרשם בסבב 67) —
-    // רענון שלא נתבקש שומט את הדף מתחת למי שממלא טופס.
-    /*  ⛔ ואין כאן רענון של דף שאיש לא נגע בו, כמו בשלוש האחיות —
-     *  ⚠️ שם `skipWaiting` דלוק והעובד החדש משתלט מעצמו, ⭐ ובלי רענון
-     *  הלשונית נשארת על ה-JS שבזיכרון: ⛔ כאן הוא כבוי בהחלטת מנהל,
-     *  והעובד החדש ממתין עד שנלחץ הבאנר — ⚠️ כלומר `controllerchange`
-     *  אינו יורה על עדכון שלא התבקש, ⭐ וענף כזה היה קוד שלא רץ. */
-    if (!updateRequested || reloading) return;
+    if (reloading || !hadController) return;
+    if (!userAccepted && touched) { showUpdate(null); return; }
     reloading = true;
     location.reload();
   });
@@ -6122,8 +6132,6 @@ function registerSW() {
     //    כמו בשלוש האחיות. ⚠️ **בלעדיה לשונית שנשארת פתוחה אינה לומדת
     //    לעולם שיצאה גרסה חדשה**, מפני שהדפדפן בודק את `sw.js` בניווט
     //    בלבד — והבאנר שקיים כאן פשוט לא היה מוצג.
-    // ⛔ אין בכך שינוי להכרעה של gius שאין `skipWaiting` (סבב 27): הבדיקה
-    //    רק **מגלה** גרסה חדשה ומציגה את הבאנר; המשתמש עדיין מחליט מתי.
     function checkForUpdate() {
       try { reg.update().catch(function () {}); } catch (e) {}
     }
