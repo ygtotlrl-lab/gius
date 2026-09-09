@@ -36,6 +36,10 @@ const APP = {
   keys: ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config', 'g_users'],
   prefixes: [''],
   legacyKeys: [],
+  /*  ⛔ מפתחות גיבוי של אחות שרשימת-ההיתר המשותפת חייבת להכיל — ⚠️ **מה
+   *  נכנס**: שם מפתח שנכתב מריפו אחר. ⛔ **ומה מפיל**: מפתח כזה שאינו
+   *  ברשימה במסד. ⭐ **ולמה היא קיימת**: הרשימה אחת לכל הפרויקט —
+   *  ⛔ **וכאן אין מפתח של אחות**, ⚠️ וההצהרה ריקה ואינה נשמטת. */
   sisterKeys: [],
   migration: 'migrations/005_backup_retention_cron.sql',
   migrationDoc: 'gius/migrations/005_backup_retention_cron.sql',
