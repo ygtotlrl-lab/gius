@@ -728,7 +728,9 @@ function _gVerify(tbl) {
   return function () {
     if (!sb) return Promise.resolve({ ok: false, rows: [] });
     var m = tableMeta(tbl);
-    return _ysRowsPaged(function () { return sb.from(tbl).select('*'); }, m.key, null)
+    return _ysRowsPaged(function () {
+      return sb.from(tbl).select('*');
+    }, m.key, null)
       .then(function (rows) {
         return Array.isArray(rows) ? { ok: true, rows: rows } : { ok: false, rows: [] };
       }, function () { return { ok: false, rows: [] }; });
@@ -3959,7 +3961,9 @@ function syncPull() {
      *  ⭐ וביום ש-`db-max-rows` יוגדר היא הייתה נחתכת **בשקט**.
      *  ⛔ והסדר הוא `m.key` ⛔ ולא `m.order` — ⚠️ `m.order` הוא סדר
      *  **תצוגה** שעשוי להיות ריק, ⭐ והעימוד דורש מפתח יציב וייחודי. */
-    return _ysRowsPaged(function () { return sb.from(m.t).select('*'); }, m.key, null)
+    return _ysRowsPaged(function () {
+      return sb.from(m.t).select('*');
+    }, m.key, null)
       .then(function (rows) { return { m: m, res: rows ? { data: rows, error: null }
                                                        : { data: null, error: { message: 'rows:' + m.t } } }; },
             function (e) { return { m: m, res: { error: e } }; });
