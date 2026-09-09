@@ -6092,12 +6092,22 @@ function registerSW() {
     // רגע היה שומט את הדף מתחת למבקר ראשון, באמצע טופס.
     // ⛔ רק עדכון שהמשתמש ביקש במפורש רשאי לרענן (נרשם בסבב 67) —
     // רענון שלא נתבקש שומט את הדף מתחת למי שממלא טופס.
+    /*  ⛔ ואין כאן רענון של דף שאיש לא נגע בו, כמו בשלוש האחיות —
+     *  ⚠️ שם `skipWaiting` דלוק והעובד החדש משתלט מעצמו, ⭐ ובלי רענון
+     *  הלשונית נשארת על ה-JS שבזיכרון: ⛔ כאן הוא כבוי בהחלטת מנהל,
+     *  והעובד החדש ממתין עד שנלחץ הבאנר — ⚠️ כלומר `controllerchange`
+     *  אינו יורה על עדכון שלא התבקש, ⭐ וענף כזה היה קוד שלא רץ. */
     if (!updateRequested || reloading) return;
     reloading = true;
     location.reload();
   });
 
-  navigator.serviceWorker.register('sw.js').then(function (reg) {
+  /*  ⛔ `updateViaCache: 'none'` — ⚠️ ברירת המחדל `'imports'` מתירה
+   *  לדפדפן לענות ל-`reg.update()` מתוך מטמון ה-HTTP: ⭐ GitHub Pages
+   *  מגיש את `sw.js` עם `max-age`, ⛔ והבדיקה משווה את הקובץ מול עותק
+   *  ישן של עצמו ⛔ ומסיקה «לא השתנה» — ⚠️ כלומר מנגנון הזיהוי היחיד
+   *  שיש נשאל ומשיב על נתון שאינו הפריסה. */
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
     console.log('[sw] registered:', reg.scope);
     if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
     reg.addEventListener('updatefound', function () {
