@@ -481,7 +481,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 <!-- generic sheet / modal -->
 <div class="veil" id="modal">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="sheet ksave" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="sheet-hd">
       <h3 id="modal-title"></h3>
       <button class="x" data-act="modal-close" aria-label="סגירה">✕</button>
@@ -3695,9 +3695,14 @@ function sortRows(t, arr) {
 /*  ⛔ `value` הוא **טקסט** בטבלה ⛔ ואינו `jsonb` — ⚠️ הלקוח ממיר אותו
  *  בעצמו: ⭐ ממיר בצד השרת הוא מנתח שני לאותו ערך, ⛔ ושני מנתחים
  *  נסחפים זה מזה בשקט. ⚠️ וערך פגום נקרא כשורה חסרה ⛔ ולא מפיל מסך. */
+var BAD_VALUE = 'ערך פגום בענן';
 function gCfgParse(v) {
   if (Array.isArray(v)) return v;
-  try { var p = JSON.parse(v); return Array.isArray(p) ? p : null; } catch (e) { return null; }
+  if (v == null || v === '') return null;
+  /*  ⛔ «אין ערך» ו«ערך פגום» אינן אותה תשובה — ⚠️ שתיהן חזרו `null`,
+   *  ⭐ והרשימה נראתה ריקה: ⛔ ומי שראה אותה חיפש הגדרה שלא נמחקה. */
+  try { var p = JSON.parse(v); return Array.isArray(p) ? p : null; }
+  catch (pe) { console.error('[sync] ' + BAD_VALUE + ':', pe); return null; }
 }
 function configFromMirror() {
   var cfg = { categories: [], causes: [], domains: [] }, seen = {};
@@ -4292,6 +4297,35 @@ function uniqHas(list, val, keyFn) {
   return list.some(function (v) { return uniqKeyOf(v, keyFn) === k; });
 }
 /* ═══════════════ סוף מודול כיווץ רשימת ערכים ═══════════════════════════ */
+/* ═══ Enter שומר בשדה עריכה — מודול משותף (סבב 125) ═════════════════════
+   ⛔ שדה שנשמר בכפתור נשמר גם ב-`Enter` — ⚠️ **וההיקף הוא הטופס** (`.ksave`)
+      ⛔ ולא השדה: ⭐ שדה שנוסף לטופס קיים מקבל את המקש בלי שאיש ייגע בו,
+      ⚠️ ומטפל פר-שדה נשכח בשדה הבא שנוסף.
+   ⛔ והכפתור מסומן — ⚠️ `data-ksave` לשמירה ו-`data-kesc` לביטול: ⭐ בטופס
+      יושב יותר מכפתור אחד, ⛔ ובחירה לפי סדר הייתה מפעילה את הראשון.
+   ⛔ והניתוב הוא **מפת הפעולות** — ⚠️ הכפתור נמצא בתוך ההיקף והפעולה שלו
+      מופעלת: ⭐ מסלול שמירה שני מתיישן ברגע שהראשון משתנה.
+   ⛔ ו-`textarea` אינו נכנס — ⚠️ `Enter` בו הוא שורה חדשה.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה. */
+function ksFire(scope, attr) {
+  var b = scope.querySelector('[' + attr + ']');
+  if (!b || b.disabled) return false;
+  var act = b.getAttribute('data-act');
+  var fn = DOM_ACTIONS[act];
+  if (!fn) { console.error('[ks] כפתור ' + attr + ' בלי פעולה במפה: ' + act); return false; }
+  fn(b);
+  return true;
+}
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter' && e.key !== 'Escape') return;
+  var t = e.target;
+  if (!t || t.tagName !== 'INPUT' || !t.closest) return;
+  var scope = t.closest('.ksave');
+  if (!scope) return;
+  if (ksFire(scope, e.key === 'Enter' ? 'data-ksave' : 'data-kesc')) e.preventDefault();
+});
+/* ═══════════════ סוף מודול Enter שומר בשדה עריכה ════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
@@ -5153,9 +5187,9 @@ function viewSettings() {
         '<button class="btn ghost xs" data-act="cfg-edit" data-key="' + c.key + '" data-i="' + i + '">עריכה</button>' +
         '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
     });
-    h += '<div class="addrow">' +
+    h += '<div class="addrow ksave">' +
       '<input aria-label="ערך חדש" class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
-      '<button class="btn sm" data-act="cfg-add" data-key="' + c.key + '">הוספה</button></div>' +
+      '<button class="btn sm" data-act="cfg-add" data-ksave data-key="' + c.key + '">הוספה</button></div>' +
       '</div>';
   });
   h += '</div></section>';
@@ -5198,7 +5232,7 @@ function viewSettings() {
    ══════════════════════════════════════════════════════════════════════════ */
 function pickerHTML(id, donorId) {
   var d = donorId ? donorById(donorId) : null;
-  return '<div class="picker" id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
+  return '<div class="picker ksave" id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
     '<div class="dp-chosen' + (d ? '' : ' hidden') + '">' +
       '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
       '<button type="button" class="dp-clear" aria-label="ניקוי">✕</button>' +
@@ -5337,7 +5371,7 @@ function formTxn(existing, presetDonor) {
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t.client_id ? '<button class="btn danger" data-act="txn-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="txn-save" data-id="' + (t.client_id || '') + '">שמירה</button>';
+    '<button class="btn" data-act="txn-save" data-ksave data-id="' + (t.client_id || '') + '">שמירה</button>';
 
   openModal(t.client_id ? 'עריכת תנועה' : '💰 תנועה חדשה', body, foot);
   wirePicker('txn-donor', function (d) {
@@ -5385,7 +5419,7 @@ function formPledge(existing, presetDonor) {
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p.client_id ? '<button class="btn danger" data-act="pledge-del" data-id="' + p.client_id + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="pledge-save" data-id="' + (p.client_id || '') + '">שמירה</button>';
+    '<button class="btn" data-act="pledge-save" data-ksave data-id="' + (p.client_id || '') + '">שמירה</button>';
 
   openModal(p.client_id ? 'עריכת התחייבות' : '🤝 התחייבות חדשה', body, foot);
   wirePicker('pl-donor');
@@ -5429,7 +5463,7 @@ function formTask(existing) {
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t.client_id ? '<button class="btn danger" data-act="task-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="task-save" data-id="' + (t.client_id || '') + '">שמירה</button>';
+    '<button class="btn" data-act="task-save" data-ksave data-id="' + (t.client_id || '') + '">שמירה</button>';
 
   openModal(t.client_id ? 'עריכת משימה' : '📋 משימה חדשה', body, foot);
   var titleEl = $('#tk-title');
@@ -5478,7 +5512,7 @@ function formDonor(existing) {
     datalistHTML('dl-agents', agentPool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="donor-save" data-id="' + (d.client_id || '') + '">שמירה</button>';
+    '<button class="btn" data-act="donor-save" data-ksave data-id="' + (d.client_id || '') + '">שמירה</button>';
   openModal(d.client_id ? 'עריכת תורם' : '🙋 תורם חדש', body, foot);
   var n = $('#dn-name'); if (n && !d.client_id) n.focus();
 }
@@ -5521,7 +5555,7 @@ function formUser(existing) {
         (u.client_id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
     '</div>';
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="user-save" data-id="' + (u.client_id || '') + '">שמירה</button>';
+    '<button class="btn" data-act="user-save" data-ksave data-id="' + (u.client_id || '') + '">שמירה</button>';
   openModal(u.client_id ? 'עריכת משתמש' : '👤 משתמש חדש', body, foot);
 }
 
@@ -5559,7 +5593,7 @@ function formPassword(u) {
   openModal('שינוי סיסמה — ' + u.full_name,
     '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="pass-save" data-id="' + u.client_id + '">שמירה</button>');
+    '<button class="btn" data-act="pass-save" data-ksave data-id="' + u.client_id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
 }
 
@@ -5575,7 +5609,7 @@ function formMyPassword() {
     '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
     '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="my-pass-save">שמירה</button>');
+    '<button class="btn" data-act="my-pass-save" data-ksave>שמירה</button>');
   var el = $('#mp-cur'); if (el) el.focus();
 }
 
@@ -5604,7 +5638,7 @@ function formSwitchUser() {
     '</select></label>' +
     '<label class="fld"><span>סיסמה *</span><input class="inp" id="sw-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="switch-confirm">כניסה</button>');
+    '<button class="btn" data-act="switch-confirm" data-ksave>כניסה</button>');
   var el = $('#sw-pass'); if (el) el.focus();
 }
 
@@ -5618,7 +5652,7 @@ function formTarget(month) {
       '<label class="fld"><span>סכום יעד *</span><input class="inp" id="tg-amount" inputmode="decimal" value="' + (cur || '') + '"></label>' +
     '</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="target-save">שמירה</button>');
+    '<button class="btn" data-act="target-save" data-ksave>שמירה</button>');
 }
 
 function saveTarget() {
@@ -5884,7 +5918,7 @@ var ACTIONS = {
       '<label class="fld"><span>ערך</span><input class="inp" id="cfg-v" value="' + esc(list[i] || '') + '"></label>' +
       '<div style="color:var(--muted);font-size:12.5px">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
       '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-      '<button class="btn" data-act="cfg-edit-save" data-key="' + key + '" data-i="' + i + '">שמירה</button>');
+      '<button class="btn" data-act="cfg-edit-save" data-ksave data-key="' + key + '" data-i="' + i + '">שמירה</button>');
   },
   'cfg-edit-save': function (el) {
     var key = el.dataset.key, i = +el.dataset.i;
