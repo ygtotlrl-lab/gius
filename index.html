@@ -2658,7 +2658,7 @@ var PL_CFG = {
     return withTimeout(sb.from('g_config').select('value').eq('key', G_STAMP_KEY).maybeSingle())
       .then(function (r) {
         if (!r || r.error) return { ok: false, ts: null };
-        return { ok: true, ts: r.data ? plNum(JSON.parse(r.data.value)) : null };
+        return { ok: true, ts: r.data ? plNum(kvParse(G_STAMP_KEY, r.data.value).value) : null };
       }, function () { return { ok: false, ts: null }; });
   },
 };
@@ -3695,19 +3695,15 @@ function sortRows(t, arr) {
 /*  ⛔ `value` הוא **טקסט** בטבלה ⛔ ואינו `jsonb` — ⚠️ הלקוח ממיר אותו
  *  בעצמו: ⭐ ממיר בצד השרת הוא מנתח שני לאותו ערך, ⛔ ושני מנתחים
  *  נסחפים זה מזה בשקט. ⚠️ וערך פגום נקרא כשורה חסרה ⛔ ולא מפיל מסך. */
-var BAD_VALUE = 'ערך פגום בענן';
-function gCfgParse(v) {
+function gCfgParse(key, v) {
   if (Array.isArray(v)) return v;
-  if (v == null || v === '') return null;
-  /*  ⛔ «אין ערך» ו«ערך פגום» אינן אותה תשובה — ⚠️ שתיהן חזרו `null`,
-   *  ⭐ והרשימה נראתה ריקה: ⛔ ומי שראה אותה חיפש הגדרה שלא נמחקה. */
-  try { var p = JSON.parse(v); return Array.isArray(p) ? p : null; }
-  catch (pe) { console.error('[sync] ' + BAD_VALUE + ':', pe); return null; }
+  var pr = kvParse(key, v);
+  return Array.isArray(pr.value) ? pr.value : null;
 }
 function configFromMirror() {
   var cfg = { categories: [], causes: [], domains: [] }, seen = {};
   (MIRROR.g_config || []).forEach(function (row) {
-    var list = gCfgParse(row.value);
+    var list = gCfgParse(row.key, row.value);
     if (!list) return;
     cfg[row.key] = list.slice();
     seen[row.key] = true;
@@ -4327,6 +4323,30 @@ document.addEventListener('keydown', function (e) {
 });
 /* ═══════════════ סוף מודול Enter שומר בשדה עריכה ════════════════════════ */
 
+/* ═══ ערך מפתח-ערך — מודול משותף (סבב 126) ══════════════════════════════
+   ⛔ «אין ערך» ו«ערך פגום» אינן אותה תשובה — ⚠️ שתיהן חזרו «נכשל», ⭐ והמשתמש
+      חיפש רשת שלא נפלה.
+   ⛔ ולכן `null` הוא ערך שאינו קיים ⛔ ואינו כשל, ⚠️ וערך שאינו JSON הוא כשל
+      שנוקב בשם המפתח.
+   ⛔ והנוסח אחד בארבעתן — ⚠️ הודעה שנבדלת בין האפליקציות היא ארבעה חיפושים
+      לאותה תקלה.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה. */
+var KV_BAD = 'ערך פגום בענן';
+function kvParse(key, raw) {
+  if (raw === null || raw === undefined || raw === '') return { ok: true, value: null, bad: false };
+  try { return { ok: true, value: JSON.parse(raw), bad: false }; }
+  catch (e) {
+    /*  ⛔ ההודעה יוצאת מכאן ⛔ ולא מאתר הקריאה — ⚠️ כשל שאינו אומר מה קרה
+     *  שקול לכשל שקט, ⭐ ונקודת יציאה אחת היא מה שמשאיר את הנוסח אחד. */
+    console.error('[sync] ' + KV_BAD + ' [' + key + ']:', e);
+    toast('⚠️ ' + kvBadLabel(key), null, 'bad');
+    return { ok: false, value: null, bad: true };
+  }
+}
+function kvBadLabel(name) { return name + ' (' + KV_BAD + ')'; }
+/* ═══════════════ סוף מודול ערך מפתח-ערך ═════════════════════════════════ */
+
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
 function selectHTML(name, options, value, placeholder) {
@@ -4500,22 +4520,18 @@ function markSVG(cls) {
 
 function renderLogin() {
   $('#app').innerHTML =
-    '<div class="auth"><form class="auth-card" id="login-form">' +
+    '<div class="auth"><div class="auth-card ksave">' +
       markSVG('mark') +
       '<h1>גיוס</h1>' +
       '<div class="sub">ניהול גיוס כספים</div>' +
       '<label class="fld"><span>שם משתמש</span>' +
-        '<input class="inp" id="lg-user" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>' +
+        '<input class="inp" id="lg-user" autocomplete="username" autocapitalize="off" spellcheck="false"></label>' +
       '<label class="fld"><span>סיסמה</span>' +
-        '<input class="inp" id="lg-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required></label>' +
-      '<button class="btn block" type="submit" id="lg-btn">כניסה</button>' +
+        '<input class="inp" id="lg-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>' +
+      '<button class="btn block" data-act="login" data-ksave id="lg-btn">כניסה</button>' +
       '<div class="auth-err" id="lg-err"></div>' +
-    '</form></div>';
+    '</div></div>';
 
-  $('#login-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    doLogin();
-  });
   var u = $('#lg-user');
   if (u) u.focus();
 }
@@ -5235,7 +5251,7 @@ function pickerHTML(id, donorId) {
   return '<div class="picker ksave" id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
     '<div class="dp-chosen' + (d ? '' : ' hidden') + '">' +
       '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
-      '<button type="button" class="dp-clear" aria-label="ניקוי">✕</button>' +
+      '<button type="button" data-act="dp-clear" aria-label="ניקוי">✕</button>' +
     '</div>' +
     '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
     '<div class="dp-results hidden"></div>' +
@@ -5245,83 +5261,84 @@ function pickerHTML(id, donorId) {
         '<label class="fld"><span>שם התורם</span><input class="inp dp-n-name"></label>' +
         '<label class="fld"><span>טלפון</span><input class="inp dp-n-phone" inputmode="tel"></label>' +
       '</div>' +
-      '<div class="btnrow"><button type="button" class="btn sm dp-n-save">שמירה ובחירה</button>' +
-      '<button type="button" class="btn ghost sm dp-n-cancel">ביטול</button></div>' +
+      '<div class="btnrow"><button type="button" class="btn sm" data-act="dp-n-save" data-ksave>שמירה ובחירה</button>' +
+      '<button type="button" class="btn ghost sm" data-act="dp-n-cancel" data-kesc>ביטול</button></div>' +
     '</div>' +
   '</div>';
 }
 
 function pickerValue(id) { var el = $('#' + id); return el ? el.dataset.value : ''; }
 
-function wirePicker(id, onChange) {
-  var root = $('#' + id);
-  if (!root) return;
-  var q = $('.dp-q', root), res = $('.dp-results', root), box = $('.dp-new', root);
-  var chosen = $('.dp-chosen', root);
+/*  ⛔ הרשימה מתרוקנת בכל מעבר מצב ⛔ ולא רק מוסתרת — ⚠️ הסימון `data-ksave`
+ *  יושב על הכפתור הראשון שבה, ⭐ וכפתור שנשאר בעץ מוסתר היה נבחר במקש
+ *  במקום כפתור השמירה של תורם חדש. */
+function pickerClear(root) {
+  var res = $('.dp-results', root);
+  res.innerHTML = '';
+  res.classList.add('hidden');
+}
 
-  function setDonor(d) {
-    root.dataset.value = d ? d.client_id : '';
-    $('.dp-name', chosen).textContent = d ? d.name : '';
-    chosen.classList.toggle('hidden', !d);
-    q.classList.toggle('hidden', !!d);
-    res.classList.add('hidden');
-    box.classList.add('hidden');
-    if (!d) { q.value = ''; q.focus(); }
-    if (onChange) onChange(d);
+/*  ⛔ שדה `#txn-pledge` תלוי בתורם שנבחר — ⚠️ והתלות יושבת כאן, במקום אחד,
+ *  ⭐ ולא בסגור שנמסר לרכיב בכל פתיחת מודאל: סגור פר-פתיחה הוא מסלול שני
+ *  שמתיישן ברגע שהרכיב משתנה. */
+function pickerSet(root, d) {
+  var chosen = $('.dp-chosen', root), q = $('.dp-q', root);
+  root.dataset.value = d ? d.client_id : '';
+  $('.dp-name', chosen).textContent = d ? d.name : '';
+  chosen.classList.toggle('hidden', !d);
+  q.classList.toggle('hidden', !!d);
+  pickerClear(root);
+  $('.dp-new', root).classList.add('hidden');
+  if (!d) { q.value = ''; q.focus(); }
+  if (root.id === 'txn-donor') {
+    var sel = $('#txn-pledge');
+    if (sel) sel.innerHTML = pledgeOptionsFor(d ? d.client_id : '');
   }
+}
 
-  function paint() {
-    var term = q.value.trim();
-    var list = donorMatches(term).slice(0, 30);
-    var h = '';
-    list.forEach(function (d) {
-      h += '<button type="button" data-id="' + d.client_id + '">' + esc(d.name) +
-        '<small>' + esc(d.phone || 'ללא טלפון') + '</small></button>';
-    });
-    h += '<button type="button" class="mk" data-new="1">＋ צור תורם חדש' +
-      (term ? ' — "' + esc(term) + '"' : '') + '</button>';
-    res.innerHTML = h;
-    res.classList.remove('hidden');
-  }
-
-  q.addEventListener('focus', paint);
-  q.addEventListener('input', paint);
-
-  res.addEventListener('click', function (e) {
-    var b = e.target.closest('button');
-    if (!b) return;
-    if (b.dataset.new) {
-      res.classList.add('hidden');
-      box.classList.remove('hidden');
-      $('.dp-n-name', box).value = q.value.trim();
-      $('.dp-n-name', box).focus();
-      return;
-    }
-    setDonor(donorById(b.dataset.id));
+/*  ⛔ ההתאמה הראשונה נושאת את `data-ksave` — ⚠️ ובלי התאמות הוא עובר
+ *  לכפתור «צור תורם חדש»: ⭐ המקש עושה בשורת החיפוש בדיוק את מה שהעין
+ *  רואה ראשון. */
+function pickerPaint(root) {
+  var q = $('.dp-q', root), res = $('.dp-results', root);
+  var term = q.value.trim();
+  var list = donorMatches(term).slice(0, 30);
+  var h = '';
+  list.forEach(function (d, i) {
+    h += '<button type="button" data-act="dp-pick"' + (i ? '' : ' data-ksave') +
+      ' data-id="' + d.client_id + '">' + esc(d.name) +
+      '<small>' + esc(d.phone || 'ללא טלפון') + '</small></button>';
   });
+  h += '<button type="button" class="mk" data-act="dp-new"' + (list.length ? '' : ' data-ksave') +
+    '>＋ צור תורם חדש' + (term ? ' — "' + esc(term) + '"' : '') + '</button>';
+  res.innerHTML = h;
+  res.classList.remove('hidden');
+}
 
-  $('.dp-clear', chosen).addEventListener('click', function () { setDonor(null); });
-  $('.dp-n-cancel', box).addEventListener('click', function () {
-    box.classList.add('hidden');
-    q.focus();
-  });
-  $('.dp-n-save', box).addEventListener('click', function () {
-    var btn = this;
-    var name = $('.dp-n-name', box).value.trim();
-    var phone = $('.dp-n-phone', box).value.trim();
-    if (!name) { toast('נא למלא שם תורם', null, 'bad'); return; }
-    busy(btn, true);
-    insert('g_donors', { name: name, phone: phone || null })
-      .then(function (d) {
-        state.donors.push(d);
-        busy(btn, false);
-        $('.dp-n-name', box).value = '';
-        $('.dp-n-phone', box).value = '';
-        setDonor(d);
-        toast('התורם נוצר', null, 'good');
-      })
-      .catch(function (e) { busy(btn, false); errToast(e); });
-  });
+function pickerNew(root) {
+  var box = $('.dp-new', root);
+  pickerClear(root);
+  box.classList.remove('hidden');
+  $('.dp-n-name', box).value = $('.dp-q', root).value.trim();
+  $('.dp-n-name', box).focus();
+}
+
+function pickerSave(root, btn) {
+  var box = $('.dp-new', root);
+  var name = $('.dp-n-name', box).value.trim();
+  var phone = $('.dp-n-phone', box).value.trim();
+  if (!name) { toast('נא למלא שם תורם', null, 'bad'); return; }
+  busy(btn, true);
+  insert('g_donors', { name: name, phone: phone || null })
+    .then(function (d) {
+      state.donors.push(d);
+      busy(btn, false);
+      $('.dp-n-name', box).value = '';
+      $('.dp-n-phone', box).value = '';
+      pickerSet(root, d);
+      toast('התורם נוצר', null, 'good');
+    })
+    .catch(function (e) { busy(btn, false); errToast(e); });
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -5374,10 +5391,6 @@ function formTxn(existing, presetDonor) {
     '<button class="btn" data-act="txn-save" data-ksave data-id="' + (t.client_id || '') + '">שמירה</button>';
 
   openModal(t.client_id ? 'עריכת תנועה' : '💰 תנועה חדשה', body, foot);
-  wirePicker('txn-donor', function (d) {
-    var sel = $('#txn-pledge');
-    if (sel) sel.innerHTML = pledgeOptionsFor(d ? d.client_id : '');
-  });
   if (t.pledge_client_id) { var sel = $('#txn-pledge'); if (sel) sel.value = t.pledge_client_id; }
 }
 
@@ -5422,7 +5435,6 @@ function formPledge(existing, presetDonor) {
     '<button class="btn" data-act="pledge-save" data-ksave data-id="' + (p.client_id || '') + '">שמירה</button>';
 
   openModal(p.client_id ? 'עריכת התחייבות' : '🤝 התחייבות חדשה', body, foot);
-  wirePicker('pl-donor');
 }
 
 function savePledge(id) {
@@ -5948,6 +5960,13 @@ var ACTIONS = {
   'sync-now-status':   function () { syncNowFromStatus(); },
   'hw-restore':        function (el) { hwRestoreClick(el); },
   'reload':            function () { location.reload(); },
+  'login':             function () { doLogin(); },
+  'dp-pick':           function (el) { pickerSet(el.closest('.picker'), donorById(el.dataset.id)); },
+  'dp-new':            function (el) { pickerNew(el.closest('.picker')); },
+  'dp-clear':          function (el) { pickerSet(el.closest('.picker'), null); },
+  'dp-n-cancel':       function (el) { var r = el.closest('.picker');
+                                       $('.dp-new', r).classList.add('hidden'); $('.dp-q', r).focus(); },
+  'dp-n-save':         function (el) { pickerSave(el.closest('.picker'), el); },
 };
 
 /* ── מאזינים גלובליים ──────────────────────────────────────────────────────
@@ -5980,7 +5999,9 @@ document.addEventListener('input', function (e) {
     if (box) box.innerHTML = donorRowsHTML(donorMatches(state.donorSearch));
     var cnt = $('#view .card > h2 .cnt');
     if (cnt) cnt.textContent = donorMatches(state.donorSearch).length;
+    return;
   }
+  if (el.classList && el.classList.contains('dp-q')) pickerPaint(el.closest('.picker'));
 });
 
 document.addEventListener('change', function (e) {
@@ -5994,6 +6015,13 @@ document.addEventListener('change', function (e) {
     state.pf[map[el.id]] = el.value;
     refreshPledges();
   }
+});
+
+/*  ⛔ שורת החיפוש שבבורר מציירת בהאצלה כמו כל השאר — ⚠️ ו-`focus` אינו
+ *  עולה בעץ, ⭐ ולכן `focusin`: מאזין שנקשר לשדה עצמו היה מת עם המודאל
+ *  שנבנה מחדש. */
+document.addEventListener('focusin', function (e) {
+  if (e.target.classList && e.target.classList.contains('dp-q')) pickerPaint(e.target.closest('.picker'));
 });
 
 document.addEventListener('keydown', function (e) {
