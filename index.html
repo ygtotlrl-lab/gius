@@ -428,6 +428,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   margin-inline-start:auto;background:var(--brand-fill);color:#fff;border:0;
   border-radius:9px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13.5px;flex:none
 }
+#updater button.x{
+  margin-inline-start:0;background:none;color:var(--bg);opacity:.7;padding:0 4px;font-size:15px
+}
 @media (min-width:900px){#updater{bottom:16px}}
 
 /* =================================================================== עלייה */
@@ -508,7 +511,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 <div id="updater">
   <div class="in">
     <span>🔄 גרסה חדשה זמינה</span>
-    <button data-act="updater-check">עדכן עכשיו</button>
+    <button data-act="sw-apply">עדכן עכשיו</button>
+    <button class="x" data-act="sw-dismiss" aria-label="סגור">✕</button>
   </div>
 </div>
 
@@ -865,7 +869,7 @@ function lsAlert(msg) {
     b.setAttribute('aria-label', 'סגור');
     b.style.cssText = 'position:absolute;right:10px;top:9px;background:transparent;border:0;color:#fff;' +
       'font:700 17px/1 sans-serif;cursor:pointer;padding:4px 8px';
-    b.addEventListener('click', function () { el.style.display = 'none'; });
+    b.dataset.act = 'ls-alert-close';
     el.appendChild(sp); el.appendChild(b);
     (document.body || document.documentElement).appendChild(el);
   }
@@ -1568,6 +1572,75 @@ var SYNC_CFG = {
   // כאן הסנכרון גם מרנדר מחדש: מסך ההגדרות של gius נבנה מהמצב שבזיכרון.
   sync: function () { return syncNow().then(function () { render(); }); }
 };
+/* ═══ הרשמת service worker — מודול משותף (סבב 128) ══════════════════════
+   ⛔ מנגנון זיהוי אחד — `reg.update()`: ⚠️ ואין מנגנון שני לאותה שאלה.
+   ⛔ ההשתלטות הראשונה אינה עדכון — ⚠️ בביקור ראשון אין מבקר, ⭐ ו-`claim()`
+      של העובד הראשון יורה `controllerchange` על דף שכבר מריץ את החדש.
+   ⛔ ודף שאיש לא נגע בו נטען מחדש מיד — ⚠️ ואחרי מגע מוצג הבאנר, ⭐ שרענון
+      באמצע עבודה מאבד את מה שהוקלד.
+   ⛔ ו-`updateViaCache: 'none'` — ⚠️ ברירת המחדל מתירה לדפדפן לענות מתוך
+      מטמון ה-HTTP, ⛔ כלומר להשוות את `sw.js` מול עותק ישן של עצמו.
+   ⛔ והכפתורים במפת הפעולות — ⚠️ המיכל `#updater` יושב במקור, ⭐ ואין כאן
+      מאזין ישיר שאיש אינו רואה.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
+      החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה. */
+var _swReg = null, _swAccepted = false, _swReloaded = false;
+function swBanner() { return document.getElementById('updater'); }
+function swShowUpdate() {
+  var el = swBanner();
+  if (!el) { console.error('[sw] אין מיכל לבאנר העדכון — #updater'); return; }
+  el.classList.add('show');
+}
+window.showAppUpdateBanner = swShowUpdate;
+function swHideUpdate() { var el = swBanner(); if (el) el.classList.remove('show'); }
+function swReload() {
+  if (_swReloaded) return;
+  _swReloaded = true;
+  location.reload();
+}
+function swApply(btn) {
+  _swAccepted = true;
+  if (btn) { btn.disabled = true; btn.textContent = 'מעדכן…'; }
+  if (_swReg && _swReg.waiting) {
+    _swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    setTimeout(swReload, 1500);
+    return;
+  }
+  swReload();
+}
+function swRegister() {
+  if (!('serviceWorker' in navigator)) return;
+  /*  ⛔ המשתמש נגע בדף — ⚠️ **מה נכנס**: המגע הראשון בלבד, ⭐ **ומה הוא
+   *  מפיל**: את הרענון האוטומטי שבהשתלטות. */
+  var touched = false;
+  ['pointerdown', 'keydown'].forEach(function (ev) {
+    window.addEventListener(ev, function () { touched = true; }, { once: true, capture: true });
+  });
+  var hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (_swReloaded || !hadController) return;
+    if (!_swAccepted && touched) { swShowUpdate(); return; }
+    _swReloaded = true;
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+    console.log('[sw] registered:', reg.scope);
+    _swReg = reg;
+    if (reg.waiting && navigator.serviceWorker.controller) swShowUpdate();
+    reg.addEventListener('updatefound', function () {
+      var nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', function () {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) swShowUpdate();
+      });
+    });
+    function checkForUpdate() { try { reg.update().catch(function () {}); } catch (e) {} }
+    checkForUpdate();
+    setInterval(checkForUpdate, 30 * 60 * 1000);
+  }).catch(function (err) { console.warn('[sw] registration failed:', err); });
+}
+window.addEventListener('load', swRegister);
+/* ═══════════════ סוף מודול הרשמת service worker ═════════════════════════ */
 /* ═══ אזור מצב — בלוק "☁️ סנכרון" — מודול משותף (סבב 17) ══════════════════
    ⛔ שינוי כאן (סבב 65) — ארבע האפליקציות **וארבעת עותקי השער**, באותו
       סבב: אחרת החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
@@ -2268,7 +2341,7 @@ function pendRenderAlert() {
   var btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = 'הבנתי';
-  btn.onclick = function () { _pendAlertDismissed = Date.now(); pendRenderAlert(); };
+  btn.dataset.act = 'pend-alert-ok';
   el.appendChild(span);
   el.appendChild(btn);
   document.body.appendChild(el);
@@ -2494,7 +2567,7 @@ function _lkWarnEl() {
   var btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = 'אני כאן ✋';
-  btn.onclick = function () { lkReset(); };
+  btn.dataset.act = 'lk-stay';
   box.appendChild(ico); box.appendChild(ttl); box.appendChild(txt); box.appendChild(btn);
   el.appendChild(box);
   document.body.appendChild(el);
@@ -5720,6 +5793,13 @@ function findTask(id) {
 }
 
 var ACTIONS = {
+  'sw-apply':            function (el) { swApply(el); },
+  'sw-dismiss':          function () { swHideUpdate(); },
+  /*  ⛔ שלוש התראות התשתית מנותבות במפה — ⚠️ הכפתור נבנה ב-JS,
+   *  ⭐ והמאזין הישיר שעליו היה בדיוק ההיקף שיצא מהמנגנון. */
+  'ls-alert-close':      function () { var el = document.getElementById('ls-alert'); if (el) el.style.display = 'none'; },
+  'pend-alert-ok':       function () { _pendAlertDismissed = Date.now(); pendRenderAlert(); },
+  'lk-stay':             function () { lkReset(); },
   'tab': function (el) { go(el.dataset.tab); },
   'switch-user': function () { formSwitchUser(); },
   'switch-confirm': function (el) {
@@ -5961,7 +6041,6 @@ var ACTIONS = {
   'hw-restore':        function (el) { hwRestoreClick(el); },
   'reload':            function () { location.reload(); },
   'login':             function () { doLogin(); },
-  'updater-check':     function (el) { swApplyUpdate(el); },
   'dp-pick':           function (el) { pickerSet(el.closest('.picker'), donorById(el.dataset.id)); },
   'dp-new':            function (el) { pickerNew(el.closest('.picker')); },
   'dp-clear':          function (el) { pickerSet(el.closest('.picker'), null); },
@@ -6120,91 +6199,6 @@ function start() {
   renderLogin();
 }
 
-/* ── service worker + באנר העדכון ────────────────────────────────────────── */
-/*  ⛔ המצב יושב ברמת המודול ⛔ ולא בסגור של `registerSW` — ⚠️ הכפתור עובר
- *  במפת הפעולות כמו כל כפתור אחר, ⭐ והמפה נבנית פעם אחת בטעינה: ⛔ סגור
- *  היה מחייב מאזין משלו, ⚠️ וזה בדיוק המסלול השני שהמפה קיימת כדי למנוע. */
-var _swWaiting = null, _swAccepted = false;
-function swApplyUpdate(btn) {
-  _swAccepted = true;
-  if (!_swWaiting) { location.reload(); return; }
-  btn.disabled = true;
-  btn.textContent = 'מעדכן…';
-  _swWaiting.postMessage({ type: 'SKIP_WAITING' });
-}
-
-function registerSW() {
-  if (!('serviceWorker' in navigator)) return;
-  var updater = $('#updater');
-
-  /*  ⛔ המשתמש נגע בדף — ⚠️ **מה נכנס**: המגע הראשון בלבד, ⭐ **ומה הוא
-   *  מפיל**: את הרענון האוטומטי שבהשתלטות. ⛔ **ולמה הוא קיים**: רענון
-   *  באמצע הקלדה מאבד את מה שהוקלד, ⚠️ ורענון על דף שאיש לא נגע בו
-   *  אינו מאבד דבר. */
-  var touched = false;
-  function markTouched() { touched = true; }
-  ['pointerdown', 'keydown'].forEach(function (ev) {
-    window.addEventListener(ev, markTouched, { once: true, capture: true });
-  });
-
-  /*  ⛔ ההשתלטות הראשונה אינה עדכון — ⚠️ בביקור ראשון אין מבקר,
-   *  ⭐ וה-`clients.claim()` של העובד הראשון יורה `controllerchange`
-   *  על דף שכבר מריץ את הקוד החדש: ⛔ רענון שם הוא טעינה שנייה
-   *  שאינה משנה דבר. */
-  var hadController = !!navigator.serviceWorker.controller;
-
-  /*  ⛔ שם אחד שמתפרסם החוצה — ⚠️ המימוש פרטי, ⭐ והקורא היחיד
-   *  מבחוץ הוא זיהוי הקוד המיושן. */
-  window.showAppUpdateBanner = function () { showUpdate(null); };
-  function showUpdate(sw) {
-    _swWaiting = sw;
-    updater.classList.add('show');
-  }
-
-  /*  ⛔ ההשתלטות אינה שלמה בלי הרענון — ⚠️ **הנימוק המדוד**: `skipWaiting`
-   *  ו-`clients.claim()` שניהם רצים, ⭐ וה-service worker אכן מתחלף
-   *  ומכניס `index.html` חדש למטמון — ⛔ אבל הלשונית ממשיכה להריץ את
-   *  ה-JS **שכבר בזיכרון**: ⚠️ המכשיר קיבל את הקוד החדש והמשיך להריץ
-   *  את הישן, ⭐ עד שמישהו יילחץ על הבאנר. ⛔ **ודף שאיש לא נגע בו
-   *  נטען מחדש מיד** — ⚠️ ואחרי מגע חוזרים לבאנר, ⭐ שרענון באמצע
-   *  עבודה מאבד אותה. */
-  var reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () {
-    if (reloading || !hadController) return;
-    if (!_swAccepted && touched) { showUpdate(null); return; }
-    reloading = true;
-    location.reload();
-  });
-
-  /*  ⛔ `updateViaCache: 'none'` — ⚠️ ברירת המחדל `'imports'` מתירה
-   *  לדפדפן לענות ל-`reg.update()` מתוך מטמון ה-HTTP: ⭐ GitHub Pages
-   *  מגיש את `sw.js` עם `max-age`, ⛔ והבדיקה משווה את הקובץ מול עותק
-   *  ישן של עצמו ⛔ ומסיקה «לא השתנה» — ⚠️ כלומר מנגנון הזיהוי היחיד
-   *  שיש נשאל ומשיב על נתון שאינו הפריסה. */
-  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
-    console.log('[sw] registered:', reg.scope);
-    if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
-    reg.addEventListener('updatefound', function () {
-      var nw = reg.installing;
-      if (!nw) return;
-      nw.addEventListener('statechange', function () {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdate(nw);
-      });
-    });
-
-    // ⭐ בדיקת עדכון תקופתית (סבב 53) — `reg.update()` כל חצי שעה, בדיוק
-    //    כמו בשלוש האחיות. ⚠️ **בלעדיה לשונית שנשארת פתוחה אינה לומדת
-    //    לעולם שיצאה גרסה חדשה**, מפני שהדפדפן בודק את `sw.js` בניווט
-    //    בלבד — והבאנר שקיים כאן פשוט לא היה מוצג.
-    function checkForUpdate() {
-      try { reg.update().catch(function () {}); } catch (e) {}
-    }
-    checkForUpdate();
-    setInterval(checkForUpdate, 30 * 60 * 1000);
-  }).catch(function (err) { console.warn('[sw] registration failed:', err); });
-}
-
-window.addEventListener('load', registerSW);
 start();
 
 })();
