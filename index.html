@@ -425,7 +425,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   font-size:14px;font-weight:650;max-width:520px;width:100%
 }
 #updater button{
-  margin-inline-start:auto;background:var(--brand-fill);color:#fff;border:0;
+  margin-inline-start:auto;background:var(--bg);color:var(--ink);border:0;
   border-radius:9px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13.5px;flex:none
 }
 #updater button.x{
@@ -1584,7 +1584,11 @@ var SYNC_CFG = {
       מאזין ישיר שאיש אינו רואה.
    ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב: ⚠️ אחרת
       החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה. */
-var _swReg = null, _swAccepted = false, _swReloaded = false;
+/*  ⛔ תקרת ההמתנה להשתלטות — ⚠️ **מה נכנס**: המתנה אחת אחרי
+ *  `SKIP_WAITING`, ⛔ **ומה מפיל**: ערך קצר, שיורה לפני ההשתלטות
+ *  ויהפוך לרענון שני. */
+var SW_APPLY_MS = 10000;
+var _swReg = null, _swAccepted = false, _swReloaded = false, _swWait = 0;
 function swBanner() { return document.getElementById('updater'); }
 function swShowUpdate() {
   var el = swBanner();
@@ -1593,20 +1597,21 @@ function swShowUpdate() {
 }
 window.showAppUpdateBanner = swShowUpdate;
 function swHideUpdate() { var el = swBanner(); if (el) el.classList.remove('show'); }
-function swReload() {
-  if (_swReloaded) return;
-  _swReloaded = true;
-  location.reload();
-}
+/*  ⛔ הרענון אינו כאן — ⚠️ הוא ב-`controllerchange` בלבד: ⭐ טיימר שמרענן
+ *  בעצמו יורה לפני שהעובד החדש השתלט, ⛔ ואז `reg.waiting` שורד, הבאנר
+ *  חוזר, והלחיצה הבאה חוזרת עליו. */
 function swApply(btn) {
   _swAccepted = true;
   if (btn) { btn.disabled = true; btn.textContent = 'מעדכן…'; }
-  if (_swReg && _swReg.waiting) {
-    _swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    setTimeout(swReload, 1500);
-    return;
-  }
-  swReload();
+  if (!(_swReg && _swReg.waiting)) { swApplyFail(btn); return; }
+  _swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  _swWait = setTimeout(function () { swApplyFail(btn); }, SW_APPLY_MS);
+}
+function swApplyFail(btn) {
+  _swWait = 0;
+  if (_swReloaded) return;
+  if (btn) { btn.disabled = false; btn.textContent = 'עדכן עכשיו'; }
+  toast('⚠️ העדכון לא הושלם — נסה שוב', 6000, 'bad');
 }
 function swRegister() {
   if (!('serviceWorker' in navigator)) return;
@@ -1618,6 +1623,7 @@ function swRegister() {
   });
   var hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (_swWait) { clearTimeout(_swWait); _swWait = 0; }
     if (_swReloaded || !hadController) return;
     if (!_swAccepted && touched) { swShowUpdate(); return; }
     _swReloaded = true;
