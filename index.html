@@ -508,7 +508,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 <div id="updater">
   <div class="in">
     <span>🔄 גרסה חדשה זמינה</span>
-    <button id="updater-btn">עדכן עכשיו</button>
+    <button data-act="updater-check">עדכן עכשיו</button>
   </div>
 </div>
 
@@ -5961,6 +5961,7 @@ var ACTIONS = {
   'hw-restore':        function (el) { hwRestoreClick(el); },
   'reload':            function () { location.reload(); },
   'login':             function () { doLogin(); },
+  'updater-check':     function (el) { swApplyUpdate(el); },
   'dp-pick':           function (el) { pickerSet(el.closest('.picker'), donorById(el.dataset.id)); },
   'dp-new':            function (el) { pickerNew(el.closest('.picker')); },
   'dp-clear':          function (el) { pickerSet(el.closest('.picker'), null); },
@@ -6120,12 +6121,21 @@ function start() {
 }
 
 /* ── service worker + באנר העדכון ────────────────────────────────────────── */
+/*  ⛔ המצב יושב ברמת המודול ⛔ ולא בסגור של `registerSW` — ⚠️ הכפתור עובר
+ *  במפת הפעולות כמו כל כפתור אחר, ⭐ והמפה נבנית פעם אחת בטעינה: ⛔ סגור
+ *  היה מחייב מאזין משלו, ⚠️ וזה בדיוק המסלול השני שהמפה קיימת כדי למנוע. */
+var _swWaiting = null, _swAccepted = false;
+function swApplyUpdate(btn) {
+  _swAccepted = true;
+  if (!_swWaiting) { location.reload(); return; }
+  btn.disabled = true;
+  btn.textContent = 'מעדכן…';
+  _swWaiting.postMessage({ type: 'SKIP_WAITING' });
+}
+
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   var updater = $('#updater');
-  var btn = $('#updater-btn');
-  var waiting = null;
-  var userAccepted = false;
 
   /*  ⛔ המשתמש נגע בדף — ⚠️ **מה נכנס**: המגע הראשון בלבד, ⭐ **ומה הוא
    *  מפיל**: את הרענון האוטומטי שבהשתלטות. ⛔ **ולמה הוא קיים**: רענון
@@ -6147,17 +6157,9 @@ function registerSW() {
    *  מבחוץ הוא זיהוי הקוד המיושן. */
   window.showAppUpdateBanner = function () { showUpdate(null); };
   function showUpdate(sw) {
-    waiting = sw;
+    _swWaiting = sw;
     updater.classList.add('show');
   }
-
-  btn.addEventListener('click', function () {
-    userAccepted = true;
-    if (!waiting) { location.reload(); return; }
-    btn.disabled = true;
-    btn.textContent = 'מעדכן…';
-    waiting.postMessage({ type: 'SKIP_WAITING' });
-  });
 
   /*  ⛔ ההשתלטות אינה שלמה בלי הרענון — ⚠️ **הנימוק המדוד**: `skipWaiting`
    *  ו-`clients.claim()` שניהם רצים, ⭐ וה-service worker אכן מתחלף
@@ -6169,7 +6171,7 @@ function registerSW() {
   var reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', function () {
     if (reloading || !hadController) return;
-    if (!userAccepted && touched) { showUpdate(null); return; }
+    if (!_swAccepted && touched) { showUpdate(null); return; }
     reloading = true;
     location.reload();
   });
