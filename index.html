@@ -39,6 +39,11 @@
   /*  ⛔ גוון האזהרה של אזור המצב — ⚠️ אסימון אחד בשם אחד בארבעתן,
    *  ⭐ והגוון בלבד נבדל: ⛔ כלל משותף אינו יכול לנקוב בשם פרטי. */
   --stale-ink:#a3341f;
+  /*  ⛔ צבע הזהות של האפליקציה — ⚠️ אסימון אחד בשם אחד בארבעתן,
+   *  ⭐ והגוון בלבד נבדל: ⛔ רכיב שמייצג את האפליקציה נגזר ממנו
+   *  ⛔ ולא מדיו הטקסט — ⚠️ ארבעה באנרים בארבעה גוונים נראו זהים.
+   *  ⛔ **והדיו שעליו צמד הפוך** — ⚠️ ומתחלף איתו יחד. */
+  --brand:var(--brand-fill); --on-brand:#ffffff;
 
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
   --ink:#12202e; --ink-2:#3b4d61; --muted:#6b7c90;
@@ -56,6 +61,8 @@
 @media (prefers-color-scheme:dark){
   :root{
     --stale-ink:#ffb4a2;
+    --on-brand:#ffffff;
+
     --bg:#0d151d; --card:#131e29; --card-2:#18242f;
     --ink:#e8eef5; --ink-2:#c2cfdc; --muted:#93a5b8;
     --line:#24333f; --line-2:#1d2a35;
@@ -420,16 +427,16 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 #updater.show{display:flex}
 #updater .in{
-  background:var(--ink);color:var(--bg);border-radius:14px;padding:11px 12px 11px 16px;
+  background:var(--brand);color:var(--on-brand);border-radius:14px;padding:11px 12px 11px 16px;
   display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);
   font-size:14px;font-weight:650;max-width:520px;width:100%
 }
 #updater button{
-  margin-inline-start:auto;background:var(--bg);color:var(--ink);border:0;
+  margin-inline-start:auto;background:var(--on-brand);color:var(--brand);border:0;
   border-radius:9px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13.5px;flex:none
 }
 #updater button.x{
-  margin-inline-start:0;background:none;color:var(--bg);opacity:.7;padding:0 4px;font-size:15px
+  margin-inline-start:0;background:none;color:var(--on-brand);opacity:.7;padding:0 4px;font-size:15px
 }
 @media (min-width:900px){#updater{bottom:16px}}
 
@@ -5751,6 +5758,32 @@ function formMyPassword() {
   var el = $('#mp-cur'); if (el) el.focus();
 }
 
+function formSaveMyPassword(btn) {
+  var c1 = $('#mp-cur'), n1 = $('#mp-new'), n2 = $('#mp-new2');
+  if (!c1 || !n1 || !n2) { uiNoDialog('formSaveMyPassword', 'mp-cur'); return; }
+  var cur = c1.value.trim(), p1 = n1.value.trim(), p2 = n2.value.trim();
+  if (!cur || !p1 || !p2) { toast('⚠️ נא למלא את כל השדות', null, 'bad'); return; }
+  if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
+  if (p1 !== p2) { toast('⚠️ הסיסמאות החדשות אינן זהות', null, 'bad'); return; }
+  if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
+  // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
+  //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
+  runSave(btn, function () {
+    // ⭐ סבב 40 — אימות הסיסמה הנוכחית מול הטביעה; הטקסט הגלוי אינו נשלף.
+    return withTimeout(sb.from('g_users').select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
+      .then(function (res) {
+        if (res && res.error) throw res.error;
+        var u = res && Array.isArray(res.data) && res.data[0];
+        if (!u) throw new Error('הסיסמה הנוכחית שגויה');
+        return gVerifyOffline(u, cur).then(function (v) {
+          if (v !== 'ok') throw new Error('הסיסמה הנוכחית שגויה');
+          return passFields(p1);
+        });
+      })
+      .then(function (pf) { return writeUser(state.user.client_id, pf).then(warnIfNoFp); });
+  }, 'הסיסמה עודכנה');
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    החלפת משתמש — מסך אחד, מול הטביעה
    ══════════════════════════════════════════════════════════════════════════
@@ -6008,31 +6041,7 @@ var DOM_ACTIONS = {
     var f = $('#' + el.dataset.id);
     if (f) f.type = (f.type === 'password' ? 'text' : 'password');
   },
-  'my-pass-save': function (el) {
-    var cur = $('#mp-cur') ? $('#mp-cur').value : '';
-    var p1 = $('#mp-new') ? $('#mp-new').value : '';
-    var p2 = $('#mp-new2') ? $('#mp-new2').value : '';
-    if (!cur || !p1 || !p2) { toast('⚠️ נא למלא את כל השדות', null, 'bad'); return; }
-    if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
-    if (p1 !== p2) { toast('⚠️ הסיסמאות החדשות אינן זהות', null, 'bad'); return; }
-    if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
-    // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
-    //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
-    runSave(el, function () {
-      // ⭐ סבב 40 — אימות הסיסמה הנוכחית מול הטביעה; הטקסט הגלוי אינו נשלף.
-      return withTimeout(sb.from('g_users').select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
-        .then(function (res) {
-          if (res && res.error) throw res.error;
-          var u = res && Array.isArray(res.data) && res.data[0];
-          if (!u) throw new Error('הסיסמה הנוכחית שגויה');
-          return gVerifyOffline(u, cur).then(function (v) {
-            if (v !== 'ok') throw new Error('הסיסמה הנוכחית שגויה');
-            return passFields(p1);
-          });
-        })
-        .then(function (pf) { return writeUser(state.user.client_id, pf).then(warnIfNoFp); });
-    }, 'הסיסמה עודכנה');
-  },
+  'my-pass-save': function (el) { formSaveMyPassword(el); },
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;

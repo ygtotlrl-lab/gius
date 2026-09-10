@@ -38,7 +38,7 @@ const APP = {
   verifyFn: 'gVerifyOffline',
   backfillFn: 'gBackfillPassFp',
   authPaths: [['function doLogin', 'הכניסה המקוונת'],
-              ["'my-pass-save'", 'שינוי סיסמה עצמי']],
+              ['function formSaveMyPassword', 'שינוי סיסמה עצמי']],
   migrationA: '007_users_drop_plaintext_password.sql',
   migrationB: '010_drop_g_users_password.sql',
 };
