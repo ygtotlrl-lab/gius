@@ -454,6 +454,24 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .toast.good{background:#15803d;color:#fff}
 @keyframes toastUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* ═══ סוף CSS שכבת הטוסט ════════════════════════════════════════════════ */
+/* ═══ CSS גרף העמודות — מודול משותף (סבב 137) ═══════════════════════════════
+   ⛔ הצגה חזותית של סדרה נבנית מרוחב יחסי ⛔ ולא מספריית גרפים — ⚠️ ספרייה
+      כזו היא מאות קילובייטים בכל עלייה, ⭐ והנתון עצמו הוא שתי מנות לשורה.
+   ⛔ הצבעים מהאסימונים ⛔ ואין כאן ליטרל — ⚠️ `--brand` למה שנגבה,
+      ⭐ ו-`--card-2` למסלול שמאחוריו: ⛔ ליטרל מוטבע כאן היה נשאר בהיר
+      במצב כהה, ⚠️ ומבטל את הזהות הפר-אפליקציה.
+   ⛔ ופס היעד הוא **אותו** אסימון בשקיפות — ⚠️ אסימון שני היה תפקיד שני
+      לצבע קיים, ⭐ והשורה על תפקיד אחד לאסימון אוסרת אותו. */
+.bchart{display:grid;gap:8px;padding:4px 0}
+.brow{display:grid;grid-template-columns:4.6rem 1fr 4.4rem;align-items:center;gap:8px;font-size:.8rem}
+.blab{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bbars{display:grid;gap:3px}
+.btrack{display:block;height:8px;border-radius:99px;background:var(--card-2);overflow:hidden}
+.btrack i{display:block;height:100%;border-radius:99px;background:var(--brand)}
+.btrack.tgt{height:4px}
+.btrack.tgt i{opacity:.38}
+.bval{color:var(--text2);text-align:end;white-space:nowrap}
+/* ═══ סוף CSS גרף העמודות ════════════════════════════════════════════════ */
 </style>
 </head>
 <body>
@@ -731,7 +749,6 @@ function _gVerify(tbl) {
 
 /*  ⛔ שם המפתח הישן פר-אפליקציה — ⚠️ וההגירה שמוחקת אותו משותפת:
  *  ⭐ הקבוע כאן הוא מה שמפריד בין הגוף הזהה לערך שנבדל. */
-var BK_AT_LEGACY_KEY = 'g_last_backup_at';
 /* ══════════════════════════════════════════════════════════════════════════
    עמידות אחסון מקומי — מודול משותף (סבב 11).
    ⛔ שינוי כאן (סבב 65) — ארבע האפליקציות **וארבעת עותקי השער**, באותו
@@ -1303,19 +1320,11 @@ function lsBootDeferred() {
   return p.then(finish, function () { return finish(0); });
 }
 
-/*  ⛔ הגירה מקומית חד-פעמית (סבב 136) — ⚠️ חותמת «גובה לאחרונה»
- *  הייתה נקראת בשורת המצב בלבד, ⛔ והשורה ירדה: ⭐ מפתח שנכתב
- *  ואין לו קורא צורך את תקציב האחסון ⛔ ומאכיל את הפינוי האוטומטי.
- *  ⛔ **והיא אידמפוטנטית** — ⚠️ מחיקה בלבד, ⭐ וריצה שנייה אינה משנה דבר. */
-function migrateBackupAtKey() {
-  try { lsRemove(BK_AT_LEGACY_KEY); } catch (e) { }
-}
 /* ── בדיקת העלייה ───────────────────────────────────────────────────────
    נקראת פעם אחת בכל עליית אפליקציה, לפני שהמשתמש מספיק לכתוב משהו.
    **סינכרונית בכוונה** — היא חייבת לרוץ לפני הטעינה. כשיש מפתחות שניתן
    לאמת מול הענן, ההתרעה נדחית יחד עם האימות (`lsBootDeferred`). */
 function lsBoot(opts) {
-  migrateBackupAtKey();
   var u = lsUsage(), swept = 0;
   if (u.total >= u.quota * LS_SWEEP_PCT) {
     swept = lsSweepGuarded('פינוי יזום בעלייה — ' + Math.round(u.pct * 100) + '% מהמכסה',
@@ -4243,6 +4252,32 @@ function kvParse(key, raw) {
 }
 function kvBadLabel(name) { return name + ' (' + KV_BAD + ')'; }
 /* ═══════════════ סוף מודול ערך מפתח-ערך ═════════════════════════════════ */
+/* ═══ גרף העמודות — מודול משותף (סבב 137) ═══════════════════════════════════
+   ⛔ סדרה מוצגת ברוחב יחסי ⛔ ולא בספריית גרפים — ⚠️ הרוחב הוא התכונה
+      היחידה שנגזרת מהנתון, ⭐ והוא החריג היחיד לסגנון מוטבע.
+   ⛔ פחות משתי נקודות אינו גרף — ⚠️ עמודה אחת אינה משווה דבר, ⭐ והמסך
+      מציג את הטבלה בלבד: ⛔ המחזירה מחרוזת ריקה ⛔ ואינה מציירת מסגרת.
+   ⛔ וכל שורה נושאת `aria-label` עם המספרים — ⚠️ גרף בלי טקסט חלופי אינו
+      נגיש, ⭐ והוא כל מה שקורא-מסך רואה.
+   ⛔ **מה נכנס**: `lab` תווית · `val` הערך · `tgt` היעד · `txt` הטקסט
+      החלופי · `end` מה שנכתב בסוף השורה. */
+function barChart(rows, label) {
+  if (!Array.isArray(rows) || rows.length < 2) return '';
+  var max = 0, i;
+  for (i = 0; i < rows.length; i++) max = Math.max(max, rows[i].val || 0, rows[i].tgt || 0);
+  if (!(max > 0)) return '';
+  var pct = function (v) { return Math.round(((v || 0) / max) * 1000) / 10; };
+  var h = '<div class="bchart" role="img" aria-label="' + esc(label) + '">';
+  for (i = 0; i < rows.length; i++) {
+    h += '<div class="brow" aria-label="' + esc(rows[i].txt) + '">' +
+      '<span class="blab">' + esc(rows[i].lab) + '</span>' +
+      '<span class="bbars"><span class="btrack"><i style="width:' + pct(rows[i].val) + '%"></i></span>' +
+      '<span class="btrack tgt"><i style="width:' + pct(rows[i].tgt) + '%"></i></span></span>' +
+      '<span class="bval">' + esc(rows[i].end) + '</span></div>';
+  }
+  return h + '</div>';
+}
+/* ═══════════════ סוף מודול גרף העמודות ══════════════════════════════════ */
 
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
@@ -4832,6 +4867,15 @@ function viewDonorCard() {
         '<td><button class="btn ghost xs" data-act="txn-edit" data-id="' + t.client_id + '">עריכה</button></td></tr>';
     });
     h += '</tbody></table></div>';
+    /*  ⛔ גרף על נתון אחד אינו גרף — ⚠️ `barChart` מחזירה מחרוזת ריקה
+     *  מתחת לשתי נקודות, ⭐ והמסך נשאר עם הטבלה בלבד. */
+    h += barChart(state.targets.map(function (t) {
+      var got = sum(monthTxns(t.month), function (x) { return x.amount; });
+      var tg = num(t.amount);
+      return { lab: t.month, val: got, tgt: tg,
+               end: (tg > 0 ? Math.round(got / tg * 100) : 0) + '%',
+               txt: monthLabel(t.month) + ': נגבה ' + ils(got) + ' מתוך יעד ' + ils(tg) };
+    }), 'גבייה חודשית מול היעד');
   }
   h += '</section>';
   return h;
