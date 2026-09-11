@@ -52,7 +52,7 @@
   --warn:#b45309; --warn-soft:#fdf1e3;
   --bad:#b91c1c; --bad-soft:#fdeceb;
   --gold:#a16207; --gold-soft:#fdf5e0;
-  --radius:16px; --radius-sm:10px;
+  --radius:var(--r-5); --radius-sm:var(--r-4);
   --shadow:0 1px 2px rgba(16,32,48,.05), 0 8px 24px rgba(16,32,48,.06);
   --shadow-lg:0 12px 40px rgba(16,32,48,.18);
   --tab-h:62px;
@@ -80,7 +80,7 @@ html,body{height:100%}
 body{
   margin:0; background:var(--bg); color:var(--text);
   font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Hebrew","Rubik",Arial,sans-serif;
-  font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%;
+  font-size:var(--fs-4); line-height:1.55; -webkit-text-size-adjust:100%;
   overflow-wrap:anywhere;
 }
 body.locked{overflow:hidden}
@@ -90,24 +90,24 @@ input,select,textarea{font:inherit; color:inherit}
 table{border-collapse:collapse; width:100%}
 .hidden{display:none !important}
 .spin{width:20px;height:20px;border:2.5px solid var(--border);border-top-color:var(--brand-ink);
-  border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-4px}
+  border-radius:var(--r-7);animation:sp .7s linear infinite;display:inline-block;vertical-align:-4px}
 @keyframes sp{to{transform:rotate(360deg)}}
 ::-webkit-scrollbar{width:10px;height:10px}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:var(--r-3)}
 
 /* =================================================================== כניסה */
-.auth{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.auth{min-height:100dvh;display:grid;place-items:center;padding:var(--sp-7)}
 .auth-card{
   width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);
-  border-radius:22px;padding:34px 26px;box-shadow:var(--shadow);text-align:center;
+  border-radius:var(--r-6);padding:var(--sp-7) var(--sp-7);box-shadow:var(--shadow);text-align:center;
 }
-.auth-card .mark{width:66px;height:66px;margin:0 auto 14px;display:block}
-.auth-card h1{font-size:26px;letter-spacing:-.5px}
-.auth-card .sub{color:var(--text3);font-size:14px;margin:4px 0 24px}
-.auth-card .fld{text-align:start;margin-bottom:12px}
+.auth-card .mark{width:66px;height:66px;margin:0 auto var(--sp-6);display:block}
+.auth-card h1{font-size:var(--fs-6);letter-spacing:-.5px}
+.auth-card .sub{color:var(--text3);font-size:var(--fs-3);margin:var(--sp-2) 0 var(--sp-7)}
+.auth-card .fld{text-align:start;margin-bottom:var(--sp-5)}
 .auth-err{
-  display:none;margin-top:14px;background:var(--bad-soft);color:var(--bad);
-  border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-weight:600
+  display:none;margin-top:var(--sp-6);background:var(--bad-soft);color:var(--bad);
+  border-radius:var(--radius-sm);padding:var(--sp-5) var(--sp-5);font-size:var(--fs-3);font-weight:600
 }
 .auth-err.show{display:block}
 
@@ -115,15 +115,15 @@ table{border-collapse:collapse; width:100%}
 .topbar{
   position:sticky;top:0;z-index:40;background:var(--card);
   border-bottom:1px solid var(--border);
-  padding:10px 14px; padding-top:calc(10px + env(safe-area-inset-top));
-  display:flex;align-items:center;gap:12px;
+  padding:var(--sp-5) var(--sp-6); padding-top:calc(10px + env(safe-area-inset-top));
+  display:flex;align-items:center;gap:var(--sp-5);
 }
-.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.3px}
+.brand{display:flex;align-items:center;gap:var(--sp-4);font-weight:800;font-size:var(--fs-4);letter-spacing:-.3px}
 .brand svg{width:26px;height:26px;flex:none}
-.brand small{font-weight:500;color:var(--text3);font-size:12px;display:none}
-.who{margin-inline-start:auto;display:flex;align-items:center;gap:8px;min-width:0}
-.who .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
-.who .role{font-size:11px;color:var(--text3);display:block;font-weight:500}
+.brand small{font-weight:500;color:var(--text3);font-size:var(--fs-2);display:none}
+.who{margin-inline-start:auto;display:flex;align-items:center;gap:var(--sp-4);min-width:0}
+.who .nm{font-size:var(--fs-3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.who .role{font-size:var(--fs-1);color:var(--text3);display:block;font-weight:500}
 
 .tabbar{
   position:fixed;inset-inline:0;bottom:0;z-index:45;
@@ -132,50 +132,48 @@ table{border-collapse:collapse; width:100%}
   padding-bottom:env(safe-area-inset-bottom);
 }
 .tabbar button{
-  background:none;border:0;cursor:pointer;padding:8px 2px 9px;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:11px;font-weight:600;color:var(--text3);
+  background:none;border:0;cursor:pointer;padding:var(--sp-4) var(--sp-1) var(--sp-4);
+  display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);
+  font-size:var(--fs-1);font-weight:600;color:var(--text3);
 }
-.tabbar button .ic{font-size:19px;line-height:1}
+.tabbar button .ic{font-size:var(--fs-5);line-height:1}
 .tabbar button.on{color:var(--brand-ink)}
 .tabbar button.on .ic{transform:translateY(-1px)}
 
-main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
+main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
   max-width:1180px;margin:0 auto}
 
 @media (min-width:900px){
   .brand small{display:inline}
   .tabbar{
-    position:static;display:flex;gap:4px;border:0;background:none;padding:0;
-    margin-inline-start:18px;
+    position:static;display:flex;gap:var(--sp-2);border:0;background:none;padding:0;
+    margin-inline-start:var(--sp-6);
   }
-  .tabbar button{flex-direction:row;gap:6px;font-size:14px;padding:8px 13px;border-radius:10px}
-  .tabbar button .ic{font-size:16px}
+  .tabbar button{flex-direction:row;gap:var(--sp-3);font-size:var(--fs-3);padding:var(--sp-4) var(--sp-5);border-radius:var(--r-4)}
+  .tabbar button .ic{font-size:var(--fs-4)}
   .tabbar button.on{background:var(--brand-soft)}
-  main{padding:20px;padding-bottom:120px}
+  main{padding:var(--sp-7);padding-bottom:var(--sp-7)}
 }
 
 /* ================================================================= כרטיסים */
 .card{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;box-shadow:var(--shadow);margin-bottom:14px
-}
-.card > h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  padding:var(--sp-6);box-shadow:var(--shadow);margin-bottom:var(--sp-6)}
+.card > h2{font-size:var(--fs-4);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-5)}
 .card > h2 .cnt{
-  font-size:11.5px;font-weight:700;background:var(--border-2);color:var(--text3);
-  border-radius:99px;padding:1px 8px
-}
-.card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:13px;color:var(--text3)}
-.grid2{display:grid;gap:14px}
+  font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text3);
+  border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:var(--fs-3);color:var(--text3)}
+.grid2{display:grid;gap:var(--sp-6)}
 @media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
-.empty{color:var(--text3);text-align:center;padding:26px 10px;font-size:14px}
-.empty .big{font-size:26px;display:block;margin-bottom:6px;opacity:.65}
+.empty{color:var(--text3);text-align:center;padding:var(--sp-7) var(--sp-5);font-size:var(--fs-3)}
+.empty .big{font-size:var(--fs-6);display:block;margin-bottom:var(--sp-3);opacity:.65}
 
 /* ============================================================= טבעת הבית */
 /* זה לצד זה מנקודת השבירה שמתחת. מתחתיה הטבעת נערמת מעל המחוונים כדי
    שהאריחים יקבלו את הרוחב המלא — אחרת "100,000 ₪" נשבר בין שורות. */
-.hero{display:flex;flex-direction:column;gap:16px;align-items:center}
-@media (min-width:640px){.hero{flex-direction:row;gap:18px}}
+.hero{display:flex;flex-direction:column;gap:var(--sp-6);align-items:center}
+@media (min-width:640px){.hero{flex-direction:row;gap:var(--sp-6)}}
 .ring{width:132px;height:132px;flex:none}
 .ring circle{fill:none;stroke-width:11;stroke-linecap:round}
 .ring .bg{stroke:var(--border)}
@@ -185,58 +183,56 @@ main{padding:14px; padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset
 .ring-val{
   position:absolute;inset:0;display:grid;place-content:center;text-align:center
 }
-.ring-val b{font-size:25px;letter-spacing:-1px;display:block;line-height:1.1}
-.ring-val span{font-size:11px;color:var(--text3);font-weight:600}
-.hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ring-val b{font-size:var(--fs-6);letter-spacing:-1px;display:block;line-height:1.1}
+.ring-val span{font-size:var(--fs-1);color:var(--text3);font-weight:600}
+.hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
 @media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
-.stat{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:9px 11px}
-.stat span{display:block;font-size:11.5px;color:var(--text3);font-weight:600;margin-bottom:1px}
-.stat b{font-size:16.5px;letter-spacing:-.4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stat{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5)}
+.stat span{display:block;font-size:var(--fs-2);color:var(--text3);font-weight:600;margin-bottom:var(--sp-1)}
+.stat b{font-size:var(--fs-4);letter-spacing:-.4px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)}
 .momentum{
-  margin-top:14px;background:var(--brand-soft);color:var(--brand-ink);
-  border-radius:var(--radius-sm);padding:11px 14px;font-weight:700;text-align:center;font-size:15px
-}
-.monthnav{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.monthnav b{font-size:15px;min-width:130px;text-align:center}
+  margin-top:var(--sp-6);background:var(--brand-soft);color:var(--brand-ink);
+  border-radius:var(--radius-sm);padding:var(--sp-5) var(--sp-6);font-weight:700;text-align:center;font-size:var(--fs-4)}
+.monthnav{display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-6)}
+.monthnav b{font-size:var(--fs-4);min-width:130px;text-align:center}
 .monthnav .grow{margin-inline-start:auto}
 
 /* ================================================================= טבלאות */
-.tw{overflow-x:auto;margin:0 -16px;padding:0 16px}
-th,td{padding:9px 10px;text-align:start;font-size:13.5px;border-bottom:1px solid var(--border-2);white-space:nowrap}
-th{font-size:11.5px;color:var(--text3);font-weight:700;letter-spacing:.2px;
+.tw{overflow-x:auto;margin:0 calc(-1 * var(--sp-6));padding:0 var(--sp-6)}
+th,td{padding:var(--sp-4) var(--sp-5);text-align:start;font-size:var(--fs-3);border-bottom:1px solid var(--border-2);white-space:nowrap}
+th{font-size:var(--fs-2);color:var(--text3);font-weight:700;letter-spacing:.2px;
   border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
 td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:0}
 tbody tr.click{cursor:pointer}
 tbody tr.click:hover{background:var(--card-2)}
 tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;background:var(--card-2)}
-.bar{height:5px;border-radius:99px;background:var(--border);overflow:hidden;min-width:52px}
-.bar i{display:block;height:100%;background:var(--brand-fill);border-radius:99px}
+.bar{height:5px;border-radius:var(--r-6);background:var(--border);overflow:hidden;min-width:52px}
+.bar i{display:block;height:100%;background:var(--brand-fill);border-radius:var(--r-6)}
 
 /* ================================================================== רשימות */
 .row{
-  display:flex;align-items:center;gap:11px;padding:11px 4px;
+  display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-5) var(--sp-2);
   border-bottom:1px solid var(--border-2);cursor:pointer
 }
 .row:last-child{border-bottom:0}
 .row:hover{background:var(--card-2)}
 .row .av{
-  width:37px;height:37px;border-radius:11px;flex:none;display:grid;place-items:center;
-  background:var(--brand-soft);color:var(--brand-ink);font-weight:800;font-size:14px
-}
+  width:37px;height:37px;border-radius:var(--r-4);flex:none;display:grid;place-items:center;
+  background:var(--brand-soft);color:var(--brand-ink);font-weight:800;font-size:var(--fs-3)}
 .row .av.vip{background:var(--gold-soft);color:var(--gold)}
 .row .main{flex:1;min-width:0}
-.row .main b{display:block;font-size:14.5px;font-weight:650;
+.row .main b{display:block;font-size:var(--fs-4);font-weight:650;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .main small{color:var(--text3);font-size:12.5px}
-.row .end{text-align:end;flex:none;font-size:13.5px;font-variant-numeric:tabular-nums}
-.row .end small{display:block;color:var(--text3);font-size:11.5px}
+.row .main small{color:var(--text3);font-size:var(--fs-2)}
+.row .end{text-align:end;flex:none;font-size:var(--fs-3);font-variant-numeric:tabular-nums}
+.row .end small{display:block;color:var(--text3);font-size:var(--fs-2)}
 
 /* ================================================================== תגיות */
 .badge{
-  display:inline-block;font-size:11.5px;font-weight:700;border-radius:99px;
-  padding:2px 9px;white-space:nowrap;background:var(--border-2);color:var(--text3)
+  display:inline-block;font-size:var(--fs-2);font-weight:700;border-radius:var(--r-6);
+  padding:var(--sp-1) var(--sp-4);white-space:nowrap;background:var(--border-2);color:var(--text3)
 }
 .badge.ok{background:var(--ok-soft);color:var(--ok)}
 .badge.warn{background:var(--warn-soft);color:var(--warn)}
@@ -247,7 +243,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 /* ================================================================== פקדים */
 .inp,select.inp,textarea.inp{
   width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:10px 12px;font-size:15px;outline:none;transition:border-color .15s,box-shadow .15s
+  padding:var(--sp-5) var(--sp-5);font-size:var(--fs-4);outline:none;transition:border-color .15s,box-shadow .15s
 }
 .inp:focus{border-color:var(--brand-ink);box-shadow:0 0 0 3px var(--brand-soft)}
 textarea.inp{resize:vertical;min-height:78px;line-height:1.55}
@@ -257,23 +253,23 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   background-size:5px 5px,5px 5px;background-repeat:no-repeat;
   /* החץ מצויר בקצה השמאלי, ולכן גם המקום הנוסף חייב להיות משמאל —
      padding-inline-start היה שם אותו מימין תחת RTL */
-  padding-left:32px}
-.fld{display:block;margin-bottom:12px}
-.fld > span{display:block;font-size:12.5px;font-weight:650;color:var(--text2);margin-bottom:5px}
-.fld.chk{display:flex;align-items:center;gap:9px;cursor:pointer}
+  padding-left:var(--sp-7)}
+.fld{display:block;margin-bottom:var(--sp-5)}
+.fld > span{display:block;font-size:var(--fs-2);font-weight:650;color:var(--text2);margin-bottom:var(--sp-3)}
+.fld.chk{display:flex;align-items:center;gap:var(--sp-4);cursor:pointer}
 .fld.chk input{width:19px;height:19px;accent-color:var(--brand-fill);flex:none;margin:0}
-.fld.chk > span{margin:0;font-size:14px}
-.f2{display:grid;gap:0 12px}
+.fld.chk > span{margin:0;font-size:var(--fs-3)}
+.f2{display:grid;gap:0 var(--sp-5)}
 @media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
 
 .btn{
   background:var(--brand-fill);color:#fff;border:1px solid transparent;
-  border-radius:var(--radius-sm);padding:10px 16px;font-weight:700;font-size:14.5px;
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:var(--radius-sm);padding:var(--sp-5) var(--sp-6);font-weight:700;font-size:var(--fs-4);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-3);
   white-space:nowrap
 }
 /* שדה וכפתור בשורה אחת; הכפתור שומר על רוחבו, והשדה מתכווץ */
-.addrow{display:flex;gap:6px;margin-top:10px}
+.addrow{display:flex;gap:var(--sp-3);margin-top:var(--sp-5)}
 .addrow .inp{min-width:0}
 .addrow .btn{flex:none}
 .btn:active{transform:translateY(1px)}
@@ -282,18 +278,18 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .btn.ghost:hover{background:var(--card-2)}
 .btn.soft{background:var(--brand-soft);color:var(--brand-ink)}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
-.btn.sm{padding:6px 11px;font-size:13px;border-radius:8px}
-.btn.xs{padding:3px 9px;font-size:12px;border-radius:7px;font-weight:650}
+.btn.sm{padding:var(--sp-3) var(--sp-5);font-size:var(--fs-3);border-radius:var(--r-3)}
+.btn.xs{padding:var(--sp-2) var(--sp-4);font-size:var(--fs-2);border-radius:var(--r-3);font-weight:650}
 .btn.block{width:100%}
-.btn.icon{padding:8px 11px}
-.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btn.icon{padding:var(--sp-4) var(--sp-5)}
+.btnrow{display:flex;gap:var(--sp-4);flex-wrap:wrap}
 
 /* ========================================================= כפתור ההוספה */
 .fab{
   position:fixed;inset-inline-end:18px;
   bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom));
-  z-index:44;width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;
-  background:var(--brand-fill);color:#fff;font-size:31px;line-height:1;
+  z-index:44;width:60px;height:60px;border-radius:var(--r-7);border:0;cursor:pointer;
+  background:var(--brand-fill);color:#fff;font-size:var(--fs-6);line-height:1;
   box-shadow:0 6px 22px rgba(15,118,110,.42);display:grid;place-items:center;
   transition:transform .18s
 }
@@ -310,90 +306,87 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @media (min-width:640px){.veil{align-items:center}}
 .sheet{
   width:100%;max-width:560px;max-height:92dvh;overflow:auto;background:var(--card);
-  border-radius:20px 20px 0 0;box-shadow:var(--shadow-lg);
+  border-radius:var(--r-6) var(--r-6) 0 0;box-shadow:var(--shadow-lg);
   animation:up .22s cubic-bezier(.2,.8,.3,1);
   padding-bottom:env(safe-area-inset-bottom)
 }
-@media (min-width:640px){.sheet{border-radius:20px;animation:pop .18s ease-out}}
+@media (min-width:640px){.sheet{border-radius:var(--r-6);animation:pop .18s ease-out}}
 @keyframes up{from{transform:translateY(24px);opacity:.5}}
 @keyframes pop{from{transform:scale(.97);opacity:0}}
 .sheet-hd{
-  display:flex;align-items:center;gap:10px;padding:15px 18px;
+  display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-6) var(--sp-6);
   border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:2;
-  border-radius:20px 20px 0 0
-}
-.sheet-hd h3{font-size:16px;flex:1}
-.sheet-hd .x{background:none;border:0;font-size:22px;line-height:1;color:var(--text3);
-  cursor:pointer;padding:2px 6px;border-radius:8px}
+  border-radius:var(--r-6) var(--r-6) 0 0}
+.sheet-hd h3{font-size:var(--fs-4);flex:1}
+.sheet-hd .x{background:none;border:0;font-size:var(--fs-5);line-height:1;color:var(--text3);
+  cursor:pointer;padding:var(--sp-1) var(--sp-3);border-radius:var(--r-3)}
 .sheet-hd .x:hover{background:var(--border-2)}
-.sheet-bd{padding:16px 18px}
+.sheet-bd{padding:var(--sp-6) var(--sp-6)}
 /* ⛔ הצבע עבר מהמחרוזת ל-CSS — ⚠️ גוף `ask` הוא `textContent` בכל ארבעתן, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד היה שובר את הזהות בית-לבית */
 #ask-body{color:var(--text2)}
-.sheet-ft{padding:12px 18px 18px;display:flex;gap:9px}
+.sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);display:flex;gap:var(--sp-4)}
 .sheet-ft:empty{display:none}
 .sheet-ft .btn{flex:1}
 
-.chooser{margin:-16px -18px;padding:14px 18px 22px;display:grid;gap:10px} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ עד כאן הבורר איפס אותו בזמן ריצה, ⛔ ו-`openModal` היה חייב להחזירו: ⭐ שני מסלולים על אותה תכונה, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
+.chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ עד כאן הבורר איפס אותו בזמן ריצה, ⛔ ו-`openModal` היה חייב להחזירו: ⭐ שני מסלולים על אותה תכונה, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
 .chooser button{
-  display:flex;align-items:center;gap:13px;text-align:start;width:100%;cursor:pointer;
-  background:var(--card-2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;
-  font-size:16px;font-weight:700
+  display:flex;align-items:center;gap:var(--sp-5);text-align:start;width:100%;cursor:pointer;
+  background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-6) var(--sp-6);
+  font-size:var(--fs-4);font-weight:700
 }
 .chooser button:hover{border-color:var(--brand-ink);background:var(--brand-soft)}
-.chooser button .ic{font-size:24px}
-.chooser button small{display:block;font-weight:500;font-size:12.5px;color:var(--text3)}
+.chooser button .ic{font-size:var(--fs-6)}
+.chooser button small{display:block;font-weight:500;font-size:var(--fs-2);color:var(--text3)}
 
 /* ============================================================ בורר התורם */
 .picker{position:relative}
 .dp-chosen{
-  display:flex;align-items:center;gap:9px;background:var(--brand-soft);color:var(--brand-ink);
-  border-radius:var(--radius-sm);padding:9px 12px;font-weight:700;font-size:14.5px
-}
+  display:flex;align-items:center;gap:var(--sp-4);background:var(--brand-soft);color:var(--brand-ink);
+  border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5);font-weight:700;font-size:var(--fs-4)}
 .dp-chosen button{margin-inline-start:auto;background:none;border:0;cursor:pointer;
-  color:inherit;font-size:18px;line-height:1;opacity:.7}
+  color:inherit;font-size:var(--fs-5);line-height:1;opacity:.7}
 .dp-results{
-  border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:6px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:var(--sp-3);
   max-height:210px;overflow:auto;background:var(--card)
 }
 .dp-results button{
   display:block;width:100%;text-align:start;background:none;border:0;cursor:pointer;
-  padding:9px 12px;border-bottom:1px solid var(--border-2);font-size:14px
-}
+  padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
 .dp-results button:last-child{border-bottom:0}
 .dp-results button:hover{background:var(--card-2)}
-.dp-results button small{color:var(--text3);font-size:12px;margin-inline-start:6px}
+.dp-results button small{color:var(--text3);font-size:var(--fs-2);margin-inline-start:var(--sp-3)}
 .dp-results .mk{color:var(--brand-ink);font-weight:700}
-.dp-new{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:8px;
+.dp-new{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:var(--sp-5);margin-top:var(--sp-4);
   background:var(--card-2)}
 
 /* =================================================================== קנבן */
-.kb{display:grid;gap:12px}
+.kb{display:grid;gap:var(--sp-5)}
 @media (min-width:900px){.kb{grid-template-columns:repeat(4,1fr);align-items:start}}
 .kcol{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:12px;min-height:110px;transition:border-color .15s,background .15s
+  padding:var(--sp-5);min-height:110px;transition:border-color .15s,background .15s
 }
 .kcol.over{border-color:var(--brand-ink);background:var(--brand-soft)}
-.kcol > h3{font-size:13.5px;display:flex;align-items:center;gap:7px;margin-bottom:10px}
-.kcol > h3 .dot{width:8px;height:8px;border-radius:50%;flex:none}
-.kcol > h3 .cnt{margin-inline-start:auto;font-size:11.5px;color:var(--text3);
-  background:var(--border-2);border-radius:99px;padding:1px 8px;font-weight:700}
+.kcol > h3{font-size:var(--fs-3);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-5)}
+.kcol > h3 .dot{width:8px;height:8px;border-radius:var(--r-7);flex:none}
+.kcol > h3 .cnt{margin-inline-start:auto;font-size:var(--fs-2);color:var(--text3);
+  background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4);font-weight:700}
 .kcard{
-  background:var(--card-2);border:1px solid var(--border);border-radius:12px;
-  padding:11px;margin-bottom:9px;cursor:grab
+  background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);
+  padding:var(--sp-5);margin-bottom:var(--sp-4);cursor:grab
 }
 .kcard.dragging{opacity:.4}
-.kcard b{display:block;font-size:14px;font-weight:650;margin-bottom:6px}
-.kcard .meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
-.kcard .ft{display:flex;gap:6px;align-items:center}
+.kcard b{display:block;font-size:var(--fs-3);font-weight:650;margin-bottom:var(--sp-3)}
+.kcard .meta{display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.kcard .ft{display:flex;gap:var(--sp-3);align-items:center}
 .kcard select{
-  flex:1;font-size:12px;padding:4px 7px;border-radius:7px;border:1px solid var(--border);
+  flex:1;font-size:var(--fs-2);padding:var(--sp-2) var(--sp-4);border-radius:var(--r-3);border:1px solid var(--border);
   background:var(--card);min-width:0
 }
-.kcard .logdot{color:var(--brand-ink);font-size:12px;font-weight:700}
+.kcard .logdot{color:var(--brand-ink);font-size:var(--fs-2);font-weight:700}
 
 /* ================================================================== מסננים */
-.filters{display:grid;gap:9px;grid-template-columns:1fr 1fr}
+.filters{display:grid;gap:var(--sp-4);grid-template-columns:1fr 1fr}
 @media (min-width:900px){.filters{grid-template-columns:repeat(5,1fr)}}
 /* פריטי grid מקבלים min-width:auto כברירת מחדל, והרוחב הפנימי של שדה
    תאריך רחב מהתא — בלי זה שורת המסננים גולשת ומאבדת יישור */
@@ -403,17 +396,17 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 
 /* ==================================================================== שונות */
-.kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-2);font-size:14px}
+.kv{display:flex;gap:var(--sp-5);padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
 .kv:last-child{border-bottom:0}
-.kv span{color:var(--text3);min-width:82px;font-size:13px}
+.kv span{color:var(--text3);min-width:82px;font-size:var(--fs-3)}
 .kv b{font-weight:650}
 .log{
   background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);
-  padding:11px;font-size:13px;white-space:pre-wrap;max-height:230px;overflow:auto;
+  padding:var(--sp-5);font-size:var(--fs-3);white-space:pre-wrap;max-height:230px;overflow:auto;
   line-height:1.65;margin:0;font-family:inherit
 }
 .back{background:none;border:0;color:var(--brand-ink);font-weight:700;cursor:pointer;
-  padding:4px 0;margin-bottom:8px;font-size:14px}
+  padding:var(--sp-2) 0;margin-bottom:var(--sp-4);font-size:var(--fs-3)}
 
 /* ==================================================================== טוסט */
 
@@ -421,25 +414,23 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 #updater{
   position:fixed;inset-inline:0;z-index:70;
   bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));
-  display:none;justify-content:center;padding:10px 14px
-}
+  display:none;justify-content:center;padding:var(--sp-5) var(--sp-6)}
 #updater.show{display:flex}
 #updater .in{
-  background:var(--brand);color:var(--on-brand);border-radius:14px;padding:11px 12px 11px 16px;
-  display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);
-  font-size:14px;font-weight:650;max-width:520px;width:100%
+  background:var(--brand);color:var(--on-brand);border-radius:var(--r-5);padding:var(--sp-5) var(--sp-5) var(--sp-5) var(--sp-6);
+  display:flex;align-items:center;gap:var(--sp-5);box-shadow:var(--shadow-lg);
+  font-size:var(--fs-3);font-weight:650;max-width:520px;width:100%
 }
 #updater button{
   margin-inline-start:auto;background:var(--on-brand);color:var(--brand);border:0;
-  border-radius:9px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13.5px;flex:none
+  border-radius:var(--r-4);padding:var(--sp-4) var(--sp-6);font-weight:700;cursor:pointer;font-size:var(--fs-3);flex:none
 }
 #updater button.x{
-  margin-inline-start:0;background:none;color:var(--on-brand);opacity:.7;padding:0 4px;font-size:15px
-}
+  margin-inline-start:0;background:none;color:var(--on-brand);opacity:.7;padding:0 var(--sp-2);font-size:var(--fs-4)}
 @media (min-width:900px){#updater{bottom:16px}}
 
 /* =================================================================== עלייה */
-#boot{min-height:100dvh;display:grid;place-items:center;gap:12px;color:var(--text3)}
+#boot{min-height:100dvh;display:grid;place-items:center;gap:var(--sp-5);color:var(--text3)}
 /* ═══ שכבת הטוסט — מודול משותף (סבב 87ב) ════════════════════════════════════
    זהה בית-לבית בארבע האפליקציות. ⛔ הכללים אינם נשענים על משתני-הצבע של
    אף אפליקציה — ⚠️ הם נבדלים ביניהן, ⭐ ולכן הצבעים כתובים במפורש.
@@ -448,8 +439,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
       ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד.
    ⛔ ו-`--toast-bottom` הוא הערך היחיד שנבדל — ⚠️ לשתיים מהן יש סרגל
       תחתון קבוע, ⭐ ולטוסט שיושב מתחתיו אין מי שיראה אותו. */
-#toasts{position:fixed;inset-inline:0;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom));z-index:999;display:grid;gap:8px;justify-items:center;pointer-events:none;padding:0 14px}
-.toast{background:#1a1a1a;color:#fff;border-radius:99px;padding:10px 20px;font-size:.86rem;font-weight:600;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.22);max-width:92vw;text-align:center;animation:toastUp .2s ease-out}
+#toasts{position:fixed;inset-inline:0;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom));z-index:999;display:grid;gap:var(--sp-4);justify-items:center;pointer-events:none;padding:0 var(--sp-6)}
+.toast{background:#1a1a1a;color:#fff;border-radius:var(--r-6);padding:var(--sp-5) var(--sp-7);font-size:var(--fs-3);font-weight:600;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.22);max-width:92vw;text-align:center;animation:toastUp .2s ease-out}
 .toast.bad{background:#b91c1c;color:#fff}
 .toast.good{background:#15803d;color:#fff}
 @keyframes toastUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -462,16 +453,84 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
       במצב כהה, ⚠️ ומבטל את הזהות הפר-אפליקציה.
    ⛔ ופס היעד הוא **אותו** אסימון בשקיפות — ⚠️ אסימון שני היה תפקיד שני
       לצבע קיים, ⭐ והשורה על תפקיד אחד לאסימון אוסרת אותו. */
-.bchart{display:grid;gap:8px;padding:4px 0}
-.brow{display:grid;grid-template-columns:4.6rem 1fr 4.4rem;align-items:center;gap:8px;font-size:.8rem}
+.bchart{display:grid;gap:var(--sp-4);padding:var(--sp-2) 0}
+.brow{display:grid;grid-template-columns:4.6rem 1fr 4.4rem;align-items:center;gap:var(--sp-4);font-size:var(--fs-3)}
 .blab{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bbars{display:grid;gap:3px}
-.btrack{display:block;height:8px;border-radius:99px;background:var(--card-2);overflow:hidden}
-.btrack i{display:block;height:100%;border-radius:99px;background:var(--brand)}
+.bbars{display:grid;gap:var(--sp-2)}
+.btrack{display:block;height:8px;border-radius:var(--r-6);background:var(--card-2);overflow:hidden}
+.btrack i{display:block;height:100%;border-radius:var(--r-6);background:var(--brand)}
 .btrack.tgt{height:4px}
 .btrack.tgt i{opacity:.38}
 .bval{color:var(--text2);text-align:end;white-space:nowrap}
 /* ═══ סוף CSS גרף העמודות ════════════════════════════════════════════════ */
+/* ═══ סולמות הגודל, הריווח והרדיוס — מודול משותף (סבב 138) ═══════════════
+   ⛔ שלושה סולמות, ⛔ ואותן דרגות בארבע האפליקציות — ⚠️ כל ערך מספרי חזותי
+      נגזר מהם ⛔ ואינו נבחר לכל אתר בנפרד: ⭐ ערך שנבחר באתר הוא סולם שלא
+      הוגדר, ⛔ ושני אתרים שנבדלים בפיקסל אחד הם שני ערכים שאיש לא הכריע
+      ביניהם.
+   ⛔ **ומספר הדרגות נגזר מהערכים שהיו בפועל** ⛔ ואינו נבחר — ⚠️ אשכול
+      משוקלל בסולם לוגריתמי על כל הערכים שבארבעת הריפו, ⭐ ותקרה של שבע.
+   ⛔ **ודרגה שאין לה קורא באפליקציה אחת נשארת** — ⚠️ הסולם הוא תשתית,
+      ⭐ ולא מפקד של מה שמשמש היום: ⛔ דרגה יורדת רק כשאין לה קורא בארבעתן.
+   ⛔ **והמחלקות שכאן הן אלה שחיות בארבעתן** — ⚠️ מחלקה שחיה בחלקן יושבת
+      בבלוק הפרטי שמתחת: ⭐ מחלקה בבלוק משותף שאין לה קורא באחת מהן היא
+      סלקטור בלי קורא, ⛔ והשער מפיל עליה.
+   ⛔ **ואין כאן `!important`** — ⚠️ `display` ו-`color` נכתבים מ-JS בזמן
+      ריצה, ⭐ וסגנון מוטבע שנכתב אחר כך חייב לגבור עליהן: ⛔ הקדימות באה
+      מהמיקום — ⚠️ הבלוק יושב בסוף הגיליון, אחרי כל כלל אחר.
+   ⛔ שינוי כאן — ארבע האפליקציות **וארבעת עותקי השער**, באותו סבב.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+--fs-1:.65rem;--fs-2:.75rem;--fs-3:.85rem;--fs-4:.95rem;--fs-5:1.2rem;--fs-6:1.7rem;--fs-7:2.8rem;
+--sp-1:2px;--sp-2:4px;--sp-3:6px;--sp-4:8px;--sp-5:12px;--sp-6:16px;--sp-7:24px;
+--r-1:4px;--r-2:6px;--r-3:8px;--r-4:10px;--r-5:14px;--r-6:20px;--r-7:999px
+}
+.u-ai-c{align-items:center}
+.u-d-flex{display:flex}
+.u-fs-2{font-size:var(--fs-2)}
+.u-fs-3{font-size:var(--fs-3)}
+.u-fw-700{font-weight:700}
+.u-fx-1{flex:1}
+.u-g-5{gap:var(--sp-5)}
+.u-mt-2{margin-top:var(--sp-2)}
+.u-mt-5{margin-top:var(--sp-5)}
+/* ═══ סוף CSS הסולמות ═══════════════════════════════════════════════════ */
+/* ══ מחלקות הסולם הפרטיות — אינן חיות בארבעתן ═══════════════════════════
+   ⚠️ כל מחלקה כאן משרתת אתר שקיים באפליקציה הזו בלבד, ⛔ ולכן אינה בבלוק
+   המשותף: ⭐ מחלקה משותפת שאין לה קורא כאן היא סלקטור בלי קורא. */
+.u-ai-fs{align-items:flex-start}
+.u-bb-1-solid-border-2{border-bottom:1px solid var(--border-2)}
+.u-bd-1-solid-border{border:1px solid var(--border)}
+.u-bg-bad{background:var(--bad)}
+.u-bg-border-2{background:var(--border-2)}
+.u-bg-brand-fill{background:var(--brand-fill)}
+.u-bg-ok{background:var(--ok)}
+.u-c-text3{color:var(--text3)}
+.u-fs-5{font-size:var(--fs-5)}
+.u-g-3{gap:var(--sp-3)}
+.u-gtc-repeat-2-1fr{grid-template-columns:repeat(2,1fr)}
+.u-gtc-repeat-3-1fr{grid-template-columns:repeat(3,1fr)}
+.u-h-52{height:52px}
+.u-m-0{margin:0}
+.u-m-0-0-5{margin:0 0 var(--sp-5)}
+.u-m-1-0-2{margin:var(--sp-1) 0 var(--sp-2)}
+.u-m-5-0-2{margin:var(--sp-5) 0 var(--sp-2)}
+.u-mb-4{margin-bottom:var(--sp-4)}
+.u-mb-5{margin-bottom:var(--sp-5)}
+.u-mb-6{margin-bottom:var(--sp-6)}
+.u-minw-0{min-width:0}
+.u-minw-76{min-width:76px}
+.u-mt-6{margin-top:var(--sp-6)}
+.u-mt-7{margin-top:var(--sp-7)}
+.u-p-3-0{padding:var(--sp-3) 0}
+.u-p-4-0{padding:var(--sp-4) 0}
+.u-p-5{padding:var(--sp-5)}
+.u-p-6-3{padding:var(--sp-6) var(--sp-3)}
+.u-r-5{border-radius:var(--r-5)}
+.u-r-radius-sm{border-radius:var(--radius-sm)}
+.u-ta-e{text-align:end}
+.u-w-52{width:52px}
+/* ══ סוף המחלקות הפרטיות ═══════════════════════════════════════════════ */
 </style>
 </head>
 <body>
@@ -528,7 +587,7 @@ var SUPABASE_URL = 'https://zrftjkghhjhqzopvdzou.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnRqa2doaGpocXpvcHZkem91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDc4MzQsImV4cCI6MjEwMDg4MzgzNH0.DWcW3o4Y9Is3jGx1frHkrUz7cc045aH1m1uKsrwRhIA';
 
 var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
-var STAGE_COLOR = { 'הכנה': 'var(--text3)', 'הרצה': 'var(--brand-fill)', 'השלמה': 'var(--ok)', 'חסומה': 'var(--bad)' };
+var STAGE_CLS = { 'הכנה': 'u-bg-border-2', 'הרצה': 'u-bg-brand-fill', 'השלמה': 'u-bg-ok', 'חסומה': 'u-bg-bad' };
 var EPS = 0.005;
 
 // נפילה-חזרה בלבד — הרשימות האמיתיות יושבות ב-g_config וניתנות לעריכה בהגדרות.
@@ -4569,7 +4628,7 @@ function renderShell() {
     '<header class="topbar">' +
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
       '<nav class="tabbar">' + tabs + '</nav>' +
-      '<div class="who"><div style="text-align:end"><div class="nm">' + esc(state.user.full_name) + '</div>' +
+      '<div class="who"><div class="u-ta-e"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
         '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
@@ -4652,8 +4711,8 @@ function breakdownTable(rows, label, total) {
     h += '<tr><td>' + esc(r.key) + '</td>' +
       '<td class="num">' + r.count + '</td>' +
       '<td class="num">' + ils(r.total) + '</td>' +
-      '<td class="num" style="min-width:76px"><div class="bar"><i style="width:' + share.toFixed(1) + '%"></i></div>' +
-      '<small style="color:var(--text3)">' + share.toFixed(0) + '%</small></td></tr>';
+      '<td class="u-minw-76 num"><div class="bar"><i style="width:' + share.toFixed(1) + '%"></i></div>' +
+      '<small class="u-c-text3">' + share.toFixed(0) + '%</small></td></tr>';
   });
   h += '</tbody><tfoot><tr><td>סה"כ</td><td class="num">' + sum(rows, function (r) { return r.count; }) +
     '</td><td class="num">' + ils(total) + '</td><td></td></tr></tfoot></table></div>';
@@ -4724,7 +4783,7 @@ function viewHome() {
     h += emptyBox('✨', 'אין משימות פתוחות או התחייבויות ממתינות על שמך');
   } else {
     if (myTasks.length) {
-      h += '<div style="font-size:12.5px;font-weight:700;color:var(--text3);margin:2px 0 4px">משימות פתוחות</div>';
+      h += '<div class="u-fs-2 u-fw-700 u-c-text3 u-m-1-0-2">משימות פתוחות</div>';
       myTasks.forEach(function (t) {
         var late = t.due_date && t.due_date < todayISO();
         h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
@@ -4734,7 +4793,7 @@ function viewHome() {
       });
     }
     if (myPledges.length) {
-      h += '<div style="font-size:12.5px;font-weight:700;color:var(--text3);margin:12px 0 4px">התחייבויות שטרם נגבו במלואן</div>';
+      h += '<div class="u-fs-2 u-fw-700 u-c-text3 u-m-5-0-2">התחייבויות שטרם נגבו במלואן</div>';
       myPledges.forEach(function (p) {
         var c = collectedForPledge(p.client_id);
         var left = Math.max(0, num(p.amount) - c);
@@ -4780,7 +4839,7 @@ function donorRowsHTML(list) {
 function viewDonors() {
   var list = donorMatches(state.donorSearch);
   return '<section class="card">' +
-    '<div class="addrow" style="margin:0 0 10px">' +
+    '<div class="u-m-0-0-5 addrow">' +
       '<input aria-label="חיפוש לפי שם, טלפון או שגריר" class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
       '<button class="btn" data-act="donor-new">＋ תורם</button>' +
     '</div>' +
@@ -4802,14 +4861,14 @@ function viewDonorCard() {
   var h = '<button class="back" data-act="donor-back">› חזרה לרשימת התורמים</button>';
 
   h += '<section class="card">' +
-    '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">' +
-      '<div class="av' + (d.is_vip ? ' vip' : '') + '" style="width:52px;height:52px;border-radius:15px;font-size:18px">' +
+    '<div class="u-d-flex u-ai-fs u-g-5 u-mb-5">' +
+      '<div class="u-w-52 u-h-52 u-r-5 u-fs-5 av' + (d.is_vip ? ' vip' : '') + '">' +
         esc(initials(d.name)) + '</div>' +
-      '<div style="flex:1;min-width:0"><h2 style="font-size:19px;margin:0">' + esc(d.name) +
+      '<div class="u-fx-1 u-minw-0"><h2 class="u-fs-5 u-m-0">' + esc(d.name) +
         (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + '</h2>' +
-        '<div style="color:var(--text3);font-size:13.5px">' + esc(d.phone || 'ללא טלפון') + '</div></div>' +
+        '<div class="u-c-text3 u-fs-3">' + esc(d.phone || 'ללא טלפון') + '</div></div>' +
     '</div>' +
-    '<div class="btnrow" style="margin-bottom:12px">' +
+    '<div class="u-mb-5 btnrow">' +
       '<button class="btn sm" data-act="donor-edit" data-id="' + d.client_id + '">עריכה</button>' +
       '<button class="btn soft sm" data-act="vip-toggle" data-id="' + d.client_id + '">' +
         (d.is_vip ? '☆ הסרת VIP' : '★ סימון VIP') + '</button>' +
@@ -4817,16 +4876,16 @@ function viewDonorCard() {
       '<button class="btn ghost sm" data-act="pledge-new" data-donor="' + d.client_id + '">＋ התחייבות</button>' +
       '<button class="btn danger sm" data-act="donor-del" data-id="' + d.client_id + '">מחיקה</button>' +
     '</div>' +
-    '<div class="hero-stats" style="grid-template-columns:repeat(3,1fr)">' +
+    '<div class="u-gtc-repeat-3-1fr hero-stats">' +
       '<div class="stat"><span>סה"כ התחייב</span><b>' + ils(pledged) + '</b></div>' +
       '<div class="stat ok"><span>סה"כ נתן</span><b>' + ils(given) + '</b></div>' +
       '<div class="stat warn"><span>נותר</span><b>' + ils(left) + '</b></div>' +
     '</div>' +
-    '<div style="margin-top:12px">' +
+    '<div class="u-mt-5">' +
       '<div class="kv"><span>שגריר</span><b>' + esc(d.agent || '—') + '</b></div>' +
       '<div class="kv"><span>תגיות</span><b>' + ((d.tags && d.tags.length) ? d.tags.map(function (t) { return '<span class="badge">' + esc(t) + '</span>'; }).join(' ') : '—') + '</b></div>' +
     '</div>' +
-    '<label class="fld" style="margin-top:12px"><span>הערות</span>' +
+    '<label class="u-mt-5 fld"><span>הערות</span>' +
       '<textarea aria-label="הערות חופשיות על התורם" class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
     '<button class="btn sm" data-act="notes-save" data-id="' + d.client_id + '">שמירת הערות</button>' +
   '</section>';
@@ -4923,7 +4982,7 @@ function pledgeTableHTML(list) {
 function pledgeTotalsHTML(list) {
   var pledged = sum(list, function (p) { return p.amount; });
   var got = sum(list, function (p) { return collectedForPledge(p.client_id); });
-  return '<div class="hero-stats" style="grid-template-columns:repeat(2,1fr)">' +
+  return '<div class="u-gtc-repeat-2-1fr hero-stats">' +
     '<div class="stat"><span>סה"כ התחייבויות</span><b>' + ils(pledged) + '</b></div>' +
     '<div class="stat ok"><span>נגבה</span><b>' + ils(got) + '</b></div>' +
     '<div class="stat warn"><span>נותר</span><b>' + ils(Math.max(0, pledged - got)) + '</b></div>' +
@@ -4938,14 +4997,14 @@ function viewPledges() {
     '<h2>🤝 התחייבויות<span class="cnt">' + list.length + '</span>' +
       '<span class="sp"><button class="btn sm" data-act="pledge-new">＋ התחייבות</button></span></h2>' +
     '<div id="pledge-totals">' + pledgeTotalsHTML(list) + '</div>' +
-    '<div class="filters" style="margin-top:12px">' +
+    '<div class="u-mt-5 filters">' +
       '<label class="fld"><span>שגריר</span>' + selectHTML('pf-agent', agentPool(), f.agent, 'הכל') + '</label>' +
       '<label class="fld"><span>סטטוס</span>' + selectHTML('pf-status', ['לא בוצע', 'חלקי', 'בוצע'], f.status, 'הכל') + '</label>' +
       '<label class="fld"><span>עילה</span>' + selectHTML('pf-cause', state.config.causes, f.cause, 'הכל') + '</label>' +
       '<label class="fld"><span>מתאריך</span><input class="inp" type="date" id="pf-from" value="' + esc(f.from) + '"></label>' +
       '<label class="fld"><span>עד תאריך</span><input class="inp" type="date" id="pf-to" value="' + esc(f.to) + '"></label>' +
     '</div>' +
-    '<div class="btnrow" style="margin-bottom:12px">' +
+    '<div class="u-mb-5 btnrow">' +
       '<button class="btn ghost sm" data-act="pf-clear">ניקוי מסננים</button></div>' +
     '<div id="pledge-table">' + pledgeTableHTML(list) + '</div>' +
   '</section>';
@@ -4971,18 +5030,18 @@ function refreshPledges() {
    נוצר מחדש בכל רינדור, ולכן מאזין שנקשר פעם אחת בטעינה מאבד את היעד.
    ══════════════════════════════════════════════════════════════════════════ */
 function viewTasks() {
-  var h = '<section class="card" style="margin-bottom:14px">' +
+  var h = '<section class="u-mb-6 card">' +
     '<h2>🗂️ משימות<span class="cnt">' + state.tasks.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="task-new">＋ משימה</button></span></h2>' +
-    '<div style="color:var(--text3);font-size:13px">גררו כרטיס בין העמודות, או שנו שלב בבורר שבתוך הכרטיס.</div>' +
+    '<div class="u-c-text3 u-fs-3">גררו כרטיס בין העמודות, או שנו שלב בבורר שבתוך הכרטיס.</div>' +
   '</section><div class="kb">';
 
   STAGES.forEach(function (st) {
     var list = state.tasks.filter(function (t) { return t.stage === st; });
     h += '<div class="kcol" data-stage="' + esc(st) + '">' +
-      '<h3><span class="dot" style="background:' + STAGE_COLOR[st] + '"></span>' + esc(st) +
+      '<h3><span class="dot ' + STAGE_CLS[st] + '"></span>' + esc(st) +
       '<span class="cnt">' + list.length + '</span></h3>';
-    if (!list.length) h += '<div class="empty" style="padding:14px 6px;font-size:13px">אין משימות</div>';
+    if (!list.length) h += '<div class="u-p-6-3 u-fs-3 empty">אין משימות</div>';
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
       h += '<div class="kcard" data-id="' + t.client_id + '">' +
@@ -5118,17 +5177,17 @@ function viewSettings() {
 
   /* רשימות */
   h += '<section class="card"><h2>📋 ניהול רשימות</h2>' +
-    '<div style="color:var(--text3);font-size:13px;margin-bottom:12px">הרשימות האלו מזינות את כל התפריטים באפליקציה.</div>' +
+    '<div class="u-c-text3 u-fs-3 u-mb-5">הרשימות האלו מזינות את כל התפריטים באפליקציה.</div>' +
     '<div class="grid2">';
   CONFIG_KEYS.forEach(function (c) {
     var items = state.config[c.key] || [];
-    h += '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">' +
-      '<div style="font-weight:700;font-size:14px">' + esc(c.label) + '</div>' +
-      '<div style="color:var(--text3);font-size:12px;margin-bottom:9px">' + esc(c.hint) + '</div>';
-    if (!items.length) h += '<div style="color:var(--text3);font-size:13px;padding:8px 0">הרשימה ריקה</div>';
+    h += '<div class="u-bd-1-solid-border u-r-radius-sm u-p-5">' +
+      '<div class="u-fw-700 u-fs-3">' + esc(c.label) + '</div>' +
+      '<div class="u-c-text3 u-fs-2 u-mb-4">' + esc(c.hint) + '</div>';
+    if (!items.length) h += '<div class="u-c-text3 u-fs-3 u-p-4-0">הרשימה ריקה</div>';
     items.forEach(function (v, i) {
-      h += '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border-2)">' +
-        '<span style="flex:1;font-size:14px">' + esc(v) + '</span>' +
+      h += '<div class="u-d-flex u-ai-c u-g-3 u-p-3-0 u-bb-1-solid-border-2">' +
+        '<span class="u-fx-1 u-fs-3">' + esc(v) + '</span>' +
         '<button class="btn ghost xs" data-act="cfg-edit" data-key="' + c.key + '" data-i="' + i + '">עריכה</button>' +
         '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
     });
@@ -5180,7 +5239,7 @@ function pickerHTML(id, donorId) {
     '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
     '<div class="dp-results hidden"></div>' +
     '<div class="dp-new hidden">' +
-      '<div style="font-weight:700;font-size:13px;margin-bottom:8px">תורם חדש</div>' +
+      '<div class="u-fw-700 u-fs-3 u-mb-4">תורם חדש</div>' +
       '<div class="f2">' +
         '<label class="fld"><span>שם התורם</span><input class="inp dp-n-name"></label>' +
         '<label class="fld"><span>טלפון</span><input class="inp dp-n-phone" inputmode="tel"></label>' +
@@ -5289,7 +5348,7 @@ function formTxn(existing, presetDonor) {
   var donorId = t.donor_client_id || presetDonor || '';
   var body =
     '<label class="fld"><span>תורם *</span></label>' + pickerHTML('txn-donor', donorId) +
-    '<div class="f2" style="margin-top:12px">' +
+    '<div class="u-mt-5 f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="txn-amount" inputmode="decimal" value="' + esc(t.amount != null ? num(t.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="txn-date" value="' + esc(t.txn_date || todayISO()) + '"></label>' +
     '</div>' +
@@ -5339,7 +5398,7 @@ function formPledge(existing, presetDonor) {
   var p = existing || {};
   var body =
     '<label class="fld"><span>תורם *</span></label>' + pickerHTML('pl-donor', p.donor_client_id || presetDonor || '') +
-    '<div class="f2" style="margin-top:12px">' +
+    '<div class="u-mt-5 f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="pl-amount" inputmode="decimal" value="' + esc(p.amount != null ? num(p.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="pl-due" value="' + esc(p.due_date || '') + '"></label>' +
     '</div>' +
@@ -5349,7 +5408,7 @@ function formPledge(existing, presetDonor) {
     '</div>' +
     '<label class="fld"><span>הערה</span><textarea class="inp" id="pl-note">' + esc(p.note || '') + '</textarea></label>' +
     (state.config.causes.length ? '' :
-      '<div style="color:var(--text3);font-size:12.5px">אין עדיין עילות. אפשר להוסיף אותן במסך ההגדרות.</div>') +
+      '<div class="u-c-text3 u-fs-2">אין עדיין עילות. אפשר להוסיף אותן במסך ההגדרות.</div>') +
     datalistHTML('dl-agents', agentPool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -5480,12 +5539,12 @@ function formUser(existing) {
       '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
       '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
     '</div>' +
-    (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>') +
+    (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="u-mt-2 btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה">👁</button></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
         '<option value="manager"' + (isAdminOf(u) ? '' : ' selected') + '>מנהל</option>' +
         '<option value="admin"' + (isAdminOf(u) ? ' selected' : '') + '>בעלים</option></select></label>' +
-      '<label class="fld chk" style="margin-top:22px"><input type="checkbox" id="us-active"' +
+      '<label class="u-mt-7 fld chk"><input type="checkbox" id="us-active"' +
         (u.client_id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
     '</div>';
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -5525,7 +5584,7 @@ function warnIfNoFp(r) {
 
 function formPassword(u) {
   openModal('שינוי סיסמה — ' + u.full_name,
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה" style="margin-top:4px">👁</button></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="u-mt-2 btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="pass-save" data-ksave data-id="' + u.client_id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
@@ -5836,7 +5895,7 @@ var DOM_ACTIONS = {
     var list = (state.config[key] || []).slice();
     openModal('עריכת ערך',
       '<label class="fld"><span>ערך</span><input class="inp" id="cfg-v" value="' + esc(list[i] || '') + '"></label>' +
-      '<div style="color:var(--text3);font-size:12.5px">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
+      '<div class="u-c-text3 u-fs-2">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
       '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
       '<button class="btn" data-act="cfg-edit-save" data-ksave data-key="' + key + '" data-i="' + i + '">שמירה</button>');
   },
@@ -5970,7 +6029,7 @@ function boot() {
     $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
       '<h1>שגיאת טעינה</h1><div class="sub">אין עדיין עותק מקומי של הנתונים, ולא הצלחנו לטעון מהשרת. ' +
       'התחברו לרשת פעם אחת — מכאן והלאה האפליקציה תעבוד גם בלעדיה.</div>' +
-      '<button class="btn block" style="margin-top:14px" data-act="reload">רענון</button>' +
+      '<button class="u-mt-6 btn block" data-act="reload">רענון</button>' +
       '</div></div>';
   });
 }
