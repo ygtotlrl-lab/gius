@@ -36,8 +36,8 @@ const APP = {
   app: 'gius',
   file: 'index.html',
   /*  ⚠️ נמדד ולא הוצהר: כאן המשיכה והדחיפה הן אותה פונקציה — `syncNow`
-   *  מושכת, ממזגת ודוחפת, ולכן היא גם `RTY_CFG.flush`, גם `PL_CFG.pull`
-   *  וגם מה שמאזין ה-`online` שב-`startSync()` מפעיל. */
+   *  מושכת, ממזגת ודוחפת, ⭐ ולכן היא גם `RTY_CFG.flush` וגם `PL_CFG.pull`:
+   *  ⛔ ואין לה מאזין `online` משלה — ⚠️ הפולינג הוא שמחזיר אותה לפעולה. */
   drainFns: ['syncNow'],
   /*  משפך הכתיבה המקומית שדורך את הניסיון החוזר. */
   noteFn: 'schedulePush',
