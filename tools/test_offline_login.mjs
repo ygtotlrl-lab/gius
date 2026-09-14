@@ -142,6 +142,10 @@ const NAMES_FN = [
   'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorLoadOne', 'mirrorLoad', 'mirrorSave', 'mirrorWrite',
   'mirrorBoot', 'adoptLegacyId', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
 ];
+/*  ⛔ ההודעות הן קבועים ⛔ ואינן ליטרל באתר התצוגה — ⚠️ הרתמה טוענת את
+ *  הצהרותיהן, ⭐ שאם לא כן מטפל שמציג הודעה זורק `ReferenceError`,
+ *  ⛔ והכשל נקרא ככשל התנהגות ולא כחוסר בסביבה. */
+const MSG_DECLS = (SRC.match(/^var MSG_[A-Z_0-9]* = '(?:[^'\\]|\\.)*';$/gm) || []).join('\n');
 const NAMES_VAR = [
   'G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_CFG', 'MIRROR',
   'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO', 'MSG_OFF_USER_WRITE'
@@ -187,7 +191,7 @@ function makeCtx(opts = {}) {
   };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
-  const code = NAMES_VAR.map(decl).join('\n') + '\n' + NAMES_FN.map(fn).join('\n');
+  const code = MSG_DECLS + '\n' + NAMES_VAR.map(decl).join('\n') + '\n' + NAMES_FN.map(fn).join('\n');
   vm.runInContext(code, ctx);
   return { ctx, store, calls };
 }

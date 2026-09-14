@@ -126,6 +126,10 @@ function decl(name) {
 }
 const body = (name) => fn(name);
 
+/*  ⛔ ההודעות הן קבועים ⛔ ואינן ליטרל באתר התצוגה — ⚠️ הרתמה טוענת את
+ *  הצהרותיהן, ⭐ שאם לא כן מטפל שמציג הודעה זורק `ReferenceError`,
+ *  ⛔ והכשל נקרא ככשל התנהגות ולא כחוסר בסביבה. */
+const MSG_DECLS = (SRC.match(/^var MSG_[A-Z_0-9]* = '(?:[^'\\]|\\.)*';$/gm) || []).join('\n');
 const NAMES_VAR = ['G_PASS_ITER', 'G_PASS_CTX', 'TABLES', 'MIRROR_CFG', 'MIRROR',
   'MSG_OFF_UNKNOWN', 'MSG_OFF_NO_FP', 'MSG_OFF_NO_CRYPTO'];
 const NAMES_FN = ['gRandSalt', 'gPassFp', 'gMakePassFp', 'gVerifyOffline',
@@ -166,7 +170,7 @@ function makeCtx(opts = {}) {
   };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
-  vm.runInContext(NAMES_VAR.map(decl).join('\n') + '\n' + NAMES_FN.map(fn).join('\n'), ctx);
+  vm.runInContext(MSG_DECLS + '\n' + NAMES_VAR.map(decl).join('\n') + '\n' + NAMES_FN.map(fn).join('\n'), ctx);
   return { ctx, store, calls };
 }
 
