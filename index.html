@@ -624,14 +624,98 @@ var sb = null;
    `sb.from(...)` כאן לא היה מוגבל בזמן: ברשת "חצי מחוברת" ה-fetch לא מצליח
    ולא נכשל, והמשתמש ממתין לנצח. */
 var MSG_OFFLINE = '⚠️ אין חיבור לאינטרנט — הפעולה תסתנכרן כשהחיבור יחזור';
-var MSG_SAVED = '✅ נשמר בהצלחה';
-// נוסח משותף לארבע האפליקציות (סבב 12 שלב 4). שמירה מקומית שטרם אושרה
-// בענן **חייבת** להיאמר אחרת משמירה שאושרה — אחרת "נשמר" נראה בדיוק אותו
-// דבר בשני המצבים, וזו ההטעיה שהסבב הזה בא למנוע.
-var MSG_SAVED_LOCAL = '✅ נשמר במכשיר — יסונכרן כשתחזור הרשת';
 var MSG_BAD_LOGIN = '❌ שם משתמש או סיסמה שגויים';
-// סבב 17: נוסח אחיד לארבע האפליקציות.
+/* ═══ מחרוזות ההודעה המשותפות — מודול משותף (סבב 141) ════════════════════
+   ⭐ הודעה שיותר מאפליקציה אחת אומרת יושבת כאן פעם אחת, ⛔ וגופה נחתם:
+   ⚠️ עד כאן הצהירה **הערה** «מילה במילה זהות», ⛔ ואיש לא מדד — ⭐ ונמדד
+   ששני שמות נשאו טקסט אחר, ⚠️ ושאחת-עשרה הודעות נכתבו כליטרל בשניים
+   ובשלושה ריפו בלי שם כלל.
+   ⛔ **והמשפחה תשתית ולא מפקד** — ⚠️ אפליקציה שאינה אומרת הודעה נושאת
+   אותה בכל זאת: ⭐ המושג חי בארבעתן, ⛔ ורשימה שנגזרת ממי שמציג אותה
+   היום משתנה עם המוצר ⛔ ואיש אינו מיישר אותה בחזרה.
+   ⚠️ **ומה שנבדל בהחלטה אינו כאן** — ⛔ `MSG_OFFLINE` ו-`MSG_BAD_LOGIN`
+   נבדלים בגיוס בהחלטת מנהל, ⭐ והם נשארים פר-אפליקציה עם נימוקם במקומם.
+   ⛔ **וכל הודעת חסימה מתארת מצב אחר** — ⚠️ אין לאחד אותן זו עם זו ולא עם
+   «סיסמה שגויה»: ⭐ הודעה מאוחדת שולחת את המשתמש להקליד שוב ושוב סיסמה
+   נכונה, ⛔ במקום לומר לו את הדבר היחיד שיפתור — חיבור אחד.
+   ═══════════════════════════════════════════════════════════════════════ */
+var MSG_SAVED = '✅ נשמר בהצלחה';
+var MSG_SAVED_LOCAL = '✅ נשמר במכשיר — יסונכרן כשתחזור הרשת';
 var MSG_SYNC_BACK = '☁️ הסנכרון חזר לפעול';
+var MSG_STALE_CODE = '⚠️ הגרסה הזו מיושנת — יש לעדכן';
+var MSG_DELETE = 'מחק';
+var MSG_FILL_ALL = '⚠️ נא למלא את כל השדות';
+var MSG_LOAD_FAIL_PRE = '⚠️ טעינת הנתונים נכשלה (';
+var MSG_MY_PASS_TITLE = '🔑 שינוי הסיסמה שלי';
+var MSG_OFFLINE_LOGIN = '📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור';
+var MSG_PASS_CUR_BAD = '❌ הסיסמה הנוכחית שגויה';
+var MSG_PASS_MISMATCH = '⚠️ הסיסמאות החדשות אינן זהות';
+var MSG_PASS_UPDATE_FAIL = '❌ עדכון הסיסמה נכשל: ';
+var MSG_PASS_VERIFY_FAIL = '❌ לא ניתן לאמת את הסיסמה הנוכחית: ';
+var MSG_SERVER_ERR = 'שגיאת שרת';
+var MSG_SWITCHED_TO = 'הוחלף ל';
+var MSG_OFF_UNKNOWN = '📴 אין חיבור — המשתמש הזה אינו בעותק המקומי שבמכשיר. נדרש חיבור לאינטרנט פעם אחת';
+var MSG_OFF_NO_FP = '📴 אין חיבור — המשתמש הזה טרם הוכן לכניסה ללא רשת. נדרש חיבור לאינטרנט פעם אחת';
+var MSG_OFF_NO_CRYPTO = '❌ הדפדפן אינו תומך בהצפנה הנדרשת לכניסה ללא רשת';
+var MSG_NO_CRYPTO = '❌ הדפדפן אינו תומך בהצפנה הנדרשת לאימות הסיסמה';
+var MSG_OFF_USER_WRITE = '📴 אין חיבור — ניהול משתמשים דורש חיבור לאינטרנט';
+/* ═══════════════ סוף מודול מחרוזות ההודעה ══════════════════════════════ */
+/* ══ הודעות פר-אפליקציה — מה שרק כאן נאמר ═══════════════════════════════
+   ⛔ ההודעה היא קבוע ⛔ ואינה ליטרל באתר התצוגה — ⚠️ טקסט שנכתב במקום
+   שבו הוא נאמר נכתב שוב במסך הבא, ⭐ ושני ניסוחים לאותו מצב הם שני
+   מסלולים בעיני הקורא.
+   ⚠️ **ומה שיותר מאפליקציה אחת אומרת אינו כאן** — ⛔ הוא בבלוק החתום,
+   ⭐ ששם החתימה היא מה שמודד את זהות הנוסח. */
+var MSG_MAYBE_STALE = ') — המוצג עלול להיות לא מעודכן';
+var MSG_OWNER_ONLY = '⚠️ אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד';
+var MSG_NEED_DONOR_NAME = '⚠️ נא למלא שם תורם';
+var MSG_DONOR_CREATED = 'התורם נוצר';
+var MSG_EDIT_TXN = 'עריכת תנועה';
+var MSG_NEW_TXN = '💰 תנועה חדשה';
+var MSG_PICK_DONOR = '⚠️ נא לבחור תורם';
+var MSG_AMOUNT_POSITIVE = '⚠️ נא להזין סכום גדול מאפס';
+var MSG_EDIT_PLEDGE = 'עריכת התחייבות';
+var MSG_NEW_PLEDGE = '🤝 התחייבות חדשה';
+var MSG_EDIT_TASK = 'עריכת משימה';
+var MSG_NEW_TASK = '📋 משימה חדשה';
+var MSG_NEED_TITLE = '⚠️ נא למלא כותרת';
+var MSG_EDIT_DONOR = 'עריכת תורם';
+var MSG_NEW_DONOR = '🙋 תורם חדש';
+var MSG_NEED_NAME = '⚠️ נא למלא שם';
+var MSG_EDIT_USER = 'עריכת משתמש';
+var MSG_NEW_USER = '👤 משתמש חדש';
+var MSG_NEED_FULL_AND_USER = '⚠️ נא למלא שם מלא ושם משתמש';
+var MSG_NEED_PASS = '⚠️ נא להזין סיסמה';
+var MSG_SAVED_NO_FP = '⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת';
+var MSG_PASS_CHANGE_FOR = 'שינוי סיסמה — ';
+var MSG_NO_OTHER_USER_LOCAL = '⚠️ אין משתמש אחר בעותק המקומי של המכשיר';
+var MSG_SWITCH_USER = '👥 החלפת משתמש';
+var MSG_MONTH_GOAL = '🎯 יעד חודשי';
+var MSG_PICK_VALID_MONTH = '⚠️ נא לבחור חודש תקין';
+var MSG_PICK_USER_AND_PASS = '⚠️ נא לבחור משתמש ולהזין סיסמה';
+var MSG_WHAT_TO_ADD = 'מה מוסיפים?';
+var MSG_NOTES_SAVED = 'ההערות נשמרו';
+var MSG_DEL_DONOR_TITLE = 'מחיקת תורם';
+var MSG_DEL_DONOR_LINKED = 'לתורם יש התחייבויות או תנועות. המחיקה היא רכה — הרשומות יישמרו במסד ולא יוצגו.';
+var MSG_DEL_QUOTE_PRE = 'למחוק את "';
+var MSG_DEL_QUOTE_POST = '"? המחיקה רכה וניתנת לשחזור במסד.';
+var MSG_DELETE_ACT = 'מחיקה';
+var MSG_DEL_TXN_TITLE = 'מחיקת תנועה';
+var MSG_DEL_TXN_BODY = 'למחוק את התנועה? המחיקה רכה.';
+var MSG_DEL_PLEDGE_TITLE = 'מחיקת התחייבות';
+var MSG_DEL_PLEDGE_BODY = 'למחוק את ההתחייבות? המחיקה רכה.';
+var MSG_DEL_TASK_TITLE = 'מחיקת משימה';
+var MSG_DEL_TASK_BODY = 'למחוק את המשימה? המחיקה רכה.';
+var MSG_NO_SELF_DISABLE = '⚠️ אי אפשר להשבית את המשתמש המחובר';
+var MSG_UPDATED = 'עודכן';
+var MSG_NEED_VALUE = '⚠️ נא להזין ערך';
+var MSG_VALUE_EXISTS2 = '⚠️ הערך כבר קיים';
+var MSG_EDIT_VALUE = 'עריכת ערך';
+var MSG_REMOVE_VALUE_TITLE = 'הסרת ערך';
+var MSG_REMOVE_QUOTE_PRE = 'להסיר את "';
+var MSG_REMOVE_QUOTE_POST = '" מהרשימה? רשומות קיימות שמשתמשות בערך יישארו כמות שהן.';
+var MSG_REMOVE_ACT = 'הסרה';
+/* ══ סוף הודעות פר-אפליקציה ═════════════════════════════════════════════ */
 /* ═══ סולם נקודות השבירה — מודול משותף (סבב 97) ═══════════════════════════
    ⭐ הסולם הוא מקור האמת היחיד לנקודות השבירה בארבע האפליקציות, ⛔ והוא
    מוצהר כאן פעם אחת: ⚠️ שאילתה שערכה אינו ברשימה מפילה בשער.
@@ -1434,7 +1518,6 @@ window.lsBootDeferred = lsBootDeferred;
 window.lsSweepVerified = lsSweepVerified;
 /* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
 
-var MSG_STALE_CODE = '⚠️ הגרסה הזו מיושנת — יש לעדכן';
 /* ═══ האזנת הסכימה — מודול משותף (סבב 91) ═════════════════════════════════
 /*  ⛔ **שלוש תשובות מסד מעידות שהקוד ישן מהסכימה** — טבלה שאינה קיימת
  *  (`42P01`) · עמודה שאינה קיימת (`42703`) · ו-404 על טבלה: ⚠️ שלושתן
@@ -3799,7 +3882,7 @@ var USER_CFG = {
   after: function (res, body) {
     /*  ⛔ הכשל נזרק כאן ⛔ ולא בבלוק — ⚠️ שלושת הקוראים כאן עובדים
      *  ב-`catch`, ⭐ ובשתי האחיות הקוראים בודקים `res.error`. */
-    if (!res || res.error) throw ((res && res.error) || new Error('שגיאת שרת'));
+    if (!res || res.error) throw ((res && res.error) || new Error(MSG_SERVER_ERR));
     var saved = (Array.isArray(res.data) && res.data[0]) || body;
     usersCacheSave(saved);
     /*  ⛔ העֵד נכתב כאן ⛔ ולא במשיכה — ⚠️ זו כתיבה לענן שחזרה `ok`,
@@ -3986,7 +4069,7 @@ function syncPull() {
       console.warn('[sync] נכשלו:', errs.join(', '));
       if (!_netWarned) {
         _netWarned = true;
-        toast('⚠️ טעינת הנתונים נכשלה (' + errs.join(', ') + ') — המוצג עלול להיות לא מעודכן', null, 'bad');
+        toast(MSG_LOAD_FAIL_PRE + errs.join(', ') + MSG_MAYBE_STALE, null, 'bad');
       }
     }
     return { ok: !errs.length, remote: remoteMaps };
@@ -4481,13 +4564,9 @@ function gIsMissingFpCol(err) {
 // ⛔ **אין לאחד אותן עם `MSG_BAD_LOGIN`.** «סיסמה שגויה» על מצב שאינו סיסמה
 // שגויה הוא כשל שקט: הוא מוביל את המשתמש להקליד שוב ושוב סיסמה נכונה
 // לחלוטין, במקום לומר לו את הדבר היחיד שיפתור — חיבור אחד.
-var MSG_OFF_UNKNOWN   = '📴 אין חיבור — המשתמש הזה אינו בעותק המקומי שבמכשיר. נדרש חיבור לאינטרנט פעם אחת';
-var MSG_OFF_NO_FP     = '📴 אין חיבור — המשתמש הזה טרם הוכן לכניסה ללא רשת. נדרש חיבור לאינטרנט פעם אחת';
-var MSG_OFF_NO_CRYPTO = '❌ הדפדפן אינו תומך בהצפנה הנדרשת לכניסה ללא רשת';
 // ⚠️ כתיבת משתמש היא החריג היחיד לכתיבה מקומית-תחילה:
 // היא חייבת להגיע לענן, אחרת הטביעה לא תגיע לשאר המכשירים והמשתמש החדש לא
-// יוכל להיכנס בהם — לא אופליין, ואפילו לא אונליין. ר' `writeUser`.
-var MSG_OFF_USER_WRITE = '📴 אין חיבור — ניהול משתמשים דורש חיבור לאינטרנט';
+// יוכל להיכנס בהם — לא אופליין, ואפילו לא אונליין.
 
 // אימות אופליין מול הטביעה. מחזירה Promise של אחת מארבע:
 // 'ok' · 'bad' (סיסמה שגויה או משתמש מושבת) · 'no-fp' (אין טביעה לרשומה)
@@ -4614,7 +4693,7 @@ function doLoginOffline(username, password) {
     ctxSwitch();
     state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
     boot();
-    toast('📴 כניסה במצב אופליין — הנתונים יסונכרנו כשהרשת תחזור', null, 'bad');
+    toast(MSG_OFFLINE_LOGIN, null, 'bad');
   }, function (e) {
     console.warn('[login] אימות אופליין נכשל', e);
     loginError(MSG_OFF_NO_CRYPTO);
@@ -4690,7 +4769,7 @@ var lastViewKey = '';
 // אותה החלטה בדיוק תועדה ב-hanhala-ruchanit (סבב 6 שם).
 function go(screen) {
   if (screen === 'settings' && !isAdmin()) {
-    toast('⚠️ אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד', null, 'bad');
+    toast(MSG_OWNER_ONLY, null, 'bad');
     return;
   }
   state.screen = screen;
@@ -5333,14 +5412,14 @@ function pickerSave(root) {
   var box = $('.dp-new', root);
   var name = $('.dp-n-name', box).value.trim();
   var phone = $('.dp-n-phone', box).value.trim();
-  if (!name) { toast('⚠️ נא למלא שם תורם', null, 'bad'); return; }
+  if (!name) { toast(MSG_NEED_DONOR_NAME, null, 'bad'); return; }
   return insert('g_donors', { name: name, phone: phone || null })
     .then(function (d) {
       state.donors.push(d);
       $('.dp-n-name', box).value = '';
       $('.dp-n-phone', box).value = '';
       pickerSet(root, d);
-      toast('התורם נוצר', null, 'good');
+      toast(MSG_DONOR_CREATED, null, 'good');
     })
     .catch(errToast);
 }
@@ -5394,15 +5473,15 @@ function formTxn(existing, presetDonor) {
     (t.client_id ? '<button class="btn danger" data-act="txn-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="txn-save" data-ksave data-id="' + (t.client_id || '') + '">שמירה</button>';
 
-  openModal(t.client_id ? 'עריכת תנועה' : '💰 תנועה חדשה', body, foot);
+  openModal(t.client_id ? MSG_EDIT_TXN : MSG_NEW_TXN, body, foot);
   if (t.pledge_client_id) { var sel = $('#txn-pledge'); if (sel) sel.value = t.pledge_client_id; }
 }
 
 function saveTxn(id) {
   var donorId = pickerValue('txn-donor');
-  if (!donorId) { toast('⚠️ נא לבחור תורם', null, 'bad'); return Promise.resolve(); }
+  if (!donorId) { toast(MSG_PICK_DONOR, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('txn-amount'));
-  if (!(amount > 0)) { toast('⚠️ נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
+  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return Promise.resolve(); }
   var row = {
     donor_client_id: donorId,
     pledge_client_id: nullable(val('txn-pledge')),
@@ -5438,14 +5517,14 @@ function formPledge(existing, presetDonor) {
     (p.client_id ? '<button class="btn danger" data-act="pledge-del" data-id="' + p.client_id + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="pledge-save" data-ksave data-id="' + (p.client_id || '') + '">שמירה</button>';
 
-  openModal(p.client_id ? 'עריכת התחייבות' : '🤝 התחייבות חדשה', body, foot);
+  openModal(p.client_id ? MSG_EDIT_PLEDGE : MSG_NEW_PLEDGE, body, foot);
 }
 
 function savePledge(id) {
   var donorId = pickerValue('pl-donor');
-  if (!donorId) { toast('⚠️ נא לבחור תורם', null, 'bad'); return Promise.resolve(); }
+  if (!donorId) { toast(MSG_PICK_DONOR, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('pl-amount'));
-  if (!(amount > 0)) { toast('⚠️ נא להזין סכום גדול מאפס', null, 'bad'); return Promise.resolve(); }
+  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return Promise.resolve(); }
   var row = {
     donor_client_id: donorId,
     amount: amount,
@@ -5481,14 +5560,14 @@ function formTask(existing) {
     (t.client_id ? '<button class="btn danger" data-act="task-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="task-save" data-ksave data-id="' + (t.client_id || '') + '">שמירה</button>';
 
-  openModal(t.client_id ? 'עריכת משימה' : '📋 משימה חדשה', body, foot);
+  openModal(t.client_id ? MSG_EDIT_TASK : MSG_NEW_TASK, body, foot);
   var titleEl = $('#tk-title');
   if (titleEl && !t.client_id) titleEl.focus();
 }
 
 function saveTask(id) {
   var title = val('tk-title');
-  if (!title) { toast('⚠️ נא למלא כותרת', null, 'bad'); return Promise.resolve(); }
+  if (!title) { toast(MSG_NEED_TITLE, null, 'bad'); return Promise.resolve(); }
   var existing = null;
   for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) existing = state.tasks[i];
 
@@ -5529,13 +5608,13 @@ function formDonor(existing) {
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="donor-save" data-ksave data-id="' + (d.client_id || '') + '">שמירה</button>';
-  openModal(d.client_id ? 'עריכת תורם' : '🙋 תורם חדש', body, foot);
+  openModal(d.client_id ? MSG_EDIT_DONOR : MSG_NEW_DONOR, body, foot);
   var n = $('#dn-name'); if (n && !d.client_id) n.focus();
 }
 
 function saveDonor(id) {
   var name = val('dn-name');
-  if (!name) { toast('⚠️ נא למלא שם', null, 'bad'); return Promise.resolve(); }
+  if (!name) { toast(MSG_NEED_NAME, null, 'bad'); return Promise.resolve(); }
   var tags = val('dn-tags').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
   var row = {
     name: name,
@@ -5548,10 +5627,8 @@ function saveDonor(id) {
   return id ? update('g_donors', id, row) : insert('g_donors', row);
 }
 
-// סבב 19: סיסמה בת שש ספרות בדיוק. ⛔ נאכף **רק במסלולי יצירה/שינוי**
-// (`saveUser` על משתמש חדש, ו-`pass-save`) — ולא במסלול הכניסה. שם רק
-// משווים מול הסיסמה השמורה, ואכיפת פורמט הייתה נועלת בחוץ כל משתמש
-// שסיסמתו נקבעה לפני הסבב הזה.
+// ⭐ תבנית שש הספרות — ⛔ נאכפת במסלולי יצירה ושינוי בלבד: ⚠️ אכיפה
+// במסלול הכניסה נועלת בחוץ סיסמה תקפה שנקבעה לפני התקן.
 var PASS_SIX_RE = /^[0-9]{6}$/;
 var MSG_PASS_SIX = '⚠️ הסיסמה חייבת להיות שש ספרות';
 
@@ -5572,12 +5649,12 @@ function formUser(existing) {
     '</div>';
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="user-save" data-ksave data-id="' + (u.client_id || '') + '">שמירה</button>';
-  openModal(u.client_id ? 'עריכת משתמש' : '👤 משתמש חדש', body, foot);
+  openModal(u.client_id ? MSG_EDIT_USER : MSG_NEW_USER, body, foot);
 }
 
 function saveUser(id) {
   var full = val('us-full'), uname = val('us-name');
-  if (!full || !uname) { toast('⚠️ נא למלא שם מלא ושם משתמש', null, 'bad'); return Promise.resolve(); }
+  if (!full || !uname) { toast(MSG_NEED_FULL_AND_USER, null, 'bad'); return Promise.resolve(); }
   var row = {
     full_name: full, username: uname,
     role: val('us-role') || 'manager',
@@ -5588,7 +5665,7 @@ function saveUser(id) {
   if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return Promise.resolve(); }
   if (!id) {
     var p = $('#us-pass') ? $('#us-pass').value : '';
-    if (!p) { toast('⚠️ נא להזין סיסמה', null, 'bad'); return Promise.resolve(); }
+    if (!p) { toast(MSG_NEED_PASS, null, 'bad'); return Promise.resolve(); }
     if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return Promise.resolve(); }
     return passFields(p).then(function (pf) {
       return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp);
@@ -5601,12 +5678,12 @@ function saveUser(id) {
 // ⚠️ שמירה שהצליחה **בלי** טביעה אינה «נשמר בהצלחה»: המשתמש נשמר, אבל
 // הכניסה האופליין שלו לא תעבוד. אומרים את זה, לא בולעים.
 function warnIfNoFp(r) {
-  if (r && r.noFp) toast('⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת', null, 'bad');
+  if (r && r.noFp) toast(MSG_SAVED_NO_FP, null, 'bad');
   return r;
 }
 
 function formPassword(u) {
-  openModal('שינוי סיסמה — ' + u.full_name,
+  openModal(MSG_PASS_CHANGE_FOR + u.full_name,
     '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="u-mt-2 btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="pass-save" data-ksave data-id="' + u.client_id + '">שמירה</button>');
@@ -5620,7 +5697,7 @@ function formPassword(u) {
 // ⚠️ הסיסמה **הנוכחית** אינה נבדקת מול תבנית שש-הספרות — בדיוק כמו
 //    במסלול הכניסה: אכיפה שם הייתה נועלת בחוץ סיסמה ותיקה ותקפה.
 function formMyPassword() {
-  openModal('🔑 שינוי הסיסמה שלי',
+  openModal(MSG_MY_PASS_TITLE,
     '<label class="fld"><span>סיסמה נוכחית *</span><input class="inp" id="mp-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>' +
     '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="mp-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>' +
     '<label class="fld"><span>אימות סיסמה חדשה *</span><input class="inp" id="mp-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"></label>',
@@ -5633,9 +5710,9 @@ function formSaveMyPassword() {
   var c1 = $('#mp-cur'), n1 = $('#mp-new'), n2 = $('#mp-new2');
   if (!c1 || !n1 || !n2) { uiNoDialog('formSaveMyPassword', 'mp-cur'); return; }
   var cur = c1.value.trim(), p1 = n1.value.trim(), p2 = n2.value.trim();
-  if (!cur || !p1 || !p2) { toast('⚠️ נא למלא את כל השדות', null, 'bad'); return; }
+  if (!cur || !p1 || !p2) { toast(MSG_FILL_ALL, null, 'bad'); return; }
   if (!PASS_SIX_RE.test(p1)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
-  if (p1 !== p2) { toast('⚠️ הסיסמאות החדשות אינן זהות', null, 'bad'); return; }
+  if (p1 !== p2) { toast(MSG_PASS_MISMATCH, null, 'bad'); return; }
   if (!sb || !navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
   // ⚠️ האימות הוא מול הענן, רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום
   //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
@@ -5671,8 +5748,8 @@ function formSwitchUser() {
   var others = (MIRROR.g_users || []).filter(function (u) {
     return u && u.active !== false && String(u.client_id) !== String(state.user.client_id);
   });
-  if (!others.length) { toast('⚠️ אין משתמש אחר בעותק המקומי של המכשיר', null, 'bad'); return; }
-  openModal('👥 החלפת משתמש',
+  if (!others.length) { toast(MSG_NO_OTHER_USER_LOCAL, null, 'bad'); return; }
+  openModal(MSG_SWITCH_USER,
     '<label class="fld"><span>משתמש</span><select class="inp" id="sw-user" aria-label="המשתמש שאליו עוברים">' +
       others.map(function (u) {
         return '<option value="' + esc(u.client_id) + '">' + esc(u.full_name || u.username) + '</option>';
@@ -5688,7 +5765,7 @@ function formTarget(month) {
   var m = month || state.month;
   var cur = 0;
   for (var i = 0; i < state.targets.length; i++) if (state.targets[i].month === m) cur = num(state.targets[i].amount);
-  openModal('🎯 יעד חודשי',
+  openModal(MSG_MONTH_GOAL,
     '<div class="f2">' +
       '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="tg-month" value="' + esc(m) + '"></label>' +
       '<label class="fld"><span>סכום יעד *</span><input class="inp" id="tg-amount" inputmode="decimal" value="' + (cur || '') + '"></label>' +
@@ -5699,7 +5776,7 @@ function formTarget(month) {
 
 function saveTarget() {
   var m = val('tg-month');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast('⚠️ נא לבחור חודש תקין', null, 'bad'); return Promise.resolve(); }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('tg-amount'));
   return upsertBy('g_targets', 'month', { month: m, amount: amount });
 }
@@ -5743,7 +5820,7 @@ var DOM_ACTIONS = {
   'switch-confirm': function (el) {
     var id = $('#sw-user') ? $('#sw-user').value : '';
     var p  = $('#sw-pass') ? $('#sw-pass').value : '';
-    if (!id || !p) { toast('⚠️ נא לבחור משתמש ולהזין סיסמה', null, 'bad'); return; }
+    if (!id || !p) { toast(MSG_PICK_USER_AND_PASS, null, 'bad'); return; }
     var cu = null, arr = MIRROR.g_users || [];
     for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) cu = arr[i];
     /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן (סבב 67) — «אין במה לאמת»
@@ -5760,7 +5837,7 @@ var DOM_ACTIONS = {
       state.screen = 'home';
       state.donorId = null;
       boot();
-      toast('הוחלף ל' + (cu.full_name || cu.username), null, 'good');
+      toast(MSG_SWITCHED_TO + (cu.full_name || cu.username), null, 'good');
     }, function (e) { console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
   },
   'logout': function () { doLogout(); },
@@ -5771,7 +5848,7 @@ var DOM_ACTIONS = {
   'month': function (el) { state.month = shiftMonth(state.month, +el.dataset.d); render(); },
 
   'fab': function () {
-    openModal('מה מוסיפים?',
+    openModal(MSG_WHAT_TO_ADD,
       '<div class="chooser">' +
         '<button data-act="txn-new"><span class="ic">💰</span><span>תנועה<small>רישום כסף שנכנס</small></span></button>' +
         '<button data-act="task-new"><span class="ic">📋</span><span>משימה<small>מטלה לקנבן</small></span></button>' +
@@ -5802,7 +5879,7 @@ var DOM_ACTIONS = {
       .then(function () {
         var d = donorById(el.dataset.id);
         if (d) d.notes = notes;
-        toast('ההערות נשמרו', null, 'good');
+        toast(MSG_NOTES_SAVED, null, 'good');
       })
       .catch(errToast);
   },
@@ -5810,11 +5887,11 @@ var DOM_ACTIONS = {
     var d = donorById(el.dataset.id);
     if (!d) return;
     var hasData = pledgesOfDonor(d.client_id).length || txnsOfDonor(d.client_id).length;
-    return ask('מחיקת תורם',
+    return ask(MSG_DEL_DONOR_TITLE,
       hasData
-        ? 'לתורם יש התחייבויות או תנועות. המחיקה היא רכה — הרשומות יישמרו במסד ולא יוצגו.'
-        : 'למחוק את "' + d.name + '"? המחיקה רכה וניתנת לשחזור במסד.',
-      'מחיקה'
+        ? MSG_DEL_DONOR_LINKED
+        : MSG_DEL_QUOTE_PRE + d.name + MSG_DEL_QUOTE_POST,
+      MSG_DELETE_ACT
     ).then(function (yes) {
       if (!yes) return;
       softDelete('g_donors', d.client_id)
@@ -5832,7 +5909,7 @@ var DOM_ACTIONS = {
   },
   'txn-save': function (el) { return runSave(function () { return saveTxn(el.dataset.id); }, 'התנועה נשמרה'); },
   'txn-del': function (el) {
-    return ask('מחיקת תנועה', 'למחוק את התנועה? המחיקה רכה.', 'מחיקה').then(function (yes) {
+    return ask(MSG_DEL_TXN_TITLE, MSG_DEL_TXN_BODY, MSG_DELETE_ACT).then(function (yes) {
       if (!yes) return;
       softDelete('g_txns', el.dataset.id).then(function () { return afterSave('נמחק'); }).catch(errToast);
     });
@@ -5843,7 +5920,7 @@ var DOM_ACTIONS = {
   'pledge-edit': function (el) { formPledge(pledgeById(el.dataset.id)); },
   'pledge-save': function (el) { return runSave(function () { return savePledge(el.dataset.id); }, 'ההתחייבות נשמרה'); },
   'pledge-del': function (el) {
-    return ask('מחיקת התחייבות', 'למחוק את ההתחייבות? המחיקה רכה.', 'מחיקה').then(function (yes) {
+    return ask(MSG_DEL_PLEDGE_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DELETE_ACT).then(function (yes) {
       if (!yes) return;
       softDelete('g_pledges', el.dataset.id).then(function () { return afterSave('נמחק'); }).catch(errToast);
     });
@@ -5858,7 +5935,7 @@ var DOM_ACTIONS = {
   'task-open': function (el) { formTask(findTask(el.dataset.id)); },
   'task-save': function (el) { return runSave(function () { return saveTask(el.dataset.id); }, 'המשימה נשמרה'); },
   'task-del': function (el) {
-    return ask('מחיקת משימה', 'למחוק את המשימה? המחיקה רכה.', 'מחיקה').then(function (yes) {
+    return ask(MSG_DEL_TASK_TITLE, MSG_DEL_TASK_BODY, MSG_DELETE_ACT).then(function (yes) {
       if (!yes) return;
       softDelete('g_tasks', el.dataset.id).then(function () { return afterSave('נמחק'); }).catch(errToast);
     });
@@ -5871,7 +5948,7 @@ var DOM_ACTIONS = {
   'user-pass': function (el) { var u = findUser(el.dataset.id); if (u) formPassword(u); },
   'pass-save': function (el) {
     var p = $('#pw-new') ? $('#pw-new').value : '';
-    if (!p) { toast('⚠️ נא להזין סיסמה', null, 'bad'); return; }
+    if (!p) { toast(MSG_NEED_PASS, null, 'bad'); return; }
     if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
     if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // סבב 23: הטביעה נגזרת בכל שינוי סיסמה, לצד הסיסמה עצמה.
@@ -5893,12 +5970,12 @@ var DOM_ACTIONS = {
   'user-toggle': function (el) {
     var u = findUser(el.dataset.id);
     if (!u) return;
-    if (idEq(u.client_id, state.user.client_id) && u.active) { toast('⚠️ אי אפשר להשבית את המשתמש המחובר', null, 'bad'); return; }
+    if (idEq(u.client_id, state.user.client_id) && u.active) { toast(MSG_NO_SELF_DISABLE, null, 'bad'); return; }
     if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⚠️ ההשבתה חייבת להגיע לענן: משתמש שהושבת ונשאר במראה של מכשיר אחר
     //    היה נשאר בר-כניסה אופליין. המשיכה הבאה מורידה אותו משם.
     return writeUser(u.client_id, { active: !u.active })
-      .then(function () { render(); toast('עודכן', null, 'good'); })
+      .then(function () { render(); toast(MSG_UPDATED, null, 'good'); })
       .catch(errToast);
   },
 
@@ -5907,16 +5984,16 @@ var DOM_ACTIONS = {
     var key = el.dataset.key;
     var input = $('#cfg-add-' + key);
     var v = input ? input.value.trim() : '';
-    if (!v) { toast('⚠️ נא להזין ערך', null, 'bad'); return; }
+    if (!v) { toast(MSG_NEED_VALUE, null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
-    if (uniqHas(list, v)) { toast('⚠️ הערך כבר קיים', null, 'bad'); return; }
+    if (uniqHas(list, v)) { toast(MSG_VALUE_EXISTS2, null, 'bad'); return; }
     list.push(v);
     return runSave(function () { return saveConfigList(key, list); }, 'נוסף');
   },
   'cfg-edit': function (el) {
     var key = el.dataset.key, i = +el.dataset.i;
     var list = (state.config[key] || []).slice();
-    openModal('עריכת ערך',
+    openModal(MSG_EDIT_VALUE,
       '<label class="fld"><span>ערך</span><input class="inp" id="cfg-v" value="' + esc(list[i] || '') + '"></label>' +
       '<div class="u-c-text3 u-fs-2">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
       '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -5925,7 +6002,7 @@ var DOM_ACTIONS = {
   'cfg-edit-save': function (el) {
     var key = el.dataset.key, i = +el.dataset.i;
     var v = val('cfg-v');
-    if (!v) { toast('⚠️ נא להזין ערך', null, 'bad'); return; }
+    if (!v) { toast(MSG_NEED_VALUE, null, 'bad'); return; }
     var list = (state.config[key] || []).slice();
     list[i] = v;
     return runSave(function () { return saveConfigList(key, list); }, 'נשמר');
@@ -5933,7 +6010,7 @@ var DOM_ACTIONS = {
   'cfg-del': function (el) {
     var key = el.dataset.key, i = +el.dataset.i;
     var list = (state.config[key] || []).slice();
-    return ask('הסרת ערך', 'להסיר את "' + list[i] + '" מהרשימה? רשומות קיימות שמשתמשות בערך יישארו כמות שהן.', 'הסרה')
+    return ask(MSG_REMOVE_VALUE_TITLE, MSG_REMOVE_QUOTE_PRE + list[i] + MSG_REMOVE_QUOTE_POST, MSG_REMOVE_ACT)
       .then(function (yes) {
         if (!yes) return;
         list.splice(i, 1);

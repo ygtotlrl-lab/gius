@@ -37,6 +37,10 @@ export const ROWS = [];
 const RUN_MUT = process.env.GATE_MUT === '1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+/*  ⛔ ההודעות הן קבועים ⛔ ואינן ליטרל באתר התצוגה — ⚠️ הרתמה טוענת את
+ *  הצהרותיהן, ⭐ שאם לא כן מטפל שמציג הודעה זורק `ReferenceError`,
+ *  ⛔ והכשל נקרא ככשל התנהגות ולא כחוסר בסביבה. */
+const MSG_DECLS = (SRC.match(/^var MSG_[A-Z_0-9]* = '(?:[^'\\]|\\.)*';$/gm) || []).join('\n');
 
 const REP = reporter();
 /*  ⛔ שער מריץ את כל טענותיו — ⚠️ תהליך שנסגר באמצע מדפיס «עבר» על טענות
@@ -107,7 +111,7 @@ function makeCtx() {
   };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
-  vm.runInContext(
+  vm.runInContext(MSG_DECLS + '\n' +
     [decl('ROLE_ADMIN')].join('\n') + '\n' +
     ['isAdminOf', 'isAdmin', 'sessSet', 'sessGet', 'sessClear', 'go'].map(fn).join('\n'), ctx);
   return { ctx, calls };
