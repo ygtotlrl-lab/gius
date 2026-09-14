@@ -48,7 +48,7 @@
   --text:#12202e; --text2:#3b4d61; --text3:#6b7c90;
   --border:#e3e8ef; --border-2:#eef2f7;
   --brand-ink:#0f766e; --brand-fill:#0f766e; --brand-soft:#e6f4f2;
-  --ok:#15803d; --ok-soft:#e7f6ec;
+  --ok:#157a39; --ok-soft:#e7f6ec;
   --warn:#b45309; --warn-soft:#fdf1e3;
   --bad:#b91c1c; --bad-soft:#fdeceb;
   --gold:#a16207; --gold-soft:#fdf5e0;
@@ -430,8 +430,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* =================================================================== עלייה */
 #boot{min-height:100dvh;display:grid;place-items:center;gap:var(--sp-5);color:var(--text3)}
 /* ═══ שכבת הטוסט — מודול משותף (סבב 87ב) ════════════════════════════════════
-   זהה בית-לבית בארבע האפליקציות. ⛔ הכללים אינם נשענים על משתני-הצבע של
-   אף אפליקציה — ⚠️ הם נבדלים ביניהן, ⭐ ולכן הצבעים כתובים במפורש.
+   זהה בית-לבית בארבע האפליקציות. ⛔ שני סיווגי המצב נשענים על אסימוני
+   המצב — ⚠️ צמד הפוך שמתחלף יחד, ⭐ והנייטרלי כתוב במפורש: אין לו מצב.
    ⛔ מיכל אחד ובתוכו `div` לכל הודעה — ⚠️ הנימוק המדוד: בשלוש מהן היה
       אלמנט **קבוע** אחד, ⛔ והודעה שנייה דרסה את הראשונה: ⭐ «נשמר»
       ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד.
@@ -439,8 +439,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
       תחתון קבוע, ⭐ ולטוסט שיושב מתחתיו אין מי שיראה אותו. */
 #toasts{position:fixed;inset-inline:0;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom));z-index:999;display:grid;gap:var(--sp-4);justify-items:center;pointer-events:none;padding:0 var(--sp-6)}
 .toast{background:#1a1a1a;color:#fff;border-radius:var(--r-6);padding:var(--sp-5) var(--sp-7);font-size:var(--fs-3);font-weight:600;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.22);max-width:92vw;text-align:center;animation:toastUp .2s ease-out}
-.toast.bad{background:#b91c1c;color:#fff}
-.toast.good{background:#15803d;color:#fff}
+.toast.bad{background:var(--bad);color:var(--bad-soft)}
+.toast.good{background:var(--ok);color:var(--ok-soft)}
 @keyframes toastUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* ═══ סוף CSS שכבת הטוסט ════════════════════════════════════════════════ */
 /* ═══ CSS גרף העמודות — מודול משותף (סבב 137) ═══════════════════════════════
