@@ -1781,11 +1781,11 @@ window.addEventListener('load', swRegister);
 
 /* ── BK_CFG — הדבר היחיד שנבדל בין האפליקציות ───────────────────────────── */
 /* ⚠️ gius חיה בפרויקט Supabase **נפרד** (`zrftjkghhjhqzopvdzou`), ולכן
-   `kv_backup` ו-`sync_log` נוצרות שם במיגרציה `0004` ואינן אותן טבלאות
+   `sh_backup` ו-`sh_sync_log` נוצרות שם במיגרציה `0004` ואינן אותן טבלאות
    שבפרויקט המשותף. שם הטבלה זהה — וזה מה שמאפשר לגוף המודול להיות זהה
    בית-לבית בארבע האפליקציות.
    ⛔ `g_users` נגבית ב-`cols` מפורש ולא ב-`*` (סבב 30) — היא מחזיקה
-   `password` בטקסט גלוי ואת `pass_salt`/`pass_fp`, ו-`kv_backup` קריאה
+   `password` בטקסט גלוי ואת `pass_salt`/`pass_fp`, ו-`sh_backup` קריאה
    ל-`anon`; `select('*')` היה מעתיק את הסוד למקום שני ומבטל בבת אחת את
    `strip: ['password']` של סבב 11 ואת שלוש נקודות הסינון של סבב 23. */
 var BK_CFG = {
@@ -1816,8 +1816,8 @@ var BK_CFG = {
    ⛔ שינוי כאן (סבב 65) — ארבע האפליקציות **וארבעת עותקי השער**, באותו
       סבב: אחרת החתימה נשברת בריפו אחד, והשער מאשר את הסטייה בשלושה.
    ══════════════════════════════════════════════════════════════════════ */
-var BK_TABLE = 'kv_backup';       // יומן הגיבויים — הכתיבה היא insert בלבד
-var BK_LOG_TABLE = 'sync_log';    // יומן הפעולות — insert בלבד
+var BK_TABLE = 'sh_backup';       // יומן הגיבויים — הכתיבה היא insert בלבד
+var BK_LOG_TABLE = 'sh_sync_log';    // יומן הפעולות — insert בלבד
 var BK_LOG_MAX = 50;              // תקרת התור המקומי של היומן
 var BK_RETENTION_DAYS = 30;       // עותק יומי נשמר 30 יום; ישן מזה נגרע
 var _bkRunning = false;           // נעילת ריצה (החליפה את הכתיבה-מראש)
@@ -3311,7 +3311,10 @@ function todayISO() {
 function pad2(n) { return (n < 10 ? '0' : '') + n; }
 function nowISO() { return new Date().toISOString(); }
 function monthOf(iso) { return String(iso || '').slice(0, 7); }
-function heDate(iso) {
+/*  ⛔ השם אומר מה הוא מעצב ⛔ ואינו נקרא כמנוע התאריך העברי (סבב 144) —
+ *  ⚠️ הוא מחזיר `dd.mm.yyyy` לועזי, ⭐ ושם שנקרא כמנוע ואינו מנוע שולח
+ *  את מי שמחפש את המנוע למקום הלא נכון. */
+function dmyDate(iso) {
   if (!iso) return '—';
   var p = String(iso).slice(0, 10).split('-');
   if (p.length !== 3) return String(iso);
@@ -3348,7 +3351,7 @@ function uniqSorted(list) {
    ⭐ הדפוס הועתק בית-לבית משכר לימוד (סבב 38) — שם הוא הוותיק, והוא זהה
    בשלוש האחיות. עד הסבב הזה `BK_CFG.device` כאן קראה ל-`getDeviceId()`
    שלא הייתה מוגדרת כלל, ולכן ה-`try/catch` שסביבה החזיר `null` בשקט: כל
-   שורה ב-`kv_backup` וב-`sync_log` נרשמה **בלי מזהה מכשיר**, ואי אפשר
+   שורה ב-`sh_backup` וב-`sh_sync_log` נרשמה **בלי מזהה מכשיר**, ואי אפשר
    היה לדעת מאיזה מכשיר הגיעה.
    ⛔ מזהה מכשיר אינו מזהה רשומה (סבב 37א) — הוא זהות של **מכשיר** ולא של
    נתון, ולכן ⛔ אינו עובר דרך `newClientId()` (סבב 38) — מזהה רשומה חייב
@@ -4891,7 +4894,7 @@ function viewHome() {
         h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
           '<div class="av">🗂️</div><div class="main"><b>' + esc(t.title) + '</b>' +
           '<small>' + esc(t.domain || 'ללא תחום') + ' · ' + esc(t.stage) + '</small></div>' +
-          '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + heDate(t.due_date) + '</span></div></div>';
+          '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + dmyDate(t.due_date) + '</span></div></div>';
       });
     }
     if (myPledges.length) {
@@ -5004,7 +5007,7 @@ function viewDonorCard() {
         '<td class="num">' + ils(p.amount) + '</td>' +
         '<td class="num">' + ils(c) + '</td>' +
         '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
-        '<td>' + heDate(p.due_date) + '</td>' +
+        '<td>' + dmyDate(p.due_date) + '</td>' +
         '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
         '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.client_id + '">עריכה</button></td></tr>';
     });
@@ -5019,7 +5022,7 @@ function viewDonorCard() {
     h += '<div class="tw"><table><thead><tr><th>תאריך</th><th class="num">סכום</th><th>סעיף</th>' +
       '<th>שגריר</th><th>מנהל</th><th>נפרע</th><th></th></tr></thead><tbody>';
     tx.forEach(function (t) {
-      h += '<tr><td>' + heDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.client_id)) + '</td>' +
+      h += '<tr><td>' + dmyDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.client_id)) + '</td>' +
         '<td class="num">' + ils(t.amount) + '</td>' +
         '<td>' + esc(t.category || '—') + '</td>' +
         '<td>' + esc(t.agent || '—') + '</td>' +
@@ -5072,7 +5075,7 @@ function pledgeTableHTML(list) {
       '<td class="num">' + ils(p.amount) + '</td>' +
       '<td class="num">' + ils(c) + '</td>' +
       '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
-      '<td>' + (late ? '<span class="badge bad">' + heDate(p.due_date) + '</span>' : heDate(p.due_date)) + '</td>' +
+      '<td>' + (late ? '<span class="badge bad">' + dmyDate(p.due_date) + '</span>' : dmyDate(p.due_date)) + '</td>' +
       '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
       '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.client_id + '">עריכה</button> ' +
         '<button class="btn danger xs" data-act="pledge-del" data-id="' + p.client_id + '">מחיקה</button></td></tr>';
@@ -5151,7 +5154,7 @@ function viewTasks() {
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
           (t.domain ? '<span class="badge">' + esc(t.domain) + '</span>' : '') +
-          (t.due_date ? '<span class="badge ' + (late ? 'bad' : '') + '">' + heDate(t.due_date) + '</span>' : '') +
+          (t.due_date ? '<span class="badge ' + (late ? 'bad' : '') + '">' + dmyDate(t.due_date) + '</span>' : '') +
           (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
         '</div>' +
         '<div class="ft">' +
@@ -5583,7 +5586,7 @@ function saveTask(id) {
   //    הטיפול במשימה — ובלי שום דרך לשחזר אותה, כי אין כאן גרסאות.
   var entry = val('tk-log');
   if (entry) {
-    var stamp = '[' + heDate(todayISO()) + ' · ' + state.user.full_name + ']';
+    var stamp = '[' + dmyDate(todayISO()) + ' · ' + state.user.full_name + ']';
     var prev = (existing && existing.log) ? existing.log + '\n' : '';
     row.log = prev + stamp + ' ' + entry;
   }
