@@ -68,6 +68,7 @@ const APP = {
   gates: ['test_behavior.mjs',
           'test_rowscan.mjs',
           'test_schema_source.mjs',
+          'test_secrets.mjs',
           'test_scanscan.mjs',
           'test_declscan.mjs',
           'test_textscan.mjs',
