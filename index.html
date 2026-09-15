@@ -4112,6 +4112,7 @@ function syncPull() {
        *  `g_synced_at`, והיא חותמת **משיכה**: «ראיתי את מצב הענן» אינו
        *  «מה שאצלי עלה לשם». ⭐ העֵד הוא `_gPushedAt` פר-טבלה, והוא
        *  מסומן בסוף מעבר הדחיפה של אותה טבלה. */
+      if (!_gPullLogged) { _gPullLogged = true; gSyncLog('pull', null, null); }
       if (_netWarned) { _netWarned = false; toast(MSG_SYNC_BACK, null, 'good'); }
     } else {
       console.warn('[sync] נכשלו:', errs.join(', '));
@@ -4131,6 +4132,15 @@ function syncPull() {
 // מה "מקומי וחדש יותר" בלי לראות קודם מה יש בענן, ודחיפה עיוורת הייתה
 // מחזירה לחיים רשומה שנמחקה במכשיר אחר. `t0` נלקח לפני המשיכה: רשומה
 // שנכתבה תוך כדי הסנכרון לא נבדקה ולא נדחפה, ולכן הסימון שלה חייב להישאר.
+/* ⭐ יומן הפעולות של הסנכרון — דחיפה
+   שהעלתה שורות נרשמת עם מספרן, ומשיכה מלאה נרשמת פעם אחת בסשן. הרישום
+   דרך `logAction` שבמודול הגיבוי — fire-and-forget, לעולם אינו חוסם.
+   ⛔ אין לרשום כל מחזור סנכרון — הפולינג רץ כל שלוש שניות,
+   ו-`sh_sync_log` היא יומן ראיות ב-insert בלבד שאי-אפשר לדלל. */
+function gSyncLog(action, key, recordCount, details) {
+  try { logAction(action, key, recordCount, details); } catch (e) { }
+}
+var _gPullLogged = false;
 function syncNow() {
   var t0 = Date.now();
   /*  ⛔ הדחיפה נבדקת מול ההקשר שנלכד לפני המשיכה — ⚠️ `res.remote` נמדד
@@ -4145,6 +4155,7 @@ function syncNow() {
     return p.then(function (r) {
       if (ctxStale(_ep)) { render(); return false; }
       pendReconcile(r.still, t0);
+      if (r && r.n) gSyncLog('push', null, r.n);
       render();
       return true;
     });
