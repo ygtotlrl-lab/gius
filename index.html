@@ -458,7 +458,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .blab{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bbars{display:grid;gap:var(--sp-2)}
 .btrack{display:block;height:8px;border-radius:var(--r-6);background:var(--card-2);overflow:hidden}
-.btrack i{display:block;height:100%;border-radius:var(--r-6);background:var(--brand)}
+.btrack i{--bar-w:0%;display:block;height:100%;width:var(--bar-w);border-radius:var(--r-6);background:var(--brand)}
 .btrack.tgt{height:4px}
 .btrack.tgt i{opacity:var(--op-2)}
 .bval{color:var(--text2);text-align:end;white-space:nowrap}
@@ -734,7 +734,6 @@ var MSG_REMOVE_ACT = 'הסרה';
    ⭐ והשער הוא מה שמשווה ביניהם לרשימה שכאן: ⛔ הקבוע הוא ההצהרה,
    ⚠️ והשאילתה היא המימוש. */
 var BP_SCALE = [360, 480, 640, 900, 1200];
-window.BP_SCALE = BP_SCALE;
 /* ═══════════════ סוף מודול סולם נקודות השבירה ═════════════════════════ */
 /* ═══ עוזרי הרשת — מודול משותף (סבב 84) ═══════════════════════════════════
    ⛔ שלוש הפונקציות ישבו **בין** בלוקים חתומים, ⚠️ ולכן אף `sha256` לא מדד
@@ -1057,14 +1056,6 @@ function lsAlert(msg) {
    מחזירה true/false — ומסלול קריטי שמתעלם מהערך המוחזר הוא באג. */
 var _lsSweeping = false;
 var _lsToastAt = 0;
-/* "אף כישלון שקט" — מונה כישלונות גלובלי.
-   מסלול קריטי (רישום נוכחות, שמירת תשלום, הוספת רשומה, רישום תנועה) עוטף את
-   הפעולה כך:  `var t = lsFails(); ...await save()...; if (!lsOkSince(t)) return;`
-   ורק אז מציג "נשמר". כך גם כתיבה שנכשלה עמוק בתוך שרשרת async מונעת את טוסט
-   ההצלחה, בלי להשחיל ערך מוחזר דרך עשר פונקציות. */
-var _lsFailCount = 0;
-function lsFails() { return _lsFailCount; }
-function lsOkSince(n) { return _lsFailCount === n; }
 
 /* ── שער "אין טוסט הצלחה אחרי כישלון שמירה" ─────────────────────────────
    נקודת אכיפה **אחת** במקום עשרות בדיקות פזורות שאפשר לשכוח באחת: `toast()`
@@ -1084,16 +1075,15 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, v); return true; } catch (e) {
     // בתוך פינוי — כישלון הוא תוצאה, לא טריגר לפינוי נוסף (רקורסיה).
     if (_lsSweeping) return false;
-    _lsFailCount++;
     _lsLastFailAt = Date.now();
     if (lsIsQuotaErr(e)) {
       // מנגנון חירום: פינוי נוסף לפי **אותו סדר** בדיוק, וניסיון אחד נוסף.
       var need = lsEntryBytes(key, v) + 64 * 1024;
       var freed = lsSweepGuarded('חירום — כתיבה נכשלה במכסה: ' + key, need);
       if (freed > 0) {
-        // הצליח בניסיון השני — לא כישלון. המונה מוחזר כדי שהמסלול הקריטי
-        // יציג "נשמר", שהרי הנתון באמת נשמר.
-        try { localStorage.setItem(key, v); _lsFailCount--; _lsLastFailAt = 0; lsLog('כתיבה חוזרת הצליחה', key, 0); return true; }
+        // הצליח בניסיון השני — לא כישלון. חלון ההשתקה נסגר כדי שטוסט
+        // ההצלחה יעבור, שהרי הנתון באמת נשמר.
+        try { localStorage.setItem(key, v); _lsLastFailAt = 0; lsLog('כתיבה חוזרת הצליחה', key, 0); return true; }
         catch (e2) { e = e2; }
       }
       lsLog('❌ כתיבה נכשלה (מכסה)', key, lsEntryBytes(key, v));
@@ -1513,15 +1503,6 @@ function lsBootAlert(u) {
   if (lsHorizonKeys().length) { try { lsToast(MSG_LS_PRUNED, 6000, 'bad'); } catch (e1) { } }
 }
 
-window.lsHorizonRelease = lsHorizonRelease;
-window.lsSet = lsSet;
-window.lsGet = lsGet;
-window.lsUsage = lsUsage;
-window.lsFails = lsFails;
-window.lsOkSince = lsOkSince;
-window.lsGuardToast = lsGuardToast;
-window.lsBootDeferred = lsBootDeferred;
-window.lsSweepVerified = lsSweepVerified;
 /* ═══════════════ סוף המודול המשותף ═══════════════════════════════════ */
 
 /* ═══ האזנת הסכימה — מודול משותף (סבב 91) ═════════════════════════════════
@@ -1639,7 +1620,8 @@ function actRun(el, fn) {
     if (isBtn) busy(el, false);
   });
 }
-window.busy = busy;
+/*  ⛔ הגשר היחיד שנשאר כאן — ⚠️ צרכנו הוא שער ההתנהגות, ⭐ שמודד את
+ *  נקודת הניתוב בדפדפן אמיתי: ⛔ שם שחי במודול אינו נראה משם. */
 window.actRun = actRun;
 /* ═══════════════ סוף מודול כפתור עסוק ═══════════════════════════════════ */
 /* ═══ צינור השמירה — מודול משותף (סבב 136) ═══════════════════════════════
@@ -1681,9 +1663,6 @@ function runSave(fn, msg) {
     })
     .catch(function (e) { errToast(e); });
 }
-window.errToast = errToast;
-window.afterSave = afterSave;
-window.runSave = runSave;
 /* ═══════════════ סוף צינור השמירה ═══════════════════════════════════════ */
 
 /* ═══ הרשמת service worker — מודול משותף (סבב 128) ══════════════════════
@@ -2120,7 +2099,6 @@ function bkBoot() {
   try { bkMaybeDaily(); } catch (e) { }
   try { logFlush(); } catch (e) { }
 }
-window.bkBoot = bkBoot;
 /* ═══════════════ סוף מודול הגיבוי היומי ═══════════════════════════════ */
 
 /* ── PEND_CFG — הדבר היחיד שנבדל בין האפליקציות ─────────────────────────── */
@@ -3133,7 +3111,6 @@ function hwBoot() {
   if (!hwEnabled()) return;
   try { setTimeout(function () { hwSweep(); }, HW_BOOT_DEFER_MS); } catch (e) { }
 }
-window.hwBoot = hwBoot;
 /* ═══════════════ סוף מודול החלון החם ══════════════════════════════════ */
 /* ═══ שכבת המראה — מודול משותף (סבב 114) ══════════════════════════════════
    ⛔ העותק המקומי של הענן חי במבנה **אחד** — ⚠️ `MIRROR`, ממופתח בשם
@@ -4346,9 +4323,20 @@ function kvBadLabel(name) { return name + ' (' + KV_BAD + ')'; }
       נמדדו — הסדרה בבונה, והפס בטבלת הפילוח.
    ⛔ **מה נכנס**: `lab` תווית · `val` הערך · `tgt` היעד · `txt` הטקסט
       החלופי · `end` מה שנכתב בסוף השורה. */
+/*  ⛔ הרוחב נכתב למשתנה CSS ⛔ ולא לתגית — ⚠️ סגנון מוטבע גובר על כל
+ *  מחלקה ואינו ניתן לשינוי ממקום אחד: ⭐ והצביעה נדחית לפריים שאחרי
+ *  ה-`innerHTML`, ⛔ שהיא הרגע שבו הפסים כבר בעץ. */
+var _barPending = false;
+function barPaint() {
+  _barPending = false;
+  var l = document.querySelectorAll('.btrack > i[data-pct]'), i;
+  for (i = 0; i < l.length; i++)
+    l[i].style.setProperty('--bar-w', l[i].getAttribute('data-pct') + '%');
+}
 function bar(pct, cls) {
+  if (!_barPending) { _barPending = true; requestAnimationFrame(barPaint); }
   return '<span class="btrack' + (cls ? ' ' + cls : '') +
-         '"><i style="width:' + pct + '%"></i></span>';
+         '"><i data-pct="' + pct + '"></i></span>';
 }
 function barChart(rows, label) {
   if (!Array.isArray(rows) || rows.length < 2) return '';
