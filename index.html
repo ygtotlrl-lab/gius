@@ -3311,7 +3311,7 @@ function todayISO() {
 }
 function pad2(n) { return (n < 10 ? '0' : '') + n; }
 function nowISO() { return new Date().toISOString(); }
-function monthOf(iso) { return String(iso || '').slice(0, 7); }
+function monthKeyOf(iso) { return String(iso || '').slice(0, 7); }
 /*  ⛔ השם אומר מה הוא מעצב ⛔ ואינו נקרא כמנוע התאריך העברי (סבב 144) —
  *  ⚠️ הוא מחזיר `dd.mm.yyyy` לועזי, ⭐ ושם שנקרא כמנוע ואינו מנוע שולח
  *  את מי שמחפש את המנוע למקום הלא נכון. */
@@ -3400,7 +3400,7 @@ var state = {
   get user() { return sessGet(); },
   set user(v) { sessSet(v); },
   screen: 'home',
-  month: monthOf(todayISO()),
+  month: monthKeyOf(todayISO()),
   config: { categories: [], causes: [], domains: [] },
   donors: [], pledges: [], txns: [], tasks: [], targets: [], users: [],
   donorId: null,
@@ -4215,7 +4215,7 @@ function pledgeStatus(p) {
   return 'בוצע';
 }
 function statusClass(s) { return s === 'בוצע' ? 'ok' : s === 'חלקי' ? 'warn' : ''; }
-function monthTxns(m) { return state.txns.filter(function (t) { return monthOf(t.txn_date) === m; }); }
+function monthTxns(m) { return state.txns.filter(function (t) { return monthKeyOf(t.txn_date) === m; }); }
 function targetFor(m) {
   for (var i = 0; i < state.targets.length; i++) if (state.targets[i].month === m) return num(state.targets[i].amount);
   return 0;
