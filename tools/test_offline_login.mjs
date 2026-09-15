@@ -143,7 +143,7 @@ const NAMES_FN = [
   'gRandSalt', 'gPassFp', 'gMakePassFp', 'gIsMissingFpCol', 'gVerifyOffline',
   'mirrorUserByName', 'doLoginOffline', 'passFields',
   'stripCols', 'stripRows', 'mirrorKey', 'mirrorTables', 'mirrorLoadOne', 'mirrorLoad', 'mirrorSave', 'mirrorWrite',
-  'mirrorBoot', 'adoptLegacyId', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
+  'mirrorBoot', 'upsertLocal', 'tableMeta', 'findRow', 'rowTs'
 ];
 /*  ⛔ ההודעות הן קבועים ⛔ ואינן ליטרל באתר התצוגה — ⚠️ הרתמה טוענת את
  *  הצהרותיהן, ⭐ שאם לא כן מטפל שמציג הודעה זורק `ReferenceError`,

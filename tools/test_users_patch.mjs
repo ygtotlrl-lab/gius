@@ -56,7 +56,7 @@ const APP = {
   deps: {
     vars: ['MIRROR_CFG', 'MIRROR', 'TABLES', 'G_PASS_ITER', 'G_PASS_CTX'],
     fns: ['mirrorKey', 'mirrorSave', 'tableMeta', 'stripCols', 'stripRows',
-          'findRow', 'rowTs', 'adoptLegacyId', 'usersSanitize',
+          'findRow', 'rowTs', 'usersSanitize',
           'usersCacheSaveAll', 'usersCacheSave',
           'gRandSalt', 'gPassFp', 'gMakePassFp'],
   },
