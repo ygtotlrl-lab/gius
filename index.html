@@ -5728,11 +5728,15 @@ function saveUser(id) {
     if (!p) { toast(MSG_NEED_PASS, null, 'bad'); return Promise.resolve(); }
     if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return Promise.resolve(); }
     return passFields(p).then(function (pf) {
-      return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp);
+      return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp)
+        .then(function (r) { if (r && !r.error) plTouch(); return r; });
     });
   }
   // עריכת משתמש קיים אינה נוגעת בסיסמה, ולכן גם לא בטביעה.
-  return writeUser(id, row);
+  /*  ⛔ כתיבת משתמש שהצליחה מקדמת את אות הפולינג — ⚠️ `g_users` נמשכת
+   *  ב-`syncPull` כמו כל טבלה שב-`TABLES`, ⭐ ובלי הקידום השינוי נשאר
+   *  בלתי-נראה לכל מכשיר אחר עד לשינוי נתונים אחר. */
+  return writeUser(id, row).then(function (r) { if (r && !r.error) plTouch(); return r; });
 }
 
 // ⚠️ שמירה שהצליחה **בלי** טביעה אינה «נשמר בהצלחה»: המשתמש נשמר, אבל
@@ -5788,7 +5792,8 @@ function formSaveMyPassword() {
           return passFields(p1);
         });
       })
-      .then(function (pf) { return writeUser(state.user.client_id, pf).then(warnIfNoFp); });
+      .then(function (pf) { return writeUser(state.user.client_id, pf).then(warnIfNoFp)
+        .then(function (r) { if (r && !r.error) plTouch(); return r; }); });
   }, 'הסיסמה עודכנה');
 }
 
