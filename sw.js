@@ -5,12 +5,14 @@
  *  ⚠️ מסבב 42ג כל הלוגיקה יושבת במודול המשותף שלמטה — זהה בית-לבית
  *  בכל האפליקציות. ⛔ מה שנבדל יושב ב-SW_CFG בלבד.
  */
-const CACHE_NAME = 'gius-v118';
+const CACHE_NAME = 'gius-v119';
 
 // קבצים מקומיים.
 var CORE = [
   './',
   './index.html',
+  './core/util.js',
+  './core/sync.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

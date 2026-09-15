@@ -28,6 +28,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { webcrypto } from 'node:crypto';
+import { appSrc } from './appsrc.mjs';
 
 
 /*  ⛔ הקובץ הזה אינו אוכף שורה בטבלת התשתית (סבב 72) — ⚠️ הצהרה ריקה
@@ -39,7 +40,9 @@ export const ROWS = [];
  *  (`--full`), בסוף הסבב ולפני מיזוג, ⚠️ ולא בכל הרצה בזמן העבודה. */
 const RUN_MUT = process.env.GATE_MUT === '1';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+/*  ⛔ המקור הוא `index.html` **ומודולי הליבה** — ⚠️ הליבה המשותפת יצאה
+ *  למודול, ⭐ ושער שקורא את הקובץ בלבד אינו מוצא את מה שרץ. */
+const SRC = appSrc(ROOT);
 
 let pass = 0, fail = 0;
 /*  ⛔ שער מריץ את כל טענותיו — ⚠️ תהליך שנסגר באמצע מדפיס «עבר» על טענות
