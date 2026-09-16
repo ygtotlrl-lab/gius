@@ -47,8 +47,8 @@ const APP = {
    *  ברשימה במסד. ⭐ **ולמה היא קיימת**: הרשימה אחת לכל הפרויקט,
    *  ⛔ והבעלות עליה כאן — ⚠️ ולכן מפתחות האחות שבפרויקט הזה מוצהרים
    *  כאן, ⭐ ואי-אפשר לגזור אותם מקוד שאינו בריפו הזה. */
-  sisterKeys: ['kp_settings', 'kp_years', 'kp_months', 'kp_standing_orders',
-               'kp_so_instances', 'kp_entries', 'kp_lookups'],
+  sisterKeys: ['k_settings', 'k_pledges', 'k_standing_orders',
+               'k_so_instances', 'k_entries', 'k_lookups'],
   /*  ⛔ הפרויקט שהאפליקציה חיה בו — ⚠️ שתי סכימות חיות ב-`DB_SCHEMA`,
       ⭐ וההצלבה היא מול זו של הפרויקט הזה בלבד. */
   project: 'gius',
@@ -63,11 +63,11 @@ const APP = {
   fnDefRpc: 'bk_fn_def',
   fnNames: ['bk_retention_keys', 'bk_retention_sweep', 'bk_prune_layer'],
   migration: 'migrations/004_backup_retention_cron.sql',
-  migrationDoc: 'gius/migrations/024_rename_g_config_to_g_settings.sql',
+  migrationDoc: 'gius/migrations/027_retention_keys_kupa_prefix.sql',
   /*  ⛔ המיגרציה האחרונה שמגדירה מחדש את רשימת-ההיתר — ⚠️ מיגרציה שכבר
       רצה אינה נערכת, ⭐ והמאוחרת היא ההגדרה: ⛔ והשער קורא ממנה ⛔ ולא
       מזו שיצרה את הפונקציה. */
-  allowlistMigration: 'migrations/024_rename_g_config_to_g_settings.sql',
+  allowlistMigration: 'migrations/027_retention_keys_kupa_prefix.sql',
   /*  ⛔ משפחת סכימה משותפת שנייה (סבב 104) — ⚠️ `ya_settings_rishon`/`ya_settings_ramataviv`
       הן הבית הענני של הגדרות היומן, ⭐ והבעלות שלו: ⛔ `migration` כאן הוא
       `null` בכל ריפו שאינו הבעלים, ⚠️ ו-`since` הוא המיגרציה שמצהירה מתי

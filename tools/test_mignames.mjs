@@ -61,6 +61,7 @@ const APP = {
     '024_rename_g_config_to_g_settings.sql': 'rename_g_config_to_g_settings',
     '025_retention_keys_match_live_tables.sql': 'round148_retention_keys_match_live_tables',
     '026_backup_policy_names_from_table.sql': '026_backup_policy_names_from_table',
+    '027_retention_keys_kupa_prefix.sql': 'round148_retention_keys_kupa_prefix',
   },
   /*  ⛔ קובץ שאין לו רשומה במעקב — ⚠️ **מה נכנס**: שם הקובץ ⟵ למה אין
    *  לו רשומה; ⛔ **ומה מפיל**: הצהרה שאין לה `null` במרשם, ו-`null`
