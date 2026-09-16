@@ -1,5 +1,5 @@
 -- ============================================================================
--- 001_init.sql — ניהול גיוס כספים
+-- 000_init.sql — ניהול גיוס כספים
 -- ============================================================================
 --
 -- ⛔ **רץ במסד.** ⛔ מיגרציה שכבר רצה אינה נערכת — ⚠️ המסד החיל אותה,
@@ -55,7 +55,7 @@ create table if not exists g_users (
 --    את ברירת המחדל בלבד, ושורות קיימות שומרות את התפקיד שכבר יש להן.
 alter table g_users alter column role drop default;
 
--- Upgrade path for an installation created before 0003_pass_fp.sql (round 23).
+-- Upgrade path for an installation created before 002_pass_fp.sql (round 23).
 -- PBKDF2-SHA256 fingerprint (100k rounds, per-user random salt) that makes
 -- offline login possible. ⛔ `password` is NOT touched: the fingerprint is
 -- added ALONGSIDE it, never in place of it — that is a documented decision
@@ -204,7 +204,7 @@ end $$;
 --   the `grant select, insert, update` below does not take them back. That was
 --   measured on the live project after the first run of this file: anon held
 --   DELETE and TRUNCATE on all seven tables while the soft-delete rule was
---   documented as enforced. `migrations/0002_revoke_delete.sql` fixed the live
+--   documented as enforced. `migrations/001_revoke_delete.sql` fixed the live
 --   database; the revoke here is what keeps a re-run of this file from being a
 --   no-op on that point.
 -- ---------------------------------------------------------------------------

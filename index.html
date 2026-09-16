@@ -3592,7 +3592,7 @@ function usersCacheSaveAll(rows) {
   return mirrorSave('g_users');
 }
 // הנתיב החלקי — משתמש **בודד**, בלי לגעת בשאר. ⚠️ מיזוג שדות ולא החלפת
-// שורה: תשובת כניסה שאינה כוללת עמודה (למשל לפני `0003_pass_fp.sql`)
+// שורה: תשובת כניסה שאינה כוללת עמודה (למשל לפני `002_pass_fp.sql`)
 // אינה מוחקת ערך שכבר יש במראה.
 function usersCacheSave(row) {
   var clean = usersSanitize(row)[0];
@@ -4459,7 +4459,7 @@ function gMakePassFp(pass) {
   return gPassFp(pass, salt).then(function (fp) { return fp ? { salt: salt, fp: fp } : null; });
 }
 
-// זיהוי תשובת שרת שאומרת "העמודות עדיין לא קיימות" — כלומר `0003_pass_fp.sql`
+// זיהוי תשובת שרת שאומרת "העמודות עדיין לא קיימות" — כלומר `002_pass_fp.sql`
 // טרם הורצה. ⚠️ בלי הבדיקה הזו כל שמירת משתמש הייתה **נכשלת לגמרי** בחלון
 // שבין דחיפת הקוד להרצת המיגרציה. ר' הנפילה-חזרה ב-`writeUser`.
 function gIsMissingFpCol(err) {

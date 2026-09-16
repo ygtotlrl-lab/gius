@@ -34,8 +34,8 @@ const APP = {
      המשותף מחזיק קובץ אחד, ועותק שני בכל ריפו היה מקור אמת שני (אותו
      כלל של 004). שם נאכף צד התיעוד בלבד, והשקילות מול ה-SQL נאכפת
      בריפו שמחזיק את הקובץ. */
-  migration: 'migrations/008_backup_retention_cap.sql',
-  migrationDoc: 'gius/migrations/008_backup_retention_cap.sql',
+  migration: 'migrations/007_backup_retention_cap.sql',
+  migrationDoc: 'gius/migrations/007_backup_retention_cap.sql',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 

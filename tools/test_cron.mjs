@@ -57,17 +57,17 @@ const APP = {
   backupTableName: 'sh_backup',
   /*  ⛔ המיגרציה האחרונה שכותבת מחדש את גוף הפינוי — ⚠️ מיגרציה שכבר רצה
       אינה נערכת, ⭐ והמאוחרת היא ההגדרה: ⛔ `null` בריפו שאינו הבעלים. */
-  sweepMigration: 'migrations/022_rename_shared_tables_to_sh.sql',
+  sweepMigration: 'migrations/021_rename_shared_tables_to_sh.sql',
   /*  ⛔ ה-RPC שמחזיר `pg_get_functiondef` לשלוש פונקציות הפינוי — ⚠️ רשימה
       סגורה בצד המסד, ⭐ והוא מחזיר טקסט הגדרה ⛔ ולא נתון. */
   fnDefRpc: 'bk_fn_def',
   fnNames: ['bk_retention_keys', 'bk_retention_sweep', 'bk_prune_layer'],
-  migration: 'migrations/005_backup_retention_cron.sql',
-  migrationDoc: 'gius/migrations/025_rename_g_config_to_g_settings.sql',
+  migration: 'migrations/004_backup_retention_cron.sql',
+  migrationDoc: 'gius/migrations/024_rename_g_config_to_g_settings.sql',
   /*  ⛔ המיגרציה האחרונה שמגדירה מחדש את רשימת-ההיתר — ⚠️ מיגרציה שכבר
       רצה אינה נערכת, ⭐ והמאוחרת היא ההגדרה: ⛔ והשער קורא ממנה ⛔ ולא
       מזו שיצרה את הפונקציה. */
-  allowlistMigration: 'migrations/025_rename_g_config_to_g_settings.sql',
+  allowlistMigration: 'migrations/024_rename_g_config_to_g_settings.sql',
   /*  ⛔ משפחת סכימה משותפת שנייה (סבב 104) — ⚠️ `ya_settings_rishon`/`ya_settings_ramataviv`
       הן הבית הענני של הגדרות היומן, ⭐ והבעלות שלו: ⛔ `migration` כאן הוא
       `null` בכל ריפו שאינו הבעלים, ⚠️ ו-`since` הוא המיגרציה שמצהירה מתי

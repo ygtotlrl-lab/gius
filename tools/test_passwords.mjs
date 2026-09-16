@@ -39,8 +39,8 @@ const APP = {
   backfillFn: 'gBackfillPassFp',
   authPaths: [['function doLogin', 'הכניסה המקוונת'],
               ['function formSaveMyPassword', 'שינוי סיסמה עצמי']],
-  migrationA: '007_users_drop_plaintext_password.sql',
-  migrationB: '010_drop_g_users_password.sql',
+  migrationA: '006_users_drop_plaintext_password.sql',
+  migrationB: '009_drop_g_users_password.sql',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 
