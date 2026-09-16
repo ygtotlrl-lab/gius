@@ -68,13 +68,13 @@ const APP = {
       רצה אינה נערכת, ⭐ והמאוחרת היא ההגדרה: ⛔ והשער קורא ממנה ⛔ ולא
       מזו שיצרה את הפונקציה. */
   allowlistMigration: 'migrations/025_rename_g_config_to_g_settings.sql',
-  /*  ⛔ משפחת סכימה משותפת שנייה (סבב 104) — ⚠️ `tb_kv_rishon`/`tb_kv_ramataviv`
+  /*  ⛔ משפחת סכימה משותפת שנייה (סבב 104) — ⚠️ `ya_settings_rishon`/`ya_settings_ramataviv`
       הן הבית הענני של הגדרות היומן, ⭐ והבעלות שלו: ⛔ `migration` כאן הוא
       `null` בכל ריפו שאינו הבעלים, ⚠️ ו-`since` הוא המיגרציה שמצהירה מתי
       הבעלות עברה — ⭐ המיגרציות שקדמו לה רצו ⛔ ואינן נערכות ואינן נמחקות,
       ⚠️ ומה שנמדד הוא שאין הגדרה **חדשה** מנקודת ההצהרה ואילך. */
   kvShared: {
-    names: ['tb_kv_rishon', 'tb_kv_ramataviv'],
+    names: ['ya_settings_rishon', 'ya_settings_ramataviv'],
     migration: null,
     migrationDoc: 'yoman-avoda/migrations/000_initial_schema.sql',
     since: null,
@@ -89,7 +89,7 @@ const APP = {
 
 /*  ⛔ השורה שהקובץ הזה אוכף (סבב 92) — ⚠️ בעלות הסכימה המשותפת: ⭐ עותק
  *  אחד, בריפו אחד, ⛔ והנמדד הוא היעדר העותק השני. */
-export const ROWS = [154, 159, 168];
+export const ROWS = [155, 160, 169, 209];
 
 /*  ⛔ המוטציות אינן ברירת המחדל (סבב 92) — ⚠️ כל מוטציה היא שינוי ⟵ הרצה
  *  ⟵ שחזור, ⭐ ושני שערים לבדם היו רוב זמן הסט: ⛔ הן רצות ברמה המלאה

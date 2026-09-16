@@ -177,7 +177,8 @@ SIGN_KEYSTORE=<עותק מקומי של המפתח> SIGN_PASS=<הערך שב-KEY
 
 ⚠️ **ה-APK הישן כאן היה TWA** שנבנה ב-PWABuilder, ⛔ ואין לבנות אותו מחדש
 ⭐ וה-keystore הוחלף בסבב 148 — כל חתימה היא
-ב-`signing/gius.keystore` בלבד.
+ב-`signing/gius.keystore` בלבד — ⛔ הקובץ אינו בריפו, ⚠️ והוא נמשך
+מ-GitHub Secrets בזמן הבנייה.
 
 <!-- SHARED:start id="android-cache-apk" -->
 ### ⚠️ Cache APK — כלל זהב
