@@ -62,6 +62,7 @@ const APP = {
     '025_retention_keys_match_live_tables.sql': 'round148_retention_keys_match_live_tables',
     '026_backup_policy_names_from_table.sql': '026_backup_policy_names_from_table',
     '027_retention_keys_kupa_prefix.sql': 'round148_retention_keys_kupa_prefix',
+    '028_sync_log_policy_names_from_table.sql': '028_sync_log_policy_names_from_table',
   },
   /*  ⛔ קובץ שאין לו רשומה במעקב — ⚠️ **מה נכנס**: שם הקובץ ⟵ למה אין
    *  לו רשומה; ⛔ **ומה מפיל**: הצהרה שאין לה `null` במרשם, ו-`null`
@@ -86,7 +87,7 @@ const APP = {
 
 /*  ⛔ השורות בטבלת התשתית שהקובץ הזה אוכף — ⚠️ המיפוי נגזר מכאן ⛔ ואינו
  *  רשימה שנייה בבודק. */
-export const ROWS = [215];
+export const ROWS = [216];
 
 /*  ⛔ המוטציות אינן ברירת המחדל — ⚠️ כל מוטציה היא שינוי ⟵ הרצה ⟵ שחזור,
  *  ⭐ והן רצות ברמה המלאה (`--full`) בסוף הסבב ולפני מיזוג. */
