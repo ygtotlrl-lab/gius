@@ -45,7 +45,7 @@
   --brand:var(--brand-fill); --on-brand:#ffffff;
 
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
-  --text:#12202e; --text2:#3b4d61; --text3:#6b7c90;
+  --text:#12202e; --text-2:#3b4d61; --text-3:#6b7c90;
   --border:#e3e8ef; --border-2:#eef2f7;
   --brand-ink:#0f766e; --brand-fill:#0f766e; --brand-soft:#e6f4f2;
   --ok:#157a39; --ok-soft:#e7f6ec;
@@ -63,7 +63,7 @@
     --on-brand:#ffffff;
 
     --bg:#0d151d; --card:#131e29; --card-2:#18242f;
-    --text:#e8eef5; --text2:#c2cfdc; --text3:#93a5b8;
+    --text:#e8eef5; --text-2:#c2cfdc; --text-3:#93a5b8;
     --border:#24333f; --border-2:#1d2a35;
     --brand-ink:#2dd4bf; --brand-fill:#0f766e; --brand-soft:#0f2c2a;
     --ok:#4ade80; --ok-soft:#122a1c;
@@ -105,7 +105,7 @@ table{border-collapse:collapse; width:100%}
 }
 .auth-card .mark{width:66px;height:66px;margin:0 auto var(--sp-6);display:block}
 .auth-card h1{font-size:var(--fs-6);letter-spacing:var(--ls-n1)}
-.auth-card .sub{color:var(--text3);font-size:var(--fs-3);margin:var(--sp-2) 0 var(--sp-7)}
+.auth-card .sub{color:var(--text-3);font-size:var(--fs-3);margin:var(--sp-2) 0 var(--sp-7)}
 .auth-card .fld{text-align:start;margin-bottom:var(--sp-5)}
 .auth-err{
   display:none;margin-top:var(--sp-6);background:var(--bad-soft);color:var(--bad);
@@ -122,10 +122,10 @@ table{border-collapse:collapse; width:100%}
 }
 .brand{display:flex;align-items:center;gap:var(--sp-4);font-weight:800;font-size:var(--fs-4);letter-spacing:var(--ls-n1)}
 .brand svg{width:26px;height:26px;flex:none}
-.brand small{font-weight:500;color:var(--text3);font-size:var(--fs-2);display:none}
+.brand small{font-weight:500;color:var(--text-3);font-size:var(--fs-2);display:none}
 .who{margin-inline-start:auto;display:flex;align-items:center;gap:var(--sp-4);min-width:0}
 .who .nm{font-size:var(--fs-3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
-.who .role{font-size:var(--fs-1);color:var(--text3);display:block;font-weight:500}
+.who .role{font-size:var(--fs-1);color:var(--text-3);display:block;font-weight:500}
 
 .tabbar{
   position:fixed;inset-inline:0;bottom:0;z-index:var(--z-2);
@@ -136,7 +136,7 @@ table{border-collapse:collapse; width:100%}
 .tabbar button{
   background:none;border:0;cursor:pointer;padding:var(--sp-4) var(--sp-1) var(--sp-4);
   display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);
-  font-size:var(--fs-1);font-weight:600;color:var(--text3);
+  font-size:var(--fs-1);font-weight:600;color:var(--text-3);
 }
 .tabbar button .ic{font-size:var(--fs-5);line-height:var(--lh-1)}
 .tabbar button.on{color:var(--brand-ink)}
@@ -163,12 +163,12 @@ main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-are
   padding:var(--sp-6);box-shadow:var(--shadow);margin-bottom:var(--sp-6)}
 .card > h2{font-size:var(--fs-4);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-5)}
 .card > h2 .cnt{
-  font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text3);
+  font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text-3);
   border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
-.card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:var(--fs-3);color:var(--text3)}
+.card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:var(--fs-3);color:var(--text-3)}
 .grid2{display:grid;gap:var(--sp-6)}
 @media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
-.empty{color:var(--text3);text-align:center;padding:var(--sp-7) var(--sp-5);font-size:var(--fs-3)}
+.empty{color:var(--text-3);text-align:center;padding:var(--sp-7) var(--sp-5);font-size:var(--fs-3)}
 .empty .big{font-size:var(--fs-6);display:block;margin-bottom:var(--sp-3);opacity:var(--op-5)}
 
 /* ============================================================= טבעת הבית */
@@ -186,11 +186,11 @@ main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-are
   position:absolute;inset:0;display:grid;place-content:center;text-align:center
 }
 .ring-val b{font-size:var(--fs-6);letter-spacing:var(--ls-n2);display:block;line-height:var(--lh-1)}
-.ring-val span{font-size:var(--fs-1);color:var(--text3);font-weight:600}
+.ring-val span{font-size:var(--fs-1);color:var(--text-3);font-weight:600}
 .hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
 @media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
 .stat{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5)}
-.stat span{display:block;font-size:var(--fs-2);color:var(--text3);font-weight:600;margin-bottom:var(--sp-1)}
+.stat span{display:block;font-size:var(--fs-2);color:var(--text-3);font-weight:600;margin-bottom:var(--sp-1)}
 .stat b{font-size:var(--fs-4);letter-spacing:var(--ls-n1);white-space:nowrap;font-variant-numeric:tabular-nums}
 .stat.ok b{color:var(--ok)} .stat.warn b{color:var(--warn)}
 .momentum{
@@ -203,7 +203,7 @@ main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-are
 /* ================================================================= טבלאות */
 .tw{overflow-x:auto;margin:0 calc(-1 * var(--sp-6));padding:0 var(--sp-6)}
 th,td{padding:var(--sp-4) var(--sp-5);text-align:start;font-size:var(--fs-3);border-bottom:1px solid var(--border-2);white-space:nowrap}
-th{font-size:var(--fs-2);color:var(--text3);font-weight:700;letter-spacing:var(--ls-1);
+th{font-size:var(--fs-2);color:var(--text-3);font-weight:700;letter-spacing:var(--ls-1);
   border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card)}
 td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:0}
@@ -225,14 +225,14 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 .row .main{flex:1;min-width:0}
 .row .main b{display:block;font-size:var(--fs-4);font-weight:650;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .main small{color:var(--text3);font-size:var(--fs-2)}
+.row .main small{color:var(--text-3);font-size:var(--fs-2)}
 .row .end{text-align:end;flex:none;font-size:var(--fs-3);font-variant-numeric:tabular-nums}
-.row .end small{display:block;color:var(--text3);font-size:var(--fs-2)}
+.row .end small{display:block;color:var(--text-3);font-size:var(--fs-2)}
 
 /* ================================================================== תגיות */
 .badge{
   display:inline-block;font-size:var(--fs-2);font-weight:700;border-radius:var(--r-6);
-  padding:var(--sp-1) var(--sp-4);white-space:nowrap;background:var(--border-2);color:var(--text3)
+  padding:var(--sp-1) var(--sp-4);white-space:nowrap;background:var(--border-2);color:var(--text-3)
 }
 .badge.ok{background:var(--ok-soft);color:var(--ok)}
 .badge.warn{background:var(--warn-soft);color:var(--warn)}
@@ -247,15 +247,15 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 }
 .inp:focus{border-color:var(--brand-ink);box-shadow:0 0 0 3px var(--brand-soft)}
 textarea.inp{resize:vertical;min-height:78px;line-height:var(--lh-4)}
-select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text3) 50%),
-  linear-gradient(135deg,var(--text3) 50%,transparent 50%);
+select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),
+  linear-gradient(135deg,var(--text-3) 50%,transparent 50%);
   background-position:12px calc(50% - 2px),17px calc(50% - 2px);
   background-size:5px 5px,5px 5px;background-repeat:no-repeat;
   /* החץ מצויר בקצה השמאלי, ולכן גם המקום הנוסף חייב להיות משמאל —
      padding-inline-start היה שם אותו מימין תחת RTL */
   padding-left:var(--sp-7)}
 .fld{display:block;margin-bottom:var(--sp-5)}
-.fld > span{display:block;font-size:var(--fs-2);font-weight:650;color:var(--text2);margin-bottom:var(--sp-3)}
+.fld > span{display:block;font-size:var(--fs-2);font-weight:650;color:var(--text-2);margin-bottom:var(--sp-3)}
 .fld.chk{display:flex;align-items:center;gap:var(--sp-4);cursor:pointer}
 .fld.chk input{width:19px;height:19px;accent-color:var(--brand-fill);flex:none;margin:0}
 .fld.chk > span{margin:0;font-size:var(--fs-3)}
@@ -274,7 +274,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .addrow .btn{flex:none}
 .btn:active{transform:translateY(1px)}
 .btn:disabled{opacity:var(--op-4);cursor:default}
-.btn.ghost{background:transparent;color:var(--text2);border-color:var(--border)}
+.btn.ghost{background:transparent;color:var(--text-2);border-color:var(--border)}
 .btn.ghost:hover{background:var(--card-2)}
 .btn.soft{background:var(--brand-soft);color:var(--brand-ink)}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
@@ -315,12 +315,12 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:var(--z-1);
   border-radius:var(--r-6) var(--r-6) 0 0}
 .sheet-hd h3{font-size:var(--fs-4);flex:1}
-.sheet-hd .x{background:none;border:0;font-size:var(--fs-5);line-height:var(--lh-1);color:var(--text3);
+.sheet-hd .x{background:none;border:0;font-size:var(--fs-5);line-height:var(--lh-1);color:var(--text-3);
   cursor:pointer;padding:var(--sp-1) var(--sp-3);border-radius:var(--r-3)}
 .sheet-hd .x:hover{background:var(--border-2)}
 .sheet-bd{padding:var(--sp-6) var(--sp-6)}
 /* ⛔ הצבע עבר מהמחרוזת ל-CSS — ⚠️ גוף `ask` הוא `textContent` בכולן, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד היה שובר את הזהות בית-לבית */
-#ask-body{color:var(--text2)}
+#ask-body{color:var(--text-2)}
 .sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);display:flex;gap:var(--sp-4)}
 .sheet-ft:empty{display:none}
 .sheet-ft .btn{flex:1}
@@ -333,7 +333,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 .chooser button:hover{border-color:var(--brand-ink);background:var(--brand-soft)}
 .chooser button .ic{font-size:var(--fs-6)}
-.chooser button small{display:block;font-weight:500;font-size:var(--fs-2);color:var(--text3)}
+.chooser button small{display:block;font-weight:500;font-size:var(--fs-2);color:var(--text-3)}
 
 /* ============================================================ בורר התורם */
 .picker{position:relative}
@@ -351,7 +351,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
 .dp-results button:last-child{border-bottom:0}
 .dp-results button:hover{background:var(--card-2)}
-.dp-results button small{color:var(--text3);font-size:var(--fs-2);margin-inline-start:var(--sp-3)}
+.dp-results button small{color:var(--text-3);font-size:var(--fs-2);margin-inline-start:var(--sp-3)}
 .dp-results .mk{color:var(--brand-ink);font-weight:700}
 .dp-new{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:var(--sp-5);margin-top:var(--sp-4);
   background:var(--card-2)}
@@ -366,7 +366,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .kcol.over{border-color:var(--brand-ink);background:var(--brand-soft)}
 .kcol > h3{font-size:var(--fs-3);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-5)}
 .kcol > h3 .dot{width:8px;height:8px;border-radius:var(--r-7);flex:none}
-.kcol > h3 .cnt{margin-inline-start:auto;font-size:var(--fs-2);color:var(--text3);
+.kcol > h3 .cnt{margin-inline-start:auto;font-size:var(--fs-2);color:var(--text-3);
   background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4);font-weight:700}
 .kcard{
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);
@@ -395,7 +395,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* ==================================================================== שונות */
 .kv{display:flex;gap:var(--sp-5);padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
 .kv:last-child{border-bottom:0}
-.kv span{color:var(--text3);min-width:82px;font-size:var(--fs-3)}
+.kv span{color:var(--text-3);min-width:82px;font-size:var(--fs-3)}
 .kv b{font-weight:650}
 .log{
   background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);
@@ -427,7 +427,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @media (min-width:900px){#updater{bottom:16px}}
 
 /* =================================================================== עלייה */
-#boot{min-height:100dvh;display:grid;place-items:center;gap:var(--sp-5);color:var(--text3)}
+#boot{min-height:100dvh;display:grid;place-items:center;gap:var(--sp-5);color:var(--text-3)}
 /* ═══ שכבת הטוסט — מודול משותף (סבב 87ב) ════════════════════════════════════
    זהה בית-לבית בכל האפליקציות. ⛔ שני סיווגי המצב נשענים על אסימוני
    המצב — ⚠️ צמד הפוך שמתחלף יחד, ⭐ והנייטרלי כתוב במפורש: אין לו מצב.
@@ -452,13 +452,13 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
       לצבע קיים, ⭐ והשורה על תפקיד אחד לאסימון אוסרת אותו. */
 .bchart{display:grid;gap:var(--sp-4);padding:var(--sp-2) 0}
 .brow{display:grid;grid-template-columns:4.6rem 1fr 4.4rem;align-items:center;gap:var(--sp-4);font-size:var(--fs-3)}
-.blab{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blab{color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bbars{display:grid;gap:var(--sp-2)}
 .btrack{display:block;height:8px;border-radius:var(--r-6);background:var(--card-2);overflow:hidden}
 .btrack i{--bar-w:0%;display:block;height:100%;width:var(--bar-w);border-radius:var(--r-6);background:var(--brand)}
 .btrack.tgt{height:4px}
 .btrack.tgt i{opacity:var(--op-2)}
-.bval{color:var(--text2);text-align:end;white-space:nowrap}
+.bval{color:var(--text-2);text-align:end;white-space:nowrap}
 /* ═══ סוף CSS גרף העמודות ════════════════════════════════════════════════ */
 /* ═══ סולמות הערך החזותי — מודול משותף (סבב 141) ═════════════════════════
    ⛔ שמונה סולמות, ⛔ ואותן דרגות בכל האפליקציות — ⚠️ כל ערך חזותי
@@ -517,7 +517,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .u-bg-border-2{background:var(--border-2)}
 .u-bg-brand-fill{background:var(--brand-fill)}
 .u-bg-ok{background:var(--ok)}
-.u-c-text3{color:var(--text3)}
+.u-c-text3{color:var(--text-3)}
 .u-fs-5{font-size:var(--fs-5)}
 .u-g-3{gap:var(--sp-3)}
 .u-gtc-repeat-2-1fr{grid-template-columns:repeat(2,1fr)}
