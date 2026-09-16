@@ -48,7 +48,7 @@ const APP = {
    *  משותפת; ⛔ **ומה מפיל**: שם שנשאל ואינו כאן, ⛔ ושם שכאן ואין לו
    *  אתר שאילתה. ⭐ **ולמה המבנה קיים**: הצלבה מול הסכימה דורשת רשימה
    *  סגורה, ⚠️ ורשימה שאינה נמדדת משני צדדיה מתיישנת בשקט. */
-  dbTables: ['g_config', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks',
+  dbTables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks',
              'g_txns', 'g_users', 'sh_backup', 'sh_sync_log'],
   /*  ⛔ שכבת העימוד — ⚠️ הארגומנט השני שלה הוא **עמודת המיון**, ⭐ והיא
    *  אינה יושבת ב-`.order(…)`: ⛔ בלי ההצהרה הזו כל אתרי המיון האמיתיים
@@ -67,17 +67,17 @@ const APP = {
    *  בלי הצהרה, הצהרה בלי אתר, והצהרה שנוקבת בטבלה שאינה מוצהרת.
    *  ⭐ **ולמה המבנה קיים**: שם שמדולג בשתיקה הוא בדיוק מה ששרד. */
   dbDyn: {
-    eraTbl:   { tables: ['g_config'],
+    eraTbl:   { tables: ['g_settings'],
                 why: 'טבלת המפתח-ערך שעידן הנתונים נקרא ממנה — ⛔ היא של האפליקציה הזו, ⭐ ולכל אחת מספר משלה' },
-    tbl:      { tables: ['g_config', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns'],
+    tbl:      { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns'],
                 why: 'שם המראה המקומית — הוא נגזר מרשימת הדחיפה בזמן ריצה' },
-    t:        { tables: ['g_config', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns'],
+    t:        { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns'],
                 why: 'יעד הדחיפה — נבחר מרשימת הדחיפה בלולאה' },
-    'm.t':    { tables: ['g_config', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
+    'm.t':    { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
                 why: 'שדה במפת המטא של הטבלאות, והלולאה עוברת על כולן' },
-    's.name': { tables: ['g_config', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
+    's.name': { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
                 why: 'שם המקור בגיבוי היומי — הרשימה נבנית בזמן ריצה' },
-    's.table': { tables: ['g_config'],
+    's.table': { tables: ['g_settings'],
                 why: 'טבלת המפתח-ערך של מקור גיבוי, והיא אחת' },
   },
   /*  ⛔ עמודת מיון שאינה ליטרל — ⚠️ **מה נכנס**: נוסח הביטוי והעמודות;

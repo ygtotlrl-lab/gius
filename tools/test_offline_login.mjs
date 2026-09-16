@@ -193,6 +193,10 @@ function makeCtx(opts = {}) {
     Promise, Object, Array, String, JSON, Date, Uint8Array, isFinite,
   };
   ctx.globalThis = ctx;
+  /*  ⛔ שם טבלת ההגדרות נגזר מהמקור ⛔ ואינו מוקלד כאן — ⚠️ הוא קבוע שחי
+   *  מחוץ לפרוסה שהרתמה טוענת, ⭐ והיא מספקת אותו כדי שהמרשמים ייקראו:
+   *  ⛔ בלעדיו המרשם זורק בטעינה, ⚠️ והשער מדווח אפס טענות. */
+  ctx.KV_TABLE = (/(?:^|\n)\s*var\s+KV_TABLE\s*=\s*'([^']+)'/.exec(SRC) || [])[1];
   vm.createContext(ctx);
   const code = MSG_DECLS + '\n' + NAMES_VAR.map(decl).join('\n') + '\n' + NAMES_FN.map(fn).join('\n');
   vm.runInContext(code, ctx);
@@ -235,7 +239,7 @@ console.log('\n▶ ש. שכבת המראה — מפתח נגזר והגירה ח
   ok('⛔ ואין קורא למפתח הישן', (h.ctx.MIRROR.g_txns || []).length === 1);
   const keys = h.ctx.mirrorTables();
   ok('⭐ כל טבלה שנדחפת יש לה מפתח במראה',
-    ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config']
+    ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_settings']
       .every((t) => keys.indexOf(t) >= 0), keys.join('|'));
   eq('⛔ והיחידה שאינה נדחפת מוכרזת', h.ctx.MIRROR_CFG.noPush.map(function (r) { return r.t; }).join('|'), 'g_users');
 }

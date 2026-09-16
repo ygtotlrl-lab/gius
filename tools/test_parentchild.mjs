@@ -79,8 +79,8 @@ const APP = {
     defaultKey: 'client_id',
     keyFn: { name: 'rowPendingKey', arg: 't', why: '' },
     tables: { g_donors: 'client_id', g_pledges: 'client_id', g_txns: 'client_id',
-              g_tasks: 'client_id', g_targets: 'client_id', g_config: 'key' },
-    gapWhy: { g_config: 'ההגדרה ממופתחת בשם המפתח ⛔ ולא במזהה שנוצר במכשיר — ⚠️ ולכן הסימון נגזר מהטבלה ב-`tableMeta`' },
+              g_tasks: 'client_id', g_targets: 'client_id', g_settings: 'key' },
+    gapWhy: { g_settings: 'ההגדרה ממופתחת בשם המפתח ⛔ ולא במזהה שנוצר במכשיר — ⚠️ ולכן הסימון נגזר מהטבלה ב-`tableMeta`' },
   },
   childMap: 'PC_CHILDREN',
   pushWriter: null,
@@ -350,7 +350,16 @@ export function arityGaps(src, names) {
  *  שמוצהר פעמיים נסחף באחד מהם. */
 export function pushTables(src) {
   const m = /\bPUSH_TABLES\s*=\s*\[([\s\S]*?)\]/.exec(src);
-  return m ? [...m[1].matchAll(/'([\w]+)'/g)].map((x) => x[1]) : [];
+  if (!m) return [];
+  /*  ⛔ שם שהוא קבוע נפתר לערכו לפני ההצלבה — ⚠️ שם טבלה חי בקבוע אחד
+   *  ⛔ ואינו פזור באתרים: ⭐ סורק שקורא ליטרל בלבד מדווח טבלה נדחפת
+   *  כחסרה, ⚠️ ומפיל על קוד תקין. */
+  return m[1].split(',').map((x) => x.trim()).filter(Boolean).map((x) => {
+    const lit = /^'([\w]+)'$/.exec(x);
+    if (lit) return lit[1];
+    const c = new RegExp('(?:^|\\n)\\s*(?:var|let|const)\\s+' + x + "\\s*=\\s*'([\\w]+)'").exec(src);
+    return c ? c[1] : null;
+  }).filter(Boolean);
 }
 /*  ⛔ המפתח נגזר מהטבלה כשיש יותר ממפתח אחד — ⚠️ מטפל שנוקב במפתח
  *  אחד בגופו מסמן בו את כל הטבלאות, ⭐ וזו בדיוק הסתירה: ⛔ והמדידה היא

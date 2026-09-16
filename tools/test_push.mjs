@@ -35,10 +35,10 @@ const APP = {
   app: 'ניהול גיוס כספים',
   file: 'index.html',
   /*  ⛔ תורמים לפני התחייבויות ותנועות — ⚠️ זה מה ששומר על המפתח הזר. */
-  tables: ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config'],
+  tables: ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_settings'],
   /*  ⛔ טבלת מפתח-ערך — ⚠️ היא גם ב-`PUSH_TABLES`, ⭐ שהיא נושאת גם את
    *  רשימות ההגדרות וגם את שורת החותמת. */
-  kvTables: ['g_config'],
+  kvTables: ['g_settings'],
   userWriteFn: 'writeUser',
   userTables: ['g_users'],
   /*  ⛔ שכבת הטביעה — ⚠️ **מה נכנס**: שלוש פונקציות הליבה בשלוש
@@ -211,7 +211,15 @@ else fail('5. `PUSH_CFG.chunk` אינו ' + CHUNK + ' — המנה היא פרמ
 
 /* ── 6. `PUSH_TABLES` — הרשימה, וההצהרה שווה למה שנמדד ─────────────────── */
 const tm = /var PUSH_TABLES\s*=\s*\[([^\]]*)\]/.exec(src);
-const tables = tm ? tm[1].split(',').map((x) => x.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean) : [];
+/*  ⛔ שם שהוא קבוע נפתר לערכו לפני ההצלבה — ⚠️ שם טבלה חי בקבוע אחד
+ *  ⛔ ואינו פזור באתרים: ⭐ הצלבה מול המזהה עצמה מפילה על קוד תקין. */
+const constOf = (nm) => {
+  const m = new RegExp('(?:^|\\n)\\s*(?:var|let|const)\\s+' + nm + "\\s*=\\s*'([^']+)'").exec(src);
+  return m ? m[1] : nm;
+};
+const tables = tm ? tm[1].split(',').map((x) => x.trim())
+  .map((x) => (/^['"]/.test(x) ? x.replace(/^['"]|['"]$/g, '') : constOf(x)))
+  .filter(Boolean) : [];
 if (tables.join('|') === APP.tables.join('|'))
   pass('6. `PUSH_TABLES` = ' + tables.length + ' טבלאות, בסדר המוצהר');
 else fail('6. `PUSH_TABLES` נמדד «' + tables.join(',') + '» והצפוי «' + APP.tables.join(',') +

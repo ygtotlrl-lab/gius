@@ -67,7 +67,7 @@ const APP = {
    *  שהמכשיר מייצר, ⛔ ובה אפס הוא **הישן ביותר** ולא «לא ידוע».
    *  ⛔ אין כאן טיפוס שני — ⚠️ שני טיפוסים לאותו מושג הם שני מנועי הכרעה. */
   stamped: ['g_donors', 'g_pledges', 'g_txns', 'g_tasks',
-             'g_targets', 'g_config', 'g_users'],
+             'g_targets', 'g_settings', 'g_users'],
   schemaSkip: ['sh_sync_log', 'sh_backup'],
   /*  ⛔ דפוסי קריאת מפתח ההגדרה — ⚠️ **מה נכנס**: `re` ביטוי עם קבוצת
    *  לכידה אחת לשם המפתח, ⛔ ו-`why` המסלול שהוא מכסה; ⛔ **ומה מפיל**:
@@ -80,13 +80,13 @@ const APP = {
    *  מפיל**: מפתח חי שאינו כאן ואין לו קורא, ⛔ והכרזה שאין לה מפתח חי.
    *  ⭐ **ולמה ריק**: נמדד ואין. */
   cfgOrphans: {},
-  cfgTable: 'g_config',
+  cfgTable: 'g_settings',
   /*  ⛔ טבלאות המפתח-ערך שבבעלות הריפו — ⚠️ **מה נכנס**: שם טבלה שעמודת
    *  `value` שלה נושאת JSON; ⛔ **ומה מפיל**: ערך שאינו מתפרש, ⭐ ורשימה
    *  ריקה. ⚠️ **ולמה היא קיימת**: הבעלות היא של ריפו אחד, ⛔ והמדידה
    *  רצה שם ⛔ ולא בשלושה. */
   kvReadFn: 'gCfgParse',
-  kvTables: ['g_config'],
+  kvTables: ['g_settings'],
   backupTable: 'sh_backup',
   /*  ⛔ לגיוס פרויקט Supabase משלו — ⚠️ ולכן רשימת-ההיתר שלו היא שלו,
    *  ⭐ והיא נקראת מהמסד שלו. */
@@ -101,7 +101,7 @@ const APP = {
    *  מפיל**: שם שאין לו אף טבלה בסכימה. ⭐ **ולמה הוא כאן**: שני פרויקטים
    *  חיים בקובץ אחד, ⛔ וריפו שמודד את שניהם מדווח פער על טבלה שאינה שלו. */
   project: 'gius',
-  ownTables: ['g_config', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
+  ownTables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
   /*  ⛔ שמות עמודה שאין להם קורא **בכוונה** (סבב 104) — ⚠️ וכל אחד נושא
    *  את נימוקו: ⭐ שלישיית המחיקה הרכה ומשפחת הטבלאות המקבילות מחייבות
    *  את העמודה בסכימה, ⛔ גם באפליקציה שאינה כותבת אותה.
@@ -127,7 +127,7 @@ const APP = {
     users:    { table: 'g_users',
                 cols: ['client_id', 'username', 'full_name', 'role', 'active',
                     'created_at', 'updated_at', 'pass_salt', 'pass_fp'] },
-    settings: { table: 'g_config',
+    settings: { table: 'g_settings',
                 cols: ['key', 'value', 'updated_at', 'client_id',
                     'deleted', 'deleted_at', 'deleted_by'] },
   },

@@ -608,7 +608,7 @@ var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
 var STAGE_CLS = { 'הכנה': 'u-bg-border-2', 'הרצה': 'u-bg-brand-fill', 'השלמה': 'u-bg-ok', 'חסומה': 'u-bg-bad' };
 var EPS = 0.005;
 
-// נפילה-חזרה בלבד — הרשימות האמיתיות יושבות ב-g_config וניתנות לעריכה בהגדרות.
+// נפילה-חזרה בלבד — הרשימות האמיתיות יושבות בטבלת ההגדרות וניתנות לעריכה בהגדרות.
 var DEFAULT_CONFIG = {
   categories: ['תרומה', 'גביה', 'מגביות', 'פרוייקטים', 'הוראות קבע', 'פרנסים ותאריכים'],
   causes: [],
@@ -808,6 +808,9 @@ async function _ysRowsPaged(mkQuery, order, win) {
 // ═══ עמידות אחסון מקומי (סבב 11) ═══
 // ── מדיניות האחסון המקומי של האפליקציה הזו ─────────────────────────────
 // זו הטבלה **היחידה** שנבדלת בין האפליקציות; המודול שמתחתיה זהה בכולן.
+/*  ⛔ שם טבלת ההגדרות חי כאן **פעם אחת** — ⚠️ שם פזור אינו ניתן לשינוי
+ *  ממקום אחד, ⭐ ושם הטבלה נגזר מתפקידה ⛔ ולא מהיום שבו נוצרה. */
+var KV_TABLE = 'g_settings';
 /* ── MIRROR_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────── */
 /*  ⚠️ `tables` היא **פונקציה** ⛔ ולא מערך — ⭐ `TABLES` מוצהר אחרי הבלוק
  *  הזה, ⛔ והצהרה שקוראת אותו כאן הייתה מקבלת `undefined`.
@@ -1787,7 +1790,7 @@ var BK_CFG = {
       { kind: 'table', name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
       { kind: 'table', name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
       { kind: 'table', name: 'g_targets', order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_config',  order: 'key' },
+      { kind: 'table', name: KV_TABLE,    order: 'key' },
       { kind: 'table', name: 'g_users',   order: 'client_id', ts: 'updated_at',
         cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
     ];
@@ -2671,7 +2674,7 @@ function isAdmin() { return isAdminOf(sessGet()); }
 
 
 /* ── PL_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────────── */
-/* ⚠️ בגיוס החותמת היא שורת `g_config` שמפתחה `G_STAMP_KEY`. היא **מוחרגת
+/* ⚠️ בגיוס החותמת היא שורת טבלת ההגדרות שמפתחה `G_STAMP_KEY`. היא **מוחרגת
    מהמראה** ב-`stripRows` — שורת מטא אינה רשימה, ⛔ ודחיפת-מצב שלה
    (סבב 51) הייתה מחזירה לענן חותמת ישנה שיושבת במכשיר הזה.
    ⛔ **ו-`active()` אינו בודק את הלקוח** — ⚠️ המשיכה בודקת אותו ממילא,
@@ -2686,12 +2689,12 @@ var PL_CFG = {
   note:   function (ts) { _gSeenTs = ts; },
   ok:     function () { _lastSeenOk = Date.now(); },
   stamp:  function (ts) {
-    return sb.from('g_config').upsert({ key: G_STAMP_KEY, value: JSON.stringify(ts), updated_at: Date.now() },
+    return sb.from(KV_TABLE).upsert({ key: G_STAMP_KEY, value: JSON.stringify(ts), updated_at: Date.now() },
                                       { onConflict: 'key' });
   },
   pull:   function () { return syncNow(); },
   remote: function () {
-    return withTimeout(sb.from('g_config').select('value').eq('key', G_STAMP_KEY).maybeSingle())
+    return withTimeout(sb.from(KV_TABLE).select('value').eq('key', G_STAMP_KEY).maybeSingle())
       .then(function (r) {
         if (!r || r.error) return { ok: false, ts: null };
         return { ok: true, ts: r.data ? plNum(kvParse(G_STAMP_KEY, r.data.value).value) : null };
@@ -2784,7 +2787,7 @@ function plBoot() {
    המשתמשים: ⛔ מסלולה הוא `writeUser`, שדורש רשת.
    ⚠️ סדר הטבלאות הוא מה ששומר על המפתח הזר — ⭐ תורמים לפני התחייבויות
    ותנועות. */
-var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', 'g_config'];
+var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', KV_TABLE];
 /*  ⛔ ההקשר שנלכד לפני ההמתנה הראשונה — ⚠️ `mark` רץ אחרי `await`, ⭐ וקריאת
  *  הגלובלי בו הייתה זוקפת את הצלחת הדחיפה של משתמש אחד לחשבון השני. */
 var _gPushEp = 0;
@@ -3166,7 +3169,7 @@ var DATA_ERA = 2;
 var ERA_CFG = {
   prefix: 'g_',
   client: function () { return sb; },
-  table:  function () { return 'g_config'; },
+  table:  function () { return KV_TABLE; },
   /*  ⛔ המוחק — ⚠️ מפתחות המראה **ואופק הפינוי שלהם**: ⭐ אופק ששרד מסנן
    *  בכתיבה את מה שהמשיכה מחזירה, ⛔ והמכשיר היה נשאר ריק אחרי הזריקה. */
   wipe:   function () {
@@ -3505,7 +3508,7 @@ var TABLES = [
   { t: 'g_tasks',   key: 'client_id', soft: true,  order: 'due_date' },
   { t: 'g_targets', key: 'client_id', soft: true,  order: 'month', desc: true, conflict: 'month' },
   { t: 'g_users',   key: 'client_id', soft: false, order: 'created_at', strip: ['password'] },
-  { t: 'g_config',  key: 'key', soft: false, conflict: 'key' }
+  { t: KV_TABLE,    key: 'key', soft: false, conflict: 'key' }
 ];
 function tableMeta(t) {
   for (var i = 0; i < TABLES.length; i++) if (TABLES[i].t === t) return TABLES[i];
@@ -3560,7 +3563,7 @@ function stripRows(t, rows) {
   //    ⛔ אין לוותר על הסינון הזה (סבב 51) — שורה שנכנסת למראה נדחפת
   //    חזרה ע"י `pushTable`, והמכשיר היה כותב לענן חותמת ישנה משלו
   //    ומשתיק בכך שינוי אמיתי שמכשיר אחר הרגע דחף.
-  if (t === 'g_config') rows = (rows || []).filter(function (r) { return !(r && String(r.key) === G_STAMP_KEY); });
+  if (t === KV_TABLE) rows = (rows || []).filter(function (r) { return !(r && String(r.key) === G_STAMP_KEY); });
   if (!m.strip) return rows;
   return (rows || []).map(function (r) { return stripCols(t, r); });
 }
@@ -3661,7 +3664,7 @@ function gCfgParse(key, v) {
 }
 function configFromMirror() {
   var cfg = { categories: [], causes: [], domains: [] }, seen = {};
-  (MIRROR.g_config || []).forEach(function (row) {
+  (MIRROR[KV_TABLE] || []).forEach(function (row) {
     var list = gCfgParse(row.key, row.value);
     if (!list) return;
     cfg[row.key] = list.slice();
@@ -3799,7 +3802,7 @@ function upsertBy(table, conflict, row) {
 }
 
 function saveConfigList(key, list) {
-  return upsertBy('g_config', 'key', { key: key, value: JSON.stringify(list) });
+  return upsertBy(KV_TABLE, 'key', { key: key, value: JSON.stringify(list) });
 }
 
 /*  ⛔ הדבר היחיד שנבדל בין שלוש האפליקציות שיש בהן כניסה — ⚠️ הלקוח,
@@ -4353,7 +4356,7 @@ function barChart(rows, label) {
 }
 /* ═══════════════ סוף מודול גרף העמודות ══════════════════════════════════ */
 
-// ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (`g_config`) נקבעים
+// ⛔ גם ה-`value` וגם הטקסט עוברים `esc` (נרשם בסבב 27) — ערכי הרשימות (טבלת ההגדרות) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
 function selectHTML(name, options, value, placeholder) {
   // ⛔ שם נגיש לכל בורר (סבב 67) — ה-id נגזר מהקורא ואין לו `<label>`
