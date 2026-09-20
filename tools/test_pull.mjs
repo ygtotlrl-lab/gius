@@ -40,7 +40,7 @@ const APP = {
    *  הנמדד הוא `USER_CFG` ⚠️ ולא `writeUser`. */
   touchFns: ['USER_CFG'],
   every: 3000,
-  stampKey: 'g_last_changed',
+  stampKey: 'last_changed',
 };
 /* ── סוף APP ───────────────────────────────────────────────────────────── */
 
