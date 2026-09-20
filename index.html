@@ -2832,7 +2832,6 @@ function pendRowKey(table, id) { return table + ':' + id; }
    עוזרים כלליים — בחירת אלמנטים, בריחת HTML, מספרים ותאריכים
    ══════════════════════════════════════════════════════════════════════════ */
 function $(sel, root) { return (root || document).querySelector(sel); }
-function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
 
 // ⛔ **כל ערך שמקורו בנתוני משתמש ונכנס ל-`innerHTML` חייב לעבור כאן**
 //    (נרשם בסבב 27) — הסיבה:
@@ -4180,7 +4179,7 @@ function render() {
   if (state.screen === 'home') view.innerHTML = viewHome();
   else if (state.screen === 'donors') view.innerHTML = state.donorId ? viewDonorCard() : viewDonors();
   else if (state.screen === 'pledges') view.innerHTML = viewPledges();
-  else if (state.screen === 'tasks') { view.innerHTML = viewTasks(); wireKanban(); }
+  else if (state.screen === 'tasks') { view.innerHTML = viewTasks(); }
   else if (state.screen === 'settings') { view.innerHTML = viewSettings(); }
 
   // Only jump to the top when the user actually moved somewhere. Re-rendering
@@ -4558,11 +4557,9 @@ function refreshPledges() {
 /* ══════════════════════════════════════════════════════════════════════════
    משימות — לוח קנבן עם גרירה
    ══════════════════════════════════════════════════════════════════════════
-   ⚠️ `wireKanban()` נקראת מ-`render()` **אחרי** הזרקת ה-HTML, כי המאזינים
-   נקשרים לאלמנטים שנוצרו זה עתה. כל רינדור מחדש מחייב קריאה חוזרת — ר'
-   הענף של `'tasks'` ב-`render()`.
-   ⛔ אין להעביר את הקשירה לטעינת הדף (נרשם בסבב 27) — ה-HTML של הלוח
-   נוצר מחדש בכל רינדור, ולכן מאזין שנקשר פעם אחת בטעינה מאבד את היעד.
+   ⛔ אין לקשור מאזין לכרטיס ולעמודה (נרשם בסבב 27) — ה-HTML של הלוח
+   נוצר מחדש בכל רינדור, ומאזין שנקשר אליהם מת איתם: ⚠️ ולכן הגרירה
+   באצלה מ-`document` כמו כל שאר האירועים.
    ══════════════════════════════════════════════════════════════════════════ */
 function viewTasks() {
   var h = '<section class="u-mb-6 card">' +
@@ -4580,6 +4577,7 @@ function viewTasks() {
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
       h += '<div class="kcard" data-id="' + t.client_id + '">' +
+        '<span class="grip" aria-hidden="true">⣿</span>' +
         '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.client_id)) +
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
@@ -4602,31 +4600,54 @@ function viewTasks() {
   return h + '</div>';
 }
 
-function wireKanban() {
-  $$('.kcard').forEach(function (c) {
-    c.draggable = true;
-    c.addEventListener('dragstart', function (e) {
-      e.dataTransfer.setData('text/plain', c.dataset.id);
-      e.dataTransfer.effectAllowed = 'move';
-      c.classList.add('dragging');
-    });
-    c.addEventListener('dragend', function () { c.classList.remove('dragging'); });
-  });
-  $$('.kcol').forEach(function (col) {
-    col.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      col.classList.add('over');
-    });
-    col.addEventListener('dragleave', function () { col.classList.remove('over'); });
-    col.addEventListener('drop', function (e) {
-      e.preventDefault();
-      col.classList.remove('over');
-      var id = e.dataTransfer.getData('text/plain');
-      if (id) moveTask(id, col.dataset.stage);
-    });
-  });
+/*  ⛔ הגרירה על אירועי מצביע ⛔ ולא על גרירת HTML5 — ⚠️ **במגע היא אינה
+ *  קיימת כלל**: ⭐ נמדד בדפדפן — `dragstart` · `dragover` ו-`drop` לא
+ *  נורו אף פעם באצבע, ⛔ ורק `pointer*` הגיעו; ⚠️ ואירועי מצביע חיים
+ *  בעכבר ובאצבע כאחד.
+ *  ⛔ **והגרירה מתחילה מהידית בלבד** — ⚠️ כרטיס שכולו נגרר חוטף את
+ *  גלילת המסך, ⭐ ו-`touch-action` שמבטל אותה על כל הכרטיס נועל את הלוח.
+ *  ⚠️ **והם באצלה מ-`document`** — ⭐ הלוח נבנה מחדש בכל רינדור, ⛔ ומאזין
+ *  פר-כרטיס היה מת איתו. */
+/*  ⛔ **מה נכנס**: הכרטיס שנתפס בידיתו והעמודה שמתחתיו ברגע השחרור;
+ *  ⚠️ **ומה מפיל**: שחרור מעל עמודה שאינה קיימת — ⭐ הגרירה מסתיימת בלי
+ *  כתיבה. ⛔ **ולמה המבנה קיים**: הגרירה היא העברת שלב ⛔ ולא שינוי סדר,
+ *  ⚠️ ולכן הנמדד הוא העמודה שבעץ ⭐ ולא צמד «מאיפה לאן». */
+var KDRAG = { el: null, col: null };
+
+function kdragCol(x, y) {
+  var over = document.elementFromPoint(x, y);
+  return over && over.closest ? over.closest('.kcol') : null;
 }
+document.addEventListener('pointerdown', function (e) {
+  var g = e.target && e.target.closest ? e.target.closest('.kcard > .grip') : null;
+  if (!g) return;
+  KDRAG.el = g.closest('.kcard');
+  KDRAG.col = null;
+  KDRAG.el.classList.add('dragging');
+  /*  ⛔ המצביע נלכד על הידית — ⚠️ בלעדיו אצבע שיוצאת מגבול הכרטיס
+   *  מפסיקה לשדר, ⭐ והגרירה נתקעת באמצע. */
+  try { g.setPointerCapture(e.pointerId); } catch (e1) {}
+  e.preventDefault();
+});
+document.addEventListener('pointermove', function (e) {
+  if (!KDRAG.el) return;
+  e.preventDefault();
+  var col = kdragCol(e.clientX, e.clientY);
+  if (col === KDRAG.col) return;
+  /*  ⛔ הסימון על העמודה הוא המשוב היחיד — ⚠️ בלעדיו המשתמש אינו
+   *  יודע אל איזו עמודה הכרטיס ייפול. */
+  if (KDRAG.col) KDRAG.col.classList.remove('over');
+  KDRAG.col = col;
+  if (col) col.classList.add('over');
+});
+document.addEventListener('pointerup', function (e) {
+  if (!KDRAG.el) return;
+  var el = KDRAG.el, col = kdragCol(e.clientX, e.clientY);
+  if (KDRAG.col) KDRAG.col.classList.remove('over');
+  KDRAG.el = null; KDRAG.col = null;
+  el.classList.remove('dragging');
+  if (col && col.dataset.stage) moveTask(el.dataset.id, col.dataset.stage);
+});
 
 // עדכון אופטימי עם החזרה אחורה: הכרטיס זז מיד (גרירה שמחכה לשמירה נראית
 // תקועה), ואם השמירה נכשלה השלב חוזר לערכו הקודם והמסך מצויר מחדש.
@@ -5470,9 +5491,7 @@ var DOM_ACTIONS = {
 
 /* ── מאזינים גלובליים ──────────────────────────────────────────────────────
    ⚠️ **האצלה על `document`, ולא קשירה לאלמנטים.** המסכים נבנים מחדש בכל
-   `render()`, ומאזין שנקשר לכפתור מת עם הכפתור. יוצא הדופן היחיד הוא
-   `wireKanban()` — הגרירה דורשת מאזינים על הכרטיס עצמו — ולכן היא נקראת
-   מחדש בכל רינדור של מסך המשימות.
+   `render()`, ומאזין שנקשר לכפתור מת עם הכפתור — ואין יוצא מן הכלל.
    ⚠️ `if (el.tagName === 'A') return;` בקליק אינו קישוט: `<a>` שיושב בתוך
    אזור עם `data-act` מקבל `preventDefault` ומאבד את הניווט הטבעי שלו,
    כלומר הופך לקישור שאינו עושה כלום. ⛔ אין למחוק את השורה כשאין `<a>`

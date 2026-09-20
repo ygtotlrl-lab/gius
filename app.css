@@ -353,6 +353,14 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   padding:var(--sp-5);margin-bottom:var(--sp-4);cursor:grab
 }
 .kcard.dragging{opacity:var(--op-2)}
+/*  ⛔ הידית היא מה שאומר שהכרטיס נגרר — ⚠️ כרטיס שאין בו סימן נראה
+ *  קבוע, ⭐ ואיש אינו מנסה להזיז אותו.
+ *  ⛔ **ו-`touch-action` עליה בלבד** — ⚠️ באצבע, אלמנט שאינו מבטל את
+ *  פעולת המגע גולל את הדף במקום לגרור; ⭐ וביטולו על כל הכרטיס היה
+ *  נועל את גלילת הלוח. */
+.kcard > .grip{float:inline-start;margin-inline-end:var(--sp-3);color:var(--text-3);
+  font-size:var(--fs-3);touch-action:none;cursor:grab}
+.kcard > .grip:active{cursor:grabbing;color:var(--brand-ink)}
 .kcard b{display:block;font-size:var(--fs-3);font-weight:650;margin-bottom:var(--sp-3)}
 .kcard .meta{display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-bottom:var(--sp-4)}
 .kcard .ft{display:flex;gap:var(--sp-3);align-items:center}
