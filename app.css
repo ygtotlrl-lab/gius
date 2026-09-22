@@ -304,6 +304,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);display:flex;gap:var(--sp-4)}
 .sheet-ft:empty{display:none}
 .sheet-ft .btn{flex:1}
+#ask .sheet-ft button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-4);background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;border-radius:var(--r-4);padding:var(--sp-5) var(--sp-6);font-family:inherit;font-size:var(--fs-3);font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+#ask .sheet-ft button:hover{box-shadow:var(--shadow-lg)}
+#ask .sheet-ft button:active{transform:translateY(1px)}
+#ask .sheet-ft button.danger{background:var(--bad-soft);color:var(--bad);box-shadow:none}
 
 .chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ עד כאן הבורר איפס אותו בזמן ריצה, ⛔ ו-`openModal` היה חייב להחזירו: ⭐ שני מסלולים על אותה תכונה, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
 .chooser button{
@@ -486,19 +490,12 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 --sh-1:rgba(0,0,0,.10);--sh-2:rgba(0,0,0,.22);--sh-3:rgba(0,0,0,.35);
 --on-dark:#FFFFFF;--on-dark-2:rgba(255,255,255,.9);--on-dark-3:rgba(255,255,255,.65);--fill-dark:rgba(255,255,255,.15)
 }
-.u-ai-c{align-items:center}
-.u-d-flex{display:flex}
-.u-fs-2{font-size:var(--fs-2)}
-.u-fs-3{font-size:var(--fs-3)}
-.u-fw-700{font-weight:700}
-.u-fx-1{flex:1}
-.u-g-5{gap:var(--sp-5)}
 .u-mt-2{margin-top:var(--sp-2)}
-.u-mt-5{margin-top:var(--sp-5)}
 /* ═══ סוף CSS הסולמות ═══════════════════════════════════════════════════ */
 /* ══ מחלקות הסולם הפרטיות — אינן חיות בכולן ═════════════════════════════
    ⚠️ כל מחלקה כאן משרתת אתר שקיים באפליקציה הזו בלבד, ⛔ ולכן אינה בבלוק
    המשותף: ⭐ מחלקה משותפת שאין לה קורא כאן היא סלקטור בלי קורא. */
+.u-ai-c{align-items:center}
 .u-ai-fs{align-items:flex-start}
 .u-bb-1-solid-border-2{border-bottom:1px solid var(--border-2)}
 .u-bd-1-solid-border{border:1px solid var(--border)}
@@ -507,13 +504,19 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .u-bg-brand-fill{background:var(--brand-fill)}
 .u-bg-ok{background:var(--ok)}
 .u-c-text3{color:var(--text-3)}
+.u-d-flex{display:flex}
+.u-fs-2{font-size:var(--fs-2)}
+.u-fs-3{font-size:var(--fs-3)}
 .u-fs-5{font-size:var(--fs-5)}
+.u-fw-700{font-weight:700}
+.u-fx-1{flex:1}
 .u-g-3{gap:var(--sp-3)}
+.u-g-5{gap:var(--sp-5)}
 .u-gtc-repeat-2-1fr{grid-template-columns:repeat(2,1fr)}
 .u-gtc-repeat-3-1fr{grid-template-columns:repeat(3,1fr)}
 .u-h-52{height:52px}
-.u-m-0{margin:0}
 .u-m-0-0-5{margin:0 0 var(--sp-5)}
+.u-m-0{margin:0}
 .u-m-1-0-2{margin:var(--sp-1) 0 var(--sp-2)}
 .u-m-5-0-2{margin:var(--sp-5) 0 var(--sp-2)}
 .u-mb-4{margin-bottom:var(--sp-4)}
@@ -521,6 +524,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .u-mb-6{margin-bottom:var(--sp-6)}
 .u-minw-0{min-width:0}
 .u-minw-76{min-width:76px}
+.u-mt-5{margin-top:var(--sp-5)}
 .u-mt-6{margin-top:var(--sp-6)}
 .u-mt-7{margin-top:var(--sp-7)}
 .u-p-3-0{padding:var(--sp-3) 0}
