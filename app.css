@@ -304,6 +304,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);display:flex;gap:var(--sp-4)}
 .sheet-ft:empty{display:none}
 .sheet-ft .btn{flex:1}
+#ask .sheet-ft button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-4);background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;border-radius:var(--r-4);padding:var(--sp-5) var(--sp-6);font-family:inherit;font-size:var(--fs-3);font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
+#ask .sheet-ft button:hover{box-shadow:var(--shadow-lg)}
+#ask .sheet-ft button:active{transform:translateY(1px)}
+#ask .sheet-ft button.danger{background:var(--bad-soft);color:var(--bad);box-shadow:none}
 
 .chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ עד כאן הבורר איפס אותו בזמן ריצה, ⛔ ו-`openModal` היה חייב להחזירו: ⭐ שני מסלולים על אותה תכונה, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
 .chooser button{
