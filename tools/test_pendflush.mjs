@@ -30,11 +30,10 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import { FACTS } from './app-facts.mjs';
 
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
-  app: 'gius',
-  file: 'index.html',
   /*  ⚠️ נמדד ולא הוצהר: כאן המשיכה והדחיפה הן אותה פונקציה — `syncNow`
    *  מושכת, ממזגת ודוחפת, ⭐ ולכן היא גם `RTY_CFG.flush` וגם `PL_CFG.pull`:
    *  ⛔ ואין לה מאזין `online` משלה — ⚠️ הפולינג הוא שמחזיר אותה לפעולה. */
@@ -148,9 +147,9 @@ process.on('exit', () => {
 const fail = (m) => { RAN++; failures++; console.error('❌ ' + m); };
 const pass = (m) => (RAN++, console.log('✅ ' + m));
 
-const src = fs.readFileSync(APP.file, 'utf8');
+const src = fs.readFileSync(FACTS.entry, 'utf8');
 
-console.log('\n🔎 אישור ה-⏳ בריקון האוטומטי (סבב 52) — ' + APP.app + '\n');
+console.log('\n🔎 אישור ה-⏳ בריקון האוטומטי (סבב 52) — ' + FACTS.slug + '\n');
 
 /*  ⚠️ סורקים על הקוד בלבד: כל אזכור בהערת המודול היה נספר כקריאה. */
 function codeOnly(text) {
@@ -481,7 +480,7 @@ for (const mu of MUTATIONS) {
   }, capsBlock(START));
 
 
-  const src = fs.readFileSync(APP.file, 'utf8');
+  const src = fs.readFileSync(FACTS.entry, 'utf8');
 
   function grab(text) {
     const i = text.indexOf(BLOCK.start);
@@ -495,7 +494,7 @@ for (const mu of MUTATIONS) {
 
   const block = grab(src);
   if (!block) {
-    fail('הבלוק המשותף לא נמצא ב-' + APP.file);
+    fail('הבלוק המשותף לא נמצא ב-' + FACTS.entry);
     console.log('\n❌ בדיקת הניסיון החוזר נכשלה (' + failures + ')');
     process.exit(1);
   }

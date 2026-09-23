@@ -37,6 +37,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { tmpdir, cpus } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FACTS } from './app-facts.mjs';
 
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
@@ -49,7 +50,6 @@ const APP = {
   floorRange: {
     'test_signeddead': '3-4 — ההצלבה מול הריפו האחיות רצה רק כשהן על הדיסק: ⛔ בעותק זמני הן אינן שם, ⚠️ והטענה מדווחת בשמן ואינה נספרת כטענה שעברה',
   },
-  app: 'gius',
   /* ⚠️ הכללים נמדדו מ-sw.js ומ-index.html של האפליקציה הזו — אלה כללי
      השער המקורי של gius (סבב 11), בצורת הנתונים של סבב 33.
      [file, regex, expect, msg] */
@@ -123,7 +123,7 @@ export const ROWS = [41, 42, 31];
 const T_START = Date.now();
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /*  ⛔ כותב על עותק — ⚠️ `node --check` מקבל קובץ ⛔ ולא טקסט, ⚠️ וה-JS המוטבע נחתך למחרוזת. */
-const work = mkdtempSync(join(tmpdir(), APP.app + '-check-'));
+const work = mkdtempSync(join(tmpdir(), FACTS.slug + '-check-'));
 
 /*  ⛔ אותם עוזרים כמו בחמשת הבודקים האחרים (סבב 72) — ⚠️ ואין לפתוח
  *  דפוס שני (`ok`/`FAIL`, בלי מונה ובלי `pass`): ⛔ שני דפוסים לאותו
@@ -238,7 +238,7 @@ for (const [file, reSrc, expect, msg] of APP.rules) {
  *  ⛔ וריצה פנימית שנייה של הסט המלא היא אותה עבודה פעמיים. */
 if (process.env.CHECKJS_STAGES_ONLY) {
   if (failures) { rmSync(work, { recursive: true, force: true });
-    console.error(`\n❌ ${APP.app}: ${failures} כשלים בשלבים 1–3`); process.exit(1); }
+    console.error(`\n❌ ${FACTS.slug}: ${failures} כשלים בשלבים 1–3`); process.exit(1); }
   console.log('\n✅ שלבים 1–3 עברו');
   rmSync(work, { recursive: true, force: true });
   process.exit(0);
@@ -595,7 +595,7 @@ if (FAST) console.log(`\n⚠️ רמה מהירה — ${wanted.length} שערי�
 rmSync(work, { recursive: true, force: true });
 
 if (failures) {
-  console.error(`\n❌ ${APP.app}: ${failures} כשלים בשער ה-JS`);
+  console.error(`\n❌ ${FACTS.slug}: ${failures} כשלים בשער ה-JS`);
   process.exit(1);
 }
 console.log('\n✅ all checks passed');

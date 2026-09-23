@@ -26,10 +26,10 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { webcrypto } from 'node:crypto';
 import { appSrc } from './appsrc.mjs';
+import { FACTS } from './app-facts.mjs';
 
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
-  app: 'gius',
   /*  ⛔ טבלת המשתמשים במראה — ⚠️ כאן היא נכתבת בשמה ⛔ ולא דרך קבוע,
    *  ⭐ ולכן ההכרזה נושאת את הליטרל עצמו. */
   usersTable: 'g_users',
@@ -368,7 +368,7 @@ function secF() {
 
 /* ── הרצה ──────────────────────────────────────────────────────────────── */
 async function run() {
-  console.log(`\n═══ נתיב עדכון חלקי למראת המשתמשים (${APP.app}) ═══`);
+  console.log(`\n═══ נתיב עדכון חלקי למראת המשתמשים (${FACTS.slug}) ═══`);
   await secA();
   await secB();
   await secC();
@@ -380,7 +380,7 @@ async function run() {
   mutStage();
   if (!RUN_MUT) {
     console.log('\n⏭ test_users_patch: המוטציות רצות ברמה המלאה (--full) — ⛔ ואינן נמדדות כאן');
-    console.log(`\n[${APP.app}] ${passN} עברו, ${failN} נכשלו`);
+    console.log(`\n[${FACTS.slug}] ${passN} עברו, ${failN} נכשלו`);
     process.exit(failN ? 1 : 0);
   }
   sect('מוטציות');
@@ -396,7 +396,7 @@ async function run() {
   ok('⭐ מוטציית-נגד: שדה שאינו סוד ⛔ אינו מפיל — נמדד המסנן, ולא הצורה',
      ra.inMem === false && ra.onDiskVal === false);
 
-  console.log('\n' + (failN ? '❌' : '✅') + `  [${APP.app}] ${passN} עברו, ${failN} נכשלו`);
+  console.log('\n' + (failN ? '❌' : '✅') + `  [${FACTS.slug}] ${passN} עברו, ${failN} נכשלו`);
   process.exit(failN ? 1 : 0);
 }
 

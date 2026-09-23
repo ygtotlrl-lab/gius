@@ -26,6 +26,7 @@ import { appSrc } from './appsrc.mjs';
 
 /* ── APP — הדבר היחיד שנבדל בין הריפו ──────────────────────────────────── */
 const APP = {
+  /*  ⭐ דפוסי החלון החם שהשער מחפש במקור — ⛔ **אינו נגזר**: שמות פונקציות ב-`index.html`, ⚠️ ואין קובץ שמצהיר עליהן */
   checks: [
     [/function gAcadYearOf\(/, 'גבול-השנה של schar אומץ (gAcadYearOf)'],
     [/HW_CFG = \{\s*\n\s*enabled: true,/, 'החלון החם פעיל (HW_CFG.enabled)'],

@@ -4206,6 +4206,9 @@ function go(screen) {
   }
   state.screen = screen;
   state.donorId = null;
+  /*  ⛔ הבית נפתח בחודש של היום — ⚠️ חודש שדופדף אליו נשאר אחרי מעבר
+   *  לשונית, ⭐ ומי שחוזר לבית רואה יעד של חודש אחר בלי שביקש. */
+  if (screen === 'home') state.month = monthKeyOf(todayISO());
   render();
 }
 
