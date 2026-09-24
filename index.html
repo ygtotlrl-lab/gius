@@ -2594,7 +2594,7 @@ var DOM_ACTIONS = {
   'sw-dismiss':          function () { swHideUpdate(); },
   /*  ⛔ שלוש התראות התשתית מנותבות במפה — ⚠️ הכפתור נבנה ב-JS,
    *  ⭐ והמאזין הישיר שעליו היה בדיוק ההיקף שיצא מהמנגנון. */
-  'ls-alert-close':      function () { var el = document.getElementById('ls-alert'); if (el) el.style.display = 'none'; },
+  'ls-alert-close':      function () { var el = document.getElementById('ls-alert'); if (el) el.remove(); },
   'pend-alert-ok':       function () { pendAlertDismiss(); },
   'lk-stay':             function () { lkReset(); },
   'tab': function (el) { go(el.dataset.tab); },
