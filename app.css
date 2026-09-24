@@ -281,6 +281,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 .fab:active{transform:scale(.93)}
 @media (min-width:900px){.fab{bottom:26px}}
+/*  ⛔ במסך רחב הסרגל עולה למעלה ⚠️ והכפתור הצף נשאר בתחתית — ⭐ והטוסט
+ *  מעליו בלבד: תחתית הכפתור, גובהו, ואותה תוספת שבטלפון. */
+@media (min-width:900px){:root{--toast-bottom:calc(26px + 60px + 10px)}}
 
 /* ================================================================= גיליונות */
 .veil{align-items:flex-end;backdrop-filter:blur(2px)}
