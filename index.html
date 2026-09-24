@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0f766e">
 <meta name="description" content="ניהול תורמים, התחייבויות, תנועות ומשימות גיוס כספים.">
-<title>גיוס</title>
+<title></title>
 
 <script>
 // ⛔ חייב לרוץ לפני שכל כתובת יחסית מפוענחת —
@@ -24,12 +24,15 @@
 </script>
 
 <link rel="manifest" href="manifest.json">
+<script src="app.config.js"></script>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.18a62cb8.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.ecf2e766.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.b2c47599.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="גיוס">
 
+<link rel="stylesheet" href="core/ui.css">
+<link rel="stylesheet" href="core/chart.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -103,6 +106,7 @@ import { bar, barChart } from './core/chart.js';
 'use strict';
 /*  ⛔ התצורה נמסרת למודולים בשומרי קריאה — ⚠️ חלקה מוגדר בהמשך הדף,
  *  ⭐ והשומר קורא אותה בזמן הקריאה ⛔ ולא בזמן המסירה. */
+document.title = self.APP.name;
 appConfigure({
   get BK_CFG() { return BK_CFG; },
   get DATA_ERA() { return DATA_ERA; },
@@ -128,11 +132,11 @@ appConfigure({
  * ⭐ הכול יושב כאן בכוונה: קובץ אחד לפריסה, קובץ אחד למטמון.
  * ======================================================================== */
 
-var SUPABASE_URL = 'https://zrftjkghhjhqzopvdzou.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnRqa2doaGpocXpvcHZkem91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDc4MzQsImV4cCI6MjEwMDg4MzgzNH0.DWcW3o4Y9Is3jGx1frHkrUz7cc045aH1m1uKsrwRhIA';
+var SUPABASE_URL = self.APP.supabase.url;
+var SUPABASE_ANON_KEY = self.APP.supabase.key;
 
 var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
-var STAGE_CLS = { 'הכנה': 'u-bg-border-2', 'הרצה': 'u-bg-brand-fill', 'השלמה': 'u-bg-ok', 'חסומה': 'u-bg-bad' };
+var STAGE_CLS = { 'הכנה': 'stage-prep', 'הרצה': 'stage-run', 'השלמה': 'stage-done', 'חסומה': 'stage-blocked' };
 var EPS = 0.005;
 
 // נפילה-חזרה בלבד — הרשימות האמיתיות יושבות בטבלת ההגדרות וניתנות לעריכה בהגדרות.
@@ -227,8 +231,8 @@ var KV_TABLE = 'g_settings';
  *  ⭐ **ולמה זה קיים**: מסלול שאינו מוסיף על הלולאה הוא לולאה שנכתבה
  *  פעמיים, ⛔ ושורותיו מסתכנות בכך שלא יעלו כלל. */
 var MIRROR_CFG = {
-  prefix: 'g_mirror_',
-  app:    'g_',
+  prefix: self.APP.prefix + 'mirror_',
+  app:    self.APP.prefix,
   tables: function () { return TABLES.map(function (m) { return m.t; }); },
   noPush: [{ t: 'g_users', via: 'writeUser', adds: 'secret' }],
   empty:  function () { return []; },
@@ -237,11 +241,11 @@ var MIRROR_CFG = {
   fail:   function (where, e) { console.error('[mirror] ' + where, e); },
 };
 var LS_CFG = {
-  /*  ⛔ קידומת המטמון — ⚠️ **מה נכנס**: הערך שב-`SW_CFG.prefix` שב-`sw.js`,
+  /*  ⛔ קידומת המטמון — ⚠️ **מה נכנס**: שם האפליקציה שבתצורה — אותו מקור של `SW_CFG.prefix`,
    *  ⭐ **וזה המקור**: ⛔ סינון המטמון לפי קידומת האחסון הוא צירוף מקרי
    *  ⛔ ולא מנגנון — ⚠️ שם אחסון שישתנה יחזיר רשימה ריקה, ⭐ וסימן דחייה
    *  שנשען על מחרוזת ריקה מת בשקט: ⛔ הבאנר חוזר בכל טעינה בלי דרך לצאת. */
-  cachePrefix: 'gius-',
+  cachePrefix: self.APP.id + '-',
   logKey: 'g_ls_log',
   hzPrefix: 'g_ls_hz_',
   /*  ⛔ מפתח סימן הדחייה של באנר העדכון — ⚠️ **מה נכנס**: שם
@@ -468,7 +472,7 @@ var HW_CFG = {
  *  להסבה ואיש כבר אינו קורא — ⚠️ והיא נזרקת פעם אחת. */
 var DATA_ERA = 2;
 var ERA_CFG = {
-  prefix: 'g_',
+  prefix: self.APP.prefix,
   client: function () { return sb; },
   table:  function () { return KV_TABLE; },
   /*  ⛔ המוחק — ⚠️ מפתחות המראה **ואופק הפינוי שלהם**: ⭐ אופק ששרד מסנן
@@ -1488,7 +1492,7 @@ function renderShell() {
     '<header class="topbar">' +
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
       '<nav class="tabbar">' + tabs + '</nav>' +
-      '<div class="who"><div class="u-ta-e"><div class="nm">' + esc(state.user.full_name) + '</div>' +
+      '<div class="who"><div class="who-id"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
         '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
@@ -1574,8 +1578,8 @@ function breakdownTable(rows, label, total) {
     h += '<tr><td>' + esc(r.key) + '</td>' +
       '<td class="num">' + r.count + '</td>' +
       '<td class="num">' + ils(r.total) + '</td>' +
-      '<td class="u-minw-76 num">' + bar(share.toFixed(1)) +
-      '<small class="u-c-text3">' + share.toFixed(0) + '%</small></td></tr>';
+      '<td class="share-cell num">' + bar(share.toFixed(1)) +
+      '<small class="share-pct">' + share.toFixed(0) + '%</small></td></tr>';
   });
   h += '</tbody><tfoot><tr><td>סה"כ</td><td class="num">' + sum(rows, function (r) { return r.count; }) +
     '</td><td class="num">' + ils(total) + '</td><td></td></tr></tfoot></table></div>';
@@ -1646,7 +1650,7 @@ function viewHome() {
     h += emptyBox('✨', 'אין משימות פתוחות או התחייבויות ממתינות על שמך');
   } else {
     if (myTasks.length) {
-      h += '<div class="u-fs-2 u-fw-700 u-c-text3 u-m-1-0-2">משימות פתוחות</div>';
+      h += '<div class="today-head">משימות פתוחות</div>';
       myTasks.forEach(function (t) {
         var late = t.due_date && t.due_date < dayToday();
         h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
@@ -1656,7 +1660,7 @@ function viewHome() {
       });
     }
     if (myPledges.length) {
-      h += '<div class="u-fs-2 u-fw-700 u-c-text3 u-m-5-0-2">התחייבויות שטרם נגבו במלואן</div>';
+      h += '<div class="today-head-next">התחייבויות שטרם נגבו במלואן</div>';
       myPledges.forEach(function (p) {
         var c = collectedForPledge(p.client_id);
         var left = Math.max(0, num(p.amount) - c);
@@ -1702,7 +1706,7 @@ function donorRowsHTML(list) {
 function viewDonors() {
   var list = donorMatches(state.donorSearch);
   return '<section class="card">' +
-    '<div class="u-m-0-0-5 addrow">' +
+    '<div class="search-row addrow">' +
       '<input aria-label="חיפוש לפי שם, טלפון או שגריר" class="inp" id="donor-q" data-inp="donor-q" placeholder="חיפוש לפי שם, טלפון או שגריר…" value="' + esc(state.donorSearch) + '">' +
       '<button class="btn" data-act="donor-new">＋ תורם</button>' +
     '</div>' +
@@ -1724,14 +1728,14 @@ function viewDonorCard() {
   var h = '<button class="back" data-act="donor-back">› חזרה לרשימת התורמים</button>';
 
   h += '<section class="card">' +
-    '<div class="u-d-flex u-ai-fs u-g-5 u-mb-5">' +
-      '<div class="u-w-52 u-h-52 u-r-5 u-fs-5 av' + (d.is_vip ? ' vip' : '') + '">' +
+    '<div class="donor-head">' +
+      '<div class="donor-av av' + (d.is_vip ? ' vip' : '') + '">' +
         esc(initials(d.name)) + '</div>' +
-      '<div class="u-fx-1 u-minw-0"><h2 class="u-fs-5 u-m-0">' + esc(d.name) +
+      '<div class="donor-id"><h2 class="donor-name">' + esc(d.name) +
         (d.is_vip ? ' <span class="badge gold">VIP</span>' : '') + '</h2>' +
-        '<div class="u-c-text3 u-fs-3">' + esc(d.phone || 'ללא טלפון') + '</div></div>' +
+        '<div class="donor-phone">' + esc(d.phone || 'ללא טלפון') + '</div></div>' +
     '</div>' +
-    '<div class="u-mb-5 btnrow">' +
+    '<div class="btnrow-top btnrow">' +
       '<button class="btn sm" data-act="donor-edit" data-id="' + d.client_id + '">עריכה</button>' +
       '<button class="btn soft sm" data-act="vip-toggle" data-id="' + d.client_id + '">' +
         (d.is_vip ? '☆ הסרת VIP' : '★ סימון VIP') + '</button>' +
@@ -1739,16 +1743,16 @@ function viewDonorCard() {
       '<button class="btn ghost sm" data-act="pledge-new" data-donor="' + d.client_id + '">＋ התחייבות</button>' +
       '<button class="btn danger sm" data-act="donor-del" data-id="' + d.client_id + '">מחיקה</button>' +
     '</div>' +
-    '<div class="u-gtc-repeat-3-1fr hero-stats">' +
+    '<div class="stats-3 hero-stats">' +
       '<div class="stat"><span>סה"כ התחייב</span><b>' + ils(pledged) + '</b></div>' +
       '<div class="stat ok"><span>סה"כ נתן</span><b>' + ils(given) + '</b></div>' +
       '<div class="stat warn"><span>נותר</span><b>' + ils(left) + '</b></div>' +
     '</div>' +
-    '<div class="u-mt-5">' +
+    '<div class="donor-kv">' +
       '<div class="kv"><span>שגריר</span><b>' + esc(d.agent || '—') + '</b></div>' +
       '<div class="kv"><span>תגיות</span><b>' + ((d.tags && d.tags.length) ? d.tags.map(function (t) { return '<span class="badge">' + esc(t) + '</span>'; }).join(' ') : '—') + '</b></div>' +
     '</div>' +
-    '<label class="u-mt-5 fld"><span>הערות</span>' +
+    '<label class="notes-fld fld"><span>הערות</span>' +
       '<textarea aria-label="הערות חופשיות על התורם" class="inp" id="donor-notes" placeholder="הערות חופשיות על התורם…">' + esc(d.notes || '') + '</textarea></label>' +
     '<button class="btn sm" data-act="notes-save" data-id="' + d.client_id + '">שמירת הערות</button>' +
   '</section>';
@@ -1845,7 +1849,7 @@ function pledgeTableHTML(list) {
 function pledgeTotalsHTML(list) {
   var pledged = sum(list, function (p) { return p.amount; });
   var got = sum(list, function (p) { return collectedForPledge(p.client_id); });
-  return '<div class="u-gtc-repeat-2-1fr hero-stats">' +
+  return '<div class="stats-2 hero-stats">' +
     '<div class="stat"><span>סה"כ התחייבויות</span><b>' + ils(pledged) + '</b></div>' +
     '<div class="stat ok"><span>נגבה</span><b>' + ils(got) + '</b></div>' +
     '<div class="stat warn"><span>נותר</span><b>' + ils(Math.max(0, pledged - got)) + '</b></div>' +
@@ -1860,14 +1864,14 @@ function viewPledges() {
     '<h2>🤝 התחייבויות<span class="cnt">' + list.length + '</span>' +
       '<span class="sp"><button class="btn sm" data-act="pledge-new">＋ התחייבות</button></span></h2>' +
     '<div id="pledge-totals">' + pledgeTotalsHTML(list) + '</div>' +
-    '<div class="u-mt-5 filters">' +
+    '<div class="filters-row filters">' +
       '<label class="fld"><span>שגריר</span>' + selectHTML('pf-agent', agentPool(), f.agent, 'הכל') + '</label>' +
       '<label class="fld"><span>סטטוס</span>' + selectHTML('pf-status', ['לא בוצע', 'חלקי', 'בוצע'], f.status, 'הכל') + '</label>' +
       '<label class="fld"><span>עילה</span>' + selectHTML('pf-cause', state.config.causes, f.cause, 'הכל') + '</label>' +
       '<label class="fld"><span>מתאריך</span><input class="inp" type="date" id="pf-from" value="' + esc(f.from) + '"></label>' +
       '<label class="fld"><span>עד תאריך</span><input class="inp" type="date" id="pf-to" value="' + esc(f.to) + '"></label>' +
     '</div>' +
-    '<div class="u-mb-5 btnrow">' +
+    '<div class="btnrow-top btnrow">' +
       '<button class="btn ghost sm" data-act="pf-clear">ניקוי מסננים</button></div>' +
     '<div id="pledge-table">' + pledgeTableHTML(list) + '</div>' +
   '</section>';
@@ -1891,10 +1895,10 @@ function refreshPledges() {
    באצלה מ-`document` כמו כל שאר האירועים.
    ══════════════════════════════════════════════════════════════════════════ */
 function viewTasks() {
-  var h = '<section class="u-mb-6 card">' +
+  var h = '<section class="board-card card">' +
     '<h2>🗂️ משימות<span class="cnt">' + state.tasks.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="task-new">＋ משימה</button></span></h2>' +
-    '<div class="u-c-text3 u-fs-3">גררו כרטיס בין העמודות, או שנו שלב בבורר שבתוך הכרטיס.</div>' +
+    '<div class="hint">גררו כרטיס בין העמודות, או שנו שלב בבורר שבתוך הכרטיס.</div>' +
   '</section><div class="kb">';
 
   STAGES.forEach(function (st) {
@@ -1902,7 +1906,7 @@ function viewTasks() {
     h += '<div class="kcol" data-stage="' + esc(st) + '">' +
       '<h3><span class="dot ' + STAGE_CLS[st] + '"></span>' + esc(st) +
       '<span class="cnt">' + list.length + '</span></h3>';
-    if (!list.length) h += '<div class="u-p-6-3 u-fs-3 empty">אין משימות</div>';
+    if (!list.length) h += '<div class="col-empty empty">אין משימות</div>';
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < dayToday() && t.stage !== 'השלמה';
       h += '<div class="kcard" data-id="' + t.client_id + '">' +
@@ -2058,17 +2062,17 @@ function viewSettings() {
 
   /* רשימות */
   h += '<section class="card"><h2>📋 ניהול רשימות</h2>' +
-    '<div class="u-c-text3 u-fs-3 u-mb-5">הרשימות האלו מזינות את כל התפריטים באפליקציה.</div>' +
+    '<div class="hint-lead">הרשימות האלו מזינות את כל התפריטים באפליקציה.</div>' +
     '<div class="grid2">';
   CONFIG_KEYS.forEach(function (c) {
     var items = state.config[c.key] || [];
-    h += '<div class="u-bd-1-solid-border u-r-radius-sm u-p-5">' +
-      '<div class="u-fw-700 u-fs-3">' + esc(c.label) + '</div>' +
-      '<div class="u-c-text3 u-fs-2 u-mb-4">' + esc(c.hint) + '</div>';
-    if (!items.length) h += '<div class="u-c-text3 u-fs-3 u-p-4-0">הרשימה ריקה</div>';
+    h += '<div class="list-box">' +
+      '<div class="list-title">' + esc(c.label) + '</div>' +
+      '<div class="list-hint">' + esc(c.hint) + '</div>';
+    if (!items.length) h += '<div class="list-empty">הרשימה ריקה</div>';
     items.forEach(function (v, i) {
-      h += '<div class="u-d-flex u-ai-c u-g-3 u-p-3-0 u-bb-1-solid-border-2">' +
-        '<span class="u-fx-1 u-fs-3">' + esc(v) + '</span>' +
+      h += '<div class="list-item">' +
+        '<span class="list-val">' + esc(v) + '</span>' +
         '<button class="btn ghost xs" data-act="cfg-edit" data-key="' + c.key + '" data-i="' + i + '">עריכה</button>' +
         '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
     });
@@ -2120,7 +2124,7 @@ function pickerHTML(id, donorId) {
     '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
     '<div class="dp-results hidden"></div>' +
     '<div class="dp-new hidden">' +
-      '<div class="u-fw-700 u-fs-3 u-mb-4">תורם חדש</div>' +
+      '<div class="new-donor-title">תורם חדש</div>' +
       '<div class="f2">' +
         '<label class="fld"><span>שם התורם</span><input class="inp dp-n-name"></label>' +
         '<label class="fld"><span>טלפון</span><input class="inp dp-n-phone" inputmode="tel"></label>' +
@@ -2229,7 +2233,7 @@ function formTxn(existing, presetDonor) {
   var donorId = t.donor_client_id || presetDonor || '';
   var body =
     '<label class="fld"><span>תורם *</span></label>' + pickerHTML('txn-donor', donorId) +
-    '<div class="u-mt-5 f2">' +
+    '<div class="f2-gap f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="txn-amount" inputmode="decimal" value="' + esc(t.amount != null ? num(t.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="txn-date" value="' + esc(t.txn_date || dayToday()) + '"></label>' +
     '</div>' +
@@ -2279,7 +2283,7 @@ function formPledge(existing, presetDonor) {
   var p = existing || {};
   var body =
     '<label class="fld"><span>תורם *</span></label>' + pickerHTML('pl-donor', p.donor_client_id || presetDonor || '') +
-    '<div class="u-mt-5 f2">' +
+    '<div class="f2-gap f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="pl-amount" inputmode="decimal" value="' + esc(p.amount != null ? num(p.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="pl-due" value="' + esc(p.due_date || '') + '"></label>' +
     '</div>' +
@@ -2289,7 +2293,7 @@ function formPledge(existing, presetDonor) {
     '</div>' +
     '<label class="fld"><span>הערה</span><textarea class="inp" id="pl-note">' + esc(p.note || '') + '</textarea></label>' +
     (state.config.causes.length ? '' :
-      '<div class="u-c-text3 u-fs-2">אין עדיין עילות. אפשר להוסיף אותן במסך ההגדרות.</div>') +
+      '<div class="note">אין עדיין עילות. אפשר להוסיף אותן במסך ההגדרות.</div>') +
     datalistHTML('dl-agents', agentPool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -2417,12 +2421,12 @@ function formUser(existing) {
       '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
       '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
     '</div>' +
-    (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="u-mt-2 btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה">👁</button></label>') +
+    (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="pass-eye btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה">👁</button></label>') +
     '<div class="f2">' +
       '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
         '<option value="manager"' + (isAdminOf(u) ? '' : ' selected') + '>מנהל</option>' +
         '<option value="admin"' + (isAdminOf(u) ? ' selected' : '') + '>בעלים</option></select></label>' +
-      '<label class="u-mt-7 fld chk"><input type="checkbox" id="us-active"' +
+      '<label class="active-chk fld chk"><input type="checkbox" id="us-active"' +
         (u.client_id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
     '</div>';
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -2466,7 +2470,7 @@ function warnIfNoFp(r) {
 
 function formPassword(u) {
   openModal(MSG_PASS_CHANGE_FOR + u.full_name,
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="u-mt-2 btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה">👁</button></label>',
+    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="pass-eye btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה">👁</button></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="pass-save" data-ksave data-id="' + u.client_id + '">שמירה</button>');
   var el = $('#pw-new'); if (el) el.focus();
@@ -2778,7 +2782,7 @@ var DOM_ACTIONS = {
     var list = (state.config[key] || []).slice();
     openModal(MSG_EDIT_VALUE,
       '<label class="fld"><span>ערך</span><input class="inp" id="cfg-v" value="' + esc(list[i] || '') + '"></label>' +
-      '<div class="u-c-text3 u-fs-2">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
+      '<div class="note">שינוי הערך אינו משנה רשומות קיימות שכבר משתמשות בערך הישן.</div>',
       '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
       '<button class="btn" data-act="cfg-edit-save" data-ksave data-key="' + key + '" data-i="' + i + '">שמירה</button>');
   },
@@ -2910,7 +2914,7 @@ function boot() {
     $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
       '<h1>שגיאת טעינה</h1><div class="sub">אין עדיין עותק מקומי של הנתונים, ולא הצלחנו לטעון מהשרת. ' +
       'התחברו לרשת פעם אחת — מכאן והלאה האפליקציה תעבוד גם בלעדיה.</div>' +
-      '<button class="u-mt-6 btn block" data-act="reload">רענון</button>' +
+      '<button class="reload-btn btn block" data-act="reload">רענון</button>' +
       '</div></div>';
   });
 }
