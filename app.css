@@ -69,7 +69,6 @@ h1,h2,h3{margin:0; font-weight:700; line-height:var(--lh-2)}
 button{font:inherit; color:inherit}
 input,select,textarea{font:inherit; color:inherit}
 table{border-collapse:collapse; width:100%}
-.hidden{display:none !important}
 .spin{width:20px;height:20px;border:2.5px solid var(--border);border-top-color:var(--brand-ink);
   border-radius:var(--r-7);animation:sp var(--dur-6) linear infinite;display:inline-block;vertical-align:-4px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -429,19 +428,40 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* =================================================================== עלייה */
 #boot{min-height:100dvh;display:grid;place-items:center;gap:var(--sp-5);color:var(--text-3)}
 /* ═══ שכבת הטוסט — מודול משותף ══════════════════════════════════════════════
-   זהה בית-לבית בכל האפליקציות. ⛔ שני סיווגי המצב נשענים על אסימוני
-   המצב — ⚠️ צמד הפוך שמתחלף יחד, ⭐ והנייטרלי כתוב במפורש: אין לו מצב.
+   זהה בית-לבית בכל האפליקציות. ⛔ שלושה סוגים בלבד, ⚠️ וכולם בגוון
+   האפליקציה: ⭐ הצלחה על `--brand-fill` · מידע על `--brand-soft` · ⛔ ושגיאה
+   נשארת בצבע שגיאה — ⚠️ שגיאה צריכה להיראות כשגיאה.
    ⛔ מיכל אחד ובתוכו `div` לכל הודעה — ⚠️ הנימוק המדוד: בשלוש מהן היה
       אלמנט **קבוע** אחד, ⛔ והודעה שנייה דרסה את הראשונה: ⭐ «נשמר»
       ו«שגיאת רשת» ברצף השאירו על המסך אחת בלבד.
    ⛔ ו-`--toast-bottom` הוא הערך היחיד שנבדל — ⚠️ לשתיים מהן יש סרגל
       תחתון קבוע, ⭐ ולטוסט שיושב מתחתיו אין מי שיראה אותו. */
 #toasts{position:fixed;inset-inline:0;bottom:calc(var(--toast-bottom) + env(safe-area-inset-bottom));z-index:var(--z-5);display:grid;gap:var(--sp-4);justify-items:center;pointer-events:none;padding:0 var(--sp-6)}
-.toast{background:var(--chip);color:var(--on-chip);border-radius:var(--r-6);padding:var(--sp-5) var(--sp-7);font-size:var(--fs-3);font-weight:600;line-height:var(--lh-3);box-shadow:0 6px 20px var(--sh-2);max-width:92vw;text-align:center;animation:toastUp var(--dur-3) ease-out}
+.toast{background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:var(--sp-5) var(--sp-7);font-size:var(--fs-3);font-weight:600;line-height:var(--lh-3);box-shadow:0 6px 20px var(--sh-2);max-width:92vw;text-align:center;animation:toastUp var(--dur-3) ease-out}
 .toast.bad{background:var(--bad);color:var(--bad-soft)}
-.toast.good{background:var(--ok);color:var(--ok-soft)}
+.toast.good{background:var(--brand-fill);color:var(--on-brand)}
+.toast.out{opacity:0;transition:opacity var(--dur-4)}
 @keyframes toastUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* ═══ סוף CSS שכבת הטוסט ════════════════════════════════════════════════ */
+/* ═══ מצבי רכיב — מודול משותף ══════════════════════════════════════════════
+   זהה בית-לבית בכל האפליקציות. ⛔ מצב קבוע של רכיב — מוסתר · עסוק — הוא
+   מחלקה ⛔ ולא `.style` בתגית: ⚠️ סגנון מוטבע גובר על כל כלל, ⭐ ומי שמשנה
+   את הגיליון אינו רואה אותו.
+   ⛔ `!important` ב-`.hidden` בכוונה — ⚠️ המחלקה מסתירה רכיב שכלל אחר
+      נותן לו `display`, ⭐ והיא חייבת לגבור עליו. */
+.hidden{display:none !important}
+.is-busy{opacity:var(--op-4);cursor:wait}
+/* ═══ סוף CSS מצבי רכיב ═════════════════════════════════════════════════ */
+/* ═══ באנר כשל האחסון — מודול משותף ═══════════════════════════════════════
+   זהה בית-לבית בכל האפליקציות. ⛔ הבאנר נבנה במודול האחסון ⚠️ והסגנון
+   כאן — ⭐ מחלקה אחת במקום אחד, ⛔ ולא מחרוזת בתגית שנבנתה.
+   ⛔ ודרגת השכבה «נעילה» — ⚠️ כשל כתיבה נשאר גלוי מעל כל מסך. */
+#ls-alert{position:fixed;z-index:var(--z-7);left:0;right:0;top:0;background:var(--alert);color:var(--on-alert);
+  direction:rtl;text-align:center;font-weight:700;font-size:var(--fs-3);line-height:var(--lh-4);
+  padding:var(--sp-5) calc(var(--sp-7) * 2);box-shadow:0 2px 14px var(--sh-3)}
+#ls-alert button{position:absolute;right:var(--sp-4);top:var(--sp-4);background:transparent;border:0;color:var(--on-alert);
+  font-weight:700;font-size:var(--fs-5);line-height:var(--lh-1);cursor:pointer;padding:var(--sp-2) var(--sp-4)}
+/* ═══ סוף CSS באנר כשל האחסון ═══════════════════════════════════════════ */
 /* ═══ CSS גרף העמודות — מודול משותף ═════════════════════════════════════════
    ⛔ הצגה חזותית של סדרה נבנית מרוחב יחסי ⛔ ולא מספריית גרפים — ⚠️ ספרייה
       כזו היא מאות קילובייטים בכל עלייה, ⭐ והנתון עצמו הוא שתי מנות לשורה.
@@ -495,7 +515,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 --op-1:.3;--op-2:.4;--op-3:.5;--op-4:.6;--op-5:.7;--op-6:.8;--op-7:.85;
 --lh-1:1;--lh-2:1.3;--lh-3:1.45;--lh-4:1.6;--lh-5:1.75;--lh-6:2;
 --ls-1:.3px;--ls-2:1px;--ls-3:4px;--ls-n1:-.4px;--ls-n2:-1px;
---chip:#1A1A1A;--on-chip:#FFFFFF;--veil:rgba(10,20,30,.5);--veil-deep:rgba(0,0,0,.75);
+--veil:rgba(10,20,30,.5);--veil-deep:rgba(0,0,0,.75);
 --alert:#B3261E;--on-alert:#FFFFFF;
 --sh-1:rgba(0,0,0,.10);--sh-2:rgba(0,0,0,.22);--sh-3:rgba(0,0,0,.35);
 --on-dark:#FFFFFF;--on-dark-2:rgba(255,255,255,.9);--on-dark-3:rgba(255,255,255,.65);--fill-dark:rgba(255,255,255,.15)
