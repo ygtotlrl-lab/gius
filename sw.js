@@ -5,7 +5,7 @@
  *  ⚠️ כל הלוגיקה יושבת במודול המשותף שלמטה — זהה בית-לבית
  *  בכל האפליקציות. ⛔ מה שנבדל יושב ב-SW_CFG בלבד.
  */
-const CACHE_NAME = 'gius-v155';
+const CACHE_NAME = 'gius-v156';
 
 // קבצים מקומיים.
 var CORE = [
@@ -17,6 +17,7 @@ var CORE = [
   './core/storage.js',
   './core/backup.js',
   './core/auth.js',
+  './core/ui.js',
   './manifest.json',
   './icons/icon-192.4ea3ca99.png',
   './icons/icon-512.7894d413.png',
