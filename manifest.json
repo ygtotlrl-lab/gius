@@ -1,19 +1,20 @@
 {
+  "//": "נוצר מהתצורה — app.config.js, ב-node tools/gen-app.mjs: אין לערוך ביד",
   "name": "גיוס",
   "short_name": "גיוס",
   "description": "ניהול תורמים, התחייבויות, תנועות ומשימות גיוס כספים.",
-  "lang": "he",
-  "dir": "rtl",
   "id": "/gius/",
   "start_url": "./index.html",
   "scope": "/gius/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#f4f6f9",
   "theme_color": "#0f766e",
+  "lang": "he",
+  "dir": "rtl",
+  "orientation": "portrait",
   "icons": [
-    { "src": "icons/icon-192.4ea3ca99.png",        "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.7894d413.png",        "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-maskable-512.8bdda7b5.png","sizes": "512x512","type": "image/png", "purpose": "maskable" }
+    { "src": "icons/icon-192.4ea3ca99.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.7894d413.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.8bdda7b5.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

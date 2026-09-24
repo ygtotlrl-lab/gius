@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0f766e">
 <meta name="description" content="ניהול תורמים, התחייבויות, תנועות ומשימות גיוס כספים.">
-<title>גיוס</title>
+<title></title>
 
 <script>
 // ⛔ חייב לרוץ לפני שכל כתובת יחסית מפוענחת —
@@ -24,6 +24,7 @@
 </script>
 
 <link rel="manifest" href="manifest.json">
+<script src="app.config.js"></script>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.18a62cb8.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.ecf2e766.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.b2c47599.png">
@@ -105,6 +106,7 @@ import { bar, barChart } from './core/chart.js';
 'use strict';
 /*  ⛔ התצורה נמסרת למודולים בשומרי קריאה — ⚠️ חלקה מוגדר בהמשך הדף,
  *  ⭐ והשומר קורא אותה בזמן הקריאה ⛔ ולא בזמן המסירה. */
+document.title = self.APP.name;
 appConfigure({
   get BK_CFG() { return BK_CFG; },
   get DATA_ERA() { return DATA_ERA; },
@@ -130,8 +132,8 @@ appConfigure({
  * ⭐ הכול יושב כאן בכוונה: קובץ אחד לפריסה, קובץ אחד למטמון.
  * ======================================================================== */
 
-var SUPABASE_URL = 'https://zrftjkghhjhqzopvdzou.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnRqa2doaGpocXpvcHZkem91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDc4MzQsImV4cCI6MjEwMDg4MzgzNH0.DWcW3o4Y9Is3jGx1frHkrUz7cc045aH1m1uKsrwRhIA';
+var SUPABASE_URL = self.APP.supabase.url;
+var SUPABASE_ANON_KEY = self.APP.supabase.key;
 
 var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
 var STAGE_CLS = { 'הכנה': 'stage-prep', 'הרצה': 'stage-run', 'השלמה': 'stage-done', 'חסומה': 'stage-blocked' };
@@ -229,8 +231,8 @@ var KV_TABLE = 'g_settings';
  *  ⭐ **ולמה זה קיים**: מסלול שאינו מוסיף על הלולאה הוא לולאה שנכתבה
  *  פעמיים, ⛔ ושורותיו מסתכנות בכך שלא יעלו כלל. */
 var MIRROR_CFG = {
-  prefix: 'g_mirror_',
-  app:    'g_',
+  prefix: self.APP.prefix + 'mirror_',
+  app:    self.APP.prefix,
   tables: function () { return TABLES.map(function (m) { return m.t; }); },
   noPush: [{ t: 'g_users', via: 'writeUser', adds: 'secret' }],
   empty:  function () { return []; },
@@ -239,11 +241,11 @@ var MIRROR_CFG = {
   fail:   function (where, e) { console.error('[mirror] ' + where, e); },
 };
 var LS_CFG = {
-  /*  ⛔ קידומת המטמון — ⚠️ **מה נכנס**: הערך שב-`SW_CFG.prefix` שב-`sw.js`,
+  /*  ⛔ קידומת המטמון — ⚠️ **מה נכנס**: שם האפליקציה שבתצורה — אותו מקור של `SW_CFG.prefix`,
    *  ⭐ **וזה המקור**: ⛔ סינון המטמון לפי קידומת האחסון הוא צירוף מקרי
    *  ⛔ ולא מנגנון — ⚠️ שם אחסון שישתנה יחזיר רשימה ריקה, ⭐ וסימן דחייה
    *  שנשען על מחרוזת ריקה מת בשקט: ⛔ הבאנר חוזר בכל טעינה בלי דרך לצאת. */
-  cachePrefix: 'gius-',
+  cachePrefix: self.APP.id + '-',
   logKey: 'g_ls_log',
   hzPrefix: 'g_ls_hz_',
   /*  ⛔ מפתח סימן הדחייה של באנר העדכון — ⚠️ **מה נכנס**: שם
@@ -470,7 +472,7 @@ var HW_CFG = {
  *  להסבה ואיש כבר אינו קורא — ⚠️ והיא נזרקת פעם אחת. */
 var DATA_ERA = 2;
 var ERA_CFG = {
-  prefix: 'g_',
+  prefix: self.APP.prefix,
   client: function () { return sb; },
   table:  function () { return KV_TABLE; },
   /*  ⛔ המוחק — ⚠️ מפתחות המראה **ואופק הפינוי שלהם**: ⭐ אופק ששרד מסנן
