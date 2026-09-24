@@ -23,9 +23,15 @@ self.APP = Object.freeze({
   },
   android: {
     package: 'com.gius.app',
+    /*  ⛔ הכתובת שהמעטפת טוענת — ⚠️ וממנה נגזר המקור היחיד שגשר השיתוף מקבל. */
+    url: 'https://ygtotlrl-lab.github.io/gius/',
+    /*  ⚠️ המשפט שלם ⛔ ולא שם בלבד — ⭐ הפועל מתאים למין השם. */
+    offlineLine: 'גיוס לא הצליח להתחבר.',
+    /*  ⚠️ צבע כפתור הניסיון החוזר בדף האופליין של המעטפת. */
+    accent: '#0f766e',
     /*  ⛔ `versionCode` לעולם אינו יורד, ⚠️ ומקודם בכל שינוי תחת `android/` —
         ⭐ בלי קידום המכשיר המותקן אינו מקבל את ה-APK החדש. */
-    versionCode: 22,
+    versionCode: 23,
     versionName: '17.0',
     launcherBg: { kind: 'solid', color: '#0F766E' },
     /*  ⚠️ גשר השיתוף — ⭐ `FileProvider` ו-`androidx`, רק באפליקציה שמייצאת קובץ. */
