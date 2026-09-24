@@ -106,7 +106,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 /*  ⛔ מסך שלפני הכניסה — טעינה, כניסה או שגיאה — ⚠️ בלי כותרת ובלי ריפוד
  *  המיכל: ⭐ הוא ממלא את החלון כולו, כפי שנבנה. */
 #app.is-bare > .topbar{display:none}
-#app.is-bare > main{padding:0}
+#app.is-bare > main{padding:0;max-width:none}
 main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
   max-width:1180px;margin:0 auto}
 .who-id{text-align:end}
