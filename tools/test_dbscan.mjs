@@ -77,8 +77,6 @@ const APP = {
   dbDyn: {
     eraTbl:   { tables: ['g_settings'],
                 why: 'טבלת המפתח-ערך שעידן הנתונים נקרא ממנה — ⛔ היא של האפליקציה הזו, ⭐ ולכל אחת מספר משלה' },
-    tbl:      { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns'],
-                why: 'שם המראה המקומית — הוא נגזר מרשימת הדחיפה בזמן ריצה' },
     t:        { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns'],
                 why: 'יעד הדחיפה — נבחר מרשימת הדחיפה בלולאה' },
     'm.t':    { tables: ['g_settings', 'g_donors', 'g_pledges', 'g_targets', 'g_tasks', 'g_txns', 'g_users'],
