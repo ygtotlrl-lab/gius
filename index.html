@@ -343,25 +343,27 @@ var LS_CFG = {
    *  ⭐ ה-origin משותף לכולן, וסימן אחד היה נדרס בכל דחייה. */
   dismissKey: 'g_sw_dismissed',
 
+  /*  ⭐ סוג האפליקציה — ⚠️ ממנו נגזר חלון הפינוי, ⛔ ואין מספר ימים באף
+   *  רשומה: ⭐ והנימוק אומר על מה החישוב שלה נפרש. */
+  appType: { type: 'annual', why: 'החישוב שלה נפרש על שנה — ⚠️ יעד החודש ו«מה שלי היום» נגזרים מהמשימות ומהתנועות של השנה' },
+
   // `wholeKeys` — ⛔ ריק ומוצהר: ⚠️ מראת המשתמשים היא **מסלול הכניסה
   // האופליין** (`pass_fp`), ⭐ ופינוי שלה נועל את המכשיר בלי רשת — ⛔ היא
-  // קבועה בגודלה (למטה). ⭐ שאר המראות הן הנתונים עצמם ולכן `oldRecords`.
+  // קבועה בגודלה (למטה). ⭐ שאר המראות הן הנתונים עצמם.
   wholeKeys: [],
 
-  // `oldRecords` — רשומות ישנות שכבר מסונכרנות, הישן ביותר קודם.
-  // ⚠️ `g_mirror_donors` **אינה** כאן: התורמים הם אבות המפתח הזר של התנועות
-  //    וההתחייבויות, והם קטנים. פינוי שלהם היה משאיר תנועות בלי שם מוצג.
-  //    רצפת 400 יום על הכסף — שנה שלמה אחורה נשארת זמינה גם בלי רשת.
-  // ⚠️ לכל מפתח **עֵד דחיפה משלו** (`_gPushedAt`) ולא החותמת הגלובלית,
-  //    ובנוסף `idOf`/`verify` למסלול האימות מול הענן — בדיוק כמו ב-yoman
-  //    וב-hanhala. ר' ההערה מתחת ל-LS_CFG.
-  oldRecords: [
-    { key: mirrorKey('g_txns'),    label: 'תנועות',      ts: rowTs, minAgeMs: 400 * 86400000,
-      idOf: _gRecId, syncedThrough: _gPushedFor('g_txns'),    verify: _gVerify('g_txns') },
-    { key: mirrorKey('g_pledges'), label: 'התחייבויות',  ts: rowTs, minAgeMs: 400 * 86400000,
-      idOf: _gRecId, syncedThrough: _gPushedFor('g_pledges'), verify: _gVerify('g_pledges') },
-    { key: mirrorKey('g_tasks'),   label: 'משימות',      ts: rowTs, minAgeMs: 180 * 86400000,
-      idOf: _gRecId, syncedThrough: _gPushedFor('g_tasks'),   verify: _gVerify('g_tasks') }
+  /*  ⛔ `oldRecords` ריק ומוצהר — ⚠️ כל טבלה שגדלה כאן נדרשת במלואה:
+   *  ⭐ שדה חסר נקרא «לא נשאל», וריק נקרא «נמדד ואין». */
+  oldRecords: [],
+  /*  ⛔ טבלה שחישוב נשען על כל ההיסטוריה שלה — ⚠️ **מה נכנס**: הטבלה ושם
+   *  החישוב שקורא אותה; ⛔ **ומה מפיל**: שם שאינו פונקציה, ⚠️ וטבלה שיושבת
+   *  גם בפינוי. ⭐ **ולמה**: «נגבה» להתחייבות הוא סכום כל תנועותיה, ⛔ והתחייבות
+   *  רב-שנתית חיה יותר מכל חלון — ⚠️ ומשימה פתוחה מוצגת ב«מה שלי היום» בכל
+   *  גיל: ⛔ רשומה שפונתה היא סכום שגוי, ⚠️ או משימה שנעלמה. */
+  fullHistory: [
+    { t: 'g_txns',    calc: 'collectedForPledge' },
+    { t: 'g_pledges', calc: 'collectedForPledge' },
+    { t: 'g_tasks',   calc: 'viewHome' }
   ],
 
   // כלל ג: כל עוד יש פעולה בתור היוצא — לא מפנים כלום.
@@ -393,30 +395,6 @@ var LS_CFG = {
    המעבר מסתיים ריק ומסמן. ⛔ אין לגזור אותו ממשיכה לבדה. */
 var _gPushedAt = {};
 function _gMarkPushed(tbl) { _gPushedAt[tbl] = Date.now(); }
-function _gPushedThrough(tbl) { return _gPushedAt[tbl] || 0; }
-function _gPushedFor(tbl) { return function () { return _gPushedThrough(tbl); }; }
-// מזהה רשומה לצורך אימות מול הענן — ⛔ והוא `client_id` בכל הטבלאות,
-// ⚠️ שהוא המפתח הראשי שלהן מאז שהמזהה הוסב.
-function _gRecId(r) { return (r && r.client_id != null) ? r.client_id : null; }
-/* ── עדות סנכרון חלופית: אימות מול הענן ───────────────────────────────────
-   מכשיר שאיבד את העֵד באמצע סשן (טעינה מחדש בלי סנכרון מוצלח) נשאר בלי
-   חותמת, ופינוי הרשומות הישנות היה מדולג לגמרי. במקום להסיק «זה בענן», שואלים את הענן:
-   מושכים את הטבלה ומאמתים פר-רשומה.
-   **נכשל סגור:** אין רשת, `_rowsPaged` החזירה `null`, או שהמשיכה זרקה ⇒
-   `ok:false` ⇒ לא מפנים דבר. */
-function _gVerify(tbl) {
-  return function () {
-    if (!sb) return Promise.resolve({ ok: false, rows: [] });
-    var m = tableMeta(tbl);
-    return _rowsPaged(function () {
-      return sb.from(tbl).select('*');
-    }, m.key, null)
-      .then(function (rows) {
-        return Array.isArray(rows) ? { ok: true, rows: rows } : { ok: false, rows: [] };
-      }, function () { return { ok: false, rows: [] }; });
-  };
-}
-
 /*  ⛔ שם המפתח הישן פר-אפליקציה — ⚠️ וההגירה שמוחקת אותו משותפת:
  *  ⭐ הקבוע כאן הוא מה שמפריד בין הגוף הזהה לערך שנבדל. */
 /* ═══ עמידות אחסון מקומי — מודול משותף ═════════════════════════════════
@@ -437,6 +415,20 @@ var LS_CRIT_BYTES  = Math.floor(LS_QUOTA_BYTES * LS_CRIT_PCT);
 var LS_SWEEP_PCT   = 0.60;              // מעל זה — פינוי יזום בעלייה
 var LS_SWEEP_TO    = 0.45;              // יעד הפינוי היזום
 var LS_LOG_MAX     = 12;                // אורך יומן הפינוי הנשמר
+
+/*  ⭐ חלון הפינוי נגזר מסוג האפליקציה — ⚠️ **מה נכנס**: סוג ⟵ ימים, ⛔ **ומה
+ *  מפיל**: סוג שאין לו אפליקציה, ⚠️ ואפליקציה שמצהירה סוג שאינו כאן.
+ *  ⭐ **ולמה המפה קיימת**: חלון שנבחר בכל אפליקציה לבדה נבחר בלי קשר
+ *  לחישוב שקורא את הטבלה — ⛔ ורשומה שפונתה מתוך מה שהחישוב קורא היא
+ *  יתרה שגויה, אופליין ובשקט. ⚠️ **ואפליקציה בלי סוג אינה מפנה דבר** —
+ *  ⛔ חלון שאיש לא הכריע עליו אינו חלון. */
+var LS_DAY_MS = 86400000;
+var LS_APP_TYPES = { annual: 400, daily: 90 };
+function lsWindowMs() {
+  var t = LS_CFG.appType && LS_CFG.appType.type;
+  var d = Object.prototype.hasOwnProperty.call(LS_APP_TYPES, t) ? LS_APP_TYPES[t] : 0;
+  return d > 0 ? d * LS_DAY_MS : Infinity;
+}
 
 // נוסח אחיד בכל האפליקציות. סמלים: ✅ הצלחה / ⚠️ אזהרה / ❌ שגיאה, בתחילה.
 var MSG_LS_FULL   = '❌ האחסון במכשיר מלא — לא ניתן לשמור. התחברו לרשת כדי שהנתונים יסונכרנו והמקום יתפנה.';
@@ -763,11 +755,11 @@ function lsPruneKey(spec, through, want) {
   try { arr = JSON.parse(raw); } catch (e) { return 0; }
   if (!Array.isArray(arr) || arr.length < 2) return 0;
 
-  // רצפת גיל פר-מפתח: גם רשומה מסונכרנת לא מפונה אם היא טרייה מדי. בלעדיה
-  // היינו מפנים דווקא את מה שהמשתמש עובד עליו עכשיו.
+  // חלון הגיל נגזר מסוג האפליקציה: גם רשומה מסונכרנת לא מפונה אם היא טרייה
+  // מדי. בלעדיו היינו מפנים דווקא את מה שהמשתמש עובד עליו עכשיו.
   var cut = lsSpecWitness(spec, through);
   if (!cut) return 0;   // אין עֵד מקומי — המסלול הנכון הוא האימות מול הענן
-  if (spec.minAgeMs) cut = Math.min(cut, Date.now() - spec.minAgeMs);
+  cut = Math.min(cut, Date.now() - lsWindowMs());
   if (cut <= 0) return 0;
 
   var before = lsEntryBytes(spec.key, raw);
@@ -887,7 +879,7 @@ function lsVerifyChildren(spec) {
 
    ⛔ **נכשל סגור.** אין רשת, `verify` זרקה, החזירה `ok:false`, או שהמפתח
       כלל אינו קיים בענן ⇒ לא מפנים דבר. היעדר ראיה אינו ראיה.
-   ⛔ **רצפות הגיל (`minAgeMs`) נשארות כמו שהיו** — הן שכבת בטיחות נפרדת
+   ⛔ **חלון הגיל (`lsWindowMs`) חל גם כאן** — הוא שכבת בטיחות נפרדת
       מהראיה, ולא תחליף לה.
    ⛔ **`LS_CFG.pending()` נבדק כאן בדיוק כמו בפינוי הרשומות הישנות הסינכרוני**: יש משהו
       שטרם עלה ⇒ לא מפנים דבר.
@@ -948,8 +940,8 @@ function lsPruneKeyVerified(spec, idx, want) {
   try { arr = JSON.parse(raw); } catch (e) { return 0; }
   if (!Array.isArray(arr) || arr.length < 2) return 0;
 
-  // הראיה החליפה את העֵד, **לא** את רצפת הגיל.
-  var cut = spec.minAgeMs ? (Date.now() - spec.minAgeMs) : 0;
+  // הראיה החליפה את העֵד, **לא** את חלון הגיל.
+  var cut = Date.now() - lsWindowMs();
   if (cut <= 0) return 0;
 
   var before = lsEntryBytes(spec.key, raw), i;
