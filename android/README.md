@@ -63,7 +63,7 @@ https://ygtotlrl-lab.github.io/gius/
 ⚠️ **המקור עצמו נבדל פר-אפליקציה**, והוא מתועד בשורה שמתחת.
 <!-- SHARED:end -->
 ### הסט כאן
-`node tools/gen-icons.mjs` מייצר את כל ה-PNG-ים מחישוב פיקסלים (ללא
+`node tools/gen-app.mjs` מריץ את `tools/gen-icons.mjs`, שמייצר את כל ה-PNG-ים מחישוב פיקסלים (ללא
 ספריות), לשני יעדים: `icons/` (PWA ופאביקון) ו-`android/app/src/main/res/
 mipmap-*/` — `ic_launcher.png` ו-`ic_launcher_foreground.png` (הסימן בלבד
 על רקע שקוף; הרקע מ-`ic_launcher_background.xml`), עם `pad` שמכניס את

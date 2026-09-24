@@ -26,7 +26,7 @@
 
 ```bash
 node tools/guard.mjs       # שומר הדחיפה — חובה לפני כל push
-node tools/gen-icons.mjs   # מחדש את האייקונים (PWA + APK)
+node tools/gen-app.mjs     # מחדש מהתצורה את קובצי הפלטפורמה והאייקונים
 ```
 
 <!-- SHARED:start id="readme-gate" -->
