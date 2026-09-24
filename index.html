@@ -36,8 +36,11 @@
 </head>
 <body>
 
-<div id="app">
-  <div id="boot"><span class="spin"></span></div>
+<!--  ⛔ הקליפה — כותרת, ובתוכה הניווט, ומיכל תוכן אחד: ⚠️ `is-bare` מסתיר את
+      הכותרת ומוריד את ריפוד המיכל, ⭐ למסכים שלפני הכניסה — טעינה, כניסה ושגיאה. -->
+<div id="app" class="is-bare">
+  <header class="topbar"></header>
+  <main id="view"><div class="view-loading" role="status" aria-label="טוען"><span class="view-spin"></span></div></main>
 </div>
 
 <!-- generic sheet / modal -->
@@ -1364,7 +1367,7 @@ function markSVG(cls) {
 }
 
 function renderLogin() {
-  $('#app').innerHTML =
+  viewBare(
     '<div class="auth"><div class="auth-card ksave">' +
       markSVG('mark') +
       '<h1>גיוס</h1>' +
@@ -1375,7 +1378,7 @@ function renderLogin() {
         '<input class="inp" id="lg-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password"></label>' +
       '<button class="btn block" data-act="login" data-busy="⏳ בודק…" data-ksave id="lg-btn">כניסה</button>' +
       '<div class="auth-err" id="lg-err"></div>' +
-    '</div></div>';
+    '</div></div>');
 
   var u = $('#lg-user');
   if (u) u.focus();
@@ -1472,6 +1475,8 @@ function doLogout() {
 /* ══════════════════════════════════════════════════════════════════════════
    מעטפת המסך — טאבים, רינדור ראשי וניווט
    ══════════════════════════════════════════════════════════════════════════ */
+/*  ⛔ מצב הטעינה המשותף — ⚠️ אותו סימון שבקליפה, ⭐ כשהקוד חוזר אליו. */
+var VIEW_LOADING = '<div class="view-loading" role="status" aria-label="טוען"><span class="view-spin"></span></div>';
 var TABS = [
   { id: 'home', ic: '🏠', label: 'בית' },
   { id: 'donors', ic: '🙋', label: 'תורמים' },
@@ -1486,18 +1491,27 @@ function renderShell() {
       '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
   }).join('');
 
-  $('#app').innerHTML =
-    '<header class="topbar">' +
+  $('#app').classList.remove('is-bare');
+  $('header.topbar').innerHTML =
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
       '<nav class="tabbar">' + tabs + '</nav>' +
       '<div class="who"><div class="who-id"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
         '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
-        '<button class="btn ghost sm" data-act="logout">יציאה</button></div>' +
-    '</header>' +
-    '<main id="view"></main>' +
-    (state.screen === 'settings' ? '' : '<button class="fab" data-act="fab" aria-label="הוספה">＋</button>');
+        '<button class="btn ghost sm" data-act="logout">יציאה</button></div>';
+  /*  ⛔ הכפתור הצף אינו בקליפה — ⚠️ הוא אינו בכל מסך: ⭐ ההגדרות בלעדיו. */
+  var fab = $('#app > .fab');
+  if (state.screen === 'settings') { if (fab) fab.remove(); }
+  else if (!fab) $('#app').insertAdjacentHTML('beforeend', '<button class="fab" data-act="fab" aria-label="הוספה">＋</button>');
+}
+/*  ⛔ מסך שלפני הכניסה — טעינה, כניסה או שגיאה: ⚠️ בלי כותרת ובלי הכפתור
+ *  הצף, ⭐ והתוכן במיכל האחד. */
+function viewBare(html) {
+  $('#app').classList.add('is-bare');
+  var fab = $('#app > .fab');
+  if (fab) fab.remove();
+  $('#view').innerHTML = html;
 }
 
 function render() {
@@ -2894,7 +2908,7 @@ function boot() {
   // נעילת חוסר-פעילות — נקודת הדריכה מחדש אחרי כניסה מוצלחת;
   // שני מסלולי הכניסה (מקוון ואופליין) מגיעים לכאן, ולכן זו נקודה אחת.
   try { lkReset(); } catch (e) { console.warn('[lk] lkReset', e); }
-  $('#app').innerHTML = '<div id="boot"><span class="spin"></span></div>';
+  viewBare(VIEW_LOADING);
   // ⭐ קריאה מהעותק המקומי **ראשונה**, לפני כל נגיעה ברשת. זה כל ההבדל
   //    בין אפליקציה שעובדת אופליין לאחת שרק מציגה ספינר.
   applyMirrorToState();
@@ -2909,19 +2923,19 @@ function boot() {
   // אין עותק מקומי כלל (התקנה ראשונה / משתמש חדש) — כאן רשת היא חובה.
   return syncNow().then(function (okPull) {
     if (okPull || mirrorHasData()) { render(); return; }
-    $('#app').innerHTML = '<div class="auth"><div class="auth-card">' +
+    viewBare('<div class="auth"><div class="auth-card">' +
       '<h1>שגיאת טעינה</h1><div class="sub">אין עדיין עותק מקומי של הנתונים, ולא הצלחנו לטעון מהשרת. ' +
       'התחברו לרשת פעם אחת — מכאן והלאה האפליקציה תעבוד גם בלעדיה.</div>' +
       '<button class="reload-btn btn block" data-act="reload">רענון</button>' +
-      '</div></div>';
+      '</div></div>');
   });
 }
 
 function start() {
   if (!window.supabase || !window.supabase.createClient) {
-    $('#app').innerHTML = '<div class="auth"><div class="auth-card"><h1>שגיאת טעינה</h1>' +
+    viewBare('<div class="auth"><div class="auth-card"><h1>שגיאת טעינה</h1>' +
       '<div class="sub">ספריית Supabase לא נטענה. בדקו את החיבור לאינטרנט ורעננו.</div>' +
-      '<button class="btn block" data-act="reload">רענון</button></div></div>';
+      '<button class="btn block" data-act="reload">רענון</button></div></div>');
     return;
   }
   sb = sbWatch(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
