@@ -6,8 +6,9 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#0f766e">
 <meta name="description" content="ניהול תורמים, התחייבויות, תנועות ומשימות גיוס כספים.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="גיוס">
 <title></title>
-
 <script>
 // ⛔ חייב לרוץ לפני שכל כתובת יחסית מפוענחת —
 // ה-service worker מגיש נתיבים עמוקים (/gius/anything/here) עם אותה קליפה,
@@ -22,15 +23,12 @@
   document.head.appendChild(b);
 })();
 </script>
-
 <link rel="manifest" href="manifest.json">
 <script src="app.config.js"></script>
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.18a62cb8.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.ecf2e766.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.b2c47599.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="גיוס">
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="core/ui.css">
 <link rel="stylesheet" href="core/chart.css">
 <link rel="stylesheet" href="app.css">
@@ -75,7 +73,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
 <script type="module">
 /*  ⛔ הליבה המשותפת נטענת כמודול ⛔ ואינה מוכפלת כאן — ⚠️ והמסמך עצמו הוא
  *  מודול: ⭐ סקריפט קלאסי רץ **לפני** כל מודול, ⛔ וקריאה אליו בעלייה
