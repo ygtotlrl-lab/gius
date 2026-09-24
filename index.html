@@ -96,7 +96,8 @@ import { bkBoot, logAction, logFlush } from './core/backup.js';
 import { isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive, sessBoot,
          sessClear, sessGet, sessSet, writeUser } from './core/auth.js';
 import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop,
-         modalEsc, openModal, swApply, swHideUpdate, toast, uiNoDialog } from './core/ui.js';
+         modalEsc, openModal, pullRender, swApply, swHideUpdate, toast,
+         uiNoDialog } from './core/ui.js';
 import { bar, barChart } from './core/chart.js';
 (function () {
 'use strict';
@@ -1112,16 +1113,16 @@ function syncNow() {
    *  עבורו, ⭐ ודחיפה מולו אחרי החלפה זוקפת לחדש מה שנמזג לקודם. */
   var _ep = ctxEpoch();
   return syncPull().then(function (res) {
-    if (!res.ok || ctxStale(_ep)) { render(); return false; }
+    if (!res.ok || ctxStale(_ep)) { pullRender(render); return false; }
     /*  ⛔ שער הרשת יושב כאן ⛔ ולא בשכבת הדחיפה — ⚠️ הוא תלוי בלקוח של
      *  האפליקציה, ⭐ ומעבר ריק היה מסמן את עֵד הפינוי בלי ראיה מהענן. */
     var p = (!sb || !navigator.onLine) ? Promise.resolve({ still: [] })
                                        : pushDirty(res.remote);
     return p.then(function (r) {
-      if (ctxStale(_ep)) { render(); return false; }
+      if (ctxStale(_ep)) { pullRender(render); return false; }
       pendReconcile(r.still, t0);
       if (r && r.n) gSyncLog('push', null, r.n);
-      render();
+      pullRender(render);
       return true;
     });
   });
@@ -1509,7 +1510,7 @@ function render() {
 
   // Only jump to the top when the user actually moved somewhere. Re-rendering
   // in place (a saved row, a dragged task) must not throw away their scroll.
-  // ⚠️ זה אינו שיפור נוחות בלבד — `render()` נקראת גם מ-`syncNow` (כל 5
+  // ⚠️ זה אינו שיפור נוחות בלבד — `render()` נקראת גם מ-`syncNow`, דרך `pullRender` (כל 5
   // שניות) ומ-`pendDrawFlush`, כלומר בלי המפתח הזה המסך היה קופץ
   // לראש מעצמו באמצע עבודה, בלי שהמשתמש נגע בכלום.
   // ⛔ אין להחליף ב-scroll ללא תנאי.
