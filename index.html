@@ -89,14 +89,15 @@ import { _rowsPaged, afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKick,
          pendMarkMany, pendRender, pendTag, plBoot, plNum, plTouch,
          pushDirty, rtyBoot, runSave, sbWatch, schedulePush, tombBoot,
          tombPruneMerged } from './core/sync.js';
-import { MIRROR, MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons,
-         lsRemove, mirrorBoot, mirrorKey, mirrorSave, mirrorTables,
-         mirrorWrite } from './core/storage.js';
+import { MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons, lsRemove } from './core/storage.js';
+import { MIRROR, mirrorBoot, mirrorKey, mirrorSave, mirrorTables,
+         mirrorWrite } from './core/mirror.js';
 import { bkBoot, logAction, logFlush } from './core/backup.js';
 import { isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive, sessBoot,
          sessClear, sessGet, sessSet, writeUser } from './core/auth.js';
 import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop,
          modalEsc, openModal, swApply, swHideUpdate, toast, uiNoDialog } from './core/ui.js';
+import { bar, barChart } from './core/chart.js';
 (function () {
 'use strict';
 /*  ⛔ התצורה נמסרת למודולים בשומרי קריאה — ⚠️ חלקה מוגדר בהמשך הדף,
@@ -158,8 +159,8 @@ var MSG_USER_INACTIVE = '❌ המשתמש מושבת. פנו לבעלים.';
    ⛔ ההודעה היא קבוע ⛔ ואינה ליטרל באתר התצוגה — ⚠️ טקסט שנכתב במקום
    שבו הוא נאמר נכתב שוב במסך הבא, ⭐ ושני ניסוחים לאותו מצב הם שני
    מסלולים בעיני הקורא.
-   ⚠️ **ומה שיותר מאפליקציה אחת אומרת אינו כאן** — ⛔ הוא בבלוק החתום,
-   ⭐ ששם החתימה היא מה שמודד את זהות הנוסח. */
+   ⚠️ **ומה שיותר מאפליקציה אחת אומרת אינו כאן** — ⛔ הוא במודול המשותף,
+   ⭐ ששם הנוסח אחד לכל הריפו. */
 var MSG_MAYBE_STALE = ') — המוצג עלול להיות לא מעודכן';
 var MSG_OWNER_ONLY = '⚠️ אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד';
 var MSG_NEED_DONOR_NAME = '⚠️ נא למלא שם תורם';
@@ -1213,58 +1214,6 @@ function agentPool() {
    ══════════════════════════════════════════════════════════════════════════ */
 /*  ⚠️ המשך התצוגה נבדל ביניהן — ⭐ והוא ערך פרטי, ⛔ לא מנגנון. */
 var TOAST_DEFAULT_MS = 2600;
-/* ═══ גרף העמודות — מודול משותף ═════════════════════════════════════════════
-   ⛔ סדרה מוצגת ברוחב יחסי ⛔ ולא בספריית גרפים — ⚠️ הרוחב הוא התכונה
-      היחידה שנגזרת מהנתון, ⭐ והוא החריג היחיד לסגנון מוטבע.
-   ⛔ פחות משתי נקודות אינו גרף — ⚠️ עמודה אחת אינה משווה דבר, ⭐ והמסך
-      מציג את הטבלה בלבד: ⛔ המחזירה מחרוזת ריקה ⛔ ואינה מציירת מסגרת.
-   ⛔ וכל שורה נושאת `aria-label` עם המספרים — ⚠️ גרף בלי טקסט חלופי אינו
-      נגיש, ⭐ והוא כל מה שקורא-מסך רואה.
-   ⛔ **פס יחיד ופס בסדרה הם רכיב אחד** — ⚠️ `bar` היא אתר
-      הרוחב הדינמי האחד, ⭐ ו-`barChart` קוראת לה בלולאה: ⛔ שני מימושים
-      באותה אפליקציה הם שני מקומות שבהם הרוחב נכתב ביד, ⚠️ ושניים כאלה
-      נמדדו — הסדרה בבונה, והפס בטבלת הפילוח.
-   ⛔ **מה נכנס**: `lab` תווית · `val` הערך · `tgt` היעד · `txt` הטקסט
-      החלופי · `end` מה שנכתב בסוף השורה.
-   ⛔ **ו-`noTarget` הוא דגל בחתימה** — ⚠️ וכשהוא דולק הפס השני **אינו
-      נוצר**, ⭐ ואינו נוצר-ומוסתר: ⛔ הסתרה ב-CSS פר-אפליקציה משאירה
-      את הקוד רץ ואת האלמנט ב-DOM, ⚠️ ומי שקורא את המודול אינו יודע
-      שהוא מכובה. ⭐ **והמכנה נשמר** — ⛔ `max` עדיין נגזר מ-`val`
-      ומ-`tgt`, ⚠️ והסרת הציור אינה משנה את אורכי הפסים. */
-/*  ⛔ הרוחב נכתב למשתנה CSS ⛔ ולא לתגית — ⚠️ סגנון מוטבע גובר על כל
- *  מחלקה ואינו ניתן לשינוי ממקום אחד: ⭐ והצביעה נדחית לפריים שאחרי
- *  ה-`innerHTML`, ⛔ שהיא הרגע שבו הפסים כבר בעץ. */
-var _barPending = false;
-function barPaint() {
-  _barPending = false;
-  var l = document.querySelectorAll('.btrack > i[data-pct]'), i;
-  for (i = 0; i < l.length; i++)
-    l[i].style.setProperty('--bar-w', l[i].getAttribute('data-pct') + '%');
-}
-function bar(pct, cls) {
-  if (!_barPending) { _barPending = true; requestAnimationFrame(barPaint); }
-  return '<span class="btrack' + (cls ? ' ' + cls : '') +
-         '"><i data-pct="' + pct + '"></i></span>';
-}
-function barChart(rows, label, noTarget) {
-  if (!Array.isArray(rows) || rows.length < 2) return '';
-  var max = 0, i;
-  for (i = 0; i < rows.length; i++) max = Math.max(max, rows[i].val || 0, rows[i].tgt || 0);
-  if (!(max > 0)) return '';
-  var pct = function (v) { return Math.round(((v || 0) / max) * 1000) / 10; };
-  var h = '<div class="bchart" role="img" aria-label="' + esc(label) + '">';
-  for (i = 0; i < rows.length; i++) {
-    h += '<div class="brow" aria-label="' + esc(rows[i].txt) + '">' +
-      '<span class="blab">' + esc(rows[i].lab) + '</span>' +
-      '<span class="bbars">' + bar(pct(rows[i].val)) +
-      (noTarget ? '' : bar(pct(rows[i].tgt), 'tgt')) +
-      '</span>' +
-      '<span class="bval">' + esc(rows[i].end) + '</span></div>';
-  }
-  return h + '</div>';
-}
-/* ═══════════════ סוף מודול גרף העמודות ══════════════════════════════════ */
-
 // ⛔ גם ה-`value` וגם הטקסט עוברים `esc` — ערכי הרשימות (טבלת ההגדרות) נקבעים
 //    ע"י המשתמש במסך ההגדרות, ולכן הם נתוני משתמש לכל דבר.
 function selectHTML(name, options, value, placeholder) {
