@@ -522,53 +522,46 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @media (prefers-reduced-motion:reduce){
   :root{--dur-1:0s;--dur-2:0s;--dur-3:0s;--dur-4:0s;--dur-5:0s;--dur-6:0s}
 }
-.u-mt-2{margin-top:var(--sp-2)}
-.u-mt-5{margin-top:var(--sp-5)}
 /* ═══ סוף CSS הסולמות ═══════════════════════════════════════════════════ */
-/* ══ מחלקות השירות הפרטיות — אינן חיות בכולן ═════════════
-   ⚠️ הן ישבו בבלוק המשותף ולא היה להן קורא בקופה — ⛔ ומחלקה
-   בבלוק משותף שאין לה קורא באחת מהן היא סלקטור בלי קורא. */
-.u-ai-c{align-items:center}
-.u-d-flex{display:flex}
-.u-fs-2{font-size:var(--fs-2)}
-.u-fs-3{font-size:var(--fs-3)}
-.u-fw-700{font-weight:700}
-.u-fx-1{flex:1}
-.u-g-5{gap:var(--sp-5)}
-/* ══ מחלקות הסולם הפרטיות — אינן חיות בכולן ═════════════════════════════
-   ⚠️ כל מחלקה כאן משרתת אתר שקיים באפליקציה הזו בלבד, ⛔ ולכן אינה בבלוק
-   המשותף: ⭐ מחלקה משותפת שאין לה קורא כאן היא סלקטור בלי קורא. */
-.u-ai-fs{align-items:flex-start}
-.u-bb-1-solid-border-2{border-bottom:1px solid var(--border-2)}
-.u-bd-1-solid-border{border:1px solid var(--border)}
-.u-bg-bad{background:var(--bad)}
-.u-bg-border-2{background:var(--border-2)}
-.u-bg-brand-fill{background:var(--brand-fill)}
-.u-bg-ok{background:var(--ok)}
-.u-c-text3{color:var(--text-3)}
-.u-fs-5{font-size:var(--fs-5)}
-.u-g-3{gap:var(--sp-3)}
-.u-gtc-repeat-2-1fr{grid-template-columns:repeat(2,1fr)}
-.u-gtc-repeat-3-1fr{grid-template-columns:repeat(3,1fr)}
-.u-h-52{height:52px}
-.u-m-0{margin:0}
-.u-m-0-0-5{margin:0 0 var(--sp-5)}
-.u-m-1-0-2{margin:var(--sp-1) 0 var(--sp-2)}
-.u-m-5-0-2{margin:var(--sp-5) 0 var(--sp-2)}
-.u-mb-4{margin-bottom:var(--sp-4)}
-.u-mb-5{margin-bottom:var(--sp-5)}
-.u-mb-6{margin-bottom:var(--sp-6)}
-.u-minw-0{min-width:0}
-.u-minw-76{min-width:76px}
-.u-mt-6{margin-top:var(--sp-6)}
-.u-mt-7{margin-top:var(--sp-7)}
-.u-p-3-0{padding:var(--sp-3) 0}
-.u-p-4-0{padding:var(--sp-4) 0}
-.u-p-5{padding:var(--sp-5)}
-.u-p-6-3{padding:var(--sp-6) var(--sp-3)}
-.u-r-5{border-radius:var(--r-5)}
-.u-r-radius-sm{border-radius:var(--radius-sm)}
-.u-ta-e{text-align:end}
-.u-w-52{width:52px}
-/* ══ סוף המחלקות הפרטיות ═══════════════════════════════════════════════ */
+/* ══ מחלקות התפקיד — מחלקה אחת לכל תפקיד ═════════════════════════════════
+   ⛔ שם המחלקה אומר את תפקיד הרכיב, ⚠️ ואין מחלקת עזר של תכונה אחת:
+   ⭐ הבלוק יושב אחרי הגיליון כולו, ולכן הוא גובר על הכלל הכללי של הרכיב. */
+.active-chk{margin-top:var(--sp-7)}
+.board-card{margin-bottom:var(--sp-6)}
+.btnrow-top{margin-bottom:var(--sp-5)}
+.col-empty{font-size:var(--fs-3);padding:var(--sp-6) var(--sp-3)}
+.donor-av{font-size:var(--fs-5);height:52px;border-radius:var(--r-5);width:52px}
+.donor-head{display:flex;gap:var(--sp-5);align-items:flex-start;margin-bottom:var(--sp-5)}
+.donor-id{flex:1;min-width:0}
+.donor-kv{margin-top:var(--sp-5)}
+.donor-name{font-size:var(--fs-5);margin:0}
+.donor-phone{font-size:var(--fs-3);color:var(--text-3)}
+.f2-gap{margin-top:var(--sp-5)}
+.filters-row{margin-top:var(--sp-5)}
+.hint{font-size:var(--fs-3);color:var(--text-3)}
+.hint-lead{font-size:var(--fs-3);color:var(--text-3);margin-bottom:var(--sp-5)}
+.list-box{border:1px solid var(--border);padding:var(--sp-5);border-radius:var(--radius-sm)}
+.list-empty{font-size:var(--fs-3);color:var(--text-3);padding:var(--sp-4) 0}
+.list-hint{font-size:var(--fs-2);color:var(--text-3);margin-bottom:var(--sp-4)}
+.list-item{align-items:center;display:flex;border-bottom:1px solid var(--border-2);gap:var(--sp-3);padding:var(--sp-3) 0}
+.list-title{font-size:var(--fs-3);font-weight:700}
+.list-val{font-size:var(--fs-3);flex:1}
+.new-donor-title{font-size:var(--fs-3);font-weight:700;margin-bottom:var(--sp-4)}
+.note{font-size:var(--fs-2);color:var(--text-3)}
+.notes-fld{margin-top:var(--sp-5)}
+.pass-eye{margin-top:var(--sp-2)}
+.reload-btn{margin-top:var(--sp-6)}
+.search-row{margin:0 0 var(--sp-5)}
+.share-cell{min-width:76px}
+.share-pct{color:var(--text-3)}
+.stats-2{grid-template-columns:repeat(2,1fr)}
+.stats-3{grid-template-columns:repeat(3,1fr)}
+.today-head{font-size:var(--fs-2);font-weight:700;color:var(--text-3);margin:var(--sp-1) 0 var(--sp-2)}
+.today-head-next{font-size:var(--fs-2);font-weight:700;color:var(--text-3);margin:var(--sp-5) 0 var(--sp-2)}
+.who-id{text-align:end}
+.stage-prep{background:var(--border-2)}
+.stage-run{background:var(--brand-fill)}
+.stage-done{background:var(--ok)}
+.stage-blocked{background:var(--bad)}
+/* ══ סוף מחלקות התפקיד ═════════════════════════════════════════════════ */
 /* ═══ סוף גיליון הסגנון — בלוק גיליון סגנון ══════════════════════════════ */
