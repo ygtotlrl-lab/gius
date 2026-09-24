@@ -5,12 +5,14 @@
  *  ⚠️ כל הלוגיקה יושבת במודול המשותף שלמטה — זהה בית-לבית
  *  בכל האפליקציות. ⛔ מה שנבדל יושב ב-SW_CFG בלבד.
  */
-const CACHE_NAME = 'gius-v162';
+const CACHE_NAME = 'gius-v163';
 
 // קבצים מקומיים.
 var CORE = [
   './',
   './index.html',
+  './core/ui.css',
+  './core/chart.css',
   './app.css',
   './core/util.js',
   './core/sync.js',
