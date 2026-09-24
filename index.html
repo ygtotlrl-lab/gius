@@ -82,7 +82,7 @@ import { MSG_FILL_ALL, MSG_FILL_LOGIN, MSG_LOAD_FAIL_PRE, MSG_LOGIN_ERR,
          MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN,
          MSG_OFF_USER_WRITE, MSG_PASS_MISMATCH, MSG_PASS_SIX,
          MSG_SERVER_ERR, MSG_SWITCHED_TO, MSG_SYNC_BACK, appConfigure,
-         getDeviceId, isNetErr, kvParse, uniqHas, withTimeout } from './core/util.js';
+         dayToday, getDeviceId, isNetErr, kvParse, uniqHas, withTimeout } from './core/util.js';
 import { _rowsPaged, afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKick,
          errToast, idEq, mergeCore, newClientId, pendAlertDismiss, pendAll,
          pendBoot, pendClearMany, pendCount, pendHas, pendMark,
@@ -446,7 +446,7 @@ var HW_CFG = {
     inWindow: function (t) {
       var y = gAcadYearOf(t && t.txn_date);
       if (!isFinite(y)) return true;
-      return y >= gAcadYearOf(todayISO());
+      return y >= gAcadYearOf(dayToday());
     },
     idOf: function (r) { return r && r.client_id; },
     ts: function (r) { return rowTs(r); },
@@ -526,14 +526,6 @@ function sum(arr, pick) {
 var ilsFmt = new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 0 });
 function ils(n) { return ilsFmt.format(Math.round(num(n))); }
 
-// ⚠️ **שעון מקומי במכוון, ולא `toISOString().slice(0,10)`.** ה-UTC מקדים או
-// מאחר את התאריך המקומי בשעות הקצה, ולכן תנועה שנרשמת בערב הייתה נופלת
-// ליום — ולעיתים לחודש — הבא, ומשנה את הסיכום החודשי.
-// ⛔ אין להחליף ב-`toISOString` — זה בדיוק הבאג שהפונקציה מונעת.
-function todayISO() {
-  var d = new Date();
-  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-}
 function pad2(n) { return (n < 10 ? '0' : '') + n; }
 function nowISO() { return new Date().toISOString(); }
 function monthKeyOf(iso) { return String(iso || '').slice(0, 7); }
@@ -604,7 +596,7 @@ var state = {
   get user() { return sessGet(); },
   set user(v) { sessSet(v); },
   screen: 'home',
-  month: monthKeyOf(todayISO()),
+  month: monthKeyOf(dayToday()),
   config: { categories: [], causes: [], domains: [] },
   donors: [], pledges: [], txns: [], tasks: [], targets: [], users: [],
   donorId: null,
@@ -1550,7 +1542,7 @@ function go(screen) {
   state.donorId = null;
   /*  ⛔ הבית נפתח בחודש של היום — ⚠️ חודש שדופדף אליו נשאר אחרי מעבר
    *  לשונית, ⭐ ומי שחוזר לבית רואה יעד של חודש אחר בלי שביקש. */
-  if (screen === 'home') state.month = monthKeyOf(todayISO());
+  if (screen === 'home') state.month = monthKeyOf(dayToday());
   render();
 }
 
@@ -1664,7 +1656,7 @@ function viewHome() {
     if (myTasks.length) {
       h += '<div class="u-fs-2 u-fw-700 u-c-text3 u-m-1-0-2">משימות פתוחות</div>';
       myTasks.forEach(function (t) {
-        var late = t.due_date && t.due_date < todayISO();
+        var late = t.due_date && t.due_date < dayToday();
         h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
           '<div class="av">🗂️</div><div class="main"><b>' + esc(t.title) + '</b>' +
           '<small>' + esc(t.domain || 'ללא תחום') + ' · ' + esc(t.stage) + '</small></div>' +
@@ -1841,7 +1833,7 @@ function pledgeTableHTML(list) {
     '<th>תאריך יעד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
   list.forEach(function (p) {
     var c = collectedForPledge(p.client_id), st = pledgeStatus(p);
-    var late = p.due_date && p.due_date < todayISO() && st !== 'בוצע';
+    var late = p.due_date && p.due_date < dayToday() && st !== 'בוצע';
     h += '<tr class="click" data-act="donor-open" data-id="' + p.donor_client_id + '">' +
       '<td><b>' + esc(donorName(p.donor_client_id)) + '</b>' + pendTag(pendRowKey('g_pledges', p.client_id)) + '</td>' +
       '<td>' + esc(p.cause || '—') + '</td>' +
@@ -1920,7 +1912,7 @@ function viewTasks() {
       '<span class="cnt">' + list.length + '</span></h3>';
     if (!list.length) h += '<div class="u-p-6-3 u-fs-3 empty">אין משימות</div>';
     list.forEach(function (t) {
-      var late = t.due_date && t.due_date < todayISO() && t.stage !== 'השלמה';
+      var late = t.due_date && t.due_date < dayToday() && t.stage !== 'השלמה';
       h += '<div class="kcard" data-id="' + t.client_id + '">' +
         '<span class="grip" aria-hidden="true">⣿</span>' +
         '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.client_id)) +
@@ -2251,7 +2243,7 @@ function formTxn(existing, presetDonor) {
     '<label class="fld"><span>תורם *</span></label>' + pickerHTML('txn-donor', donorId) +
     '<div class="u-mt-5 f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="txn-amount" inputmode="decimal" value="' + esc(t.amount != null ? num(t.amount) : '') + '"></label>' +
-      '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="txn-date" value="' + esc(t.txn_date || todayISO()) + '"></label>' +
+      '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="txn-date" value="' + esc(t.txn_date || dayToday()) + '"></label>' +
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>סעיף</span>' + selectHTML('txn-category', state.config.categories, t.category, '— ללא סעיף —') + '</label>' +
@@ -2285,7 +2277,7 @@ function saveTxn(id) {
     donor_client_id: donorId,
     pledge_client_id: nullable(val('txn-pledge')),
     amount: amount,
-    txn_date: val('txn-date') || todayISO(),
+    txn_date: val('txn-date') || dayToday(),
     category: nullable(val('txn-category')),
     agent: nullable(val('txn-agent')),
     manager: nullable(val('txn-manager')),
@@ -2382,7 +2374,7 @@ function saveTask(id) {
   //    הטיפול במשימה — ובלי שום דרך לשחזר אותה, כי אין כאן גרסאות.
   var entry = val('tk-log');
   if (entry) {
-    var stamp = '[' + dmyDate(todayISO()) + ' · ' + state.user.full_name + ']';
+    var stamp = '[' + dmyDate(dayToday()) + ' · ' + state.user.full_name + ']';
     var prev = (existing && existing.log) ? existing.log + '\n' : '';
     row.log = prev + stamp + ' ' + entry;
   }
