@@ -187,7 +187,22 @@ th{font-size:var(--fs-2);color:var(--text-3);font-weight:700;letter-spacing:var(
 td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 tbody tr:last-child td{border-bottom:0}
 tbody tr.click{cursor:pointer}
-tbody tr.click:hover{background:var(--card-2)}
+/*  ⛔ `:hover` חל רק במכשיר שיש לו ריחוף — ⚠️ במגע הוא נשאר על הרכיב
+ *  אחרי הלחיצה, ⭐ והלחצן נראה לחוץ עד שנוגעים במקום אחר: ⛔ המשוב במגע
+ *  הוא `:active` בלבד, ⚠️ ולכן הוא נשאר מחוץ לבלוק.
+ *  ⚠️ **והבלוק יושב כאן ולא בסוף הגיליון** — ⛔ כלל ריחוף שיורד אל אחרי
+ *  `.active` או `:active` באותה סגוליות גובר עליהם. */
+@media (hover:hover){
+  tbody tr.click:hover{background:var(--card-2)}
+  .row:hover{background:var(--card-2)}
+  .btn:hover{box-shadow:var(--shadow-lg)}
+  .btn.ghost:hover{background:var(--card-2)}
+  .sheet-hd .x:hover{background:var(--card-2)}
+  #ask .sheet-ft button:hover{box-shadow:var(--shadow-lg)}
+  .chooser button:hover{border-color:var(--brand-ink);background:var(--brand-soft)}
+  .dp-results button:hover{background:var(--card-2)}
+  .back:hover{text-decoration:underline}
+}
 tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;background:var(--card-2)}
 
 /* ================================================================== רשימות */
@@ -196,7 +211,6 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
   border-bottom:1px solid var(--border-2);cursor:pointer
 }
 .row:last-child{border-bottom:0}
-.row:hover{background:var(--card-2)}
 .row .av{
   width:37px;height:37px;border-radius:var(--r-4);flex:none;display:grid;place-items:center;
   background:var(--brand-soft);color:var(--brand-ink);font-weight:800;font-size:var(--fs-3)}
@@ -251,11 +265,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .addrow{display:flex;gap:var(--sp-3);margin-top:var(--sp-5)}
 .addrow .inp{min-width:0}
 .addrow .btn{flex:none}
-.btn:hover{box-shadow:var(--shadow-lg)}
 .btn:active{transform:translateY(1px)}
 .btn:disabled{opacity:var(--op-4);cursor:default}
 .btn.ghost{background:transparent;color:var(--text-2);border-color:var(--border)}
-.btn.ghost:hover{background:var(--card-2)}
 .btn.soft{background:var(--brand-soft);color:var(--brand-ink)}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
 .btn.sm{padding:var(--sp-3) var(--sp-5);font-size:var(--fs-3);border-radius:var(--r-3)}
@@ -297,7 +309,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-hd h3{font-size:var(--fs-4);flex:1}
 .sheet-hd .x{background:none;border:0;font-size:var(--fs-5);line-height:var(--lh-1);color:var(--text-3);
   cursor:pointer;padding:var(--sp-1) var(--sp-3);border-radius:var(--r-3)}
-.sheet-hd .x:hover{background:var(--card-2)}
 .sheet-bd{padding:var(--sp-6) var(--sp-6)}
 /* ⛔ הצבע עבר מהמחרוזת ל-CSS — ⚠️ גוף `ask` הוא `textContent` בכולן, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד היה שובר את הזהות בית-לבית */
 #ask-body{color:var(--text-2)}
@@ -305,7 +316,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-ft:empty{display:none}
 .sheet-ft .btn{flex:1}
 #ask .sheet-ft button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-4);background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;border-radius:var(--r-4);padding:var(--sp-5) var(--sp-6);font-family:inherit;font-size:var(--fs-3);font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
-#ask .sheet-ft button:hover{box-shadow:var(--shadow-lg)}
 #ask .sheet-ft button:active{transform:translateY(1px)}
 #ask .sheet-ft button.danger{background:var(--bad-soft);color:var(--bad);box-shadow:none}
 
@@ -315,7 +325,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-6) var(--sp-6);
   font-size:var(--fs-4);font-weight:700
 }
-.chooser button:hover{border-color:var(--brand-ink);background:var(--brand-soft)}
 .chooser button .ic{font-size:var(--fs-6)}
 .chooser button small{display:block;font-weight:500;font-size:var(--fs-2);color:var(--text-3)}
 
@@ -334,7 +343,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   display:block;width:100%;text-align:start;background:none;border:0;cursor:pointer;
   padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
 .dp-results button:last-child{border-bottom:0}
-.dp-results button:hover{background:var(--card-2)}
 .dp-results button small{color:var(--text-3);font-size:var(--fs-2);margin-inline-start:var(--sp-3)}
 .dp-results .mk{color:var(--brand-ink);font-weight:700}
 .dp-new{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:var(--sp-5);margin-top:var(--sp-4);
@@ -396,7 +404,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 .back{background:none;border:0;color:var(--brand-ink);font-weight:700;cursor:pointer;
   padding:var(--sp-2) 0;margin-bottom:var(--sp-4);font-size:var(--fs-3)}
-.back:hover{text-decoration:underline}
 
 /* ==================================================================== טוסט */
 
@@ -474,6 +481,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
    ⛔ **והמשך נמדד בשניות ולא באלפיות** — ⚠️ והכתיב אחיד, בלי
       אפס מוביל: ⭐ `.15s` ו-`0.15s` הם אותו ערך בשני כתיבים, ⛔ ושני כתיבים
       הם שני חיפושים.
+   ⛔ **ותחת הפחתת תנועה כל `--dur-N` הוא אפס** — ⚠️ כל מעבר ואנימציה
+      נגזרים מהסולם, ⭐ ואפס בו מכבה את כולם: ⛔ ו-`0s` ולא `0` — משך בלי
+      יחידה אינו ערך תקף, ⚠️ והמאפיין נזרק בשקט.
    ⛔ שינוי כאן — כל האפליקציות **וכל עותקי השער**, באותו סבב.
    ═══════════════════════════════════════════════════════════════════════ */
 :root{
@@ -489,6 +499,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 --alert:#B3261E;--on-alert:#FFFFFF;
 --sh-1:rgba(0,0,0,.10);--sh-2:rgba(0,0,0,.22);--sh-3:rgba(0,0,0,.35);
 --on-dark:#FFFFFF;--on-dark-2:rgba(255,255,255,.9);--on-dark-3:rgba(255,255,255,.65);--fill-dark:rgba(255,255,255,.15)
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-1:0s;--dur-2:0s;--dur-3:0s;--dur-4:0s;--dur-5:0s;--dur-6:0s}
 }
 .u-mt-2{margin-top:var(--sp-2)}
 .u-mt-5{margin-top:var(--sp-5)}
