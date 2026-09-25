@@ -108,9 +108,8 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 .tabbar button .ic{font-size:var(--fs-5);line-height:var(--lh-1)}
 .tabbar button.on{color:var(--brand-ink)}
 .tabbar button.on .ic{transform:translateY(-1px)}
-/*  ⛔ מסך שלפני הכניסה — טעינה, כניסה או שגיאה — ⚠️ בלי כותרת ובלי ריפוד
- *  המיכל: ⭐ הוא ממלא את החלון כולו, כפי שנבנה. */
-#app.is-bare > .topbar{display:none}
+/*  ⛔ מסך שלפני הכניסה — טעינה, כניסה או שגיאה — ⚠️ בלי ריפוד המיכל:
+ *  ⭐ הוא ממלא את החלון כולו, כפי שנבנה. */
 #app.is-bare > main{padding:0;max-width:none}
 main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
   max-width:var(--col);margin:0 auto}

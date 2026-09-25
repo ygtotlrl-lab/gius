@@ -36,8 +36,8 @@
 </head>
 <body>
 
-<!--  ⛔ הקליפה — כותרת, ובתוכה הניווט, ומיכל תוכן אחד: ⚠️ `is-bare` מסתיר את
-      הכותרת ומוריד את ריפוד המיכל, ⭐ למסכים שלפני הכניסה — טעינה, כניסה ושגיאה. -->
+<!--  ⛔ הקליפה — כותרת, ובתוכה הניווט, ומיכל תוכן אחד: ⚠️ והיא מתחילה חשופה,
+      ⭐ והמסגרת נחשפת רק יחד עם מסך שמשתמש בה — ⛔ ולא בטעינה, בכניסה ובשגיאה. -->
 <div id="app" class="is-bare">
   <header class="topbar"></header>
   <main id="view"><div class="view-loading" role="status" aria-label="טוען"><span class="view-spin"></span></div></main>
@@ -100,8 +100,8 @@ import { bkBoot, logAction, logFlush } from './core/backup.js';
 import { isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive, sessBoot,
          sessClear, sessGet, sessSet, writeUser } from './core/auth.js';
 import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop,
-         modalEsc, openModal, pullRender, swApply, swHideUpdate, toast,
-         uiNoDialog } from './core/ui.js';
+         modalEsc, openModal, pullRender, shellBare, swApply, swHideUpdate,
+         toast, uiNoDialog } from './core/ui.js';
 import { bar, barChart } from './core/chart.js';
 (function () {
 'use strict';
@@ -1491,7 +1491,7 @@ function renderShell() {
       '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
   }).join('');
 
-  $('#app').classList.remove('is-bare');
+  shellBare(false);
   $('header.topbar').innerHTML =
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
       '<nav class="tabbar">' + tabs + '</nav>' +
@@ -1508,7 +1508,7 @@ function renderShell() {
 /*  ⛔ מסך שלפני הכניסה — טעינה, כניסה או שגיאה: ⚠️ בלי כותרת ובלי הכפתור
  *  הצף, ⭐ והתוכן במיכל האחד. */
 function viewBare(html) {
-  $('#app').classList.add('is-bare');
+  shellBare(true);
   var fab = $('#app > .fab');
   if (fab) fab.remove();
   $('#view').innerHTML = html;
