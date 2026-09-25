@@ -1,4 +1,4 @@
-# gius — Native WebView APK
+# גיוס — Native WebView APK
 
 מעטפת אנדרואיד מקורית מבוססת **WebView** — **לא TWA**. היא טוענת את האתר החי:
 
