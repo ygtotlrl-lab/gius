@@ -677,7 +677,7 @@ var G_STAMP_KEY = 'last_changed';
 // (`gen_random_uuid()`) בדיוק בשביל זה.
 // ⭐ **המחולל עצמו עבר למודול המשותף** — `newClientId()` זהה
 // בית-לבית בכל האפליקציות.
-// ⛔ אין להחזיר לכאן `newId()` מקומי — כמה שמות לאותה יכולת
+// ⛔ ואין לצידו מחולל מקומי — כמה שמות לאותה יכולת
 //    נסחפים בשקט זה מזה.
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1486,7 +1486,7 @@ var TABS = [
 ];
 
 function renderShell() {
-  var tabs = TABS.map(function (t) {
+  var tabsHtml = TABS.map(function (t) {
     return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
       '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
   }).join('');
@@ -1494,7 +1494,7 @@ function renderShell() {
   shellBare(false);
   $('header.topbar').innerHTML =
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
-      '<nav class="tabbar">' + tabs + '</nav>' +
+      '<nav class="tabbar">' + tabsHtml + '</nav>' +
       '<div class="who"><div class="who-id"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
@@ -1668,7 +1668,7 @@ function viewHome() {
         h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
           '<div class="av">🗂️</div><div class="main"><b>' + esc(t.title) + '</b>' +
           '<small>' + esc(t.domain || 'ללא תחום') + ' · ' + esc(t.stage) + '</small></div>' +
-          '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + dmyDate(t.due_date) + '</span></div></div>';
+          '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + esc(dmyDate(t.due_date)) + '</span></div></div>';
       });
     }
     if (myPledges.length) {
@@ -1781,7 +1781,7 @@ function viewDonorCard() {
         '<td class="num">' + ils(p.amount) + '</td>' +
         '<td class="num">' + ils(c) + '</td>' +
         '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
-        '<td>' + dmyDate(p.due_date) + '</td>' +
+        '<td>' + esc(dmyDate(p.due_date)) + '</td>' +
         '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
         '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.client_id + '">עריכה</button></td></tr>';
     });
@@ -1796,7 +1796,7 @@ function viewDonorCard() {
     h += '<div class="tw"><table><thead><tr><th>תאריך</th><th class="num">סכום</th><th>סעיף</th>' +
       '<th>שגריר</th><th>מנהל</th><th>נפרע</th><th></th></tr></thead><tbody>';
     tx.forEach(function (t) {
-      h += '<tr><td>' + dmyDate(t.txn_date) + pendTag(pendRowKey('g_txns', t.client_id)) + '</td>' +
+      h += '<tr><td>' + esc(dmyDate(t.txn_date)) + pendTag(pendRowKey('g_txns', t.client_id)) + '</td>' +
         '<td class="num">' + ils(t.amount) + '</td>' +
         '<td>' + esc(t.category || '—') + '</td>' +
         '<td>' + esc(t.agent || '—') + '</td>' +
@@ -1849,7 +1849,7 @@ function pledgeTableHTML(list) {
       '<td class="num">' + ils(p.amount) + '</td>' +
       '<td class="num">' + ils(c) + '</td>' +
       '<td class="num">' + ils(Math.max(0, num(p.amount) - c)) + '</td>' +
-      '<td>' + (late ? '<span class="badge bad">' + dmyDate(p.due_date) + '</span>' : dmyDate(p.due_date)) + '</td>' +
+      '<td>' + (late ? '<span class="badge bad">' + esc(dmyDate(p.due_date)) + '</span>' : esc(dmyDate(p.due_date))) + '</td>' +
       '<td><span class="badge ' + statusClass(st) + '">' + st + '</span></td>' +
       '<td><button class="btn ghost xs" data-act="pledge-edit" data-id="' + p.client_id + '">עריכה</button> ' +
         '<button class="btn danger xs" data-act="pledge-del" data-id="' + p.client_id + '">מחיקה</button></td></tr>';
@@ -1927,7 +1927,7 @@ function viewTasks() {
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
           (t.domain ? '<span class="badge">' + esc(t.domain) + '</span>' : '') +
-          (t.due_date ? '<span class="badge ' + (late ? 'bad' : '') + '">' + dmyDate(t.due_date) + '</span>' : '') +
+          (t.due_date ? '<span class="badge ' + (late ? 'bad' : '') + '">' + esc(dmyDate(t.due_date)) + '</span>' : '') +
           (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
         '</div>' +
         '<div class="ft">' +
@@ -2975,8 +2975,7 @@ function start() {
   //    כניסה קבועה, והסשן הוריד לדיסק גם את **ההרשאה** (`role`).
   //    ⚠️ הכניסה האופליין לא נפגעה — היא מוכרעת ב-`gVerifyOffline` מול
   //    `pass_fp` שבמראה, ולא מול הסשן.
-  // ⛔ `revalidateSession` ירדה איתו — היא רצה **רק** מכאן,
-  //    ותפקידה היה לאמת סשן משוחזר. אין סשן משוחזר, אין מה לאמת:
+  // ⛔ ואין כאן אימות סשן — אין סשן משוחזר, אין מה לאמת:
   //    הכניסה עצמה כבר קוראת את השורה מהענן ומרעננת את המראה.
   renderLogin();
 }
