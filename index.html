@@ -91,8 +91,8 @@ import { _rowsPaged, afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKick,
          errToast, idEq, mergeCore, newClientId, pendAlertDismiss, pendAll,
          pendBoot, pendClearMany, pendCount, pendHas, pendMark,
          pendMarkMany, pendRender, pendTag, plBoot, plNum, plTouch,
-         pushDirty, rtyBoot, runSave, sbWatch, schedulePush, tombBoot,
-         tombPruneMerged } from './core/sync.js';
+         pushDirty, rtyBoot, runSave, sbWatch, schedulePush, tombAt,
+         tombBoot, tombPruneMerged } from './core/sync.js';
 import { MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons, lsRemove } from './core/storage.js';
 import { MIRROR, mirrorBoot, mirrorKey, mirrorSave, mirrorTables,
          mirrorWrite } from './core/mirror.js';
@@ -922,7 +922,7 @@ function pcCascadeDelete(table, parent) {
 }
 
 function softDelete(table, id) {
-  return update(table, id, { deleted: true, deleted_at: nowISO() })
+  return update(table, id, { deleted: true, deleted_at: tombAt() })
     .then(function (row) { pcCascadeDelete(table, row); return row; });
 }
 
