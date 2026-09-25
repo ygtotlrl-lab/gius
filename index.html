@@ -96,7 +96,7 @@ import { _rowsPaged, afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKick,
 import { MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons, lsRemove } from './core/storage.js';
 import { MIRROR, mirrorBoot, mirrorKey, mirrorSave, mirrorTables,
          mirrorWrite } from './core/mirror.js';
-import { bkBoot, logAction, logFlush } from './core/backup.js';
+import { bkBoot, logAction } from './core/backup.js';
 import { authLog, isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive,
          sessClear, sessGet, sessSet, writeUser } from './core/auth.js';
 import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop,
@@ -1065,11 +1065,9 @@ function syncPull() {
     applyMirrorToState();
     if (!errs.length) {
       _lastPullOk = Date.now();
-      // ⛔ הגיבוי היומי **אינו** נתלה כאן — הניסוח הראשון
-      //    תלה אותו במשיכה מלאה שהצליחה, כלומר בפעילות סנכרון. נקודת
-      //    ההפעלה היא `bkBoot()` ב-`start()`. ⚠️ ריקון תור היומן כן נשאר:
-      //    הוא ריקון חוזר, וכאן יש ראיה טרייה שהרשת עובדת.
-      try { logFlush(); } catch (eB) { }
+      // ⛔ הגיבוי היומי ותור היומן **אינם** נתלים כאן — ⚠️ מה שתלוי
+      //    במשיכה מלאה שהצליחה מדלג על כל יום בלי סנכרון: ⭐ נקודת
+      //    ההפעלה היא `bkBoot()` ב-`start()`.
       /* ⛔ **אין כאן כתיבת עֵד פינוי** — ⚠️ עד כאן נכתבה מכאן
        *  `g_synced_at`, והיא חותמת **משיכה**: «ראיתי את מצב הענן» אינו
        *  «מה שאצלי עלה לשם». ⭐ העֵד הוא `_gPushedAt` פר-טבלה, והוא
