@@ -97,7 +97,7 @@ import { MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons, lsRemove } f
 import { MIRROR, mirrorBoot, mirrorKey, mirrorSave, mirrorTables,
          mirrorWrite } from './core/mirror.js';
 import { bkBoot, logAction, logFlush } from './core/backup.js';
-import { isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive,
+import { authLog, isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive,
          sessClear, sessGet, sessSet, writeUser } from './core/auth.js';
 import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop,
          modalEsc, openModal, pullRender, shellBare, swApply, swHideUpdate,
@@ -1410,6 +1410,7 @@ function doLogin() {
     .then(function (u) {
       ctxSwitch();
       state.user = { client_id: u.client_id, username: u.username, full_name: u.full_name, role: u.role };
+      authLog(true, 'online', username);
       // ⭐ הנתיב החלקי. השורה הזו כבר בידינו מהכניסה, ולכן אין
       // סיבה שהחלפת משתמש במכשיר תמתין למשיכה מלאה מהענן כדי שהוא ייכנס
       // למראה. ⚠️ **אחרי `state.user`, לא לפניו** — התיקון:
@@ -1420,6 +1421,10 @@ function doLogin() {
       return boot();
     })
     .catch(function (e) {
+      var m = e && e.message;
+      authLog(false, m === 'bad' ? 'wrong_credentials_online' : m === 'inactive' ? 'inactive_online'
+                   : m === 'no-crypto' ? 'no_crypto_online' : isNetErr(e) ? 'net_error' : 'server_error',
+              username);
       if (e && e.message === 'bad') loginError(MSG_BAD_LOGIN);
       else if (e && e.message === 'inactive') loginError(MSG_USER_INACTIVE);
       /*  ⛔ כשל מערכת אינו יושב על משטח המשתמש — ⚠️ `.auth-err` שמור למה
@@ -1437,19 +1442,21 @@ function doLogin() {
    את המשתמש לנסות שוב ושוב סיסמה נכונה לחלוטין. */
 function doLoginOffline(username, password) {
   var cu = mirrorUserByName(username);
-  if (!cu) { loginError(MSG_OFF_UNKNOWN); return Promise.resolve(); }
+  if (!cu) { authLog(false, 'unknown_user_offline', username); loginError(MSG_OFF_UNKNOWN); return Promise.resolve(); }
   // מחזירה את ה-Promise — הכניסה אסינכרונית (גזירת PBKDF2), והבדיקות
   // חייבות משהו להמתין לו. אף קורא בקוד אינו נשען על הערך המוחזר.
   return gVerifyOffline(cu, password).then(function (verdict) {
-    if (verdict === 'no-fp')     { loginError(MSG_OFF_NO_FP); return; }
-    if (verdict === 'no-crypto') { loginError(MSG_OFF_NO_CRYPTO); return; }
-    if (verdict !== 'ok')        { loginError(MSG_BAD_LOGIN); return; }
+    if (verdict === 'no-fp')     { authLog(false, 'no_fp_offline', username); loginError(MSG_OFF_NO_FP); return; }
+    if (verdict === 'no-crypto') { authLog(false, 'no_crypto_offline', username); loginError(MSG_OFF_NO_CRYPTO); return; }
+    if (verdict !== 'ok')        { authLog(false, 'wrong_credentials_offline', username); loginError(MSG_BAD_LOGIN); return; }
     ctxSwitch();
     state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
+    authLog(true, 'offline', username);
     boot();
     toast(MSG_OFFLINE_LOGIN, null, 'bad');
   }, function (e) {
     console.warn('[login] אימות אופליין נכשל', e);
+    authLog(false, 'no_crypto_offline', username);
     loginError(MSG_OFF_NO_CRYPTO);
   });
 }
@@ -2616,19 +2623,20 @@ var DOM_ACTIONS = {
     /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן — «אין במה לאמת»
      *  אינו «סיסמה שגויה», והודעה מאוחדת שולחת את המשתמש להקליד שוב
      *  ושוב סיסמה נכונה לחלוטין במקום לומר לו שנדרש חיבור אחד. */
-    if (!cu) { toast(MSG_OFF_UNKNOWN, null, 'bad'); return; }
+    if (!cu) { authLog(false, 'switch_unknown_user_offline', String(id)); toast(MSG_OFF_UNKNOWN, null, 'bad'); return; }
     return gVerifyOffline(cu, p).then(function (v) {
-      if (v === 'no-fp')     { toast(MSG_OFF_NO_FP, null, 'bad'); return; }
-      if (v === 'no-crypto') { toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
-      if (v !== 'ok')        { toast(MSG_BAD_LOGIN, null, 'bad'); return; }
+      if (v === 'no-fp')     { authLog(false, 'switch_no_fp_offline', cu.username); toast(MSG_OFF_NO_FP, null, 'bad'); return; }
+      if (v === 'no-crypto') { authLog(false, 'switch_no_crypto_offline', cu.username); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
+      if (v !== 'ok')        { authLog(false, 'switch_wrong_credentials_offline', cu.username); toast(MSG_BAD_LOGIN, null, 'bad'); return; }
       closeModal();
       ctxSwitch();
       state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
+      authLog(true, 'switch_offline', cu.username);
       state.screen = 'home';
       state.donorId = null;
       boot();
       toast(MSG_SWITCHED_TO + (cu.full_name || cu.username), null, 'good');
-    }, function (e) { console.warn('[switch]', e); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
+    }, function (e) { console.warn('[switch]', e); authLog(false, 'switch_no_crypto_offline', cu.username); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
   },
   'logout': function () { doLogout(); },
   'modal-close': function () { closeModal(); },
