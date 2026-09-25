@@ -96,9 +96,11 @@ import { _rowsPaged, afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKick,
 import { MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons, lsRemove } from './core/storage.js';
 import { MIRROR, mirrorBoot, mirrorKey, mirrorSave, mirrorTables,
          mirrorWrite } from './core/mirror.js';
-import { bkBoot, logAction, logFlush } from './core/backup.js';
-import { authLog, isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive,
-         sessClear, sessGet, sessSet, writeUser } from './core/auth.js';
+import { bkBoot, logAction } from './core/backup.js';
+import { AUTH_USER_COLS, authLog, authPassFields, authUsersTable, authVerify,
+         isAdmin, isAdminOf, lkBoot, lkReset, lkStop, sessActive, sessClear,
+         sessGet, sessSet, usersByName, usersGet, usersSaveAll, usersSaveOne,
+         usersSanitize, writeUser } from './core/auth.js';
 import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop,
          modalEsc, openModal, pullRender, shellBare, swApply, swHideUpdate,
          toast, uiNoDialog } from './core/ui.js';
@@ -704,45 +706,13 @@ function stripRows(t, rows) {
   //    חזרה ע"י `pushTable`, והמכשיר היה כותב לענן חותמת ישנה משלו
   //    ומשתיק בכך שינוי אמיתי שמכשיר אחר הרגע דחף.
   if (t === KV_TABLE) rows = (rows || []).filter(function (r) { return !(r && String(r.key) === G_STAMP_KEY); });
+  /*  ⛔ מראת המשתמשים עוברת ברשימת-ההיתר של המודול — ⚠️ במשיכה ובשער
+   *  הדיסק כאחד: ⭐ `strip` הוא רשימת-איסור, ⛔ ועמודה רגישה חדשה עוקפת אותה. */
+  if (t === authUsersTable()) return usersSanitize(rows);
   if (!m.strip) return rows;
   return (rows || []).map(function (r) { return stripCols(t, r); });
 }
 
-/* ═══ מראת המשתמשים — שני נתיבי כתיבה, מסנן אחד ══════════════════════════
-   ⛔ ולנתיב החלקי יש טעם משלו — ⚠️ בלעדיו משתמש שנכנס במכשיר שאינו שלו
-   נכנס למראה רק בסנכרון הבא: ⭐ החלפת משתמש הייתה תלויה במשיכה מלאה
-   מהענן, ⛔ בזמן שהשורה שלו כבר יושבת בזיכרון מהכניסה עצמה.
-
-   ⛔⛔ **שני הנתיבים עוברים דרך `usersSanitize` — ואין שלישי.** זו הנקודה
-   המדויקת שנשברה ב-hanhala ותוקנה ב-22, ואותה נקודה בדיוק
-   שנשברה כאן (הסינון ישב במשיכה בלבד, ולכן כתיבה מקומית עקפה
-   אותו וכתבה סיסמה גלויה לדיסק). נתיב חלקי הוא בדיוק ההזדמנות לחזור על
-   הטעות: הוא מקבל שורה **ישירות מתשובת הכניסה**, כלומר שורה שמכילה
-   `password` בוודאות. ⛔ אין לכתוב ל-`MIRROR.g_users` בלי לעבור כאן.
-
-   שכבת ההגנה השנייה נשארת במקומה: `mirrorSave` מסננת שוב בשער הדיסק. */
-function usersSanitize(rows) {
-  return (Array.isArray(rows) ? rows : [rows])
-    .filter(function (r) { return r && typeof r === 'object'; })
-    .map(function (r) { return stripCols('g_users', r); });
-}
-// הנתיב המלא — מחליף את המראה כולה (משיכה מלאה מהענן).
-function usersCacheSaveAll(rows) {
-  MIRROR.g_users = usersSanitize(rows);
-  return mirrorSave('g_users');
-}
-// הנתיב החלקי — משתמש **בודד**, בלי לגעת בשאר. ⚠️ מיזוג שדות ולא החלפת
-// שורה: תשובת כניסה שאינה כוללת עמודה (למשל לפני `002_pass_fp.sql`)
-// אינה מוחקת ערך שכבר יש במראה.
-function usersCacheSave(row) {
-  var clean = usersSanitize(row)[0];
-  if (!clean || clean.client_id == null) return false;
-  var arr = MIRROR.g_users || (MIRROR.g_users = []);
-  var cur = findRow(arr, 'client_id', clean.client_id);
-  if (cur) Object.keys(clean).forEach(function (k) { cur[k] = clean[k]; });
-  else arr.push(clean);
-  return mirrorSave('g_users');
-}
 function mirrorHasData() {
   for (var i = 0; i < TABLES.length; i++) if ((MIRROR[TABLES[i].t] || []).length) return true;
   return false;
@@ -956,15 +926,20 @@ var USER_CFG = {
   /*  ⛔ ההודעה נקראת בזמן הקריאה ⛔ ולא בזמן ההשמה — ⚠️ הקבוע מוצהר
    *  **מתחת** לבלוק הזה, ⭐ וקריאה בהשמה הייתה נותנת `undefined`. */
   offMsg: function () { return MSG_OFF_USER_WRITE; },
-  from: function () { return sb.from('g_users'); },
+  from: function () { return sb.from(authUsersTable()); },
   run: function (q) { return withTimeout(q); },
-  missingFp: gIsMissingFpCol,
+  refreshed: function () { applyMirrorToState(); },
+  revalidated: function (u) {
+    state.user = { client_id: u.client_id, username: u.username, full_name: u.full_name, role: u.role };
+    applyMirrorToState();
+  },
+  logout: function (msg) { doLogout(); toast(msg, null, 'bad'); },
   after: function (res, body) {
     /*  ⛔ הכשל נזרק כאן ⛔ ולא בבלוק — ⚠️ שלושת הקוראים כאן עובדים
      *  ב-`catch`, ⭐ ובשתי האחיות הקוראים בודקים `res.error`. */
     if (!res || res.error) throw ((res && res.error) || new Error(MSG_SERVER_ERR));
     var saved = (Array.isArray(res.data) && res.data[0]) || body;
-    usersCacheSave(saved);
+    usersSaveOne(saved);
     /*  ⛔ העֵד נכתב כאן ⛔ ולא במשיכה — ⚠️ זו כתיבה לענן שחזרה `ok`,
      *  ⭐ ומשיכה אינה ראיה שהשורה שלנו עלתה. */
     _gMarkPushed('g_users');
@@ -980,21 +955,6 @@ var USER_CFG = {
       (Object.prototype.hasOwnProperty.call(body, 'pass_fp') && !body.pass_fp) };
   }
 };
-
-// גוזרת טביעה לסיסמה חדשה ומחזירה את שדות הכתיבה.
-// ⛔ **כישלון גזירה מאפס את שני השדות ולא רק מדלג על הכתיבה** — טביעה ישנה
-//    שנשארת הייתה ממשיכה לפתוח את הכניסה האופליין עם הסיסמה **הקודמת**,
-//    לנצח — כלומר שינוי סיסמה שאינו משנה כלום מבחינת מי שמחזיק את המכשיר.
-/* ⛔ **צעד ב — הכתיבה לטקסט הגלוי ירדה בהחלטת המנהל** ⚠️ ואין להחזירה:
-   `g_users.password` הייתה קריאה לכל מי שהחזיק את מפתח ה-anon שב-`index.html`
-   הציבורי, וה-RLS כאן פתוח בכוונה. ⛔ הפונקציה מחזירה שני שדות בלבד,
-   ⭐ והם היחידים שהאימות נשען עליהם. */
-function passFields(pass) {
-  return gMakePassFp(pass).then(function (made) {
-    return made ? { pass_salt: made.salt, pass_fp: made.fp }
-                : { pass_salt: null, pass_fp: null };
-  });
-}
 
 /* ══════════════════════════════════════════════════════════════════════════
    דחיפת-מצב — מה שמקומי-וחדש-יותר עולה לענן
@@ -1058,18 +1018,16 @@ function syncPull() {
       var merged = mergeRows(MIRROR[x.m.t], rows, x.m.key,
         function (k) { return pendHas(pendRowKey(x.m.t, k)); });
       // ⚠️ מראת המשתמשים נשמרת דרך **הנתיב המלא** של המודול שלה,
-      // אותו מסנן בדיוק שמשמש את הנתיב החלקי. ר' `usersSanitize`.
-      if (x.m.t === 'g_users') usersCacheSaveAll(merged);
+      // אותו מסנן בדיוק שמשמש את הנתיב החלקי.
+      if (x.m.t === authUsersTable()) usersSaveAll(merged);
       else { MIRROR[x.m.t] = merged; mirrorSave(x.m.t); }
     });
     applyMirrorToState();
     if (!errs.length) {
       _lastPullOk = Date.now();
-      // ⛔ הגיבוי היומי **אינו** נתלה כאן — הניסוח הראשון
-      //    תלה אותו במשיכה מלאה שהצליחה, כלומר בפעילות סנכרון. נקודת
-      //    ההפעלה היא `bkBoot()` ב-`start()`. ⚠️ ריקון תור היומן כן נשאר:
-      //    הוא ריקון חוזר, וכאן יש ראיה טרייה שהרשת עובדת.
-      try { logFlush(); } catch (eB) { }
+      // ⛔ הגיבוי היומי ותור היומן **אינם** נתלים כאן — ⚠️ מה שתלוי
+      //    במשיכה מלאה שהצליחה מדלג על כל יום בלי סנכרון: ⭐ נקודת
+      //    ההפעלה היא `bkBoot()` ב-`start()`.
       /* ⛔ **אין כאן כתיבת עֵד פינוי** — ⚠️ עד כאן נכתבה מכאן
        *  `g_synced_at`, והיא חותמת **משיכה**: «ראיתי את מצב הענן» אינו
        *  «מה שאצלי עלה לשם». ⭐ העֵד הוא `_gPushedAt` פר-טבלה, והוא
@@ -1229,127 +1187,6 @@ function emptyBox(icon, text) {
 /*  כניסה                                                                  */
 /* ====================================================================== */
 
-/* ══════════════════════════════════════════════════════════════════════════
-   טביעת סיסמה — PBKDF2-SHA256
-   ══════════════════════════════════════════════════════════════════════════
-   **למה טביעה.** `g_users` יורדת למראה המקומית בלי עמודת `password`
-   (`strip`) — נכון ובטוח, ⚠️ ובלי טביעה **אין כניסה אופליין כלל**: אין
-   מול מה לאמת, ⛔ ומכשיר שמישהו אחר נכנס בו אחרון נועל בחוץ את כל השאר.
-
-   **הפתרון — אותו מנגנון בדיוק.** לכל משתמש
-   נשמרים `pass_salt` + `pass_fp`: טביעת PBKDF2-SHA256 ב-`G_PASS_ITER` סיבובים,
-   עם **מלח אקראי פר-משתמש**. הטביעה יורדת למכשיר; הסיסמה — לעולם לא.
-   מכשיר שאבד חושף טביעות, לא סיסמאות, וההשהיה של 100k היא מה שהופך
-   ניחוש-בכוח על העותק שבדיסק ליקר גם מול סיסמה בת שש ספרות.
-
-   ⭐ **`password` ירדה בהחלטת המנהל (צעד ב)** — ⛔ אין בקוד אף מסלול
-   שכותב אליה ואף מסלול שקורא אותה, ⛔ ואין להחזיר לא זה ולא זה.
-
-   ⛔ **`strip: ['password']` נשאר, ⚠️ והוא אינו שריד** — המחיקה במסד היא
-   פעולת מנהל שטרם רצה, ומכשיר מותקן עלול להחזיק מראה שנושאת את העמודה:
-   ⭐ הסינון הוא מה שמנקה אותה, ⛔ והוא נאכף בשלוש נקודות ולא באחת —
-   במשיכה (`syncPull`), בכל כתיבה מקומית (`upsertLocal`), ובשער הדיסק
-   עצמו (`mirrorSave`). ר' `stripCols`.
-   ══════════════════════════════════════════════════════════════════════════ */
-var G_PASS_ITER = 100000;
-// המלח הנשמר הוא אקראי פר-משתמש; הקידומת מוסיפה הפרדת-הקשר, כך שטבלה
-// מחושבת מראש עבור אפליקציה אחרת על אותו origin אינה תקפה כאן. ה-origin
-// `ygtotlrl-lab.github.io` משותף לכל האפליקציות — זו לא הערה תיאורטית.
-var G_PASS_CTX = 'gius/g_users/v1/';
-
-// 16 בתים אקראיים כ-hex. מחזירה null כשאין crypto — והקורא **נכשל סגור**:
-// לא נשמרת טביעה, ו**גם לא נשארת טביעה ישנה** (ר' `passFields`).
-function gRandSalt() {
-  try {
-    if (typeof crypto === 'undefined' || !crypto || !crypto.getRandomValues) return null;
-    var b = new Uint8Array(16);
-    crypto.getRandomValues(b);
-    var h = '';
-    for (var i = 0; i < b.length; i++) h += (b[i] + 0x100).toString(16).slice(1);
-    return h;
-  } catch (e) { return null; }
-}
-
-// PBKDF2-SHA256 → hex בן 64 תווים. מחזירה null כשאין `crypto.subtle`
-// (הקשר לא-מאובטח / WebView ישן) — וגם כאן הקורא נכשל סגור.
-function gPassFp(pass, salt) {
-  try {
-    if (!salt) return Promise.resolve(null);
-    if (typeof crypto === 'undefined' || !crypto || !crypto.subtle || !crypto.subtle.importKey) {
-      return Promise.resolve(null);
-    }
-    var enc = new TextEncoder();
-    return Promise.resolve(
-      crypto.subtle.importKey('raw', enc.encode(String(pass == null ? '' : pass)), 'PBKDF2', false, ['deriveBits'])
-    ).then(function (key) {
-      return crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt: enc.encode(G_PASS_CTX + String(salt)), iterations: G_PASS_ITER, hash: 'SHA-256' },
-        key, 256);
-    }).then(function (bits) {
-      var b = new Uint8Array(bits), h = '';
-      for (var i = 0; i < b.length; i++) h += (b[i] + 0x100).toString(16).slice(1);
-      return h;
-    }, function (e) { console.warn('[pass] גזירת טביעה נכשלה', e); return null; });
-  } catch (e) { console.warn('[pass] גזירת טביעה נכשלה', e); return Promise.resolve(null); }
-}
-
-// גוזרת מלח+טביעה לסיסמה חדשה. מחזירה Promise של {salt, fp} או null בכישלון.
-function gMakePassFp(pass) {
-  var salt = gRandSalt();
-  if (!salt) return Promise.resolve(null);
-  return gPassFp(pass, salt).then(function (fp) { return fp ? { salt: salt, fp: fp } : null; });
-}
-
-// זיהוי תשובת שרת שאומרת "העמודות עדיין לא קיימות" — כלומר `002_pass_fp.sql`
-// טרם הורצה. ⚠️ בלי הבדיקה הזו כל שמירת משתמש הייתה **נכשלת לגמרי** בחלון
-// שבין דחיפת הקוד להרצת המיגרציה. ר' הנפילה-חזרה ב-`writeUser`.
-function gIsMissingFpCol(err) {
-  var m = ((err && (err.message || err.details || err.hint || err.code || '')) + '').toLowerCase();
-  return m.indexOf('pass_fp') !== -1 || m.indexOf('pass_salt') !== -1;
-}
-
-/* ---- כניסה אופליין: אימות מול הטביעה שבמראה ---- */
-// ⚠️ שלוש הודעות **פרטיות ל-gius**, ובכוונה מחוץ לבלוק ההודעות המשותף
-// (`MSG_OFFLINE`/`MSG_SAVED`/`MSG_BAD_LOGIN`/`MSG_SYNC_BACK`): הבלוק ההוא
-// מוכרז זהה בכל הפרויקטים, והוספת קבוע אליו כאן בלבד הייתה יוצרת בדיוק
-// את הסחיפה שהבלוק המשותף בא למנוע. אותו שיקול בדיוק כמו `MSG_PASS_SIX`.
-//
-// ⛔ **אין לאחד אותן עם `MSG_BAD_LOGIN`.** «סיסמה שגויה» על מצב שאינו סיסמה
-// שגויה הוא כשל שקט: הוא מוביל את המשתמש להקליד שוב ושוב סיסמה נכונה
-// לחלוטין, במקום לומר לו את הדבר היחיד שיפתור — חיבור אחד.
-// ⚠️ כתיבת משתמש היא החריג היחיד לכתיבה מקומית-תחילה:
-// היא חייבת להגיע לענן, אחרת הטביעה לא תגיע לשאר המכשירים והמשתמש החדש לא
-// יוכל להיכנס בהם — לא אופליין, ואפילו לא אונליין.
-
-// אימות אופליין מול הטביעה. מחזירה Promise של אחת מארבע:
-// 'ok' · 'bad' (סיסמה שגויה או משתמש מושבת) · 'no-fp' (אין טביעה לרשומה)
-// · 'no-crypto' (הדפדפן לא תומך). ⚠️ שלושת הכישלונות **אינם** אותו דבר,
-// ולכן אינם מקבלים אותה הודעה — ר' ההערה שמעל ההודעות.
-function gVerifyOffline(cu, pass) {
-  if (!cu || cu.active !== true) return Promise.resolve('bad');
-  if (!cu.pass_salt || !cu.pass_fp) return Promise.resolve('no-fp');
-  return gPassFp(pass, cu.pass_salt).then(function (fp) {
-    if (!fp) return 'no-crypto';
-    return (fp === cu.pass_fp) ? 'ok' : 'bad';
-  });
-}
-
-// המשתמש מהמראה לפי שם משתמש. המראה מחזיקה גם משתמשים מושבתים (היא עותק
-// מלא של הטבלה), ולכן `active` נבדק ב-`gVerifyOffline` ולא כאן.
-function mirrorUserByName(username) {
-  var arr = MIRROR.g_users || [];
-  for (var i = 0; i < arr.length; i++) {
-    if (arr[i] && String(arr[i].username) === String(username)) return arr[i];
-  }
-  return null;
-}
-
-/* ---- השלמת טביעות למשתמשים קיימים (מסלול חד-פעמי) ---- */
-// רץ **רק** בכניסה מקוונת של **בעלים**; אחרת מדלג בשקט. מנהל לא יריץ עדכון
-// על שורות של אחרים, ומכשיר אופליין לא ינסה בכלל. אין כאן יצירת סוד — רק
-// גזירת טביעה מהסיסמה שכבר יושבת בענן.
-// ⚠️ טבלה בלי העמודות (המיגרציה טרם הורצה) מחזירה שגיאה שנבלעת — זהו אחד
-// ממסלולי הדילוג השקטים המכוונים.
 function markSVG(cls) {
   return '<svg class="' + cls + '" viewBox="0 0 100 100" aria-hidden="true">' +
     '<rect x="2" y="2" width="96" height="96" rx="24" fill="var(--brand-fill)"/>' +
@@ -1391,17 +1228,16 @@ function doLogin() {
   //    ⭐ מכשיר שמישהו אחר נכנס בו אחרון היה נועל בחוץ את כל השאר.
   //    ⛔ הסיסמה עצמה עדיין **אינה** יורדת לדיסק — רק `pass_salt`+`pass_fp`.
   if (!navigator.onLine) { return doLoginOffline(username, password); }
-  return withTimeout(sb.from('g_users').select('*').eq('username', username).limit(1))
+  return withTimeout(sb.from(authUsersTable()).select(AUTH_USER_COLS.join(',')).eq('username', username).limit(1))
     .then(ok)
     .then(function (rows) {
       var u = rows && rows[0];
       if (!u) throw new Error('bad');
       if (!u.active) throw new Error('inactive');
-      // ⭐ ההשוואה היא מול **הטביעה** ולא מול הטקסט הגלוי — ⛔ השוואה
-      // מול `g_users.password` הופכת אותה **למפתח שפותח את הכניסה**, ⚠️ וה-RLS
+      // ⭐ ההשוואה היא מול **הטביעה** ולא מול טקסט גלוי — ⛔ השוואה
+      // מול עמודת סיסמה הופכת אותה **למפתח שפותח את הכניסה**, ⚠️ וה-RLS
       // כאן הוא `using (true)` ומפתח ה-anon יושב ב-`index.html` הציבורי.
-      // ⛔ ההחלטה «סיסמה גלויה בענן» בוטלה ב-2026-08-19 בהחלטת המנהל.
-      return gVerifyOffline(u, password).then(function (v) {
+      return authVerify(u, password).then(function (v) {
         if (v === 'no-crypto') throw new Error('no-crypto');
         if (v !== 'ok') throw new Error('bad');
         return u;
@@ -1415,9 +1251,8 @@ function doLogin() {
       // סיבה שהחלפת משתמש במכשיר תמתין למשיכה מלאה מהענן כדי שהוא ייכנס
       // למראה. ⚠️ **אחרי `state.user`, לא לפניו** — התיקון:
       // רענון שקודם לקביעת המשתמש הפעיל עובד על מצב שעוד לא השתנה.
-      // ⛔ `u` מכיל `password` (ה-`select` הוא `*`) — `usersCacheSave`
       // מסננת אותו, וזו בדיוק הסיבה שהיא הנתיב היחיד.
-      try { usersCacheSave(u); } catch (e) { console.warn('[users] cache', e); }
+      try { usersSaveOne(u); } catch (e) { console.warn('[users] cache', e); }
       return boot();
     })
     .catch(function (e) {
@@ -1441,11 +1276,11 @@ function doLogin() {
    לאמת אותה. הודעת «שם משתמש או סיסמה שגויים» במצבים האלה היא שקר שמוביל
    את המשתמש לנסות שוב ושוב סיסמה נכונה לחלוטין. */
 function doLoginOffline(username, password) {
-  var cu = mirrorUserByName(username);
+  var cu = usersByName(username);
   if (!cu) { authLog(false, 'unknown_user_offline', username); loginError(MSG_OFF_UNKNOWN); return Promise.resolve(); }
   // מחזירה את ה-Promise — הכניסה אסינכרונית (גזירת PBKDF2), והבדיקות
   // חייבות משהו להמתין לו. אף קורא בקוד אינו נשען על הערך המוחזר.
-  return gVerifyOffline(cu, password).then(function (verdict) {
+  return authVerify(cu, password).then(function (verdict) {
     if (verdict === 'no-fp')     { authLog(false, 'no_fp_offline', username); loginError(MSG_OFF_NO_FP); return; }
     if (verdict === 'no-crypto') { authLog(false, 'no_crypto_offline', username); loginError(MSG_OFF_NO_CRYPTO); return; }
     if (verdict !== 'ok')        { authLog(false, 'wrong_credentials_offline', username); loginError(MSG_BAD_LOGIN); return; }
@@ -2459,7 +2294,7 @@ function saveUser(id) {
     var p = $('#us-pass') ? $('#us-pass').value : '';
     if (!p) { toast(MSG_NEED_PASS, null, 'bad'); return Promise.resolve(); }
     if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return Promise.resolve(); }
-    return passFields(p).then(function (pf) {
+    return authPassFields(p).then(function (pf) {
       return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp)
         .then(function (r) { if (r && !r.error) plTouch(); return r; });
     });
@@ -2488,7 +2323,7 @@ function formPassword(u) {
 
 // ⭐ החלפת סיסמה עצמית — לכל משתמש מחובר, מתוך המסך (כפתור 🔑
 //    בכותרת). הסיסמה הנוכחית מאומתת מול הענן ואינה נשמרת בשום מקום;
-//    הכתיבה עוברת ב-`passFields`+`writeUser` — אותו מסלול בדיוק כמו
+//    הכתיבה עוברת ב-`authPassFields`+`writeUser` — אותו מסלול בדיוק כמו
 //    שינוי סיסמה ע"י הבעלים, כולל גזירת הטביעה מחדש.
 // ⚠️ הסיסמה **הנוכחית** אינה נבדקת מול תבנית שש-הספרות — בדיוק כמו
 //    במסלול הכניסה: אכיפה שם הייתה נועלת בחוץ סיסמה ותיקה ותקפה.
@@ -2514,14 +2349,14 @@ function formSaveMyPassword() {
   //    מקום, וכשל רשת באמצע נכשל ברעש (writeUser ממילא דורש רשת).
   return runSave(function () {
     // ⭐ אימות הסיסמה הנוכחית מול הטביעה; הטקסט הגלוי אינו נשלף.
-    return withTimeout(sb.from('g_users').select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
+    return withTimeout(sb.from(authUsersTable()).select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
       .then(function (res) {
         if (res && res.error) throw res.error;
         var u = res && Array.isArray(res.data) && res.data[0];
         if (!u) throw new Error('הסיסמה הנוכחית שגויה');
-        return gVerifyOffline(u, cur).then(function (v) {
+        return authVerify(u, cur).then(function (v) {
           if (v !== 'ok') throw new Error('הסיסמה הנוכחית שגויה');
-          return passFields(p1);
+          return authPassFields(p1);
         });
       })
       .then(function (pf) { return writeUser(state.user.client_id, pf).then(warnIfNoFp)
@@ -2535,14 +2370,14 @@ function formSaveMyPassword() {
    ⭐ שכבת הכניסה אחידה: שתי האפליקציות שיש בהן ניהול משתמשים
    מלא מחזיקות **גם** שינוי סיסמה עצמי **וגם** החלפת
    משתמש.
-   ⛔ האימות הוא `gVerifyOffline` — אותה פונקציה בדיוק שמכריעה
+   ⛔ האימות הוא `authVerify` — אותה פונקציה בדיוק שמכריעה
    את הכניסה, מקוונת ואופליין. ⚠️ מסלול אימות שני היה מקום נוסף שבו
    `active` או הטביעה עלולים להיבדק אחרת, ובדיוק שם נולדים פערים.
    ⛔ ואין כאן קיצור דרך: החלפה בלי סיסמה הייתה הופכת כל מכשיר פתוח
    למעבר חופשי לכל זהות שנמצאת במראה.
    ══════════════════════════════════════════════════════════════════════════ */
 function formSwitchUser() {
-  var others = (MIRROR.g_users || []).filter(function (u) {
+  var others = usersGet().filter(function (u) {
     return u && u.active !== false && String(u.client_id) !== String(state.user.client_id);
   });
   if (!others.length) { toast(MSG_NO_OTHER_USER_LOCAL, null, 'bad'); return; }
@@ -2618,13 +2453,13 @@ var DOM_ACTIONS = {
     var id = $('#sw-user') ? $('#sw-user').value : '';
     var p  = $('#sw-pass') ? $('#sw-pass').value : '';
     if (!id || !p) { toast(MSG_PICK_USER_AND_PASS, null, 'bad'); return; }
-    var cu = null, arr = MIRROR.g_users || [];
-    for (var i = 0; i < arr.length; i++) if (String(arr[i].id) === String(id)) cu = arr[i];
+    var cu = null, arr = usersGet();
+    for (var i = 0; i < arr.length; i++) if (arr[i] && String(arr[i].client_id) === String(id)) cu = arr[i];
     /*  ⛔ ארבע ההודעות נשארות נבדלות גם כאן — «אין במה לאמת»
      *  אינו «סיסמה שגויה», והודעה מאוחדת שולחת את המשתמש להקליד שוב
      *  ושוב סיסמה נכונה לחלוטין במקום לומר לו שנדרש חיבור אחד. */
     if (!cu) { authLog(false, 'switch_unknown_user_offline', String(id)); toast(MSG_OFF_UNKNOWN, null, 'bad'); return; }
-    return gVerifyOffline(cu, p).then(function (v) {
+    return authVerify(cu, p).then(function (v) {
       if (v === 'no-fp')     { authLog(false, 'switch_no_fp_offline', cu.username); toast(MSG_OFF_NO_FP, null, 'bad'); return; }
       if (v === 'no-crypto') { authLog(false, 'switch_no_crypto_offline', cu.username); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
       if (v !== 'ok')        { authLog(false, 'switch_wrong_credentials_offline', cu.username); toast(MSG_BAD_LOGIN, null, 'bad'); return; }
@@ -2751,7 +2586,7 @@ var DOM_ACTIONS = {
     if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
     // ⭐ הטביעה נגזרת בכל שינוי סיסמה, לצד הסיסמה עצמה.
     return runSave(function () {
-      return passFields(p).then(function (pf) {
+      return authPassFields(p).then(function (pf) {
         return writeUser(el.dataset.id, pf).then(warnIfNoFp);
       });
     }, 'הסיסמה עודכנה');
@@ -2970,7 +2805,7 @@ function start() {
   //    תפוגה** משאיר מי שנכנס פעם אחת מחובר לנצח על אותו מכשיר.
   //    ⛔ אין להחזיר: על מכשיר משותף זו
   //    כניסה קבועה, והסשן הוריד לדיסק גם את **ההרשאה** (`role`).
-  //    ⚠️ הכניסה האופליין לא נפגעה — היא מוכרעת ב-`gVerifyOffline` מול
+  //    ⚠️ הכניסה האופליין לא נפגעה — היא מוכרעת ב-`authVerify` מול
   //    `pass_fp` שבמראה, ולא מול הסשן.
   // ⛔ ואין כאן אימות סשן — אין סשן משוחזר, אין מה לאמת:
   //    הכניסה עצמה כבר קוראת את השורה מהענן ומרעננת את המראה.
