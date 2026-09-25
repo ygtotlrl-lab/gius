@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **Package ID** | שם החבילה — `android.package` שבתצורה — זהה ל-TWA שהוא מחליף (חובה, אחרת זו אפליקציה נפרדת) |
+| **Package ID** | שם החבילה — `android.package` שבתצורה — קבוע (חובה, אחרת זו אפליקציה נפרדת) |
 | **שם** | `shortName` שבתצורה |
 | **טוען** | כתובת האפליקציה — `android.url` שבתצורה — מהרשת, לא מנכסים מוטבעים |
 | **versionCode** | ⛔ עולה בכל שינוי ב-APK: ⚠️ מכשיר אינו מתקין מעל גרסה שאינה גבוהה ממנה |
@@ -40,10 +40,6 @@
 ⛔ **גם כאן «⏳ ממתין לסנכרון» נבדק לפני ההסרה ולא אחריה** — אחריה כבר אין מה
 לבדוק.
 <!-- SHARED:end -->
-
-⚠️ **כאן המעבר היה מ-TWA** — ה-APK הראשון נבנה ב-PWABuilder ורץ בתוך כרום.
-⭐ **והוחלף גם ה-keystore**, ולכן שני המכשירים שבשטח עברו הסרה
-והתקנה בפועל; נמדד לפני כן שאין בהם נתונים שלא סונכרנו.
 
 <!-- SHARED:start id="android-icons" -->
 ## אייקונים
@@ -103,9 +99,6 @@ mipmap-*/` — `ic_launcher.png` ו-`ic_launcher_foreground.png` (הסימן ב�
 מסרב לחתום אם טביעת האצבע של ה-keystore אינה טביעת המפתח שבתצורה, ואחרי
 החתימה מוודא שה-APK אכן נושא את התעודה הזו — ה-workflow נכשל בכל אחד מהמקרים.
 
-> ⚠️ **המפתח הוחלף ב-2026-09-15.** APK חדש ⛔ אינו מתקין על גבי התקנה
-> שנחתמה במפתח הישן — נדרשת הסרה והתקנה מחדש, פעם אחת..
-
 ### בנייה מקומית (דורשת Android SDK + Gradle)
 
 ```bash
@@ -127,48 +120,17 @@ cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRele
 | | |
 |---|---|
 | **קובץ** | ⛔ אינו בריפו — GitHub Secret `KEYSTORE_B64`, מפוענח לקובץ זמני בזמן בנייה ונמחק אחריה (PKCS12, RSA 4096) |
-| **נוצר** | 2026-09-15, `keytool -genkeypair` |
 | **Package ID** | שם החבילה — `android.package` שבתצורה |
 | **alias** | ⛔ אינו מוקלד — `sign-apk.sh` גוזר אותו מהמפתח עצמו |
 | **storepass / keypass** | ⛔ אינה בריפו — GitHub Secret `KEYSTORE_PASS` |
-| **תוקף** | 10,000 יום — 2026-09-15 עד 2054-01-31 |
 | **SHA256** | טביעת המפתח — `signSha256` שבתצורה |
-| **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
 
 ### פרטי המעטפת
-`applicationId` חייב להישאר שם החבילה שבתצורה, ו-`versionCode` גבוה מזה של
-ה-TWA שהוחלף.
+`applicationId` חייב להישאר שם החבילה שבתצורה, ו-`versionCode` עולה בכל
+שינוי ב-APK.
 
 ⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית
 היא ה-workflow. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.
-
-<!-- SHARED:start id="android-smali-scope" -->
-## תיקון URL ב-APK קיים ובנוי (בלי מקור) — smali בלבד
-
-⚠️ **הפרק הזה רלוונטי רק ל-APK ישן שנבנה לפני `android/`.** בנייה רגילה היום
-היא מ-`android/` דרך `.github/workflows/build-apk.yml`, והמעטפת טוענת מהרשת —
-ולכן אין בה URL שצריך לתקן.
-⛔ **smali בלבד — לא binary patch.** עריכה בינארית של ה-APK שוברת את החתימה
-ואינה ניתנת לאימות, ⛔ והחתימה מחדש היא במפתח הקבוע של הריפו בלבד — ר' הפרק
-«Sign with the PERMANENT key» שלמעלה.
-⭐ **שני הקבצים שנושאים את ה-URL הם `MainActivity.smali` ו-`MainActivity$2.smali`**
-— ⛔ וההוראה זהה בכל הריפו; הכתובת עצמה, שם תיקיית העבודה והמפתח הם
-פר-אפליקציה, ⛔ ויושבים בבלוק שמתחת.
-<!-- SHARED:end -->
-
-```bash
-apktool d <app>.apk -o /tmp/gius_work -f
-rm -rf /tmp/gius_work/build          # חובה לפני בנייה חוזרת
-apktool b /tmp/gius_work -o built.apk
-zipalign -f 4 built.apk aligned.apk
-SIGN_KEYSTORE=<עותק מקומי של המפתח> SIGN_PASS=<הערך שב-KEYSTORE_PASS> \
-  signing/sign-apk.sh aligned.apk output.apk
-```
-
-⚠️ **ה-APK הישן כאן היה TWA** שנבנה ב-PWABuilder, ⛔ ואין לבנות אותו מחדש
-⭐ וה-keystore הוחלף — כל חתימה היא
-ב-`signing/gius.keystore` בלבד — ⛔ הקובץ אינו בריפו, ⚠️ והוא נמשך
-מ-GitHub Secrets בזמן הבנייה.
 
 <!-- SHARED:start id="android-cache-apk" -->
 ### ⚠️ Cache APK — כלל זהב
