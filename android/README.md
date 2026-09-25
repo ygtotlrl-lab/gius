@@ -1,20 +1,16 @@
 # גיוס — Native WebView APK
 
-מעטפת אנדרואיד מקורית מבוססת **WebView** — **לא TWA**. היא טוענת את האתר החי:
-
-```
-https://ygtotlrl-lab.github.io/gius/
-```
+מעטפת אנדרואיד מקורית מבוססת **WebView** — **לא TWA**. היא טוענת את האתר החי — כתובת האפליקציה, `android.url` שבתצורה.
 
 ## מה בפנים
 
 | | |
 |---|---|
-| **Package ID** | `com.gius.app` — זהה ל-TWA שהוא מחליף (חובה, אחרת זו אפליקציה נפרדת) |
-| **שם** | גיוס |
-| **טוען** | `https://ygtotlrl-lab.github.io/gius/` — מהרשת, לא מנכסים מוטבעים |
-| **versionCode** | 21 — ⛔ עולה בכל שינוי תחת `android/`: ⚠️ מכשיר אינו מתקין מעל גרסה שאינה גבוהה ממנה |
-| **minSdk / targetSdk** | 21 / 34 |
+| **Package ID** | שם החבילה — `android.package` שבתצורה — זהה ל-TWA שהוא מחליף (חובה, אחרת זו אפליקציה נפרדת) |
+| **שם** | `shortName` שבתצורה |
+| **טוען** | כתובת האפליקציה — `android.url` שבתצורה — מהרשת, לא מנכסים מוטבעים |
+| **versionCode** | ⛔ עולה בכל שינוי ב-APK: ⚠️ מכשיר אינו מתקין מעל גרסה שאינה גבוהה ממנה |
+| **minSdk / targetSdk** | נוצרים ב-`tools/gen-app.mjs` — ⛔ זהים בכולן |
 | **WebView** | JavaScript, DOM storage (localStorage — שם יושב ה-session), DB |
 | **סכמות שאינן http** | נמסרות למערכת ב-`ACTION_VIEW`. כל `http`/`https` נשאר בתוך המעטפת |
 | **בורר קבצים** | `WebChromeClient.onShowFileChooser` מחובר ל-`<input type=file>` |
@@ -104,7 +100,7 @@ mipmap-*/` — `ic_launcher.png` ו-`ic_launcher_foreground.png` (הסימן ב�
 
 החתימה נעשית ב-`signing/sign-apk.sh` מול המפתח שמגיע מ-GitHub Secrets —
 **ואין קלט ידני**, ולכן אין דרך לבנות בטעות APK במפתח אחר. הסקריפט
-מסרב לחתום אם טביעת האצבע של ה-keystore אינה `30:C3:08:38:...:A9:7A`, ואחרי
+מסרב לחתום אם טביעת האצבע של ה-keystore אינה טביעת המפתח שבתצורה, ואחרי
 החתימה מוודא שה-APK אכן נושא את התעודה הזו — ה-workflow נכשל בכל אחד מהמקרים.
 
 > ⚠️ **המפתח הוחלף ב-2026-09-15.** APK חדש ⛔ אינו מתקין על גבי התקנה
@@ -132,17 +128,16 @@ cd android && gradle wrapper --gradle-version 8.7 && ./gradlew :app:assembleRele
 |---|---|
 | **קובץ** | ⛔ אינו בריפו — GitHub Secret `KEYSTORE_B64`, מפוענח לקובץ זמני בזמן בנייה ונמחק אחריה (PKCS12, RSA 4096) |
 | **נוצר** | 2026-09-15, `keytool -genkeypair` |
-| **Package ID** | `com.gius.app` |
+| **Package ID** | שם החבילה — `android.package` שבתצורה |
 | **alias** | ⛔ אינו מוקלד — `sign-apk.sh` גוזר אותו מהמפתח עצמו |
 | **storepass / keypass** | ⛔ אינה בריפו — GitHub Secret `KEYSTORE_PASS` |
 | **תוקף** | 10,000 יום — 2026-09-15 עד 2054-01-31 |
-| **SHA256** | `30:C3:08:38:6B:2E:19:F6:B2:0C:FF:AE:57:4A:3C:9A:DF:13:63:8C:B6:A6:8F:80:E4:8E:88:9F:1D:00:A9:7A` |
-| **SHA1** | `F8:48:49:1F:DF:9A:FE:B6:26:77:6E:30:8E:79:C0:8A:93:F7:58:48` |
+| **SHA256** | טביעת המפתח — `signSha256` שבתצורה |
 | **DN** | `CN=gius, OU=Yeshiva, O=Yeshiva, L=Rishon LeZion, ST=Israel, C=IL` |
 
 ### פרטי המעטפת
-`applicationId` חייב להישאר `com.gius.app`, ו-`versionCode` גבוה מזה של
-ה-TWA שהוחלף (ה-TWA היה 1; המעטפת היא 2).
+`applicationId` חייב להישאר שם החבילה שבתצורה, ו-`versionCode` גבוה מזה של
+ה-TWA שהוחלף.
 
 ⚠️ **בסביבת הענן אין Android SDK ו-`dl.google.com` חסום** — הדרך המעשית
 היא ה-workflow. ⛔ ולא PWABuilder: הוא יודע לייצר TWA בלבד.

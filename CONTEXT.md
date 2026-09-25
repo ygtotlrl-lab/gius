@@ -2,10 +2,10 @@
 
 ## פרטי ריפו
 - **ריפו:** `ygtotlrl-lab/gius`
-- **GitHub Pages:** `https://ygtotlrl-lab.github.io/gius/`
+- **GitHub Pages:** כתובת האפליקציה — `android.url` שבתצורה
 - **טוקן:** מנוהל ב-Windows Credential Manager (host `github.com`) — לעולם לא בקובץ
 - **קובץ ראשי:** `index.html`
-- **Supabase:** project `zrftjkghhjhqzopvdzou` (⚠️ **ייעודי**, לא הפרויקט המשותף
+- **Supabase:** project — `supabase.url` שבתצורה (⚠️ **ייעודי**, לא הפרויקט המשותף
   של שלוש האחיות) | טבלאות `g_*` (ראה למטה)
 
 ---
