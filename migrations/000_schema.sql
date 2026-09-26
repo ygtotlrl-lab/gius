@@ -214,7 +214,7 @@ create table if not exists public.g_pledges (
 
 create table if not exists public.g_settings (
   key text not null,
-  value text not null default '[]'::text,
+  value text,
   updated_at bigint not null,
   client_id text,
   deleted boolean not null default false,
