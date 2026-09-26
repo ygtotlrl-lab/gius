@@ -776,7 +776,6 @@ function sortRows(t, arr) {
  *  בעצמו: ⭐ ממיר בצד השרת הוא מנתח שני לאותו ערך, ⛔ ושני מנתחים
  *  נסחפים זה מזה בשקט. ⚠️ וערך פגום נקרא כשורה חסרה ⛔ ולא מפיל מסך. */
 function gCfgParse(key, v) {
-  if (Array.isArray(v)) return v;
   var pr = kvParse(key, v);
   return Array.isArray(pr.value) ? pr.value : null;
 }
