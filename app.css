@@ -15,9 +15,9 @@
   --col:1180px;
   /*  ⛔ גוון האזהרה של אזור המצב — ⚠️ אסימון אחד בשם אחד בכולן,
    *  ⭐ והגוון בלבד נבדל: ⛔ כלל משותף אינו יכול לנקוב בשם פרטי. */
-  /*  ⛔ צבע הזהות של האפליקציה — ⚠️ אסימון אחד בשם אחד בכולן,
-   *  ⭐ והגוון בלבד נבדל: ⛔ רכיב שמייצג את האפליקציה נגזר ממנו
-   *  ⛔ ולא מדיו הטקסט — ⚠️ הבאנרים בכל הגוונים נראו זהים.
+  /*  ⛔ צבע הזהות של האפליקציה — ⚠️ אסימון אחד בשם אחד,
+   *  ⭐ והגוון הוא של האפליקציה: ⛔ רכיב שמייצג אותה נגזר ממנו
+   *  ⛔ ולא מדיו הטקסט — ⚠️ באנר בדיו הטקסט נראה זהה בכל גוון.
    *  ⛔ **והדיו שעליו צמד הפוך** — ⚠️ ומתחלף איתו יחד. */
   --brand:var(--brand-fill); --on-brand:#ffffff;
 
@@ -243,14 +243,14 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-hd h3{font-size:var(--fs-4);flex:1}
 .sheet-hd .x{color:var(--text-3);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-3)}
 .sheet-bd{padding:var(--sp-6) var(--sp-6)}
-/* ⛔ הצבע עבר מהמחרוזת ל-CSS — ⚠️ גוף `ask` הוא `textContent` בכולן, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד היה שובר את הזהות בית-לבית */
+/* ⛔ הצבע ב-CSS ולא במחרוזת — ⚠️ גוף `ask` הוא `textContent`, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד שובר את הגוף המשותף */
 #ask-body{color:var(--text-2)}
 .sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);gap:var(--sp-4)}
 .sheet-ft .btn{flex:1}
 #ask .sheet-ft button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-4);background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;border-radius:var(--r-4);padding:var(--sp-5) var(--sp-6);font-family:inherit;font-size:var(--fs-3);font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
 #ask .sheet-ft button:active{transform:translateY(1px)}
 #ask .sheet-ft button.danger{background:var(--bad-soft);color:var(--bad);box-shadow:none}
-.chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ עד כאן הבורר איפס אותו בזמן ריצה, ⛔ ו-`openModal` היה חייב להחזירו: ⭐ שני מסלולים על אותה תכונה, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
+.chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ ולא איפוס בזמן ריצה: ⭐ איפוס כזה מחייב את `openModal` להחזירו, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
 .chooser button{
   display:flex;align-items:center;gap:var(--sp-5);text-align:start;width:100%;cursor:pointer;
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-6) var(--sp-6);

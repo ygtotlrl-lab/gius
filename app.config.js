@@ -32,7 +32,7 @@ self.APP = Object.freeze({
     accent: '#0f766e',
     /*  ⛔ `versionCode` לעולם אינו יורד, ⚠️ ומקודם בכל שינוי בקובץ שנכנס ל-APK —
         ⭐ בלי קידום המכשיר המותקן אינו מקבל את ה-APK החדש. */
-    versionCode: 24,
+    versionCode: 25,
     versionName: '17.0',
     launcherBg: { kind: 'solid', color: '#0F766E' },
     /*  ⚠️ גשר השיתוף — ⭐ `FileProvider` ו-`androidx`, רק באפליקציה שמייצאת קובץ. */
