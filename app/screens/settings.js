@@ -3,12 +3,12 @@ import { MSG_OFF_USER_WRITE, MSG_PASS_SIX } from '../../core/util.js';
 import { plTouch } from '../../core/sync.js';
 import { authPassFields, isAdmin, isAdminOf, writeUser } from '../../core/auth.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { state } from '../state.js';
 import { CONFIG_KEYS, MSG_EDIT_USER, MSG_MONTH_GOAL, MSG_NEED_FULL_AND_USER,
          MSG_NEED_PASS, MSG_NEW_USER, MSG_PASS_CHANGE_FOR, MSG_PICK_VALID_MONTH,
-         MSG_SAVED_NO_FP } from '../config.js';
-import { $, PASS_SIX_RE, checked, emptyBox, ils, monthLabel, monthTxns, num, sum,
-         upsertBy, val } from '../domain.js';
+         PASS_SIX_RE } from '../constants.js';
+import { state } from '../state.js';
+import { $, checked, emptyBox, ils, monthLabel, monthTxns, num, sum, upsertBy, val,
+         warnIfNoFp } from '../domain.js';
 
 // ── הגדרות ──
 // אין שער סיסמה מעל ההגדרות ואין ברירת מחדל לסיסמה או לתפקיד — בהתקנה טרייה הם נופלים לערך שכל אחד מקליד.
@@ -124,12 +124,6 @@ function saveUser(id) {
   return writeUser(id, row).then(function (r) { if (r && !r.error) plTouch(); return r; });
 }
 
-// שמירה בלי טביעה אינה «נשמר בהצלחה» — הכניסה האופליין של המשתמש לא תעבוד, ואומרים את זה.
-function warnIfNoFp(r) {
-  if (r && r.noFp) toast(MSG_SAVED_NO_FP, null, 'bad');
-  return r;
-}
-
 function formPassword(u) {
   openModal(MSG_PASS_CHANGE_FOR + u.full_name,
     '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="pass-eye btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה">👁</button></label>',
@@ -158,5 +152,4 @@ function saveTarget() {
   return upsertBy('g_targets', 'month', { month: m, amount: amount });
 }
 
-export { formPassword, formTarget, formUser, saveTarget, saveUser, viewSettings,
-         warnIfNoFp };
+export { formPassword, formTarget, formUser, saveTarget, saveUser, viewSettings };

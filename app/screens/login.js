@@ -5,13 +5,13 @@ import { MSG_FILL_ALL, MSG_FILL_LOGIN, MSG_LOGIN_ERR, MSG_MY_PASS_TITLE, MSG_OFF
          withTimeout } from '../../core/util.js';
 import { ctxSwitch, plTouch, runSave } from '../../core/sync.js';
 import { AUTH_USER_COLS, authLog, authPassFields, authUsersTable, authVerify, lkStop,
-         sessClear, usersByName, usersGet, usersSaveOne, writeUser } from '../../core/auth.js';
+         sessClear, usersByName, usersGet, usersSaveOne,
+         writeUser } from '../../core/auth.js';
 import { esc, openModal, toast, uiNoDialog } from '../../core/ui.js';
-import { S, state } from '../state.js';
-import { MSG_BAD_LOGIN, MSG_NO_OTHER_USER_LOCAL, MSG_SWITCH_USER, MSG_USER_INACTIVE } from '../config.js';
-import { $, PASS_SIX_RE, ok, val } from '../domain.js';
-import { warnIfNoFp } from './settings.js';
-import { boot, viewBare } from '../main.js';
+import { MSG_BAD_LOGIN, MSG_NO_OTHER_USER_LOCAL, MSG_SWITCH_USER, MSG_USER_INACTIVE,
+         PASS_SIX_RE } from '../constants.js';
+import { S, shell, state } from '../state.js';
+import { $, ok, val, viewBare, warnIfNoFp } from '../domain.js';
 
 // ── כניסה ──
 
@@ -73,7 +73,7 @@ function doLogin() {
       authLog(true, 'online', username);
       // הנתיב החלקי רץ אחרי קביעת state.user — רענון שקודם לו עובד על מצב שעוד לא השתנה.
       try { usersSaveOne(u); } catch (e) { console.warn('[users] cache', e); }
-      return boot();
+      return shell.boot();
     })
     .catch(function (e) {
       var m = e && e.message;
@@ -100,7 +100,7 @@ function doLoginOffline(username, password) {
     ctxSwitch();
     state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
     authLog(true, 'offline', username);
-    boot();
+    shell.boot();
     toast(MSG_OFFLINE_LOGIN, null, 'bad');
   }, function (e) {
     console.warn('[login] אימות אופליין נכשל', e);
@@ -175,5 +175,5 @@ function formSwitchUser() {
   var el = $('#sw-pass'); if (el) el.focus();
 }
 
-export { doLogin, doLogout, formMyPassword, formSaveMyPassword, formSwitchUser,
-         markSVG, renderLogin };
+export { doLogin, doLogout, formMyPassword, formSaveMyPassword, formSwitchUser, markSVG,
+         renderLogin };
