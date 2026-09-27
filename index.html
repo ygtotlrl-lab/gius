@@ -90,7 +90,7 @@ import { MSG_FILL_ALL, MSG_FILL_LOGIN, MSG_LOAD_FAIL_PRE, MSG_LOGIN_ERR,
 import { _rowsPaged, afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKeys, eraKick,
          errToast, idEq, mergeCore, newClientId, pendAlertDismiss, pendAll,
          pendBoot, pendClearMany, pendCount, pendHas, pendMark,
-         pendMarkMany, pendRender, pendTag, plBoot, plNum, plTouch,
+         pendMarkMany, pendRender, pendTag, PL_STAMP_KEY, plBoot, plTouch,
          pushDirty, rtyBoot, runSave, sbWatch, schedulePush, tombAt,
          tombBoot, tombPruneMerged } from './core/sync.js';
 import { MSG_LS_FULL, hwBoot, hwNoteCloud, lsBoot, lsClearHorizons, lsRemove } from './core/storage.js';
@@ -379,7 +379,7 @@ var LK_CFG = {
   lock:   function () { doLogout(); },
 };
 /* ── PL_CFG — הדבר היחיד שנבדל בין האפליקציות ──────────────────────────── */
-/* ⚠️ בגיוס החותמת היא שורת טבלת ההגדרות שמפתחה `G_STAMP_KEY`. היא **מוחרגת
+/* ⚠️ בגיוס החותמת היא שורת טבלת ההגדרות שמפתחה `PL_STAMP_KEY`. היא **מוחרגת
    מהמראה** ב-`stripRows` — שורת מטא אינה רשימה, ⛔ ודחיפת-מצב שלה
     הייתה מחזירה לענן חותמת ישנה שיושבת במכשיר הזה.
    ⛔ **ו-`active()` אינו בודק את הלקוח** — ⚠️ המשיכה בודקת אותו ממילא,
@@ -393,18 +393,9 @@ var PL_CFG = {
   seen:   function () { return _gSeenTs; },
   note:   function (ts) { _gSeenTs = ts; },
   ok:     function () { _lastSeenOk = Date.now(); },
-  stamp:  function (ts) {
-    return sb.from(KV_TABLE).upsert({ key: G_STAMP_KEY, value: JSON.stringify(ts), updated_at: Date.now() },
-                                      { onConflict: 'key' });
-  },
   pull:   function () { return syncNow(); },
-  remote: function () {
-    return withTimeout(sb.from(KV_TABLE).select('value').eq('key', G_STAMP_KEY).maybeSingle())
-      .then(function (r) {
-        if (!r || r.error) return { ok: false, ts: null };
-        return { ok: true, ts: r.data ? plNum(kvParse(G_STAMP_KEY, r.data.value).value) : null };
-      }, function () { return { ok: false, ts: null }; });
-  },
+  client: function () { return sb; },
+  table:  function () { return KV_TABLE; },
 };
 /* ── PUSH_CFG — הדבר היחיד שנבדל בין האפליקציות ────────────────────────── */
 /* ⛔ `g_users` **אינה כאן ואינה נדחפת לעולם** — ⚠️ המראה
@@ -673,7 +664,6 @@ var _netWarned = false, _lastPullOk = 0;
 //    ⛔ אין להזין מהן את עֵד הפינוי — ⚠️ הן מתקדמות גם במשיכה, ⭐ והעֵד הוא
 //    `_gPushedAt` פר-טבלה.
 var _gSeenTs = 0, _lastSeenOk = 0;
-var G_STAMP_KEY = 'last_changed';
 
 /* ------------------------------------------------------------- מזהים */
 // מזהה נוצר בצד הלקוח כדי שהכתיבה תעבוד בלי רשת. הסכימה משתמשת ב-uuid
@@ -710,11 +700,11 @@ function stripCols(t, row) {
 }
 function stripRows(t, rows) {
   var m = tableMeta(t);
-  // ⭐ שורת החותמת (`G_STAMP_KEY`) אינה רשימה ואינה יורדת למראה.
+  // ⭐ שורת החותמת (`PL_STAMP_KEY`) אינה רשימה ואינה יורדת למראה.
   //    ⛔ אין לוותר על הסינון הזה — שורה שנכנסת למראה נדחפת
   //    חזרה ע"י `pushTable`, והמכשיר היה כותב לענן חותמת ישנה משלו
   //    ומשתיק בכך שינוי אמיתי שמכשיר אחר הרגע דחף.
-  if (t === KV_TABLE) rows = (rows || []).filter(function (r) { return !(r && String(r.key) === G_STAMP_KEY); });
+  if (t === KV_TABLE) rows = (rows || []).filter(function (r) { return !(r && String(r.key) === PL_STAMP_KEY); });
   /*  ⛔ מראת המשתמשים עוברת ברשימת-ההיתר של המודול — ⚠️ במשיכה ובשער
    *  הדיסק כאחד: ⭐ `strip` הוא רשימת-איסור, ⛔ ועמודה רגישה חדשה עוקפת אותה. */
   if (t === authUsersTable()) return usersSanitize(rows);
