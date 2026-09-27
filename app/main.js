@@ -483,6 +483,6 @@ function start() {
 
 start();
 
-bootOk();
+window.bootOk();
 
 export { DOM_ACTIONS, HE, boot, render, saveRefresh, viewBare };
