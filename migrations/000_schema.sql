@@ -104,16 +104,27 @@ revoke all on function public.bk_prune_layer(text,integer) from public, anon, au
 grant execute on function public.bk_prune_layer(text,integer) to service_role;
 
 -- ⛔ רשימת-ההיתר היא בדיוק מפתחות הגיבוי שהקוד כותב — מפתח שאינו בה אינו מתפנה.
+-- ⚠️ מקור-טבלה נכתב בשכבה — ANCHOR: או DIFF: לפני המפתח, ומקור בלי עמודת חותמת בעוגן בלבד;
+--    ומקור kv נכתב בלי שכבה.
 CREATE OR REPLACE FUNCTION public.bk_retention_keys()
  RETURNS text[]
  LANGUAGE sql
  IMMUTABLE
 AS $function$
   select array[
-    'g_donors', 'g_pledges', 'g_txns', 'g_tasks',
-    'g_targets', 'g_settings', 'g_users',
-    'k_settings', 'k_pledges', 'k_standing_orders',
-    'k_so_instances', 'k_entries', 'k_lookups'
+    'ANCHOR:g_donors', 'DIFF:g_donors',
+    'ANCHOR:g_pledges', 'DIFF:g_pledges',
+    'ANCHOR:g_txns', 'DIFF:g_txns',
+    'ANCHOR:g_tasks', 'DIFF:g_tasks',
+    'ANCHOR:g_targets', 'DIFF:g_targets',
+    'ANCHOR:g_settings',
+    'ANCHOR:g_users', 'DIFF:g_users',
+    'ANCHOR:k_settings',
+    'ANCHOR:k_pledges', 'DIFF:k_pledges',
+    'ANCHOR:k_standing_orders', 'DIFF:k_standing_orders',
+    'ANCHOR:k_so_instances', 'DIFF:k_so_instances',
+    'ANCHOR:k_entries', 'DIFF:k_entries',
+    'ANCHOR:k_lookups', 'DIFF:k_lookups'
   ]::text[];
 $function$;
 revoke all on function public.bk_retention_keys() from public, anon, authenticated, service_role;
