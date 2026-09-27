@@ -1,24 +1,13 @@
-/* ═══ גיליון הסגנון — בלוק גיליון סגנון ═════════════════════════════════════
-   ⛔ CSS של האפליקציה יושב בקובץ ⛔ ולא ב-`index.html` — ⚠️ בלוק שאינו
-   נושא את סוגו נקרא כסוג אחר: ⭐ מחרוזת CSS בתוך JS נראית כ-CSS של
-   האפליקציה, ⛔ ואינה.
-   ════════════════════════════════════════════════════════════ */
+/* app.css — עיצוב האפליקציה */
 
-/* ══ אסימוני העיצוב ════════════════════════════════════════════════════ */
+/* ── אסימוני העיצוב ── */
 :root{
-  /*  ⛔ מרחק הטוסט מתחתית המסך — ⚠️ הערך היחיד שנבדל בשכבת הטוסט:
-   *  סרגל לשוניות תחתון, ⛔ ומעליו סרגל הפעולה. */
+  /* המרחק מעל סרגל הלשוניות התחתון וסרגל הפעולה שמעליו. */
   --toast-bottom:calc(var(--tab-h) + 88px);
-  /*  ⛔ רוחב עמודת התוכן — ⚠️ המיכל וכל פס קבוע קוראים אותו: ⭐ ערך
-   *  שכל צרכניו קוראים ממקום אחד משתנה פעם אחת, ⛔ ופס שרוחבו מוקלד
-   *  נפרד מהעמודה ביום שהיא משתנה. */
   --col:1180px;
-  /*  ⛔ גוון האזהרה של אזור המצב — ⚠️ אסימון אחד בשם אחד בכולן,
-   *  ⭐ והגוון בלבד נבדל: ⛔ כלל משותף אינו יכול לנקוב בשם פרטי. */
-  /*  ⛔ צבע הזהות של האפליקציה — ⚠️ אסימון אחד בשם אחד,
-   *  ⭐ והגוון הוא של האפליקציה: ⛔ רכיב שמייצג אותה נגזר ממנו
-   *  ⛔ ולא מדיו הטקסט — ⚠️ באנר בדיו הטקסט נראה זהה בכל גוון.
-   *  ⛔ **והדיו שעליו צמד הפוך** — ⚠️ ומתחלף איתו יחד. */
+  /* גוון האזהרה של אזור המצב נבדל, אך שמו אחד — כלל משותף אינו יכול לנקוב בשם פרטי.
+     רכיב שמייצג את האפליקציה נגזר מצבע הזהות ולא מדיו הטקסט — באנר בדיו הטקסט נראה זהה בכל גוון.
+     הדיו שעל --brand הוא צמד הפוך, ומתחלף איתו יחד. */
   --brand:var(--brand-fill); --on-brand:#ffffff;
 
   --bg:#f4f6f9; --card:#ffffff; --card-2:#fbfcfe;
@@ -36,7 +25,7 @@
   --shadow-brand:rgba(15,118,110,.42);
 }
 
-/* ══ הערכה הכהה ════════════════════════════════════════════════════════ */
+/* ── הערכה הכהה ── */
 @media (prefers-color-scheme:dark){
     :root{
       --on-brand:#ffffff;
@@ -55,12 +44,10 @@
     }
 }
 
-/* ══ בסיס ══════════════════════════════════════════════════════════════ */
+/* ── בסיס ── */
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
-/*  ⛔ המשוב בלחיצה נקבע ⛔ ולא נירש — ⚠️ ברירת המחדל של הדפדפן היא ריבוע
- *  כחול שאינו מערכת הצבעים שלנו, ⭐ והיא מופיעה במגע בלבד: ⛔ ומי שבודק
- *  בעכבר אינו רואה אותה. */
+/* ברירת המחדל של הדפדפן היא ריבוע כחול שמופיע במגע בלבד — ומי שבודק בעכבר אינו רואה אותו. */
 body{-webkit-tap-highlight-color:transparent}
 body{
   margin:0; background:var(--bg); color:var(--text);
@@ -80,7 +67,7 @@ th{font-size:var(--fs-2);color:var(--text-3);font-weight:700;letter-spacing:var(
 tbody tr:last-child td{border-bottom:0}
 tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;background:var(--card-2)}
 
-/* ══ קליפה ═════════════════════════════════════════════════════════════ */
+/* ── קליפה ── */
 .topbar{
   position:sticky;top:0;z-index:var(--z-2);background:var(--card);
   border-bottom:1px solid var(--border);
@@ -108,14 +95,13 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 .tabbar button .ic{font-size:var(--fs-5);line-height:var(--lh-1)}
 .tabbar button.on{color:var(--brand-ink)}
 .tabbar button.on .ic{transform:translateY(-1px)}
-/*  ⛔ מסך שלפני הכניסה — טעינה, כניסה או שגיאה — ⚠️ בלי ריפוד המיכל:
- *  ⭐ הוא ממלא את החלון כולו, כפי שנבנה. */
+/* מסך שלפני הכניסה ממלא את החלון כולו — בלי ריפוד המיכל. */
 #app.is-bare > main{padding:0;max-width:none}
 main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
   max-width:var(--col);margin:0 auto}
 .who-id{text-align:end}
 
-/* ══ רכיבים ════════════════════════════════════════════════════════════ */
+/* ── רכיבים ── */
 .card{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
   padding:var(--sp-6);box-shadow:var(--shadow);margin-bottom:var(--sp-6)}
@@ -130,11 +116,8 @@ main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-are
 .tw{overflow-x:auto;margin:0 calc(-1 * var(--sp-6));padding:0 var(--sp-6)}
 td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 tbody tr.click{cursor:pointer}
-/*  ⛔ `:hover` חל רק במכשיר שיש לו ריחוף — ⚠️ במגע הוא נשאר על הרכיב
- *  אחרי הלחיצה, ⭐ והלחצן נראה לחוץ עד שנוגעים במקום אחר: ⛔ המשוב במגע
- *  הוא `:active` בלבד, ⚠️ ולכן הוא נשאר מחוץ לבלוק.
- *  ⚠️ **וכל כלל ריחוף יושב ליד רכיבו ולא בסוף הגיליון** — ⛔ כלל ריחוף שיורד אל אחרי
- *  `.active` או `:active` באותה סגוליות גובר עליהם. */
+/* :hover רק במכשיר עם ריחוף — במגע הוא נשאר על הרכיב אחרי הלחיצה.
+   וכלל ריחוף יושב ליד רכיבו — אחרי .active באותה סגוליות הוא היה גובר עליו. */
 @media (hover:hover){
   tbody tr.click:hover{background:var(--card-2)}
 }
@@ -190,8 +173,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   linear-gradient(135deg,var(--text-3) 50%,transparent 50%);
   background-position:12px calc(50% - 2px),17px calc(50% - 2px);
   background-size:5px 5px,5px 5px;background-repeat:no-repeat;
-  /* החץ מצויר בקצה השמאלי, ולכן גם המקום הנוסף חייב להיות משמאל —
-     padding-inline-start היה שם אותו מימין תחת RTL */
+  /* החץ מצויר בקצה השמאלי — padding-inline-start היה שם את המקום מימין תחת RTL. */
   padding-left:var(--sp-7)}
 .fld{display:block;margin-bottom:var(--sp-5)}
 .fld > span{display:block;font-size:var(--fs-2);font-weight:650;color:var(--text-2);margin-bottom:var(--sp-3)}
@@ -205,7 +187,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-3);
   white-space:nowrap
 }
-/* שדה וכפתור בשורה אחת; הכפתור שומר על רוחבו, והשדה מתכווץ */
 .addrow{display:flex;gap:var(--sp-3);margin-top:var(--sp-5)}
 .addrow .inp{min-width:0}
 .addrow .btn{flex:none}
@@ -220,8 +201,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .btn.icon{padding:var(--sp-4) var(--sp-5)}
 .btnrow{display:flex;gap:var(--sp-4);flex-wrap:wrap}
 .fab{
-  /*  ⛔ הכפתור צמוד לקצה העמודה ⛔ ולא לקצה החלון — ⚠️ בחלון רחב ממנה
-   *  הוא היה מתרחק מהתוכן שהוא פועל עליו. */
+  /* צמוד לקצה העמודה ולא לקצה החלון — בחלון רחב הוא היה מתרחק מהתוכן שהוא פועל עליו. */
   position:fixed;inset-inline-end:calc(max(0px, (100% - var(--col)) / 2) + 18px);
   bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom));
   z-index:var(--z-2);width:60px;height:60px;border-radius:var(--r-7);border:0;cursor:pointer;
@@ -243,14 +223,14 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-hd h3{font-size:var(--fs-4);flex:1}
 .sheet-hd .x{color:var(--text-3);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-3)}
 .sheet-bd{padding:var(--sp-6) var(--sp-6)}
-/* ⛔ הצבע ב-CSS ולא במחרוזת — ⚠️ גוף `ask` הוא `textContent`, ⭐ ועיצוב שנשען על `<p>` שנבנה בקוד שובר את הגוף המשותף */
+/* הצבע ב-CSS — גוף ask הוא textContent, ועיצוב שנשען על p שנבנה בקוד שובר את הגוף המשותף. */
 #ask-body{color:var(--text-2)}
 .sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);gap:var(--sp-4)}
 .sheet-ft .btn{flex:1}
 #ask .sheet-ft button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-4);background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;border-radius:var(--r-4);padding:var(--sp-5) var(--sp-6);font-family:inherit;font-size:var(--fs-3);font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
 #ask .sheet-ft button:active{transform:translateY(1px)}
 #ask .sheet-ft button.danger{background:var(--bad-soft);color:var(--bad);box-shadow:none}
-.chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* ⛔ השוליים השליליים מבטלים את `padding` של `.sheet-bd` — ⚠️ ולא איפוס בזמן ריצה: ⭐ איפוס כזה מחייב את `openModal` להחזירו, ⛔ ומודאל שנפתח מתוך הבורר נשאר בלי `padding` */
+.chooser{margin:calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));padding:var(--sp-6) var(--sp-6) var(--sp-7);display:grid;gap:var(--sp-5)} /* שוליים שליליים ולא איפוס בזמן ריצה — איפוס מחייב את openModal להחזירו, ומודאל שנפתח מהבורר נשאר בלי ריפוד. */
 .chooser button{
   display:flex;align-items:center;gap:var(--sp-5);text-align:start;width:100%;cursor:pointer;
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-6) var(--sp-6);
@@ -259,8 +239,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .chooser button .ic{font-size:var(--fs-6)}
 .chooser button small{display:block;font-weight:500;font-size:var(--fs-2);color:var(--text-3)}
 .filters{display:grid;gap:var(--sp-4);grid-template-columns:1fr 1fr}
-/* פריטי grid מקבלים min-width:auto כברירת מחדל, והרוחב הפנימי של שדה
-   תאריך רחב מהתא — בלי זה שורת המסננים גולשת ומאבדת יישור */
+/* פריטי grid מקבלים min-width:auto, ושדה תאריך רחב מהתא — בלי זה שורת המסננים גולשת. */
 .filters > *{min-width:0}
 .filters .fld{margin:0}
 .filters .inp{width:100%;min-width:0}
@@ -286,8 +265,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .share-cell{min-width:76px}
 .share-pct{color:var(--text-3)}
 
-/* ══ מסכים ═════════════════════════════════════════════════════════════ */
-/* ── כניסה ── */
+/* ── מסכים ──
+   ── כניסה ── */
 .auth{min-height:100dvh;display:grid;place-items:center;padding:var(--sp-7)}
 .auth-card{
   width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);
@@ -302,9 +281,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   border-radius:var(--radius-sm);padding:var(--sp-5) var(--sp-5);font-size:var(--fs-3);font-weight:600
 }
 .auth-err.show{display:block}
-/* ── בית ── */
-/* זה לצד זה מנקודת השבירה שמתחת. מתחתיה הטבעת נערמת מעל המחוונים כדי
-   שהאריחים יקבלו את הרוחב המלא — אחרת "100,000 ₪" נשבר בין שורות. */
+/* ── בית ──
+   מתחת לנקודת השבירה הטבעת נערמת מעל המחוונים — אחרת «100,000 ₪» נשבר בין שורות. */
 .hero{display:flex;flex-direction:column;gap:var(--sp-6);align-items:center}
 .ring{width:132px;height:132px;flex:none}
 .ring circle{fill:none;stroke-width:11;stroke-linecap:round}
@@ -378,11 +356,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   padding:var(--sp-5);margin-bottom:var(--sp-4);cursor:grab
 }
 .kcard.dragging{opacity:var(--op-2)}
-/*  ⛔ הידית היא מה שאומר שהכרטיס נגרר — ⚠️ כרטיס שאין בו סימן נראה
- *  קבוע, ⭐ ואיש אינו מנסה להזיז אותו.
- *  ⛔ **ו-`touch-action` עליה בלבד** — ⚠️ באצבע, אלמנט שאינו מבטל את
- *  פעולת המגע גולל את הדף במקום לגרור; ⭐ וביטולו על כל הכרטיס היה
- *  נועל את גלילת הלוח. */
+/* touch-action על הידית בלבד — באצבע אלמנט שאינו מבטל את המגע גולל במקום לגרור, וביטולו על כל הכרטיס נועל את גלילת הלוח. */
 .kcard > .grip{float:inline-start;margin-inline-end:var(--sp-3);color:var(--text-3);
   font-size:var(--fs-3);touch-action:none;cursor:grab}
 .kcard > .grip:active{cursor:grabbing;color:var(--brand-ink)}
@@ -411,7 +385,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pass-eye{margin-top:var(--sp-2)}
 .reload-btn{margin-top:var(--sp-6)}
 
-/* ══ נקודות שבירה ══════════════════════════════════════════════════════ */
+/* ── נקודות שבירה ── */
 @media (min-width:900px){
   .brand small{display:inline}
 }
@@ -438,12 +412,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
 @media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
 @media (min-width:900px){.fab{bottom:26px}}
-/*  ⛔ במסך רחב הסרגל עולה לראש המסך ⚠️ והכפתור הצף נשאר בתחתית — ⭐ והטוסט
- *  מעליו בלבד: תחתית הכפתור, גובהו, ואותה תוספת שבטלפון. */
+/* במסך רחב הסרגל עולה לראש המסך והכפתור הצף נשאר בתחתית — הטוסט מעליו בלבד. */
 @media (min-width:900px){:root{--toast-bottom:calc(26px + 60px + 10px)}}
 @media (min-width:640px){.veil{align-items:center}}
 @media (min-width:640px){.sheet{border-radius:var(--r-6);animation:pop var(--dur-3) ease-out}}
 @media (min-width:900px){.kb{grid-template-columns:repeat(4,1fr);align-items:start}}
 @media (min-width:900px){.filters{grid-template-columns:repeat(5,1fr)}}
 
-/* ═══ סוף גיליון הסגנון — בלוק גיליון סגנון ══════════════════════════════ */

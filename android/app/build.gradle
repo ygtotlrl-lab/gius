@@ -1,4 +1,4 @@
-// ⛔ נוצר מהתצורה — `app.config.js`, ב-`node tools/gen-app.mjs`: אין לערוך ביד
+// נוצר מהתצורה — app.config.js, ב-node tools/gen-app.mjs: אין לערוך ביד
 plugins {
     id 'com.android.application'
 }
@@ -11,7 +11,7 @@ android {
         applicationId "com.gius.app"
         minSdk 21
         targetSdk 34
-        versionCode 25
+        versionCode 26
         versionName "17.0"
     }
 
