@@ -1,10 +1,7 @@
 // app/state.js — המצב המשותף בין המודולים
-import { dayToday } from '../core/util.js';
-import { sessGet, sessSet } from '../core/auth.js';
-import { monthKeyOf } from './domain.js';
 
 // מצב שמודולים שונים כותבים — אובייקט אחד, כי קישור מיובא אינו ניתן להשמה.
-export const S = {
+const S = {
   sb: null,
   // ההקשר נלכד לפני ההמתנה — mark רץ אחרי await, וקריאת הגלובלי הייתה זוקפת את ההצלחה למשתמש אחר.
   _gPushEp: 0,
@@ -24,12 +21,10 @@ export const S = {
 // ── מצב האפליקציה ──
 // state הוא תצוגה ולא מקור אמת — applyMirrorToState היא הדרך היחידה למלא אותו.
 // אין לכתוב ישירות ל-state.donors — כתיבה כזו אינה מגיעה לדיסק ואינה נדחפת, ונעלמת בסנכרון הבא.
+// state.user והחודש של היום מותקנים בעלייה — מקורם בליבה ובתחום, והקובץ הזה אינו מייבא מהם.
 var state = {
-  // state.user הוא חלון למודול הסשן — שדה רגיל היה מסלול שדרכו הסשן יורד לדיסק.
-  get user() { return sessGet(); },
-  set user(v) { sessSet(v); },
   screen: 'home',
-  month: monthKeyOf(dayToday()),
+  month: '',
   config: { categories: [], causes: [], domains: [] },
   donors: [], pledges: [], txns: [], tasks: [], targets: [], users: [],
   donorId: null,
@@ -42,4 +37,8 @@ var state = {
 // הגרירה היא העברת שלב ולא שינוי סדר — הנמדד הוא העמודה שמתחת לשחרור.
 var KDRAG = { el: null, col: null };
 
-export { KDRAG, state };
+// ── מה שמסך צריך מ-main ──
+// main רושם כאן בעלייה — מודול שמייבא מ-main סוגר מעגל, והרישום הוא הכיוון האחד.
+const shell = { render: null, boot: null };
+
+export { KDRAG, S, shell, state };

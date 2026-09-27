@@ -3,7 +3,7 @@
 הטבלה ב-`TABLE.md` — מקור האמת היחיד ליכולת; סשן קורא ממנה את הפרקים שהסבב נוגע בהם.
 
 ## מפת המסכים
-- מסך ⟵ מודול: כניסה, החלפת משתמש ו«הסיסמה שלי» (דיאלוג מכפתור 🔑) ⟵ `app/screens/login.js` · `home` ⟵ `app/screens/home.js` · `donors` (וכרטיס התורם והתנועות) ⟵ `app/screens/donors.js` · `pledges` ⟵ `app/screens/pledges.js` · `tasks` ⟵ `app/screens/tasks.js` · `settings` (משתמשים, רשימות, יעד) ⟵ `app/screens/settings.js`. הסנכרון, הנגזרות ובורר התורם — `app/domain.js`; מצב הריצה — `app/state.js`; הקליפה, הניווט ומפת הפעולות — `app/main.js`.
+- מסך ⟵ מודול: כניסה, החלפת משתמש ו«הסיסמה שלי» (דיאלוג מכפתור 🔑) ⟵ `app/screens/login.js` · `home` ⟵ `app/screens/home.js` · `donors` (וכרטיס התורם והתנועות) ⟵ `app/screens/donors.js` · `pledges` ⟵ `app/screens/pledges.js` · `tasks` ⟵ `app/screens/tasks.js` · `settings` (משתמשים, רשימות, יעד) ⟵ `app/screens/settings.js`. הנתונים והמחרוזות — `app/constants.js`; מצב הריצה ו-`shell` — `app/state.js`; הסנכרון, הנגזרות ובורר התורם — `app/domain.js`; החיווט, הקליפה, הניווט ומפת הפעולות — `app/main.js`.
 - בית — יעד החודש, פילוחים, «מה שלי היום». הלשונית פותחת תמיד את החודש של היום.
 
 ## מונחי התחום

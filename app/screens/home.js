@@ -3,9 +3,10 @@ import { dayToday } from '../../core/util.js';
 import { isAdmin } from '../../core/auth.js';
 import { esc } from '../../core/ui.js';
 import { bar } from '../../core/chart.js';
+import { EPS } from '../constants.js';
 import { state } from '../state.js';
-import { EPS, collectedForPledge, dmyDate, donorName, emptyBox, ils, monthLabel,
-         monthTxns, num, sum, targetFor } from '../domain.js';
+import { collectedForPledge, dmyDate, donorName, emptyBox, ils, monthLabel, monthTxns,
+         num, sum, targetFor } from '../domain.js';
 
 // ── מסך הבית ──
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.

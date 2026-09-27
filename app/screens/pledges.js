@@ -2,8 +2,9 @@
 import { dayToday } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
+import { MSG_AMOUNT_POSITIVE, MSG_EDIT_PLEDGE, MSG_NEW_PLEDGE,
+         MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
-import { MSG_AMOUNT_POSITIVE, MSG_EDIT_PLEDGE, MSG_NEW_PLEDGE, MSG_PICK_DONOR } from '../config.js';
 import { $, agentPool, collectedForPledge, datalistHTML, dmyDate, donorName, emptyBox,
          ils, insert, nullable, num, pendRowKey, pickerHTML, pickerValue, pledgeStatus,
          selectHTML, statusClass, sum, update, val } from '../domain.js';

@@ -1,24 +1,21 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
 import { MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
-         newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany,
-         pendRender, pushDirty, schedulePush, tombAt, tombPruneMerged } from '../core/sync.js';
+         newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
+         pushDirty, schedulePush, tombAt, tombPruneMerged } from '../core/sync.js';
 import { MSG_LS_FULL, hwNoteCloud } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
 import { authUsersTable, usersSanitize, usersSaveAll } from '../core/auth.js';
-import { esc, pullRender, toast } from '../core/ui.js';
-import { S, state } from './state.js';
-import { DEFAULT_CONFIG, KV_TABLE, MSG_DONOR_CREATED, MSG_MAYBE_STALE,
-         MSG_NEED_DONOR_NAME, TABLES } from './config.js';
-import { donorMatches } from './screens/donors.js';
-import { HE, render } from './main.js';
+import { esc, pullRender, shellBare, toast } from '../core/ui.js';
+import { DEFAULT_CONFIG, EPS, KV_TABLE, MSG_DONOR_CREATED, MSG_MAYBE_STALE,
+         MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
+import { S, shell, state } from './state.js';
 
-var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
+// ── מיון עברי ──
+try { S._heColl = new Intl.Collator('he'); } catch (e) { S._heColl = null; }
 
-var STAGE_CLS = { 'הכנה': 'stage-prep', 'הרצה': 'stage-run', 'השלמה': 'stage-done', 'חסומה': 'stage-blocked' };
-
-var EPS = 0.005;
+var HE = S._heColl || { compare: function (a, b) { return String(a).localeCompare(String(b), 'he'); } };
 
 // ── עד הדחיפה פר-מפתח ──
 // נכתב רק אחרי מעבר דחיפה של הטבלה בלי שורה בכשל רשת, והדחיפה רצה רק אחרי משיכה מלאה שהצליחה.
@@ -403,15 +400,15 @@ function syncNow() {
   // הדחיפה נבדקת מול ההקשר שנלכד לפני המשיכה — res.remote נמדד עבורו.
   var _ep = ctxEpoch();
   return syncPull().then(function (res) {
-    if (!res.ok || ctxStale(_ep)) { pullRender(render); return false; }
+    if (!res.ok || ctxStale(_ep)) { pullRender(shell.render); return false; }
     // שער הרשת כאן ולא בשכבת הדחיפה — הוא תלוי בלקוח, ומעבר ריק היה מסמן עד פינוי בלי ראיה מהענן.
     var p = (!S.sb || !navigator.onLine) ? Promise.resolve({ still: [] })
                                        : pushDirty(res.remote);
     return p.then(function (r) {
-      if (ctxStale(_ep)) { pullRender(render); return false; }
+      if (ctxStale(_ep)) { pullRender(shell.render); return false; }
       pendReconcile(r.still, t0);
       if (r && r.n) gSyncLog('push', null, r.n);
-      pullRender(render);
+      pullRender(shell.render);
       return true;
     });
   });
@@ -606,15 +603,36 @@ function pledgeOptionsFor(donorId) {
   return h;
 }
 
-// נאכפת ביצירה ובשינוי בלבד — אכיפה במסלול הכניסה נועלת בחוץ סיסמה תקפה שנקבעה לפני התקן
-var PASS_SIX_RE = /^[0-9]{6}$/;
+// ── משותף למסכים ──
+function viewBare(html) {
+  shellBare(true);
+  var fab = $('#app > .fab');
+  if (fab) fab.remove();
+  $('#view').innerHTML = html;
+}
 
-export { $, EPS, PASS_SIX_RE, STAGES, STAGE_CLS, _gMarkPushed, agentPool,
-         applyMirrorToState, byName, checked, collectedForPledge, datalistHTML,
-         dirtyRows, dmyDate, donorById, donorName, emptyBox, gAcadYearOf, ils,
-         initials, insert, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nullable,
-         num, ok, pendRowKey, pickerHTML, pickerNew, pickerPaint, pickerSave,
-         pickerSet, pickerValue, pledgeById, pledgeOptionsFor, pledgeStatus,
+function donorMatches(q) {
+  q = String(q || '').trim().toLowerCase();
+  var list = state.donors.slice().sort(byName);
+  if (!q) return list;
+  return list.filter(function (d) {
+    return String(d.name || '').toLowerCase().indexOf(q) >= 0 ||
+      String(d.phone || '').indexOf(q) >= 0 ||
+      String(d.agent || '').toLowerCase().indexOf(q) >= 0;
+  });
+}
+
+// שמירה בלי טביעה אינה «נשמר בהצלחה» — הכניסה האופליין של המשתמש לא תעבוד, ואומרים את זה.
+function warnIfNoFp(r) {
+  if (r && r.noFp) toast(MSG_SAVED_NO_FP, null, 'bad');
+  return r;
+}
+
+export { $, HE, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
+         datalistHTML, dirtyRows, dmyDate, donorById, donorMatches, donorName, emptyBox,
+         gAcadYearOf, ils, initials, insert, mirrorHasData, monthKeyOf, monthLabel,
+         monthTxns, nullable, num, ok, pendRowKey, pickerHTML, pickerNew, pickerPaint,
+         pickerSave, pickerSet, pickerValue, pledgeById, pledgeOptionsFor, pledgeStatus,
          pledgesOfDonor, rowPendingKey, rowTs, saveConfigList, selectHTML, shiftMonth,
          softDelete, statusClass, stripRows, sum, syncNow, tableMeta, targetFor,
-         txnsOfDonor, uniqSorted, update, upsertBy, val };
+         txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };

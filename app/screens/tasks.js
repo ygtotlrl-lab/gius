@@ -2,11 +2,14 @@
 import { dayToday } from '../../core/util.js';
 import { errToast, idEq, pendTag, schedulePush } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { state } from '../state.js';
-import { MSG_EDIT_TASK, MSG_NEED_TITLE, MSG_NEW_TASK } from '../config.js';
-import { $, STAGES, STAGE_CLS, datalistHTML, dmyDate, insert, nullable, pendRowKey,
-         selectHTML, uniqSorted, update, val } from '../domain.js';
-import { render } from '../main.js';
+import { MSG_EDIT_TASK, MSG_NEED_TITLE, MSG_NEW_TASK } from '../constants.js';
+import { shell, state } from '../state.js';
+import { $, datalistHTML, dmyDate, insert, nullable, pendRowKey, selectHTML, uniqSorted,
+         update, val } from '../domain.js';
+
+var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
+
+var STAGE_CLS = { 'הכנה': 'stage-prep', 'הרצה': 'stage-run', 'השלמה': 'stage-done', 'חסומה': 'stage-blocked' };
 
 // ── משימות ──
 // הלוח נבנה מחדש בכל רינדור — הגרירה באצלה מ-document ולא במאזין לכרטיס או לעמודה.
@@ -61,10 +64,10 @@ function moveTask(id, stage) {
   if (!t || t.stage === stage) return;
   var prev = t.stage;
   t.stage = stage;
-  render();
+  shell.render();
   Promise.resolve().then(function () { return update('g_tasks', id, { stage: stage }); })
     .then(function () { schedulePush(); })
-    .catch(function (e) { t.stage = prev; render(); errToast(e); });
+    .catch(function (e) { t.stage = prev; shell.render(); errToast(e); });
 }
 
 function formTask(existing) {

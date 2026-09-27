@@ -3,26 +3,16 @@ import { dayToday } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
 import { barChart } from '../../core/chart.js';
+import { MSG_AMOUNT_POSITIVE, MSG_EDIT_DONOR, MSG_EDIT_TXN, MSG_NEED_NAME, MSG_NEW_DONOR,
+         MSG_NEW_TXN, MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
-import { MSG_AMOUNT_POSITIVE, MSG_EDIT_DONOR, MSG_EDIT_TXN, MSG_NEED_NAME,
-         MSG_NEW_DONOR, MSG_NEW_TXN, MSG_PICK_DONOR } from '../config.js';
-import { $, agentPool, byName, checked, collectedForPledge, datalistHTML, dmyDate,
-         donorById, emptyBox, ils, initials, insert, monthLabel, monthTxns, nullable,
+import { $, HE, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
+         donorMatches, emptyBox, ils, initials, insert, monthLabel, monthTxns, nullable,
          num, pendRowKey, pickerHTML, pickerValue, pledgeOptionsFor, pledgeStatus,
-         pledgesOfDonor, selectHTML, statusClass, sum, txnsOfDonor, update, val } from '../domain.js';
-import { HE } from '../main.js';
+         pledgesOfDonor, selectHTML, statusClass, sum, txnsOfDonor, update,
+         val } from '../domain.js';
 
 // ── תורמים ──
-function donorMatches(q) {
-  q = String(q || '').trim().toLowerCase();
-  var list = state.donors.slice().sort(byName);
-  if (!q) return list;
-  return list.filter(function (d) {
-    return String(d.name || '').toLowerCase().indexOf(q) >= 0 ||
-      String(d.phone || '').indexOf(q) >= 0 ||
-      String(d.agent || '').toLowerCase().indexOf(q) >= 0;
-  });
-}
 
 function donorRowsHTML(list) {
   if (!list.length) return emptyBox('🙋', state.donors.length ? 'אין תורם התואם את החיפוש' : 'עדיין אין תורמים');
@@ -227,5 +217,5 @@ function saveDonor(id) {
   return id ? update('g_donors', id, row) : insert('g_donors', row);
 }
 
-export { donorMatches, donorRowsHTML, formDonor, formTxn, saveDonor, saveTxn,
-         viewDonorCard, viewDonors };
+export { donorRowsHTML, formDonor, formTxn, saveDonor, saveTxn, viewDonorCard,
+         viewDonors };
