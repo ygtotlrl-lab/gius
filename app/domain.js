@@ -2,7 +2,7 @@
 import { MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
-         pushDirty, schedulePush, tombAt } from '../core/sync.js';
+         pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
 import { MSG_LS_FULL, hwNoteCloud } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
@@ -252,16 +252,6 @@ function update(table, id, patch) {
   return Promise.resolve(saved);
 }
 
-// הבן מקבל את חותמת המחיקה של האב ולא Date.now() — שתי חותמות לאותה מחיקה הן שתי הכרעות נפרדות במנוע המיזוג
-function pcChildKill(parent, kid) {
-  return Object.assign({}, kid, {
-    deleted: !!parent.deleted,
-    deleted_at: (parent.deleted_at === undefined) ? null : parent.deleted_at,
-    deleted_by: (parent.deleted_by === undefined) ? null : parent.deleted_by,
-    updated_at: parent.updated_at
-  });
-}
-
 // לתנועה שני אבות — התורם חובה וההתחייבות אופציונלית, והתורם נשאל ראשון: מחיקתו מפילה את התנועה בכל מקרה.
 var PC_CHILDREN = {
   g_donors: [{ t: 'g_pledges', fk: 'donor_client_id' }, { t: 'g_txns', fk: 'donor_client_id' }],
@@ -275,7 +265,7 @@ function pcCascadeDelete(table, parent) {
     var k = kids[i], km = tableMeta(k.t), arr = MIRROR[k.t] || [];
     for (var j = 0; j < arr.length; j++) {
       if (arr[j].deleted || !idEq(arr[j][k.fk], pid)) continue;
-      var kid = pcChildKill(parent, arr[j]);
+      var kid = tombInherit(parent, Object.assign({}, arr[j]));
       upsertLocal(k.t, kid);
       markLocal(k.t, kid[km.key]);
       n++;
@@ -285,9 +275,15 @@ function pcCascadeDelete(table, parent) {
   return n;
 }
 
+// לא דרך update — הוא חותם Date.now() משלו, ו-deleted_at היה נבדל מ-updated_at של המחיקה.
 function softDelete(table, id) {
-  return update(table, id, { deleted: true, deleted_at: tombAt() })
-    .then(function (row) { pcCascadeDelete(table, row); return row; });
+  var row = tombKill({});
+  row[tableMeta(table).key] = id;
+  var saved = upsertLocal(table, row);
+  markLocal(table, id);
+  pcCascadeDelete(table, saved);
+  applyMirrorToState();
+  return Promise.resolve(saved);
 }
 
 // השורה נושאת את מפתח המיזוג — מזהה שנגזר מהמפתח הטבעי, או key בטבלת ההגדרות.
@@ -311,25 +307,13 @@ function saveConfigList(key, list) {
 // דחיפת-מצב ולא תור יוצא — בתור, כשל תוכן אחד חוסם את כל מה שאחריו; כאן כל רשומה עומדת בפני עצמה.
 function rowPendingKey(t, row) { return pendRowKey(t, row[tableMeta(t).key]); }
 
-// בחותמת שווה שני התנאים הראשונים שקטים — בלי בדיקת הסימון, רשומה ממתינה לא הייתה נדחפת לעולם.
-function dirtyRows(t, remoteByKey) {
-  var m = tableMeta(t);
-  return (MIRROR[t] || []).filter(function (l) {
-    var k = String(l[m.key]);
-    if (k === 'undefined' || k === 'null') return false;
-    var r = remoteByKey[k];
-    return !r || rowTs(l) > rowTs(r) || pendHas(pendRowKey(t, l[m.key]));
-  });
-}
-
 // ── משיכה ──
-// מחזירה {ok, remote} — מפת הענן היא מה שמאפשר לדחיפה שאחריה לדעת מה מקומי וחדש יותר.
+// מחזירה {ok} — משיכה שנכשלה עוצרת את הדחיפה שאחריה, כי אין ראיה על מצב הענן.
 function syncPull() {
   if (S._pulling || !S.sb) return Promise.resolve({ ok: false, remote: {} });
   S._pulling = true;
   // ההקשר נלכד בכניסה ונבדק לפני המיזוג — המשתמש יכול להתחלף בין המשיכה לכתיבה.
   var _ep = ctxEpoch();
-  var remoteMaps = {};
   return Promise.all(TABLES.map(function (m) {
     // בלי סינון deleted — בלי ה-tombstones מחיקה ממכשיר אחר לא תגיע לכאן לעולם.
     // העימוד חובה: select('*') בבקשה אחת נחתך בשקט בתקרת db-max-rows.
@@ -341,15 +325,12 @@ function syncPull() {
                                                        : { data: null, error: { message: 'rows:' + m.t } } }; },
             function (e) { return { m: m, res: { error: e } }; });
   })).then(function (list) {
-    if (ctxStale(_ep)) return { ok: false, remote: {} };
+    if (ctxStale(_ep)) return { ok: false };
     var errs = [];
     list.forEach(function (x) {
       if (!x.res || x.res.error || !Array.isArray(x.res.data)) { errs.push(x.m.t); return; }
       var rows = stripRows(x.m.t, x.res.data);
       hwNoteCloud(mirrorKey(x.m.t), rows); // ראיה עננית לשער הדיסק
-      var map = {};
-      rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
-      remoteMaps[x.m.t] = map;
       var merged = mergeCore(MIRROR[x.m.t], rows, { key: x.m.key,
         isPending: function (k) { return pendHas(pendRowKey(x.m.t, k)); } });
       // מראת המשתמשים נשמרת דרך הנתיב המלא של המודול שלה, שמסנן בדיוק כמו הנתיב החלקי.
@@ -370,10 +351,10 @@ function syncPull() {
         toast(MSG_LOAD_FAIL_PRE + errs.join(', ') + MSG_MAYBE_STALE, null, 'bad');
       }
     }
-    return { ok: !errs.length, remote: remoteMaps };
+    return { ok: !errs.length };
   }).catch(function (e) {
     console.warn('[sync]', e);
-    return { ok: false, remote: {} };
+    return { ok: false };
   }).then(function (r) { S._pulling = false; pendRender(); return r; });
 }
 
@@ -385,13 +366,13 @@ function gSyncLog(action, key, recordCount, details) {
 
 function syncNow() {
   var t0 = Date.now();
-  // הדחיפה נבדקת מול ההקשר שנלכד לפני המשיכה — res.remote נמדד עבורו.
+  // הדחיפה נבדקת מול ההקשר שנלכד לפני המשיכה.
   var _ep = ctxEpoch();
   return syncPull().then(function (res) {
     if (!res.ok || ctxStale(_ep)) { pullRender(shell.render); return false; }
     // שער הרשת כאן ולא בשכבת הדחיפה — הוא תלוי בלקוח, ומעבר ריק היה מסמן עד פינוי בלי ראיה מהענן.
     var p = (!S.sb || !navigator.onLine) ? Promise.resolve({ still: [] })
-                                       : pushDirty(res.remote);
+                                       : pushDirty(null);
     return p.then(function (r) {
       if (ctxStale(_ep)) { pullRender(shell.render); return false; }
       pendReconcile(r.still, t0);
@@ -590,7 +571,7 @@ function warnIfNoFp(r) {
 }
 
 export { $, HE, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
-         datalistHTML, dirtyRows, dmyDate, donorById, donorFieldHTML, donorMatches,
+         datalistHTML, dmyDate, donorById, donorFieldHTML, donorMatches,
          donorName, donorNewCancel, donorNewSave, emptyBox, gAcadYearOf, ils, initials,
          insert, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nullable, num, ok,
          pendRowKey, pledgeById, pledgeOptionsFor, pledgeStatus,

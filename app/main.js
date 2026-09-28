@@ -25,7 +25,7 @@ import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          MSG_WHAT_TO_ADD, PASS_SIX_RE, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL,
          TABLES } from './constants.js';
 import { KDRAG, S, shell, state } from './state.js';
-import { $, _gMarkPushed, applyMirrorToState, dirtyRows, donorById, donorMatches,
+import { $, _gMarkPushed, applyMirrorToState, donorById, donorMatches,
          donorNewCancel, donorNewSave, gAcadYearOf, mirrorHasData, monthKeyOf, pendRowKey,
          pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
@@ -181,7 +181,7 @@ var PUSH_CFG = {
   tables: PUSH_TABLES,
   chunk:  500,
   delay:  400,
-  dirty:  function (t, ctx) { S._gPushEp = ctxEpoch(); return dirtyRows(t, (ctx && ctx[t]) || {}); },
+  rows:   function (t) { S._gPushEp = ctxEpoch(); return MIRROR[t] || []; },
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
     var m = tableMeta(t);
