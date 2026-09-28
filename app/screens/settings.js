@@ -52,7 +52,7 @@ function viewSettings() {
         '<button class="btn ghost xs" data-act="cfg-edit" data-key="' + c.key + '" data-i="' + i + '">עריכה</button>' +
         '<button class="btn danger xs" data-act="cfg-del" data-key="' + c.key + '" data-i="' + i + '">הסרה</button></div>';
     });
-    h += '<div class="addrow ksave">' +
+    h += '<div class="addrow" data-ks>' +
       '<input aria-label="ערך חדש" class="inp" id="cfg-add-' + c.key + '" placeholder="ערך חדש…">' +
       '<button class="btn sm" data-act="cfg-add" data-ksave data-key="' + c.key + '">הוספה</button></div>' +
       '</div>';

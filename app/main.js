@@ -329,9 +329,10 @@ function go(screen) {
 }
 
 document.addEventListener('pointerdown', function (e) {
-  var g = e.target && e.target.closest ? e.target.closest('.kcard > .grip') : null;
+  var g = e.target && e.target.closest ? e.target.closest('[data-grip]') : null;
   if (!g) return;
-  KDRAG.el = g.closest('.kcard');
+  KDRAG.el = g.closest('[data-drag]');
+  if (!KDRAG.el) return;
   KDRAG.col = null;
   KDRAG.el.classList.add('dragging');
   // המצביע נלכד על הידית — בלעדיו אצבע שיוצאת מגבול הכרטיס מפסיקה לשדר והגרירה נתקעת.
@@ -355,7 +356,7 @@ document.addEventListener('pointerup', function (e) {
   if (KDRAG.col) KDRAG.col.classList.remove('over');
   KDRAG.el = null; KDRAG.col = null;
   el.classList.remove('dragging');
-  if (col && col.dataset.stage) moveTask(el.dataset.id, col.dataset.stage);
+  if (col && col.dataset.drop) moveTask(el.dataset.id, col.dataset.drop);
 });
 
 // ── פעולות ──
@@ -618,7 +619,8 @@ document.addEventListener('keydown', function (e) {
 // החיפוש מרנדר רק את הרשימה והמונה — רינדור מלא בונה מחדש את השדה ומאבד את הפוקוס אחרי כל תו.
 document.addEventListener('input', function (e) {
   var el = e.target;
-  if (el.id === 'donor-q') {
+  if (!el.dataset) return;
+  if (el.dataset.inp === 'donor-q') {
     state.donorSearch = el.value;
     var box = $('#donor-list');
     if (box) box.innerHTML = donorRowsHTML(donorMatches(state.donorSearch));
@@ -626,25 +628,26 @@ document.addEventListener('input', function (e) {
     if (cnt) cnt.textContent = donorMatches(state.donorSearch).length;
     return;
   }
-  if (el.classList && el.classList.contains('dp-q')) pickerPaint(el.closest('.picker'));
+  if ('dp' in el.dataset) pickerPaint(el.closest('.picker'));
 });
 
 document.addEventListener('change', function (e) {
   var el = e.target;
-  if (el.dataset && el.dataset.inp === 'stage') {
+  if (!el.dataset) return;
+  if (el.dataset.chg === 'stage') {
     moveTask(el.dataset.id, el.value);
     return;
   }
   var map = { 'pf-agent': 'agent', 'pf-status': 'status', 'pf-cause': 'cause', 'pf-from': 'from', 'pf-to': 'to' };
-  if (el.id && map[el.id]) {
-    state.pf[map[el.id]] = el.value;
+  if (map[el.dataset.chg]) {
+    state.pf[map[el.dataset.chg]] = el.value;
     refreshPledges();
   }
 });
 
 // focusin ולא focus — focus אינו עולה בעץ, ומאזין על השדה עצמו מת עם המודאל שנבנה מחדש.
 document.addEventListener('focusin', function (e) {
-  if (e.target.classList && e.target.classList.contains('dp-q')) pickerPaint(e.target.closest('.picker'));
+  if (e.target.dataset && 'dp' in e.target.dataset) pickerPaint(e.target.closest('.picker'));
 });
 
 // ── עלייה ──
