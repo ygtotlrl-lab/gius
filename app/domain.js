@@ -2,7 +2,7 @@
 import { MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
-         pushDirty, schedulePush, tombAt, tombPruneMerged } from '../core/sync.js';
+         pushDirty, schedulePush, tombAt } from '../core/sync.js';
 import { MSG_LS_FULL, hwNoteCloud } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
@@ -153,17 +153,6 @@ function mirrorHasData() {
 function findRow(arr, keyName, k) {
   for (var i = 0; i < arr.length; i++) if (String(arr[i][keyName]) === String(k)) return arr[i];
   return null;
-}
-
-// הענן מנצח בשוויון, ורשומה ממתינה (isPending) גוברת עליו בשוויון — אחרת היא נדרסת בגרסה שלא ראתה את העריכה.
-// dedupe: false — כפילות נשארת גלויה ואינה מכווצת בשקט.
-// localPick: 'first' קובע איזו משתי רשומות מקומיות באותו מפתח מתמודדת מול הענן — אין ליישר.
-function mergeRows(local, remote, keyName, isPending) {
-  return tombPruneMerged(mergeCore(local, remote, {
-    getKey: function (r) { return String(r[keyName]); },
-    ts: rowTs, isPending: isPending, keepUnversionedLocal: true,
-    dedupe: false, keyless: 'drop', localPick: 'first'
-  }));
 }
 
 function liveRows(t) {
@@ -362,8 +351,8 @@ function syncPull() {
       var map = {};
       rows.forEach(function (r) { map[String(r[x.m.key])] = r; });
       remoteMaps[x.m.t] = map;
-      var merged = mergeRows(MIRROR[x.m.t], rows, x.m.key,
-        function (k) { return pendHas(pendRowKey(x.m.t, k)); });
+      var merged = mergeCore(MIRROR[x.m.t], rows, { key: x.m.key,
+        isPending: function (k) { return pendHas(pendRowKey(x.m.t, k)); } });
       // מראת המשתמשים נשמרת דרך הנתיב המלא של המודול שלה, שמסנן בדיוק כמו הנתיב החלקי.
       if (x.m.t === authUsersTable()) usersSaveAll(merged);
       else { MIRROR[x.m.t] = merged; mirrorSave(x.m.t); }
@@ -507,7 +496,7 @@ function emptyBox(icon, text) {
 // רשימה שנבנית בכל הקלדה ולא select — בורר עם מאות אפשרויות אינו שמיש במובייל.
 function donorComboItems() {
   return state.donors.slice().sort(byName).map(function (d) {
-    return { id: d.client_id, label: d.name, sub: d.phone || DONOR_NO_PHONE,
+    return { value: d.client_id, label: d.name, sub: d.phone || DONOR_NO_PHONE,
              find: [d.name, d.phone || '', d.agent || ''].join('\n') };
   });
 }
@@ -517,13 +506,13 @@ comboDef('donor', DONOR_COMBO);
 // התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת מודאל — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
 comboDef('donor-txn', Object.assign({}, DONOR_COMBO, { pick: function (it) {
   var sel = $('#txn-pledge');
-  if (sel) sel.innerHTML = pledgeOptionsFor(it ? it.id : '');
+  if (sel) sel.innerHTML = pledgeOptionsFor(it ? it.value : '');
 } }));
 
 function donorFieldHTML(id, kind, donorId) {
   var d = donorId ? donorById(donorId) : null;
   return comboHTML(kind, { id: id, label: 'חיפוש תורם לפי שם או טלפון', placeholder: 'חיפוש תורם לפי שם או טלפון…',
-                           value: d ? { id: d.client_id, label: d.name } : null }) +
+                           picked: d ? { value: d.client_id, label: d.name } : null }) +
     '<div class="new-donor" data-new-donor="' + esc(id) + '"></div>';
 }
 
@@ -558,7 +547,7 @@ function donorNewSave(id) {
   return insert('g_donors', { name: name, phone: phone || null })
     .then(function (d) {
       box.innerHTML = '';
-      comboSet(id, { id: d.client_id, label: d.name });
+      comboSet(id, { value: d.client_id, label: d.name });
       toast(MSG_DONOR_CREATED, null, 'good');
     })
     .catch(errToast);

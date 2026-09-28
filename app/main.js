@@ -8,7 +8,7 @@ import { afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKeys, eraKick, errToast, i
 import { hwBoot, lsBoot, lsClearHorizons, lsRemove } from '../core/storage.js';
 import { MIRROR, mirrorBoot, mirrorKey, mirrorTables,
          mirrorWrite } from '../core/mirror.js';
-import { bkBoot } from '../core/backup.js';
+import { bkBoot, logAwait } from '../core/backup.js';
 import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkBoot, lkReset,
          sessActive, sessGet, sessSet, usersGet, usersSaveOne,
          writeUser } from '../core/auth.js';
@@ -64,7 +64,6 @@ appConfigure({
 // טבלה שאינה נדחפת מוכרזת ב-noPush עם המסלול שדוחף אותה — רשומת אב או סוד.
 var MIRROR_CFG = {
   prefix: self.APP.prefix + 'mirror_',
-  app:    self.APP.prefix,
   tables: function () { return TABLES.map(function (m) { return m.t; }); },
   noPush: [{ t: 'g_users', via: 'writeUser', adds: 'secret' }],
   empty:  function () { return []; },
@@ -146,7 +145,7 @@ var BK_CFG = {
 
 // אין כאן תור ולכן אין extra — הסימונים הם מקור האמת היחיד.
 var PEND_CFG = {
-  app: 'gius', key: 'g_pending',
+  key: 'g_pending',
   // סימון שקידומתו אינה כאן יורד בעלייה — אין לו כותב ואין שורה שתידחף ותוריד אותו.
   marks: function () { return PUSH_TABLES.map(function (t) { return pendRowKey(t, ''); }); },
   // בתום ההחזקה, תגית ממתין שנותרה צריכה להיכנס לשורות שכבר רונדרו — render שומר על מיקום הגלילה.
@@ -232,7 +231,8 @@ var ERA_CFG = {
   },
   // הדחיפה היא ראיה טרייה ולא זיכרון — מכשיר נקי מקבל ok עם still ריק.
   push:   function () { return pushDirty(null); },
-  refresh: function () { return syncNow(); }
+  refresh: function () { return syncNow(); },
+  log:    function (action, entries) { return logAwait(action, entries); }
 };
 
 // מזהה מכשיר אינו מזהה רשומה — אינו עובר ב-newClientId, ודי בשמונה תווים קריאים ביומן.
