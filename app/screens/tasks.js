@@ -103,7 +103,7 @@ function saveTask(id) {
   var title = val('tk-title');
   if (!title) { toast(MSG_NEED_TITLE, null, 'bad'); return Promise.resolve(); }
   var existing = null;
-  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) existing = state.tasks[i];
+  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].client_id, id)) existing = state.tasks[i];
 
   var row = {
     title: title,

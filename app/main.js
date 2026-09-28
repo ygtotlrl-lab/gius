@@ -384,7 +384,7 @@ function findUser(id) {
 }
 
 function findTask(id) {
-  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) return state.tasks[i];
+  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].client_id, id)) return state.tasks[i];
   return null;
 }
 
@@ -483,7 +483,7 @@ var DOM_ACTIONS = {
   'txn-new': function (el) { formTxn(null, el.dataset.donor || ''); },
   'txn-edit': function (el) {
     var t = null;
-    for (var i = 0; i < state.txns.length; i++) if (idEq(state.txns[i].id, el.dataset.id)) t = state.txns[i];
+    for (var i = 0; i < state.txns.length; i++) if (idEq(state.txns[i].client_id, el.dataset.id)) t = state.txns[i];
     if (t) formTxn(t);
   },
   'txn-save': function (el) { return runSave(function () { return saveTxn(el.dataset.id); }, 'התנועה נשמרה'); },

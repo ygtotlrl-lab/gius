@@ -67,12 +67,12 @@ function viewSettings() {
     h += '<div class="tw"><table><thead><tr><th>חודש</th><th class="num">יעד</th><th class="num">נגבה</th>' +
       '<th class="num">אחוז</th><th></th></tr></thead><tbody>';
     state.targets.forEach(function (t) {
-      var got = sum(monthTxns(t.month), function (x) { return x.amount; });
+      var got = sum(monthTxns(t.target_month), function (x) { return x.amount; });
       var pct = num(t.amount) > 0 ? got / num(t.amount) * 100 : 0;
-      h += '<tr><td>' + esc(monthLabel(t.month)) + '</td>' +
+      h += '<tr><td>' + esc(monthLabel(t.target_month)) + '</td>' +
         '<td class="num">' + ils(t.amount) + '</td><td class="num">' + ils(got) + '</td>' +
         '<td class="num">' + pct.toFixed(0) + '%</td>' +
-        '<td><button class="btn ghost xs" data-act="target-set" data-month="' + esc(t.month) + '">עריכה</button></td></tr>';
+        '<td><button class="btn ghost xs" data-act="target-set" data-month="' + esc(t.target_month) + '">עריכה</button></td></tr>';
     });
     h += '</tbody></table></div>';
   }
@@ -135,7 +135,7 @@ function formPassword(u) {
 function formTarget(month) {
   var m = month || state.month;
   var cur = 0;
-  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].month === m) cur = num(state.targets[i].amount);
+  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].target_month === m) cur = num(state.targets[i].amount);
   openModal(MSG_MONTH_GOAL,
     '<div class="f2">' +
       '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="tg-month" value="' + esc(m) + '"></label>' +
@@ -149,7 +149,7 @@ function saveTarget() {
   var m = val('tg-month');
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('tg-amount'));
-  return upsertBy('g_targets', 'month', { month: m, amount: amount });
+  return upsertBy('g_targets', 'target_month', { target_month: m, amount: amount });
 }
 
 export { formPassword, formTarget, formUser, saveTarget, saveUser, viewSettings };

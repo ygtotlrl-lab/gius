@@ -449,7 +449,7 @@ function statusClass(s) { return s === 'בוצע' ? 'ok' : s === 'חלקי' ? 'w
 function monthTxns(m) { return state.txns.filter(function (t) { return monthKeyOf(t.txn_date) === m; }); }
 
 function targetFor(m) {
-  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].month === m) return num(state.targets[i].amount);
+  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].target_month === m) return num(state.targets[i].amount);
   return 0;
 }
 

@@ -202,7 +202,7 @@ create table if not exists public.g_settings (
 
 create table if not exists public.g_targets (
   client_id text not null,
-  month text not null,
+  target_month text not null,
   amount numeric(14,2) not null default 0,
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
@@ -210,8 +210,8 @@ create table if not exists public.g_targets (
   deleted_at timestamp with time zone,
   deleted_by text,
   constraint g_targets_pkey PRIMARY KEY (client_id),
-  constraint g_targets_month_key UNIQUE (month),
-  constraint g_targets_month_check CHECK ((month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text))
+  constraint g_targets_target_month_key UNIQUE (target_month),
+  constraint g_targets_target_month_check CHECK ((target_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text))
 );
 
 create table if not exists public.g_tasks (
