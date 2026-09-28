@@ -149,7 +149,8 @@ function saveTarget() {
   var m = val('tg-month');
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('tg-amount'));
-  return upsertBy('g_targets', 'target_month', { target_month: m, amount: amount });
+  // המזהה הוא החודש — שני מכשירים שקובעים את אותו חודש מגיעים לאותה שורה.
+  return upsertBy('g_targets', { client_id: m, target_month: m, amount: amount });
 }
 
 export { formPassword, formTarget, formUser, saveTarget, saveUser, viewSettings };

@@ -290,13 +290,12 @@ function softDelete(table, id) {
     .then(function (row) { pcCascadeDelete(table, row); return row; });
 }
 
-function upsertBy(table, conflict, row) {
+// השורה נושאת את מפתח המיזוג — מזהה שנגזר מהמפתח הטבעי, או key בטבלת ההגדרות.
+function upsertBy(table, row) {
   var m = tableMeta(table);
   var full = Object.assign({}, row, { updated_at: Date.now() });
   var arr = MIRROR[table] || (MIRROR[table] = []);
-  var cur = findRow(arr, conflict, full[conflict]);
-  if (cur && cur[m.key] != null) full[m.key] = cur[m.key];
-  else if (full[m.key] == null && m.key !== conflict) full[m.key] = newClientId();
+  var cur = findRow(arr, m.key, full[m.key]);
   if (cur) Object.keys(full).forEach(function (k) { cur[k] = full[k]; });
   else arr.push(full);
   markLocal(table, full[m.key]);
@@ -305,7 +304,7 @@ function upsertBy(table, conflict, row) {
 }
 
 function saveConfigList(key, list) {
-  return upsertBy(KV_TABLE, 'key', { key: key, value: JSON.stringify(list) });
+  return upsertBy(KV_TABLE, { key: key, value: JSON.stringify(list) });
 }
 
 // ── דחיפת-מצב ──
