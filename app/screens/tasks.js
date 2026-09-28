@@ -60,7 +60,7 @@ function kdragCol(x, y) {
 // עדכון אופטימי עם החזרה — update נכשלת רק כשהכתיבה המקומית נכשלה, ואז הכרטיס שעל המסך משקר.
 function moveTask(id, stage) {
   var t = null;
-  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].id, id)) t = state.tasks[i];
+  for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].client_id, id)) t = state.tasks[i];
   if (!t || t.stage === stage) return;
   var prev = t.stage;
   t.stage = stage;

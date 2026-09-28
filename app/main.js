@@ -329,6 +329,7 @@ function go(screen) {
   render();
 }
 
+// הקנבן אינו הגרירה לסידור שבליבה — הכרטיס אינו זז בעץ, והשחרור מעביר אותו לשלב שב-data-drop של העמודה שמתחתיו, ולא לסדר שנקרא מה-DOM.
 document.addEventListener('pointerdown', function (e) {
   var g = e.target && e.target.closest ? e.target.closest('[data-grip]') : null;
   if (!g) return;
@@ -358,6 +359,14 @@ document.addEventListener('pointerup', function (e) {
   KDRAG.el = null; KDRAG.col = null;
   el.classList.remove('dragging');
   if (col && col.dataset.drop) moveTask(el.dataset.id, col.dataset.drop);
+});
+
+// גרירה שבוטלה אינה מעבירה — בלי זה הכרטיס נשאר «נגרר», והשחרור הבא בכל מקום היה מעביר אותו.
+document.addEventListener('pointercancel', function () {
+  if (!KDRAG.el) return;
+  if (KDRAG.col) KDRAG.col.classList.remove('over');
+  KDRAG.el.classList.remove('dragging');
+  KDRAG.el = null; KDRAG.col = null;
 });
 
 // ── פעולות ──
