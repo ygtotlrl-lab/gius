@@ -475,9 +475,10 @@ function agentPool() {
 }
 
 // גם value וגם הטקסט עוברים esc — ערכי הרשימות נקבעים בידי המשתמש במסך ההגדרות.
-function selectHTML(name, options, value, placeholder) {
+function selectHTML(name, options, value, placeholder, chg) {
   // ה-placeholder הוא השם הנגיש של הבורר — ה-id נגזר מהקורא ואין label צמוד.
-  var h = '<select class="inp" aria-label="' + esc(placeholder || 'בחירה') + '" id="' + name + '">';
+  var h = '<select class="inp" aria-label="' + esc(placeholder || 'בחירה') + '" id="' + name + '"' +
+    (chg ? ' data-chg="' + chg + '"' : '') + '>';
   h += '<option value="">' + esc(placeholder || '— ללא —') + '</option>';
   for (var i = 0; i < options.length; i++) {
     var o = options[i];
@@ -506,12 +507,12 @@ function emptyBox(icon, text) {
 // הערך יושב ב-dataset.value של השורש ולא ב-select — הרשימה נבנית בכל הקלדה, ובורר עם מאות אפשרויות אינו שמיש במובייל.
 function pickerHTML(id, donorId) {
   var d = donorId ? donorById(donorId) : null;
-  return '<div class="picker ksave" id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
+  return '<div class="picker" data-ks id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
     '<div class="dp-chosen' + (d ? '' : ' hidden') + '">' +
       '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
       '<button type="button" data-act="dp-clear" aria-label="ניקוי">✕</button>' +
     '</div>' +
-    '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
+    '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" data-dp placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
     '<div class="dp-results hidden"></div>' +
     '<div class="dp-new hidden">' +
       '<div class="new-donor-title">תורם חדש</div>' +

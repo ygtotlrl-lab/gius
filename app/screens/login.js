@@ -24,7 +24,7 @@ function markSVG(cls) {
 
 function renderLogin() {
   viewBare(
-    '<div class="auth"><div class="auth-card ksave">' +
+    '<div class="auth"><div class="auth-card" data-ks>' +
       markSVG('mark') +
       '<h1>גיוס</h1>' +
       '<div class="sub">ניהול גיוס כספים</div>' +

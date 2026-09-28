@@ -22,14 +22,14 @@ function viewTasks() {
 
   STAGES.forEach(function (st) {
     var list = state.tasks.filter(function (t) { return t.stage === st; });
-    h += '<div class="kcol" data-stage="' + esc(st) + '">' +
+    h += '<div class="kcol" data-drop="' + esc(st) + '">' +
       '<h3><span class="dot ' + STAGE_CLS[st] + '"></span>' + esc(st) +
       '<span class="cnt">' + list.length + '</span></h3>';
     if (!list.length) h += '<div class="col-empty empty">אין משימות</div>';
     list.forEach(function (t) {
       var late = t.due_date && t.due_date < dayToday() && t.stage !== 'השלמה';
-      h += '<div class="kcard" data-id="' + t.client_id + '">' +
-        '<span class="grip" aria-hidden="true">⣿</span>' +
+      h += '<div class="kcard" data-drag="task" data-id="' + t.client_id + '">' +
+        '<span class="grip" data-grip aria-hidden="true">⣿</span>' +
         '<b>' + esc(t.title) + '</b>' + pendTag(pendRowKey('g_tasks', t.client_id)) +
         '<div class="meta">' +
           (t.assignee ? '<span class="badge brand">' + esc(t.assignee) + '</span>' : '') +
@@ -38,7 +38,7 @@ function viewTasks() {
           (t.log ? '<span class="logdot" title="יש רישום ביומן">✎</span>' : '') +
         '</div>' +
         '<div class="ft">' +
-          '<select data-inp="stage" aria-label="שלב המשימה" data-id="' + t.client_id + '">' +
+          '<select data-chg="stage" aria-label="שלב המשימה" data-id="' + t.client_id + '">' +
             STAGES.map(function (s) {
               return '<option value="' + esc(s) + '"' + (s === t.stage ? ' selected' : '') + '>' + esc(s) + '</option>';
             }).join('') +
@@ -54,7 +54,7 @@ function viewTasks() {
 
 function kdragCol(x, y) {
   var over = document.elementFromPoint(x, y);
-  return over && over.closest ? over.closest('.kcol') : null;
+  return over && over.closest ? over.closest('[data-drop]') : null;
 }
 
 // עדכון אופטימי עם החזרה — update נכשלת רק כשהכתיבה המקומית נכשלה, ואז הכרטיס שעל המסך משקר.

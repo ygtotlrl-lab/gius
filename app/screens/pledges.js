@@ -65,11 +65,11 @@ function viewPledges() {
       '<span class="sp"><button class="btn sm" data-act="pledge-new">＋ התחייבות</button></span></h2>' +
     '<div id="pledge-totals">' + pledgeTotalsHTML(list) + '</div>' +
     '<div class="filters-row filters">' +
-      '<label class="fld"><span>שגריר</span>' + selectHTML('pf-agent', agentPool(), f.agent, 'הכל') + '</label>' +
-      '<label class="fld"><span>סטטוס</span>' + selectHTML('pf-status', ['לא בוצע', 'חלקי', 'בוצע'], f.status, 'הכל') + '</label>' +
-      '<label class="fld"><span>עילה</span>' + selectHTML('pf-cause', state.config.causes, f.cause, 'הכל') + '</label>' +
-      '<label class="fld"><span>מתאריך</span><input class="inp" type="date" id="pf-from" value="' + esc(f.from) + '"></label>' +
-      '<label class="fld"><span>עד תאריך</span><input class="inp" type="date" id="pf-to" value="' + esc(f.to) + '"></label>' +
+      '<label class="fld"><span>שגריר</span>' + selectHTML('pf-agent', agentPool(), f.agent, 'הכל', 'pf-agent') + '</label>' +
+      '<label class="fld"><span>סטטוס</span>' + selectHTML('pf-status', ['לא בוצע', 'חלקי', 'בוצע'], f.status, 'הכל', 'pf-status') + '</label>' +
+      '<label class="fld"><span>עילה</span>' + selectHTML('pf-cause', state.config.causes, f.cause, 'הכל', 'pf-cause') + '</label>' +
+      '<label class="fld"><span>מתאריך</span><input class="inp" type="date" id="pf-from" data-chg="pf-from" value="' + esc(f.from) + '"></label>' +
+      '<label class="fld"><span>עד תאריך</span><input class="inp" type="date" id="pf-to" data-chg="pf-to" value="' + esc(f.to) + '"></label>' +
     '</div>' +
     '<div class="btnrow-top btnrow">' +
       '<button class="btn ghost sm" data-act="pf-clear">ניקוי מסננים</button></div>' +
