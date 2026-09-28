@@ -2,7 +2,7 @@
 import { MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
-         pushDirty, schedulePush, tombAt } from '../core/sync.js';
+         pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
 import { MSG_LS_FULL, hwNoteCloud } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
@@ -252,16 +252,6 @@ function update(table, id, patch) {
   return Promise.resolve(saved);
 }
 
-// הבן מקבל את חותמת המחיקה של האב ולא Date.now() — שתי חותמות לאותה מחיקה הן שתי הכרעות נפרדות במנוע המיזוג
-function pcChildKill(parent, kid) {
-  return Object.assign({}, kid, {
-    deleted: !!parent.deleted,
-    deleted_at: (parent.deleted_at === undefined) ? null : parent.deleted_at,
-    deleted_by: (parent.deleted_by === undefined) ? null : parent.deleted_by,
-    updated_at: parent.updated_at
-  });
-}
-
 // לתנועה שני אבות — התורם חובה וההתחייבות אופציונלית, והתורם נשאל ראשון: מחיקתו מפילה את התנועה בכל מקרה.
 var PC_CHILDREN = {
   g_donors: [{ t: 'g_pledges', fk: 'donor_client_id' }, { t: 'g_txns', fk: 'donor_client_id' }],
@@ -275,7 +265,7 @@ function pcCascadeDelete(table, parent) {
     var k = kids[i], km = tableMeta(k.t), arr = MIRROR[k.t] || [];
     for (var j = 0; j < arr.length; j++) {
       if (arr[j].deleted || !idEq(arr[j][k.fk], pid)) continue;
-      var kid = pcChildKill(parent, arr[j]);
+      var kid = tombInherit(parent, Object.assign({}, arr[j]));
       upsertLocal(k.t, kid);
       markLocal(k.t, kid[km.key]);
       n++;
@@ -285,9 +275,15 @@ function pcCascadeDelete(table, parent) {
   return n;
 }
 
+// לא דרך update — הוא חותם Date.now() משלו, ו-deleted_at היה נבדל מ-updated_at של המחיקה.
 function softDelete(table, id) {
-  return update(table, id, { deleted: true, deleted_at: tombAt() })
-    .then(function (row) { pcCascadeDelete(table, row); return row; });
+  var row = tombKill({});
+  row[tableMeta(table).key] = id;
+  var saved = upsertLocal(table, row);
+  markLocal(table, id);
+  pcCascadeDelete(table, saved);
+  applyMirrorToState();
+  return Promise.resolve(saved);
 }
 
 // השורה נושאת את מפתח המיזוג — מזהה שנגזר מהמפתח הטבעי, או key בטבלת ההגדרות.
