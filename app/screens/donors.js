@@ -1,14 +1,14 @@
 // app/screens/donors.js — התורמים, כרטיס התורם והתנועות
 import { dayToday } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { esc, openModal, toast } from '../../core/ui.js';
+import { comboValue, esc, openModal, toast } from '../../core/ui.js';
 import { barChart } from '../../core/chart.js';
 import { MSG_AMOUNT_POSITIVE, MSG_EDIT_DONOR, MSG_EDIT_TXN, MSG_NEED_NAME, MSG_NEW_DONOR,
          MSG_NEW_TXN, MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
 import { $, HE, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
-         donorMatches, emptyBox, ils, initials, insert, monthLabel, monthTxns, nullable,
-         num, pendRowKey, pickerHTML, pickerValue, pledgeOptionsFor, pledgeStatus,
+         donorFieldHTML, donorMatches, emptyBox, ils, initials, insert, monthLabel,
+         monthTxns, nullable, num, pendRowKey, pledgeOptionsFor, pledgeStatus,
          pledgesOfDonor, selectHTML, statusClass, sum, txnsOfDonor, update,
          val } from '../domain.js';
 
@@ -133,7 +133,7 @@ function formTxn(existing, presetDonor) {
   var t = existing || {};
   var donorId = t.donor_client_id || presetDonor || '';
   var body =
-    '<label class="fld"><span>תורם *</span></label>' + pickerHTML('txn-donor', donorId) +
+    '<label class="fld"><span>תורם *</span></label>' + donorFieldHTML('txn-donor', 'donor-txn', donorId) +
     '<div class="f2-gap f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="txn-amount" inputmode="decimal" value="' + esc(t.amount != null ? num(t.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="txn-date" value="' + esc(t.txn_date || dayToday()) + '"></label>' +
@@ -162,7 +162,7 @@ function formTxn(existing, presetDonor) {
 }
 
 function saveTxn(id) {
-  var donorId = pickerValue('txn-donor');
+  var donorId = comboValue('txn-donor');
   if (!donorId) { toast(MSG_PICK_DONOR, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('txn-amount'));
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return Promise.resolve(); }

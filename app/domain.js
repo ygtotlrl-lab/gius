@@ -7,9 +7,9 @@ import { MSG_LS_FULL, hwNoteCloud } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
 import { authUsersTable, usersSanitize, usersSaveAll } from '../core/auth.js';
-import { esc, pullRender, shellBare, toast } from '../core/ui.js';
-import { DEFAULT_CONFIG, EPS, KV_TABLE, MSG_DONOR_CREATED, MSG_MAYBE_STALE,
-         MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
+import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from '../core/ui.js';
+import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_DONOR_CREATED,
+         MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
 
 // ── מיון עברי ──
@@ -504,89 +504,61 @@ function emptyBox(icon, text) {
 }
 
 // ── בורר התורם ──
-// הערך יושב ב-dataset.value של השורש ולא ב-select — הרשימה נבנית בכל הקלדה, ובורר עם מאות אפשרויות אינו שמיש במובייל.
-function pickerHTML(id, donorId) {
+// רשימה שנבנית בכל הקלדה ולא select — בורר עם מאות אפשרויות אינו שמיש במובייל.
+function donorComboItems() {
+  return state.donors.slice().sort(byName).map(function (d) {
+    return { id: d.client_id, label: d.name, sub: d.phone || DONOR_NO_PHONE,
+             find: [d.name, d.phone || '', d.agent || ''].join('\n') };
+  });
+}
+var DONOR_COMBO = { val: true, max: 30, items: donorComboItems, make: donorNewOpen,
+  makeLabel: function (q) { return DONOR_NEW_LABEL + (q ? ' — "' + q + '"' : ''); } };
+comboDef('donor', DONOR_COMBO);
+// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת מודאל — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
+comboDef('donor-txn', Object.assign({}, DONOR_COMBO, { pick: function (it) {
+  var sel = $('#txn-pledge');
+  if (sel) sel.innerHTML = pledgeOptionsFor(it ? it.id : '');
+} }));
+
+function donorFieldHTML(id, kind, donorId) {
   var d = donorId ? donorById(donorId) : null;
-  return '<div class="picker" data-ks id="' + id + '" data-value="' + esc(d ? d.client_id : '') + '">' +
-    '<div class="dp-chosen' + (d ? '' : ' hidden') + '">' +
-      '<span class="dp-name">' + esc(d ? d.name : '') + '</span>' +
-      '<button type="button" data-act="dp-clear" aria-label="ניקוי">✕</button>' +
-    '</div>' +
-    '<input aria-label="חיפוש תורם לפי שם או טלפון" class="inp dp-q' + (d ? ' hidden' : '') + '" data-dp placeholder="חיפוש תורם לפי שם או טלפון…" autocomplete="off">' +
-    '<div class="dp-results hidden"></div>' +
-    '<div class="dp-new hidden">' +
+  return comboHTML(kind, { id: id, label: 'חיפוש תורם לפי שם או טלפון', placeholder: 'חיפוש תורם לפי שם או טלפון…',
+                           value: d ? { id: d.client_id, label: d.name } : null }) +
+    '<div class="new-donor" data-new-donor="' + esc(id) + '"></div>';
+}
+
+// הטופס נבנה כשנפתח ויורד בביטול — כפתור שמירה מוסתר שנשאר בעץ היה נבחר במקש.
+function donorNewOpen(q, root) {
+  var box = $('[data-new-donor="' + root.id + '"]');
+  if (!box) { console.error('[donor] אין מקום לטופס תורם חדש — #' + root.id); return; }
+  box.innerHTML = '<div class="new-donor-form" data-ks>' +
       '<div class="new-donor-title">תורם חדש</div>' +
       '<div class="f2">' +
-        '<label class="fld"><span>שם התורם</span><input class="inp dp-n-name"></label>' +
-        '<label class="fld"><span>טלפון</span><input class="inp dp-n-phone" inputmode="tel"></label>' +
+        '<label class="fld"><span>שם התורם</span><input class="inp" data-new-donor-name value="' + esc(q) + '"></label>' +
+        '<label class="fld"><span>טלפון</span><input class="inp" data-new-donor-phone inputmode="tel"></label>' +
       '</div>' +
-      '<div class="btnrow"><button type="button" class="btn sm" data-act="dp-n-save" data-ksave>שמירה ובחירה</button>' +
-      '<button type="button" class="btn ghost sm" data-act="dp-n-cancel" data-kesc>ביטול</button></div>' +
-    '</div>' +
-  '</div>';
+      '<div class="btnrow"><button type="button" class="btn sm" data-act="donor-new-save" data-id="' + esc(root.id) + '" data-ksave>שמירה ובחירה</button>' +
+      '<button type="button" class="btn ghost sm" data-act="donor-new-cancel" data-id="' + esc(root.id) + '" data-kesc>ביטול</button></div>' +
+    '</div>';
+  $('[data-new-donor-name]', box).focus();
 }
 
-function pickerValue(id) { var el = $('#' + id); return el ? el.dataset.value : ''; }
-
-// הרשימה מתרוקנת ולא רק מוסתרת — data-ksave יושב על הכפתור הראשון בה, וכפתור מוסתר שנשאר בעץ היה נבחר במקש.
-function pickerClear(root) {
-  var res = $('.dp-results', root);
-  res.innerHTML = '';
-  res.classList.add('hidden');
+function donorNewCancel(id) {
+  var box = $('[data-new-donor="' + id + '"]'), root = $('#' + id);
+  if (box) box.innerHTML = '';
+  if (root) $('[data-combo-q]', root).focus();
 }
 
-// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת מודאל — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
-function pickerSet(root, d) {
-  var chosen = $('.dp-chosen', root), q = $('.dp-q', root);
-  root.dataset.value = d ? d.client_id : '';
-  $('.dp-name', chosen).textContent = d ? d.name : '';
-  chosen.classList.toggle('hidden', !d);
-  q.classList.toggle('hidden', !!d);
-  pickerClear(root);
-  $('.dp-new', root).classList.add('hidden');
-  if (!d) { q.value = ''; q.focus(); }
-  if (root.id === 'txn-donor') {
-    var sel = $('#txn-pledge');
-    if (sel) sel.innerHTML = pledgeOptionsFor(d ? d.client_id : '');
-  }
-}
-
-// ההתאמה הראשונה נושאת את data-ksave, ובלי התאמות — כפתור «צור תורם חדש»: המקש עושה את מה שהעין רואה ראשון.
-function pickerPaint(root) {
-  var q = $('.dp-q', root), res = $('.dp-results', root);
-  var term = q.value.trim();
-  var list = donorMatches(term).slice(0, 30);
-  var h = '';
-  list.forEach(function (d, i) {
-    h += '<button type="button" data-act="dp-pick"' + (i ? '' : ' data-ksave') +
-      ' data-id="' + d.client_id + '">' + esc(d.name) +
-      '<small>' + esc(d.phone || 'ללא טלפון') + '</small></button>';
-  });
-  h += '<button type="button" class="mk" data-act="dp-new"' + (list.length ? '' : ' data-ksave') +
-    '>＋ צור תורם חדש' + (term ? ' — "' + esc(term) + '"' : '') + '</button>';
-  res.innerHTML = h;
-  res.classList.remove('hidden');
-}
-
-function pickerNew(root) {
-  var box = $('.dp-new', root);
-  pickerClear(root);
-  box.classList.remove('hidden');
-  $('.dp-n-name', box).value = $('.dp-q', root).value.trim();
-  $('.dp-n-name', box).focus();
-}
-
-function pickerSave(root) {
-  var box = $('.dp-new', root);
-  var name = $('.dp-n-name', box).value.trim();
-  var phone = $('.dp-n-phone', box).value.trim();
+function donorNewSave(id) {
+  var box = $('[data-new-donor="' + id + '"]');
+  if (!box) { console.error('[donor] אין טופס תורם חדש — #' + id); return; }
+  var name = $('[data-new-donor-name]', box).value.trim();
+  var phone = $('[data-new-donor-phone]', box).value.trim();
   if (!name) { toast(MSG_NEED_DONOR_NAME, null, 'bad'); return; }
   return insert('g_donors', { name: name, phone: phone || null })
     .then(function (d) {
-      state.donors.push(d);
-      $('.dp-n-name', box).value = '';
-      $('.dp-n-phone', box).value = '';
-      pickerSet(root, d);
+      box.innerHTML = '';
+      comboSet(id, { id: d.client_id, label: d.name });
       toast(MSG_DONOR_CREATED, null, 'good');
     })
     .catch(errToast);
@@ -630,10 +602,10 @@ function warnIfNoFp(r) {
 }
 
 export { $, HE, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
-         datalistHTML, dirtyRows, dmyDate, donorById, donorMatches, donorName, emptyBox,
-         gAcadYearOf, ils, initials, insert, mirrorHasData, monthKeyOf, monthLabel,
-         monthTxns, nullable, num, ok, pendRowKey, pickerHTML, pickerNew, pickerPaint,
-         pickerSave, pickerSet, pickerValue, pledgeById, pledgeOptionsFor, pledgeStatus,
+         datalistHTML, dirtyRows, dmyDate, donorById, donorFieldHTML, donorMatches,
+         donorName, donorNewCancel, donorNewSave, emptyBox, gAcadYearOf, ils, initials,
+         insert, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nullable, num, ok,
+         pendRowKey, pledgeById, pledgeOptionsFor, pledgeStatus,
          pledgesOfDonor, rowPendingKey, rowTs, saveConfigList, selectHTML, shiftMonth,
          softDelete, statusClass, stripRows, sum, syncNow, tableMeta, targetFor,
          txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };

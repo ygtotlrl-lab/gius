@@ -1,12 +1,12 @@
 // app/screens/pledges.js — ההתחייבויות
 import { dayToday } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { esc, openModal, toast } from '../../core/ui.js';
+import { comboValue, esc, openModal, toast } from '../../core/ui.js';
 import { MSG_AMOUNT_POSITIVE, MSG_EDIT_PLEDGE, MSG_NEW_PLEDGE,
          MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
-import { $, agentPool, collectedForPledge, datalistHTML, dmyDate, donorName, emptyBox,
-         ils, insert, nullable, num, pendRowKey, pickerHTML, pickerValue, pledgeStatus,
+import { $, agentPool, collectedForPledge, datalistHTML, dmyDate, donorFieldHTML,
+         donorName, emptyBox, ils, insert, nullable, num, pendRowKey, pledgeStatus,
          selectHTML, statusClass, sum, update, val } from '../domain.js';
 
 // ── התחייבויות ──
@@ -88,7 +88,7 @@ function refreshPledges() {
 function formPledge(existing, presetDonor) {
   var p = existing || {};
   var body =
-    '<label class="fld"><span>תורם *</span></label>' + pickerHTML('pl-donor', p.donor_client_id || presetDonor || '') +
+    '<label class="fld"><span>תורם *</span></label>' + donorFieldHTML('pl-donor', 'donor', p.donor_client_id || presetDonor || '') +
     '<div class="f2-gap f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="pl-amount" inputmode="decimal" value="' + esc(p.amount != null ? num(p.amount) : '') + '"></label>' +
       '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="pl-due" value="' + esc(p.due_date || '') + '"></label>' +
@@ -110,7 +110,7 @@ function formPledge(existing, presetDonor) {
 }
 
 function savePledge(id) {
-  var donorId = pickerValue('pl-donor');
+  var donorId = comboValue('pl-donor');
   if (!donorId) { toast(MSG_PICK_DONOR, null, 'bad'); return Promise.resolve(); }
   var amount = num(val('pl-amount'));
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return Promise.resolve(); }

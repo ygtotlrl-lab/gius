@@ -12,8 +12,9 @@ import { bkBoot } from '../core/backup.js';
 import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkBoot, lkReset,
          sessActive, sessGet, sessSet, usersGet, usersSaveOne,
          writeUser } from '../core/auth.js';
-import { actRun, ask, closeAsk, closeModal, esc, ksKey, modalBackdrop, modalEsc,
-         openModal, shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
+import { actRun, ask, closeAsk, closeModal, comboFocus, comboInput, comboKey, comboMake,
+         comboOutside, comboPick, esc, ksKey, modalBackdrop, modalEsc, openModal,
+         shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
 import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          MSG_DEL_DONOR_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DEL_PLEDGE_TITLE,
          MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY, MSG_DEL_TASK_TITLE,
@@ -25,8 +26,8 @@ import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          TABLES } from './constants.js';
 import { KDRAG, S, shell, state } from './state.js';
 import { $, _gMarkPushed, applyMirrorToState, dirtyRows, donorById, donorMatches,
-         gAcadYearOf, mirrorHasData, monthKeyOf, pendRowKey, pickerNew, pickerPaint,
-         pickerSave, pickerSet, pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
+         donorNewCancel, donorNewSave, gAcadYearOf, mirrorHasData, monthKeyOf, pendRowKey,
+         pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
          txnsOfDonor, update, val, viewBare, warnIfNoFp } from './domain.js';
 import { donorRowsHTML, formDonor, formTxn, saveDonor, saveTxn, viewDonorCard,
@@ -588,18 +589,17 @@ var DOM_ACTIONS = {
   'target-save': function () { return runSave(saveTarget, 'היעד נשמר'); },
   'reload':            function () { location.reload(); },
   'login':             function () { return doLogin(); },
-  'dp-pick':           function (el) { pickerSet(el.closest('.picker'), donorById(el.dataset.id)); },
-  'dp-new':            function (el) { pickerNew(el.closest('.picker')); },
-  'dp-clear':          function (el) { pickerSet(el.closest('.picker'), null); },
-  'dp-n-cancel':       function (el) { var r = el.closest('.picker');
-                                       $('.dp-new', r).classList.add('hidden'); $('.dp-q', r).focus(); },
-  'dp-n-save':         function (el) { return pickerSave(el.closest('.picker')); },
+  'combo-pick':        function (el) { return comboPick(el); },
+  'combo-make':        function (el) { return comboMake(el); },
+  'donor-new-cancel':  function (el) { donorNewCancel(el.dataset.id); },
+  'donor-new-save':    function (el) { return donorNewSave(el.dataset.id); },
 };
 
 // ── מאזינים גלובליים ──
 // if (el.tagName === 'A') return אינו קישוט — אחרת קישור בתוך אזור data-act מקבל preventDefault; אין למחוק גם כשאין קישור כזה.
 // סגירת הרקע קודמת לניתוב — לחיצה על הרקע אינה נושאת data-act.
 document.addEventListener('click', function (e) {
+  comboOutside(e);
   if (modalBackdrop(e)) return;
   var el = e.target.closest('[data-act]');
   if (!el) return;
@@ -612,12 +612,13 @@ document.addEventListener('click', function (e) {
 
 // שמירה בשדה עריכה קודמת לסגירת המודאל — אחרת Escape בשדה שבתוך מודאל היה סוגר אותו במקום לבטל את השדה.
 document.addEventListener('keydown', function (e) {
-  if (ksKey(e)) return;
+  if (comboKey(e) || ksKey(e)) return;
   modalEsc(e);
 });
 
 // החיפוש מרנדר רק את הרשימה והמונה — רינדור מלא בונה מחדש את השדה ומאבד את הפוקוס אחרי כל תו.
 document.addEventListener('input', function (e) {
+  if (comboInput(e)) return;
   var el = e.target;
   if (!el.dataset) return;
   if (el.dataset.inp === 'donor-q') {
@@ -628,7 +629,6 @@ document.addEventListener('input', function (e) {
     if (cnt) cnt.textContent = donorMatches(state.donorSearch).length;
     return;
   }
-  if ('dp' in el.dataset) pickerPaint(el.closest('.picker'));
 });
 
 document.addEventListener('change', function (e) {
@@ -646,9 +646,7 @@ document.addEventListener('change', function (e) {
 });
 
 // focusin ולא focus — focus אינו עולה בעץ, ומאזין על השדה עצמו מת עם המודאל שנבנה מחדש.
-document.addEventListener('focusin', function (e) {
-  if (e.target.dataset && 'dp' in e.target.dataset) pickerPaint(e.target.closest('.picker'));
-});
+document.addEventListener('focusin', comboFocus);
 
 // ── עלייה ──
 // אין להזיז את mirrorLoad אחרי הסנכרון הראשון — המסך עולה מהדיסק לפני שנוגעים ברשת.

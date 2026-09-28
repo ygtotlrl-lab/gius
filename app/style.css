@@ -163,11 +163,11 @@ tbody tr.click{cursor:pointer}
 .badge.bad{background:var(--bad-soft);color:var(--bad)}
 .badge.brand{background:var(--brand-soft);color:var(--brand-ink)}
 .badge.gold{background:var(--gold-soft);color:var(--gold)}
-.inp,select.inp,textarea.inp{
+.inp,.combo-q,select.inp,textarea.inp{
   width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:var(--sp-5) var(--sp-5);font-size:var(--fs-4);outline:none;transition:border-color var(--dur-2),box-shadow var(--dur-2)
 }
-.inp:focus{border-color:var(--brand-ink);box-shadow:0 0 0 3px var(--brand-soft)}
+.inp:focus,.combo-q:focus{border-color:var(--brand-ink);box-shadow:0 0 0 3px var(--brand-soft)}
 textarea.inp{resize:vertical;min-height:78px;line-height:var(--lh-4)}
 select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),
   linear-gradient(135deg,var(--text-3) 50%,transparent 50%);
@@ -312,26 +312,22 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .today-head{font-size:var(--fs-2);font-weight:700;color:var(--text-3);margin:var(--sp-1) 0 var(--sp-2)}
 .today-head-next{font-size:var(--fs-2);font-weight:700;color:var(--text-3);margin:var(--sp-5) 0 var(--sp-2)}
 /* ── תורמים ── */
+/* ── רשימה נפתחת עם חיפוש ──
+   בתוך הדיאלוג הרשימה בזרימה ולא צפה — רשימה צפה נחתכת בגלילת הגיליון. */
 @media (hover:hover){
-  .dp-results button:hover{background:var(--card-2)}
+  .combo-opt:hover{background:var(--card-2)}
 }
-.picker{position:relative}
-.dp-chosen{
-  display:flex;align-items:center;gap:var(--sp-4);background:var(--brand-soft);color:var(--brand-ink);
-  border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5);font-weight:700;font-size:var(--fs-4)}
-.dp-chosen button{margin-inline-start:auto;background:none;border:0;cursor:pointer;
-  color:inherit;font-size:var(--fs-5);line-height:var(--lh-1);opacity:var(--op-5)}
-.dp-results{
-  border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:var(--sp-3);
-  max-height:210px;overflow:auto;background:var(--card)
-}
-.dp-results button{
-  display:block;width:100%;text-align:start;background:none;border:0;cursor:pointer;
-  padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
-.dp-results button:last-child{border-bottom:0}
-.dp-results button small{color:var(--text-3);font-size:var(--fs-2);margin-inline-start:var(--sp-3)}
-.dp-results .mk{color:var(--brand-ink);font-weight:700}
-.dp-new{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:var(--sp-5);margin-top:var(--sp-4);
+.combo-list{position:static;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:var(--sp-3);
+  max-height:210px;background:var(--card)}
+.combo-opt{justify-content:flex-start;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
+.combo-opt:last-child{border-bottom:0}
+.combo-opt.is-on{background:var(--card-2)}
+.combo-opt:active{background:var(--card-2)}
+.combo-opt:focus-visible{background:var(--card-2);outline:none}
+.combo-sub{color:var(--text-3);font-size:var(--fs-2)}
+.combo-make{color:var(--brand-ink);font-weight:700}
+.combo-empty{padding:var(--sp-4) var(--sp-5);font-size:var(--fs-3);color:var(--text-3)}
+.new-donor-form{border:1px dashed var(--border);border-radius:var(--radius-sm);padding:var(--sp-5);margin-top:var(--sp-4);
   background:var(--card-2)}
 .donor-av{font-size:var(--fs-5);height:52px;border-radius:var(--r-5);width:52px}
 .donor-head{display:flex;gap:var(--sp-5);align-items:flex-start;margin-bottom:var(--sp-5)}
