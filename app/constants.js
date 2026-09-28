@@ -43,6 +43,8 @@ var MSG_OWNER_ONLY = '⚠️ אין הרשאה — מסך ההגדרות פתו�
 var MSG_NEED_DONOR_NAME = '⚠️ נא למלא שם תורם';
 
 var MSG_DONOR_CREATED = 'התורם נוצר';
+var DONOR_NEW_LABEL = '＋ צור תורם חדש';
+var DONOR_NO_PHONE = 'ללא טלפון';
 
 var MSG_EDIT_TXN = 'עריכת תנועה';
 
@@ -162,7 +164,7 @@ var EPS = 0.005;
 // נאכפת ביצירה ובשינוי בלבד — אכיפה במסלול הכניסה נועלת בחוץ סיסמה תקפה שנקבעה לפני התקן
 var PASS_SIX_RE = /^[0-9]{6}$/;
 
-export { CONFIG_KEYS, DEFAULT_CONFIG, EPS, KV_TABLE, MSG_AMOUNT_POSITIVE, MSG_BAD_LOGIN,
+export { CONFIG_KEYS, DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_AMOUNT_POSITIVE, MSG_BAD_LOGIN,
          MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED, MSG_DEL_DONOR_TITLE, MSG_DEL_PLEDGE_BODY,
          MSG_DEL_PLEDGE_TITLE, MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY,
          MSG_DEL_TASK_TITLE, MSG_DEL_TXN_BODY, MSG_DEL_TXN_TITLE, MSG_DONOR_CREATED,
