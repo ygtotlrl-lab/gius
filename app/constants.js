@@ -5,7 +5,7 @@ import { appConfigure } from '../core/util.js';
 // כאן הנתונים שהליבה קוראת, והחיווט — ב-main.js; הקובץ הזה נטען ראשון, לפני כל קריאה לליבה.
 // העידן עולה בשינוי צורת רשומה או מפתחה, ושינוי שם טבלה הוא שינוי כזה — המראה ממופתחת בשם.
 // עותק בעידן ישן אינו נדחף — הממתין בו נרשם ביומן, והוא נזרק ונמשך מלא.
-var DATA_ERA = 3;
+var DATA_ERA = 4;
 
 appConfigure({ DATA_ERA: DATA_ERA });
 
@@ -152,9 +152,9 @@ var TABLES = [
   { t: 'g_pledges', key: 'client_id', soft: true,  order: 'due_date' },
   { t: 'g_txns',    key: 'client_id', soft: true,  order: 'txn_date', desc: true },
   { t: 'g_tasks',   key: 'client_id', soft: true,  order: 'due_date' },
-  { t: 'g_targets', key: 'client_id', soft: true,  order: 'target_month', desc: true, conflict: 'target_month' },
+  { t: 'g_targets', key: 'client_id', soft: true,  order: 'target_month', desc: true },
   { t: 'g_users',   key: 'client_id', soft: false, order: 'created_at', strip: ['password'] },
-  { t: KV_TABLE,    key: 'key', soft: false, conflict: 'key' }
+  { t: KV_TABLE,    key: 'key', soft: false }
 ];
 
 var EPS = 0.005;

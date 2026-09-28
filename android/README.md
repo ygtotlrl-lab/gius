@@ -11,7 +11,7 @@
 | **טוען** | כתובת האפליקציה — `android.url` שבתצורה — מהרשת, לא מנכסים מוטבעים |
 | **versionCode** | ⛔ עולה בכל שינוי ב-APK: ⚠️ מכשיר אינו מתקין מעל גרסה שאינה גבוהה ממנה |
 | **minSdk / targetSdk** | נוצרים ב-`tools/gen-app.mjs` — ⛔ ואינם נערכים ביד |
-| **WebView** | JavaScript, DOM storage (localStorage — שם יושב ה-session), DB |
+| **WebView** | JavaScript, DOM storage (localStorage — שם יושבים `g_mirror_*` וה-pending), DB |
 | **סכמות שאינן http** | נמסרות למערכת ב-`ACTION_VIEW`. כל `http`/`https` נשאר בתוך המעטפת |
 | **בורר קבצים** | `WebChromeClient.onShowFileChooser` מחובר ל-`<input type=file>` |
 | **אופליין** | ה-service worker של האתר. המעטפת מציגה דף שגיאה בעברית רק בהפעלה ראשונה בלי רשת |
@@ -53,17 +53,8 @@
 עריכה ידנית היא גרסה שנייה שתידרס בגזירה הבאה בלי שאיש יידע.
 ⚠️ **המקור עצמו נבדל פר-אפליקציה**, והוא מתועד בשורה שמתחת.
 <!-- SHARED:end -->
-### הסט כאן
-`node tools/gen-app.mjs` מריץ את `tools/gen-icons.mjs`, שמייצר את כל ה-PNG-ים מחישוב פיקסלים (ללא
-ספריות), לשני יעדים: `icons/` (PWA ופאביקון) ו-`android/app/src/main/res/
-mipmap-*/` — `ic_launcher.png` ו-`ic_launcher_foreground.png` (הסימן בלבד
-על רקע שקוף; הרקע מ-`ic_launcher_background.xml`), עם `pad` שמכניס את
-החזית לאזור הבטוח של 66dp מתוך 108dp.
-⛔ **אין לערוך את הקבצים ידנית** — משנים את הסקריפט ומריצים מחדש. הוא
-דטרמיניסטי: הרצה חוזרת בלי שינוי קוד מייצרת קבצים זהים בית-לבית.
-
 ⚠️ **המאסטר הוא `design/icon-master.svg`** — ⛔ המחולל קורא אותו וגוזר ממנו את 16 הנכסים,
-⚠️ ואין נכס שנערך ביד: ⭐ והצורה מוצהרת ב-`APP.art` שבמחולל.
+⚠️ ואין נכס שנערך ביד: ⭐ והצורה מוצהרת ב-`icon.art` שבתצורה.
 
 <!-- SHARED:start id="android-shell-split" -->
 ## המעטפת — ליבה משותפת ומעטפת פר-אפליקציה

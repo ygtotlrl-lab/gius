@@ -185,7 +185,7 @@ var PUSH_CFG = {
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
     var m = tableMeta(t);
-    return withTimeout(S.sb.from(t).upsert(rows, { onConflict: m.conflict || m.key }));
+    return withTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
   },
   mark:   function (t) { if (!ctxStale(S._gPushEp)) _gMarkPushed(t); },
   run:    function () { syncNow(); },
