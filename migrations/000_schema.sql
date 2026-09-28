@@ -153,6 +153,51 @@ select cron.schedule('bk_retention_daily', '0 3 * * *', 'select public.bk_retent
 select cron.schedule('sh_sync_log_retention', '20 3 * * *', 'delete from public.sh_sync_log where created_at < now() - interval ''30 days'';');
 select cron.schedule('cron_run_log_retention', '25 3 * * *', 'delete from cron.job_run_details where start_time < now() - interval ''30 days'' or jobid not in (select jobid from cron.job);');
 
+-- גריעת המצבות — הגריעה היחידה במסד, בסף של TOMBSTONE_TTL_MS; רשימת הטבלאות נקראת מהמסד בכל ריצה ואינה מוקלדת
+CREATE OR REPLACE FUNCTION public.tomb_retention_sweep(p_days integer)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_tbl text;
+  v_n   integer;
+  v_all integer := 0;
+  v_per jsonb := '{}'::jsonb;
+begin
+  if p_days is null or p_days < 90 then
+    raise exception 'tomb_retention_sweep: סף קצר מ-90 ימים — מסרב לרוץ';
+  end if;
+  for v_tbl in
+    select c.table_name
+      from information_schema.columns c
+      join information_schema.tables t
+        on t.table_schema = c.table_schema and t.table_name = c.table_name and t.table_type = 'BASE TABLE'
+     where c.table_schema = 'public' and c.column_name in ('deleted', 'deleted_at')
+     group by c.table_name
+    having count(*) = 2
+     order by c.table_name
+  loop
+    execute format('delete from public.%I where deleted and deleted_at < now() - make_interval(days => $1)', v_tbl)
+      using p_days;
+    get diagnostics v_n = row_count;
+    if v_n > 0 then v_per := v_per || jsonb_build_object(v_tbl, v_n); end if;
+    v_all := v_all + v_n;
+  end loop;
+
+  if v_all > 0 then
+    insert into public.sh_sync_log (device_id, user_name, action, key, record_count, details)
+    values ('pg_cron', null, 'tomb_retention', null, v_all, jsonb_build_object('days', p_days, 'tables', v_per));
+  end if;
+
+  return v_all;
+end;
+$function$;
+revoke all on function public.tomb_retention_sweep(integer) from public, anon, authenticated, service_role;
+grant execute on function public.tomb_retention_sweep(integer) to service_role;
+select cron.schedule('tomb_retention_daily', '30 3 * * *', 'select public.tomb_retention_sweep(90);');
+
 -- ── גיוס ──
 
 create table if not exists public.g_donors (
@@ -202,7 +247,7 @@ create table if not exists public.g_settings (
 
 create table if not exists public.g_targets (
   client_id text not null,
-  month text not null,
+  target_month text not null,
   amount numeric(14,2) not null default 0,
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
@@ -210,8 +255,8 @@ create table if not exists public.g_targets (
   deleted_at timestamp with time zone,
   deleted_by text,
   constraint g_targets_pkey PRIMARY KEY (client_id),
-  constraint g_targets_month_key UNIQUE (month),
-  constraint g_targets_month_check CHECK ((month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text))
+  constraint g_targets_target_month_key UNIQUE (target_month),
+  constraint g_targets_target_month_check CHECK ((target_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text))
 );
 
 create table if not exists public.g_tasks (

@@ -3,13 +3,11 @@ import { appConfigure } from '../core/util.js';
 
 // ── מסירת התצורה ──
 // כאן הנתונים שהליבה קוראת, והחיווט — ב-main.js; הקובץ הזה נטען ראשון, לפני כל קריאה לליבה.
-// העידן עולה רק בשינוי צורת שורה — שורה ישנה שנדחפת נושאת מפתח שאין לו עמודה, נופלת ב-42703 וחוסמת את התור
-var DATA_ERA = 2;
+// העידן עולה בשינוי צורת רשומה או מפתחה, ושינוי שם טבלה הוא שינוי כזה — המראה ממופתחת בשם.
+// עותק בעידן ישן אינו נדחף — הממתין בו נרשם ביומן, והוא נזרק ונמשך מלא.
+var DATA_ERA = 3;
 
-// משך התצוגה של הטוסט הוא ערך פרטי ולא מנגנון.
-var TOAST_DEFAULT_MS = 2600;
-
-appConfigure({ DATA_ERA: DATA_ERA, TOAST_DEFAULT_MS: TOAST_DEFAULT_MS });
+appConfigure({ DATA_ERA: DATA_ERA });
 
 var SUPABASE_URL = self.APP.supabase.url;
 
@@ -154,7 +152,7 @@ var TABLES = [
   { t: 'g_pledges', key: 'client_id', soft: true,  order: 'due_date' },
   { t: 'g_txns',    key: 'client_id', soft: true,  order: 'txn_date', desc: true },
   { t: 'g_tasks',   key: 'client_id', soft: true,  order: 'due_date' },
-  { t: 'g_targets', key: 'client_id', soft: true,  order: 'month', desc: true, conflict: 'month' },
+  { t: 'g_targets', key: 'client_id', soft: true,  order: 'target_month', desc: true, conflict: 'target_month' },
   { t: 'g_users',   key: 'client_id', soft: false, order: 'created_at', strip: ['password'] },
   { t: KV_TABLE,    key: 'key', soft: false, conflict: 'key' }
 ];

@@ -118,11 +118,11 @@ function viewDonorCard() {
     h += '</tbody></table></div>';
     // barChart מחזירה מחרוזת ריקה מתחת לשתי נקודות, והמסך נשאר עם הטבלה בלבד.
     h += barChart(state.targets.map(function (t) {
-      var got = sum(monthTxns(t.month), function (x) { return x.amount; });
+      var got = sum(monthTxns(t.target_month), function (x) { return x.amount; });
       var tg = num(t.amount);
-      return { lab: t.month, val: got, tgt: tg,
+      return { lab: t.target_month, val: got, tgt: tg,
                end: (tg > 0 ? Math.round(got / tg * 100) : 0) + '%',
-               txt: monthLabel(t.month) + ': נגבה ' + ils(got) + ' מתוך יעד ' + ils(tg) };
+               txt: monthLabel(t.target_month) + ': נגבה ' + ils(got) + ' מתוך יעד ' + ils(tg) };
     }), 'גבייה חודשית מול היעד');
   }
   h += '</section>';
