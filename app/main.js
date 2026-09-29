@@ -129,7 +129,7 @@ var BK_CFG = {
       { name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
       { name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
       { name: 'g_targets', order: 'client_id', ts: 'updated_at' },
-      { name: KV_TABLE,    order: 'key' },
+      { name: KV_TABLE,    order: 'key',       ts: 'updated_at' },
       { name: 'g_users',   order: 'client_id', ts: 'updated_at',
         cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
     ];
