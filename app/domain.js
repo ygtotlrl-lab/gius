@@ -359,7 +359,7 @@ function syncPull() {
 }
 
 // משיכה קודמת לדחיפה — בלי מצב הענן אין לדעת מה מקומי וחדש יותר, ודחיפה עיוורת מחייה רשומה שנמחקה במכשיר אחר.
-// אין לרשום כל מחזור סנכרון — הפולינג רץ כל שלוש שניות, ו-sh_sync_log היא insert בלבד ואי-אפשר לדלל אותה.
+// אין לרשום כל מחזור סנכרון — הבדיקה המחזורית רצה כל שלוש שניות, ו-sh_sync_log היא insert בלבד ואי-אפשר לדלל אותה.
 function gSyncLog(action, key, recordCount, details) {
   try { logAction(action, key, recordCount, details); } catch (e) { }
 }
@@ -483,7 +483,7 @@ function donorComboItems() {
 var DONOR_COMBO = { val: true, max: 30, items: donorComboItems, make: donorNewOpen,
   makeLabel: function (q) { return DONOR_NEW_LABEL + (q ? ' — "' + q + '"' : ''); } };
 comboDef('donor', DONOR_COMBO);
-// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת מודאל — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
+// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת חלון דו-שיח — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
 comboDef('donor-txn', Object.assign({}, DONOR_COMBO, { pick: function (it) {
   var sel = $('#txn-pledge');
   if (sel) sel.innerHTML = pledgeOptionsFor(it ? it.value : '');
@@ -533,7 +533,7 @@ function donorNewSave(id) {
     .catch(errToast);
 }
 
-// saveX שמחזירה undefined היא ולידציה שעצרה, ו-runSave אינה סוגרת את המודאל — אין להחזיר משם ערך «בשביל האחידות».
+// saveX שמחזירה undefined היא ולידציה שעצרה, ו-runSave אינה סוגרת את חלון הדו-שיח — אין להחזיר משם ערך «בשביל האחידות».
 function pledgeOptionsFor(donorId) {
   var list = donorId ? pledgesOfDonor(donorId) : [];
   var h = '<option value="">— ללא שיוך —</option>';
