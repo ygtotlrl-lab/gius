@@ -1,5 +1,5 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
-import { GREG_MONTHS, HE_COLLATOR, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, kvParse } from '../core/util.js';
+import { DAY_MONTHS, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, kvParse, sortCompare } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
@@ -53,7 +53,7 @@ function dmyDate(iso) {
 function monthLabel(m) {
   var p = String(m || '').split('-');
   if (p.length !== 2) return String(m || '');
-  return (GREG_MONTHS[+p[1] - 1] || '') + ' ' + p[0];
+  return (DAY_MONTHS[+p[1] - 1] || '') + ' ' + p[0];
 }
 
 function shiftMonth(m, delta) {
@@ -69,17 +69,17 @@ function initials(name) {
 
 // תורמים — לפי השם, בסדר הא״ב.
 function gSortDonors(list) {
-  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(a.name || '', b.name || ''); });
+  return list.slice().sort(function (a, b) { return sortCompare(a.name || '', b.name || ''); });
 }
 
 // שמות — בסדר הא״ב.
 function gSortNames(list) {
-  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(a, b); });
+  return list.slice().sort(function (a, b) { return sortCompare(a, b); });
 }
 
 // תנועות — החדשה ראשונה.
 function gSortTxns(list) {
-  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(b.txn_date, a.txn_date); });
+  return list.slice().sort(function (a, b) { return sortCompare(b.txn_date, a.txn_date); });
 }
 
 // קבוצות הפילוח — הסכום הגדול ראשון.
@@ -167,7 +167,7 @@ function gSortRows(t, arr) {
     if (xe && ye) return 0;
     if (xe) return 1; // ריקים תמיד בסוף, כמו nullsFirst:false
     if (ye) return -1;
-    if (m.order === 'name') return HE_COLLATOR.compare(x, y) * dir;
+    if (m.order === 'name') return sortCompare(x, y) * dir;
     return (x < y ? -1 : x > y ? 1 : 0) * dir;
   });
 }

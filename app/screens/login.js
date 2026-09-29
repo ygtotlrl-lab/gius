@@ -2,7 +2,7 @@
 import { MSG_FILL_ALL, MSG_FILL_LOGIN, MSG_LOGIN_ERR, MSG_MY_PASS_TITLE, MSG_OFFLINE,
          MSG_OFFLINE_LOGIN, MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN,
          MSG_OFF_USER_WRITE, MSG_PASS_MISMATCH, MSG_PASS_SIX, MSG_SERVER_ERR, isNetErr,
-         withTimeout } from '../../core/util.js';
+         netTimeout } from '../../core/util.js';
 import { ctxSwitch, plTouch, runSave } from '../../core/sync.js';
 import { AUTH_USER_COLS, authLog, authPassFields, authUsersTable, authVerify, lkStop,
          sessClear, usersByName, usersGet, usersSaveOne,
@@ -54,7 +54,7 @@ function doLogin() {
 
   // בלי רשת — אימות מול הטביעה שבמראה ולא MSG_OFFLINE: אחרת רק מי שנכנס אחרון במכשיר יכול להיכנס.
   if (!navigator.onLine) { return doLoginOffline(username, password); }
-  return withTimeout(S.sb.from(authUsersTable()).select(AUTH_USER_COLS.join(',')).eq('username', username).limit(1))
+  return netTimeout(S.sb.from(authUsersTable()).select(AUTH_USER_COLS.join(',')).eq('username', username).limit(1))
     .then(ok)
     .then(function (rows) {
       var u = rows && rows[0];
@@ -140,7 +140,7 @@ function formSaveMyPassword() {
   // האימות מול הענן רגעי בלבד — הסיסמה הנוכחית אינה נכתבת לשום מקום.
   return runSave(function () {
     // האימות מול הטביעה; הטקסט הגלוי אינו נשלף.
-    return withTimeout(S.sb.from(authUsersTable()).select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
+    return netTimeout(S.sb.from(authUsersTable()).select('client_id,active,pass_salt,pass_fp').eq('client_id', state.user.client_id).limit(1))
       .then(function (res) {
         if (res && res.error) throw res.error;
         var u = res && Array.isArray(res.data) && res.data[0];

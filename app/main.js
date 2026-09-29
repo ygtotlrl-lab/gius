@@ -1,7 +1,7 @@
 // app/main.js — העלייה, הקליפה, מפת הפעולות והניווט
 import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
          MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
-         getDeviceId, uniqHas, withTimeout } from '../core/util.js';
+         getDeviceId, uniqHas, netTimeout } from '../core/util.js';
 import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCount, pendRender,
          plTouch, pushDirty, runSave, sbWatch } from '../core/sync.js';
 
@@ -176,7 +176,7 @@ var PUSH_CFG = {
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
     var m = tableMeta(t);
-    return withTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
+    return netTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
   },
   run:    function () { syncNow(); },
 };
@@ -207,7 +207,7 @@ var USER_CFG = {
   // ההודעה נקראת בזמן הקריאה ולא בזמן ההשמה — הקבוע מוצהר מתחת לבלוק, וקריאה בהשמה הייתה נותנת undefined.
   offMsg: function () { return MSG_OFF_USER_WRITE; },
   from: function () { return S.sb.from(authUsersTable()); },
-  run: function (q) { return withTimeout(q); },
+  run: function (q) { return netTimeout(q); },
   refreshed: function () { applyMirrorToState(); },
   revalidated: function (u) {
     state.user = { client_id: u.client_id, username: u.username, full_name: u.full_name, role: u.role };
