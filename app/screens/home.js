@@ -5,7 +5,7 @@ import { esc } from '../../core/ui.js';
 import { bar } from '../../core/chart.js';
 import { EPS } from '../constants.js';
 import { state } from '../state.js';
-import { collectedForPledge, dmyDate, donorName, emptyBox, ils, monthLabel, monthTxns,
+import { collectedForPledge, dmyDate, donorName, emptyBox, gSortGroups, ils, monthLabel, monthTxns,
          num, sum, targetFor } from '../domain.js';
 
 // ── מסך הבית ──
@@ -55,8 +55,7 @@ function groupBy(list, pick, fallback) {
     map[k].total += num(item.amount);
     map[k].count++;
   });
-  return order.map(function (k) { return map[k]; })
-    .sort(function (a, b) { return b.total - a.total; });
+  return gSortGroups(order.map(function (k) { return map[k]; }));
 }
 
 function viewHome() {

@@ -82,7 +82,23 @@ function initials(name) {
   return (parts[0] || '?').charAt(0) + (parts[1] ? parts[1].charAt(0) : '');
 }
 
-function byName(a, b) { return HE_COLLATOR.compare(a.name || '', b.name || ''); }
+// תורמים — לפי השם, בסדר הא״ב.
+function gSortDonors(list) {
+  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(a.name || '', b.name || ''); });
+}
+
+// שמות — בסדר הא״ב.
+function gSortNames(list) {
+  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(a, b); });
+}
+
+// תנועות — החדשה ראשונה.
+function gSortTxns(list) {
+  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(b.txn_date, a.txn_date); });
+}
+
+// קבוצות הפילוח — הסכום הגדול ראשון.
+function gSortGroups(list) { return list.slice().sort(function (a, b) { return b.total - a.total; }); }
 
 function uniqSorted(list) {
   var seen = {}, out = [];
@@ -91,7 +107,7 @@ function uniqSorted(list) {
     if (!v || seen[v]) continue;
     seen[v] = 1; out.push(v);
   }
-  return out.sort(function (a, b) { return HE_COLLATOR.compare(a, b); });
+  return gSortNames(out);
 }
 
 // ── עבודה אופליין — מראה, סנכרון ומיזוג ──
@@ -156,7 +172,7 @@ function liveRows(t) {
 }
 
 // המיון בצד הלקוח — המראה נקראת מהדיסק, והסדר אינו מגיע מהשרת.
-function sortRows(t, arr) {
+function gSortRows(t, arr) {
   var m = tableMeta(t);
   if (!m.order) return arr;
   var dir = m.desc ? -1 : 1;
@@ -191,12 +207,12 @@ function configFromMirror() {
 }
 
 function applyMirrorToState() {
-  state.donors  = sortRows('g_donors',  liveRows('g_donors'));
-  state.pledges = sortRows('g_pledges', liveRows('g_pledges'));
-  state.txns    = sortRows('g_txns',    liveRows('g_txns'));
-  state.tasks   = sortRows('g_tasks',   liveRows('g_tasks'));
-  state.targets = sortRows('g_targets', liveRows('g_targets'));
-  state.users   = sortRows('g_users',   liveRows('g_users'));
+  state.donors  = gSortRows('g_donors',  liveRows('g_donors'));
+  state.pledges = gSortRows('g_pledges', liveRows('g_pledges'));
+  state.txns    = gSortRows('g_txns',    liveRows('g_txns'));
+  state.tasks   = gSortRows('g_tasks',   liveRows('g_tasks'));
+  state.targets = gSortRows('g_targets', liveRows('g_targets'));
+  state.users   = gSortRows('g_users',   liveRows('g_users'));
   state.config  = configFromMirror();
 }
 
@@ -470,7 +486,7 @@ function emptyBox(icon, text) {
 // ── בורר התורם ──
 // רשימה שנבנית בכל הקלדה ולא select — בורר עם מאות אפשרויות אינו שמיש במובייל.
 function donorComboItems() {
-  return state.donors.slice().sort(byName).map(function (d) {
+  return gSortDonors(state.donors).map(function (d) {
     return { value: d.client_id, label: d.name, sub: d.phone || DONOR_NO_PHONE,
              find: [d.name, d.phone || '', d.agent || ''].join('\n') };
   });
@@ -550,7 +566,7 @@ function viewBare(html) {
 
 function donorMatches(q) {
   q = String(q || '').trim().toLowerCase();
-  var list = state.donors.slice().sort(byName);
+  var list = gSortDonors(state.donors);
   if (!q) return list;
   return list.filter(function (d) {
     return String(d.name || '').toLowerCase().indexOf(q) >= 0 ||
@@ -565,11 +581,10 @@ function warnIfNoFp(r) {
   return r;
 }
 
-export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
-         datalistHTML, dmyDate, donorById, donorFieldHTML, donorMatches,
-         donorName, donorNewCancel, donorNewSave, emptyBox, gAcadYearOf, ils, initials,
-         insert, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nullable, num, ok,
-         pendRowKey, pledgeById, pledgeOptionsFor, pledgeStatus,
-         pledgesOfDonor, rowPendingKey, rowTs, saveConfigList, selectHTML, shiftMonth,
-         softDelete, statusClass, stripRows, sum, syncNow, tableMeta, targetFor,
-         txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };
+export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
+         dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
+         emptyBox, gAcadYearOf, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
+         monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
+         pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, rowTs, saveConfigList,
+         selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow, tableMeta,
+         targetFor, txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };
