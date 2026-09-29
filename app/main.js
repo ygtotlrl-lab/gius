@@ -6,7 +6,8 @@ import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCo
          plTouch, pushDirty, runSave, sbWatch } from '../core/sync.js';
 
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
-import { coreBoot, logAwait } from '../core/backup.js';
+import { logAwait } from '../core/backup.js';
+import { bootRun } from '../core/boot-run.js';
 import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkReset, sessActive, sessGet,
          sessSet, usersGet, usersSaveOne, writeUser } from '../core/auth.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick, esc,
@@ -643,7 +644,7 @@ function start() {
   }));
 
   // הליבה עולה לפני הכניסה — הסימונים, הגיבוי והמראה אינם תלויים בה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
-  coreBoot();
+  bootRun();
 
   // אין שחזור סשן — סשן מ-localStorage בלי תפוגה משאיר מחובר לנצח במכשיר משותף ומוריד את role לדיסק.
   // הכניסה האופליין אינה תלויה בסשן — היא מוכרעת ב-authVerify מול pass_fp שבמראה.
