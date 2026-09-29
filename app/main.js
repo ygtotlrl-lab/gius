@@ -2,9 +2,9 @@
 import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
          MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
          getDeviceId, uniqHas, withTimeout } from '../core/util.js';
-import { afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKeys, eraKick, errToast, idEq,
-         pendAlertDismiss, pendBoot, pendCount, pendRender, plBoot, plTouch,
-         pushDirty, rtyBoot, runSave, sbWatch, tombBoot } from '../core/sync.js';
+import { afterSave, ctxSwitch, eraKeys, eraKick, errToast, idEq, pendAlertDismiss, pendBoot,
+         pendCount, pendRender, plBoot, plTouch, pushDirty, rtyBoot, runSave, sbWatch,
+         tombBoot } from '../core/sync.js';
 import { hwBoot, lsBoot, lsClearHorizons, lsRemove } from '../core/storage.js';
 import { MIRROR, mirrorBoot, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { bkBoot, logAwait } from '../core/backup.js';
@@ -24,7 +24,7 @@ import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          MSG_WHAT_TO_ADD, PASS_SIX_RE, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL,
          TABLES } from './constants.js';
 import { KDRAG, S, shell, state } from './state.js';
-import { $, _gMarkPushed, applyMirrorToState, donorById, donorMatches,
+import { $, applyMirrorToState, donorById, donorMatches,
          donorNewCancel, donorNewSave, mirrorHasData, monthKeyOf, pendRowKey,
          pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
@@ -108,13 +108,7 @@ var LS_CFG = {
     { t: 'g_targets', why: 'יעדים — שורה לחודש, ⛔ שתים-עשרה בשנה' },
     { t: KV_TABLE,    why: 'הגדרות — שורה למפתח, ⛔ ומספר המפתחות קבוע בקוד' },
     { t: 'g_users',   why: 'משתמשים — שורה למשתמש, ⚠️ והיא מסלול הכניסה האופליין' }
-  ],
-
-  pending: function () { try { return pendCount() > 0; } catch (e) { return true; } },
-
-  // 0 בכוונה — חותמת המשיכה המלאה אינה עד דחיפה, ופינוי שנשען עליה מוחק מהדיסק רשומה שמעולם לא עלתה.
-  // כל מפתח ב-oldRecords מביא עד דחיפה משלו, _gPushedAt.
-  syncedThrough: function () { return 0; }
+  ]
 };
 
 // האפליקציה בפרויקט Supabase נפרד — ולכן sh_backup ו-sh_sync_log נוצרות בקובץ הסכימה שלה.
@@ -180,13 +174,12 @@ var PUSH_CFG = {
   tables: PUSH_TABLES,
   chunk:  500,
   delay:  400,
-  rows:   function (t) { S._gPushEp = ctxEpoch(); return MIRROR[t] || []; },
+  rows:   function (t) { return MIRROR[t] || []; },
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
     var m = tableMeta(t);
     return withTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
   },
-  mark:   function (t) { if (!ctxStale(S._gPushEp)) _gMarkPushed(t); },
   run:    function () { syncNow(); },
 };
 
@@ -233,8 +226,6 @@ var USER_CFG = {
     if (!res || res.error) throw ((res && res.error) || new Error(MSG_SERVER_ERR));
     var saved = (Array.isArray(res.data) && res.data[0]) || body;
     usersSaveOne(saved);
-    // העד נכתב אחרי כתיבה לענן שחזרה ok — משיכה אינה ראיה שהשורה שלנו עלתה.
-    _gMarkPushed('g_users');
     applyMirrorToState();
     // g_users נמשכת בבדיקה המחזורית, ולכן גם כתיבה אליה מקדמת את החותמת — אחרת משתמש חדש לא יגיע למכשיר אחר עד שינוי נתונים אחר.
     plTouch();

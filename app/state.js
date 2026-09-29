@@ -3,12 +3,10 @@
 // מצב שמודולים שונים כותבים — אובייקט אחד, כי קישור מיובא אינו ניתן להשמה.
 const S = {
   sb: null,
-  // ההקשר נלכד לפני ההמתנה — mark רץ אחרי await, וקריאת הגלובלי הייתה זוקפת את ההצלחה למשתמש אחר.
-  _gPushEp: 0,
   _pulling: false,
   _netWarned: false,
   _lastPullOk: 0,
-  // _gSeenTs ו-_lastSeenOk מתקדמות גם במשיכה — אין להזין מהן את עד הפינוי; העד הוא _gPushedAt פר-טבלה.
+  // _gSeenTs ו-_lastSeenOk מתקדמות גם במשיכה — אין להזין מהן את עד הפינוי; העד נרשם בליבה, בדחיפה עצמה.
   _gSeenTs: 0,
   _lastSeenOk: 0,
   _gPullLogged: false,

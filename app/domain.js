@@ -12,13 +12,6 @@ import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_DON
          MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
 
-// ── עד הדחיפה פר-מפתח ──
-// נכתב רק אחרי מעבר דחיפה של הטבלה בלי שורה בכשל רשת, והדחיפה רצה רק אחרי משיכה מלאה שהצליחה.
-// מכשיר שרק קורא מקבל אותו גם הוא — המעבר מסתיים ריק; אין לגזור אותו ממשיכה לבדה.
-var _gPushedAt = {};
-
-function _gMarkPushed(tbl) { _gPushedAt[tbl] = Date.now(); }
-
 // ── סימוני ממתין ──
 // אין תור — האישור מגיע מ-pendClear על upsert מוצלח ומ-pendReconcile אחרי משיכה שהצליחה.
 function pendRowKey(table, id) { return table + ':' + id; }
@@ -572,7 +565,7 @@ function warnIfNoFp(r) {
   return r;
 }
 
-export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
+export { $, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
          dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
          emptyBox, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
          monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
