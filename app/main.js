@@ -131,13 +131,13 @@ var BK_CFG = {
   secrets: [],
   sources: function () {
     return [
-      { kind: 'table', name: 'g_donors',  order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_pledges', order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_targets', order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: KV_TABLE,    order: 'key' },
-      { kind: 'table', name: 'g_users',   order: 'client_id', ts: 'updated_at',
+      { name: 'g_donors',  order: 'client_id', ts: 'updated_at' },
+      { name: 'g_pledges', order: 'client_id', ts: 'updated_at' },
+      { name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
+      { name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
+      { name: 'g_targets', order: 'client_id', ts: 'updated_at' },
+      { name: KV_TABLE,    order: 'key' },
+      { name: 'g_users',   order: 'client_id', ts: 'updated_at',
         cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
     ];
   }
