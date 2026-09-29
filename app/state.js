@@ -5,9 +5,6 @@ const S = {
   sb: null,
   // ההקשר נלכד לפני ההמתנה — mark רץ אחרי await, וקריאת הגלובלי הייתה זוקפת את ההצלחה למשתמש אחר.
   _gPushEp: 0,
-  // משווה אחד ברמת המודול — localeCompare בונה משווה חדש בכל קריאה, ובתוך sort זה קורה O(n log n) פעמים.
-  // בלי Intl.Collator — נפילה-חזרה ל-localeCompare עם אותו he ואותו סדר.
-  _heColl: null,
   _pulling: false,
   _netWarned: false,
   _lastPullOk: 0,

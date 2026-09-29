@@ -6,11 +6,10 @@ import { barChart } from '../../core/chart.js';
 import { MSG_AMOUNT_POSITIVE, MSG_EDIT_DONOR, MSG_EDIT_TXN, MSG_NEED_NAME, MSG_NEW_DONOR,
          MSG_NEW_TXN, MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
-import { $, HE, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
-         donorFieldHTML, donorMatches, emptyBox, ils, initials, insert, monthLabel,
-         monthTxns, nullable, num, pendRowKey, pledgeOptionsFor, pledgeStatus,
-         pledgesOfDonor, selectHTML, statusClass, sum, txnsOfDonor, update,
-         val } from '../domain.js';
+import { $, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
+         donorFieldHTML, donorMatches, emptyBox, gSortTxns, ils, initials, insert, monthLabel,
+         monthTxns, nullable, num, pendRowKey, pledgeOptionsFor, pledgeStatus, pledgesOfDonor,
+         selectHTML, statusClass, sum, txnsOfDonor, update, val } from '../domain.js';
 
 // ── תורמים ──
 
@@ -43,7 +42,7 @@ function viewDonorCard() {
   if (!d) { state.donorId = null; return viewDonors(); }
 
   var pl = pledgesOfDonor(d.client_id);
-  var tx = txnsOfDonor(d.client_id).slice().sort(function (a, b) { return HE.compare(b.txn_date, a.txn_date); });
+  var tx = gSortTxns(txnsOfDonor(d.client_id));
   var pledged = sum(pl, function (p) { return p.amount; });
   var given = sum(tx, function (t) { return t.amount; });
   var left = Math.max(0, pledged - given);

@@ -144,7 +144,7 @@ var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', KV
 
 // ── מזהה מכשיר ──
 
-// אין מרווח פולינג משלו — המרווח היחיד הוא PL_CFG.every.
+// אין מרווח בדיקה מחזורית משלו — המרווח היחיד הוא PL_CFG.every.
 
 // strip — עמודות שאינן נשמרות במראה: password נשלפת, ו-pass_salt ו-pass_fp לעולם לא — הן מה שמאפשר כניסה בלי רשת.
 var TABLES = [

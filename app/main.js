@@ -131,13 +131,13 @@ var BK_CFG = {
   secrets: [],
   sources: function () {
     return [
-      { kind: 'table', name: 'g_donors',  order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_pledges', order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: 'g_targets', order: 'client_id', ts: 'updated_at' },
-      { kind: 'table', name: KV_TABLE,    order: 'key' },
-      { kind: 'table', name: 'g_users',   order: 'client_id', ts: 'updated_at',
+      { name: 'g_donors',  order: 'client_id', ts: 'updated_at' },
+      { name: 'g_pledges', order: 'client_id', ts: 'updated_at' },
+      { name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
+      { name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
+      { name: 'g_targets', order: 'client_id', ts: 'updated_at' },
+      { name: KV_TABLE,    order: 'key' },
+      { name: 'g_users',   order: 'client_id', ts: 'updated_at',
         cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
     ];
   }
@@ -260,7 +260,7 @@ var USER_CFG = {
     // העד נכתב אחרי כתיבה לענן שחזרה ok — משיכה אינה ראיה שהשורה שלנו עלתה.
     _gMarkPushed('g_users');
     applyMirrorToState();
-    // g_users נמשכת בפולינג, ולכן גם כתיבה אליה מקדמת את החותמת — אחרת משתמש חדש לא יגיע למכשיר אחר עד שינוי נתונים אחר.
+    // g_users נמשכת בבדיקה המחזורית, ולכן גם כתיבה אליה מקדמת את החותמת — אחרת משתמש חדש לא יגיע למכשיר אחר עד שינוי נתונים אחר.
     plTouch();
     // ללא טביעה: הגזירה נכשלה ו-pass_fp נכתב ריק לצד סיסמה חדשה; השדה נכנס ל-body רק כשנמסרה סיסמה.
     return { noFp: Object.prototype.hasOwnProperty.call(body, 'pass_fp') && !body.pass_fp };
@@ -281,7 +281,7 @@ var TABS = [
 ];
 
 function renderShell() {
-  var tabsHtml = TABS.map(function (t) {
+  var tabsHTML = TABS.map(function (t) {
     return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
       '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
   }).join('');
@@ -289,7 +289,7 @@ function renderShell() {
   shellBare(false);
   $('header.topbar').innerHTML =
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
-      '<nav class="tabbar">' + tabsHtml + '</nav>' +
+      '<nav class="tabbar">' + tabsHTML + '</nav>' +
       '<div class="who"><div class="who-id"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
@@ -311,7 +311,7 @@ function render() {
   else if (state.screen === 'tasks') { view.innerHTML = viewTasks(); }
   else if (state.screen === 'settings') { view.innerHTML = viewSettings(); }
 
-  // קופצים לראש רק במעבר מסך — render נקראת גם מהפולינג, וגלילה ללא תנאי הייתה מקפיצה את המסך באמצע עבודה.
+  // קופצים לראש רק במעבר מסך — render נקראת גם מהבדיקה המחזורית, וגלילה ללא תנאי הייתה מקפיצה את המסך באמצע עבודה.
   var key = state.screen + '/' + (state.donorId || '');
   if (key !== S.lastViewKey) { window.scrollTo(0, 0); S.lastViewKey = key; }
 }
@@ -619,7 +619,7 @@ document.addEventListener('click', function (e) {
   actRun(el, fn);
 });
 
-// שמירה בשדה עריכה קודמת לסגירת המודאל — אחרת Escape בשדה שבתוך מודאל היה סוגר אותו במקום לבטל את השדה.
+// שמירה בשדה עריכה קודמת לסגירת חלון הדו-שיח — אחרת Escape בשדה שבתוך חלון דו-שיח היה סוגר אותו במקום לבטל את השדה.
 document.addEventListener('keydown', function (e) {
   if (comboKey(e) || ksKey(e)) return;
   modalEsc(e);
@@ -654,7 +654,7 @@ document.addEventListener('change', function (e) {
   }
 });
 
-// focusin ולא focus — focus אינו עולה בעץ, ומאזין על השדה עצמו מת עם המודאל שנבנה מחדש.
+// focusin ולא focus — focus אינו עולה בעץ, ומאזין על השדה עצמו מת עם חלון הדו-שיח שנבנה מחדש.
 document.addEventListener('focusin', comboFocus);
 
 // ── עלייה ──

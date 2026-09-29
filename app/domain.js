@@ -1,5 +1,5 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
-import { MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
+import { HE_COLLATOR, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
@@ -11,11 +11,6 @@ import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from
 import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_DONOR_CREATED,
          MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
-
-// ── מיון עברי ──
-try { S._heColl = new Intl.Collator('he'); } catch (e) { S._heColl = null; }
-
-var HE = S._heColl || { compare: function (a, b) { return String(a).localeCompare(String(b), 'he'); } };
 
 // ── עד הדחיפה פר-מפתח ──
 // נכתב רק אחרי מעבר דחיפה של הטבלה בלי שורה בכשל רשת, והדחיפה רצה רק אחרי משיכה מלאה שהצליחה.
@@ -87,7 +82,23 @@ function initials(name) {
   return (parts[0] || '?').charAt(0) + (parts[1] ? parts[1].charAt(0) : '');
 }
 
-function byName(a, b) { return HE.compare(a.name || '', b.name || ''); }
+// תורמים — לפי השם, בסדר הא״ב.
+function gSortDonors(list) {
+  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(a.name || '', b.name || ''); });
+}
+
+// שמות — בסדר הא״ב.
+function gSortNames(list) {
+  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(a, b); });
+}
+
+// תנועות — החדשה ראשונה.
+function gSortTxns(list) {
+  return list.slice().sort(function (a, b) { return HE_COLLATOR.compare(b.txn_date, a.txn_date); });
+}
+
+// קבוצות הפילוח — הסכום הגדול ראשון.
+function gSortGroups(list) { return list.slice().sort(function (a, b) { return b.total - a.total; }); }
 
 function uniqSorted(list) {
   var seen = {}, out = [];
@@ -96,7 +107,7 @@ function uniqSorted(list) {
     if (!v || seen[v]) continue;
     seen[v] = 1; out.push(v);
   }
-  return out.sort(function (a, b) { return HE.compare(a, b); });
+  return gSortNames(out);
 }
 
 // ── עבודה אופליין — מראה, סנכרון ומיזוג ──
@@ -161,7 +172,7 @@ function liveRows(t) {
 }
 
 // המיון בצד הלקוח — המראה נקראת מהדיסק, והסדר אינו מגיע מהשרת.
-function sortRows(t, arr) {
+function gSortRows(t, arr) {
   var m = tableMeta(t);
   if (!m.order) return arr;
   var dir = m.desc ? -1 : 1;
@@ -171,7 +182,7 @@ function sortRows(t, arr) {
     if (xe && ye) return 0;
     if (xe) return 1; // ריקים תמיד בסוף, כמו nullsFirst:false
     if (ye) return -1;
-    if (m.order === 'name') return HE.compare(x, y) * dir;
+    if (m.order === 'name') return HE_COLLATOR.compare(x, y) * dir;
     return (x < y ? -1 : x > y ? 1 : 0) * dir;
   });
 }
@@ -196,12 +207,12 @@ function configFromMirror() {
 }
 
 function applyMirrorToState() {
-  state.donors  = sortRows('g_donors',  liveRows('g_donors'));
-  state.pledges = sortRows('g_pledges', liveRows('g_pledges'));
-  state.txns    = sortRows('g_txns',    liveRows('g_txns'));
-  state.tasks   = sortRows('g_tasks',   liveRows('g_tasks'));
-  state.targets = sortRows('g_targets', liveRows('g_targets'));
-  state.users   = sortRows('g_users',   liveRows('g_users'));
+  state.donors  = gSortRows('g_donors',  liveRows('g_donors'));
+  state.pledges = gSortRows('g_pledges', liveRows('g_pledges'));
+  state.txns    = gSortRows('g_txns',    liveRows('g_txns'));
+  state.tasks   = gSortRows('g_tasks',   liveRows('g_tasks'));
+  state.targets = gSortRows('g_targets', liveRows('g_targets'));
+  state.users   = gSortRows('g_users',   liveRows('g_users'));
   state.config  = configFromMirror();
 }
 
@@ -359,7 +370,7 @@ function syncPull() {
 }
 
 // משיכה קודמת לדחיפה — בלי מצב הענן אין לדעת מה מקומי וחדש יותר, ודחיפה עיוורת מחייה רשומה שנמחקה במכשיר אחר.
-// אין לרשום כל מחזור סנכרון — הפולינג רץ כל שלוש שניות, ו-sh_sync_log היא insert בלבד ואי-אפשר לדלל אותה.
+// אין לרשום כל מחזור סנכרון — הבדיקה המחזורית רצה כל שלוש שניות, ו-sh_sync_log היא insert בלבד ואי-אפשר לדלל אותה.
 function gSyncLog(action, key, recordCount, details) {
   try { logAction(action, key, recordCount, details); } catch (e) { }
 }
@@ -475,7 +486,7 @@ function emptyBox(icon, text) {
 // ── בורר התורם ──
 // רשימה שנבנית בכל הקלדה ולא select — בורר עם מאות אפשרויות אינו שמיש במובייל.
 function donorComboItems() {
-  return state.donors.slice().sort(byName).map(function (d) {
+  return gSortDonors(state.donors).map(function (d) {
     return { value: d.client_id, label: d.name, sub: d.phone || DONOR_NO_PHONE,
              find: [d.name, d.phone || '', d.agent || ''].join('\n') };
   });
@@ -483,7 +494,7 @@ function donorComboItems() {
 var DONOR_COMBO = { val: true, max: 30, items: donorComboItems, make: donorNewOpen,
   makeLabel: function (q) { return DONOR_NEW_LABEL + (q ? ' — "' + q + '"' : ''); } };
 comboDef('donor', DONOR_COMBO);
-// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת מודאל — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
+// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת חלון דו-שיח — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
 comboDef('donor-txn', Object.assign({}, DONOR_COMBO, { pick: function (it) {
   var sel = $('#txn-pledge');
   if (sel) sel.innerHTML = pledgeOptionsFor(it ? it.value : '');
@@ -533,7 +544,7 @@ function donorNewSave(id) {
     .catch(errToast);
 }
 
-// saveX שמחזירה undefined היא ולידציה שעצרה, ו-runSave אינה סוגרת את המודאל — אין להחזיר משם ערך «בשביל האחידות».
+// saveX שמחזירה undefined היא ולידציה שעצרה, ו-runSave אינה סוגרת את חלון הדו-שיח — אין להחזיר משם ערך «בשביל האחידות».
 function pledgeOptionsFor(donorId) {
   var list = donorId ? pledgesOfDonor(donorId) : [];
   var h = '<option value="">— ללא שיוך —</option>';
@@ -555,7 +566,7 @@ function viewBare(html) {
 
 function donorMatches(q) {
   q = String(q || '').trim().toLowerCase();
-  var list = state.donors.slice().sort(byName);
+  var list = gSortDonors(state.donors);
   if (!q) return list;
   return list.filter(function (d) {
     return String(d.name || '').toLowerCase().indexOf(q) >= 0 ||
@@ -570,11 +581,10 @@ function warnIfNoFp(r) {
   return r;
 }
 
-export { $, HE, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
-         datalistHTML, dmyDate, donorById, donorFieldHTML, donorMatches,
-         donorName, donorNewCancel, donorNewSave, emptyBox, gAcadYearOf, ils, initials,
-         insert, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nullable, num, ok,
-         pendRowKey, pledgeById, pledgeOptionsFor, pledgeStatus,
-         pledgesOfDonor, rowPendingKey, rowTs, saveConfigList, selectHTML, shiftMonth,
-         softDelete, statusClass, stripRows, sum, syncNow, tableMeta, targetFor,
-         txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };
+export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
+         dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
+         emptyBox, gAcadYearOf, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
+         monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
+         pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, rowTs, saveConfigList,
+         selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow, tableMeta,
+         targetFor, txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };
