@@ -1,5 +1,5 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
-import { HE_COLLATOR, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
+import { GREG_MONTHS, HE_COLLATOR, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
@@ -11,13 +11,6 @@ import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from
 import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_DONOR_CREATED,
          MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
-
-// ── עד הדחיפה פר-מפתח ──
-// נכתב רק אחרי מעבר דחיפה של הטבלה בלי שורה בכשל רשת, והדחיפה רצה רק אחרי משיכה מלאה שהצליחה.
-// מכשיר שרק קורא מקבל אותו גם הוא — המעבר מסתיים ריק; אין לגזור אותו ממשיכה לבדה.
-var _gPushedAt = {};
-
-function _gMarkPushed(tbl) { _gPushedAt[tbl] = Date.now(); }
 
 // ── סימוני ממתין ──
 // אין תור — האישור מגיע מ-pendClear על upsert מוצלח ומ-pendReconcile אחרי משיכה שהצליחה.
@@ -60,12 +53,12 @@ function dmyDate(iso) {
 function monthLabel(m) {
   var p = String(m || '').split('-');
   if (p.length !== 2) return String(m || '');
-  return new Date(+p[0], +p[1] - 1, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+  return (GREG_MONTHS[+p[1] - 1] || '') + ' ' + p[0];
 }
 
 function shiftMonth(m, delta) {
   var p = m.split('-');
-  var d = new Date(+p[0], +p[1] - 1 + delta, 1);
+  var d = dayNoon(+p[0], +p[1] - 1 + delta, 1);
   return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
 }
 
@@ -572,7 +565,7 @@ function warnIfNoFp(r) {
   return r;
 }
 
-export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
+export { $, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
          dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
          emptyBox, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
          monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,

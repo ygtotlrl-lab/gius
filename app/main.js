@@ -2,18 +2,15 @@
 import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
          MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
          getDeviceId, uniqHas, withTimeout } from '../core/util.js';
-import { afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKeys, eraKick, errToast, idEq,
-         pendAlertDismiss, pendBoot, pendCount, pendRender, plBoot, plTouch,
-         pushDirty, rtyBoot, runSave, sbWatch, tombBoot } from '../core/sync.js';
-import { hwBoot, lsBoot, lsClearHorizons, lsRemove } from '../core/storage.js';
-import { MIRROR, mirrorBoot, mirrorKey, mirrorTables } from '../core/mirror.js';
-import { bkBoot, logAwait } from '../core/backup.js';
-import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkBoot, lkReset,
-         sessActive, sessGet, sessSet, usersGet, usersSaveOne,
-         writeUser } from '../core/auth.js';
-import { actRun, ask, closeAsk, closeModal, comboFocus, comboInput, comboKey, comboMake,
-         comboOutside, comboPick, esc, ksKey, modalBackdrop, modalEsc, openModal,
-         shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
+import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCount, pendRender,
+         plTouch, pushDirty, runSave, sbWatch } from '../core/sync.js';
+
+import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
+import { coreBoot, logAwait } from '../core/backup.js';
+import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkReset, sessActive, sessGet,
+         sessSet, usersGet, usersSaveOne, writeUser } from '../core/auth.js';
+import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick, esc,
+         openModal, shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
 import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          MSG_DEL_DONOR_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DEL_PLEDGE_TITLE,
          MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY, MSG_DEL_TASK_TITLE,
@@ -24,7 +21,7 @@ import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          MSG_WHAT_TO_ADD, PASS_SIX_RE, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL,
          TABLES } from './constants.js';
 import { KDRAG, S, shell, state } from './state.js';
-import { $, _gMarkPushed, applyMirrorToState, donorById, donorMatches,
+import { $, applyMirrorToState, donorById, donorMatches,
          donorNewCancel, donorNewSave, mirrorHasData, monthKeyOf, pendRowKey,
          pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
@@ -108,13 +105,7 @@ var LS_CFG = {
     { t: 'g_targets', why: 'יעדים — שורה לחודש, ⛔ שתים-עשרה בשנה' },
     { t: KV_TABLE,    why: 'הגדרות — שורה למפתח, ⛔ ומספר המפתחות קבוע בקוד' },
     { t: 'g_users',   why: 'משתמשים — שורה למשתמש, ⚠️ והיא מסלול הכניסה האופליין' }
-  ],
-
-  pending: function () { try { return pendCount() > 0; } catch (e) { return true; } },
-
-  // 0 בכוונה — חותמת המשיכה המלאה אינה עד דחיפה, ופינוי שנשען עליה מוחק מהדיסק רשומה שמעולם לא עלתה.
-  // כל מפתח ב-oldRecords מביא עד דחיפה משלו, _gPushedAt.
-  syncedThrough: function () { return 0; }
+  ]
 };
 
 // האפליקציה בפרויקט Supabase נפרד — ולכן sh_backup ו-sh_sync_log נוצרות בקובץ הסכימה שלה.
@@ -135,7 +126,7 @@ var BK_CFG = {
       { name: 'g_txns',    order: 'client_id', ts: 'updated_at' },
       { name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
       { name: 'g_targets', order: 'client_id', ts: 'updated_at' },
-      { name: KV_TABLE,    order: 'key' },
+      { name: KV_TABLE,    order: 'key',       ts: 'updated_at' },
       { name: 'g_users',   order: 'client_id', ts: 'updated_at',
         cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
     ];
@@ -180,21 +171,18 @@ var PUSH_CFG = {
   tables: PUSH_TABLES,
   chunk:  500,
   delay:  400,
-  rows:   function (t) { S._gPushEp = ctxEpoch(); return MIRROR[t] || []; },
+  rows:   function (t) { return MIRROR[t] || []; },
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
     var m = tableMeta(t);
     return withTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
   },
-  mark:   function (t) { if (!ctxStale(S._gPushEp)) _gMarkPushed(t); },
   run:    function () { syncNow(); },
 };
 
-// החלון החם כבוי — כל טבלה שגדלה כאן נדרשת במלואה (fullHistory): «נגבה» להתחייבות רב-שנתית סוכם מכל תנועותיה,
-// ותנועה של שנה סגורה שפונתה מהדיסק היא סכום שגוי אופליין. המנגנון מחווט, ואין לו מה לצמצם.
+// רשימה ריקה — כל טבלה שגדלה כאן נדרשת במלואה (LS_CFG.fullHistory): «נגבה» להתחייבות רב-שנתית סוכם מכל תנועותיה,
+// ותנועה של שנה סגורה שפונתה מהדיסק היא סכום שגוי אופליין.
 var HW_CFG = {
-  enabled: false,
-  admin: function () { return isAdmin(); },
   specs: []
 };
 
@@ -202,11 +190,6 @@ var ERA_CFG = {
   prefix: self.APP.prefix,
   client: function () { return S.sb; },
   table:  function () { return KV_TABLE; },
-  // גם אופק הפינוי נמחק — אופק ששרד מסנן את מה שהמשיכה מחזירה, והמכשיר היה נשאר ריק.
-  wipe:   function () {
-    mirrorTables().forEach(function (t) { MIRROR[t] = MIRROR_CFG.empty(); lsRemove(mirrorKey(t)); });
-    lsClearHorizons();
-  },
   // הדחיפה היא ראיה טרייה ולא זיכרון — מכשיר נקי מקבל ok עם still ריק.
   push:   function () { return pushDirty(null); },
   refresh: function () { return syncNow(); },
@@ -235,8 +218,6 @@ var USER_CFG = {
     if (!res || res.error) throw ((res && res.error) || new Error(MSG_SERVER_ERR));
     var saved = (Array.isArray(res.data) && res.data[0]) || body;
     usersSaveOne(saved);
-    // העד נכתב אחרי כתיבה לענן שחזרה ok — משיכה אינה ראיה שהשורה שלנו עלתה.
-    _gMarkPushed('g_users');
     applyMirrorToState();
     // g_users נמשכת בבדיקה המחזורית, ולכן גם כתיבה אליה מקדמת את החותמת — אחרת משתמש חדש לא יגיע למכשיר אחר עד שינוי נתונים אחר.
     plTouch();
@@ -583,25 +564,8 @@ var DOM_ACTIONS = {
 };
 
 // ── מאזינים גלובליים ──
-// if (el.tagName === 'A') return אינו קישוט — אחרת קישור בתוך אזור data-act מקבל preventDefault; אין למחוק גם כשאין קישור כזה.
-// סגירת הרקע קודמת לניתוב — לחיצה על הרקע אינה נושאת data-act.
-document.addEventListener('click', function (e) {
-  comboOutside(e);
-  if (modalBackdrop(e)) return;
-  var el = e.target.closest('[data-act]');
-  if (!el) return;
-  var fn = DOM_ACTIONS[el.dataset.act];
-  if (!fn) return;
-  if (el.tagName === 'A') return;
-  e.preventDefault();
-  actRun(el, fn);
-});
+actWire(DOM_ACTIONS);
 
-// שמירה בשדה עריכה קודמת לסגירת חלון הדו-שיח — אחרת Escape בשדה שבתוך חלון דו-שיח היה סוגר אותו במקום לבטל את השדה.
-document.addEventListener('keydown', function (e) {
-  if (comboKey(e) || ksKey(e)) return;
-  modalEsc(e);
-});
 
 // החיפוש מרנדר רק את הרשימה והמונה — רינדור מלא בונה מחדש את השדה ומאבד את הפוקוס אחרי כל תו.
 document.addEventListener('input', function (e) {
@@ -678,19 +642,8 @@ function start() {
     auth: { persistSession: false, autoRefreshToken: false }
   }));
 
-  // מדידה ופינוי יזום לפני טעינת המראה — כדי שהמשיכה שאחריה תכתוב לאחסון שכבר יש בו מקום.
-  try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
-  mirrorBoot();
-  // סימוני ההמתנה נטענים לפני הרינדור הראשון — כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
-  try { pendBoot(); } catch (e) { console.warn('[pend] pendBoot', e); }
-  try { tombBoot(); } catch (e) { console.warn('[tomb] tombBoot', e); }
-  try { eraKick(); } catch (e) { console.warn('[era] eraKick', e); }
-  // הגיבוי מופעל בעלייה ולא אחרי משיכה שהצליחה — אחרת בתקופה בלי סנכרון הוא מושבת בלי שאיש יודע.
-  try { bkBoot(); } catch (e) { console.warn('[bk] bkBoot', e); }
-  try { rtyBoot(); } catch (e) { console.warn('[rty] rtyBoot', e); }
-  try { plBoot(); } catch (e) { console.warn('[pl] plBoot', e); }
-  try { hwBoot(); } catch (e) { console.warn('[hw] hwBoot', e); }
-  try { lkBoot(); } catch (e) { console.warn('[lk] lkBoot', e); }
+  // הליבה עולה לפני הכניסה — הסימונים, הגיבוי והמראה אינם תלויים בה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
+  coreBoot();
 
   // אין שחזור סשן — סשן מ-localStorage בלי תפוגה משאיר מחובר לנצח במכשיר משותף ומוריד את role לדיסק.
   // הכניסה האופליין אינה תלויה בסשן — היא מוכרעת ב-authVerify מול pass_fp שבמראה.
