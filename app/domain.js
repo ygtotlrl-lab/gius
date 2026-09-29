@@ -1,5 +1,5 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
-import { MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
+import { HE_COLLATOR, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
@@ -11,11 +11,6 @@ import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from
 import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_DONOR_CREATED,
          MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
-
-// ── מיון עברי ──
-try { S._heColl = new Intl.Collator('he'); } catch (e) { S._heColl = null; }
-
-var HE = S._heColl || { compare: function (a, b) { return String(a).localeCompare(String(b), 'he'); } };
 
 // ── עד הדחיפה פר-מפתח ──
 // נכתב רק אחרי מעבר דחיפה של הטבלה בלי שורה בכשל רשת, והדחיפה רצה רק אחרי משיכה מלאה שהצליחה.
@@ -87,7 +82,7 @@ function initials(name) {
   return (parts[0] || '?').charAt(0) + (parts[1] ? parts[1].charAt(0) : '');
 }
 
-function byName(a, b) { return HE.compare(a.name || '', b.name || ''); }
+function byName(a, b) { return HE_COLLATOR.compare(a.name || '', b.name || ''); }
 
 function uniqSorted(list) {
   var seen = {}, out = [];
@@ -96,7 +91,7 @@ function uniqSorted(list) {
     if (!v || seen[v]) continue;
     seen[v] = 1; out.push(v);
   }
-  return out.sort(function (a, b) { return HE.compare(a, b); });
+  return out.sort(function (a, b) { return HE_COLLATOR.compare(a, b); });
 }
 
 // ── עבודה אופליין — מראה, סנכרון ומיזוג ──
@@ -171,7 +166,7 @@ function sortRows(t, arr) {
     if (xe && ye) return 0;
     if (xe) return 1; // ריקים תמיד בסוף, כמו nullsFirst:false
     if (ye) return -1;
-    if (m.order === 'name') return HE.compare(x, y) * dir;
+    if (m.order === 'name') return HE_COLLATOR.compare(x, y) * dir;
     return (x < y ? -1 : x > y ? 1 : 0) * dir;
   });
 }
@@ -570,7 +565,7 @@ function warnIfNoFp(r) {
   return r;
 }
 
-export { $, HE, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
+export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge,
          datalistHTML, dmyDate, donorById, donorFieldHTML, donorMatches,
          donorName, donorNewCancel, donorNewSave, emptyBox, gAcadYearOf, ils, initials,
          insert, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nullable, num, ok,

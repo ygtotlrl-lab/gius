@@ -1,12 +1,12 @@
 // app/screens/donors.js — התורמים, כרטיס התורם והתנועות
-import { dayToday } from '../../core/util.js';
+import { HE_COLLATOR, dayToday } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { comboValue, esc, openModal, toast } from '../../core/ui.js';
 import { barChart } from '../../core/chart.js';
 import { MSG_AMOUNT_POSITIVE, MSG_EDIT_DONOR, MSG_EDIT_TXN, MSG_NEED_NAME, MSG_NEW_DONOR,
          MSG_NEW_TXN, MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
-import { $, HE, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
+import { $, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorMatches, emptyBox, ils, initials, insert, monthLabel,
          monthTxns, nullable, num, pendRowKey, pledgeOptionsFor, pledgeStatus,
          pledgesOfDonor, selectHTML, statusClass, sum, txnsOfDonor, update,
@@ -43,7 +43,7 @@ function viewDonorCard() {
   if (!d) { state.donorId = null; return viewDonors(); }
 
   var pl = pledgesOfDonor(d.client_id);
-  var tx = txnsOfDonor(d.client_id).slice().sort(function (a, b) { return HE.compare(b.txn_date, a.txn_date); });
+  var tx = txnsOfDonor(d.client_id).slice().sort(function (a, b) { return HE_COLLATOR.compare(b.txn_date, a.txn_date); });
   var pledged = sum(pl, function (p) { return p.amount; });
   var given = sum(tx, function (t) { return t.amount; });
   var left = Math.max(0, pledged - given);

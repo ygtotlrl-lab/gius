@@ -281,7 +281,7 @@ var TABS = [
 ];
 
 function renderShell() {
-  var tabsHtml = TABS.map(function (t) {
+  var tabsHTML = TABS.map(function (t) {
     return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
       '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
   }).join('');
@@ -289,7 +289,7 @@ function renderShell() {
   shellBare(false);
   $('header.topbar').innerHTML =
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
-      '<nav class="tabbar">' + tabsHtml + '</nav>' +
+      '<nav class="tabbar">' + tabsHTML + '</nav>' +
       '<div class="who"><div class="who-id"><div class="nm">' + esc(state.user.full_name) + '</div>' +
         '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
         '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
