@@ -67,14 +67,28 @@ $function$;
 revoke all on function public.bk_fn_def(text) from public, anon, authenticated, service_role;
 grant execute on function public.bk_fn_def(text) to anon, authenticated, service_role;
 
--- מפתח שאינו ברשימה אינו מתפנה לעולם
--- מקור-טבלה נכתב בשכבה — ANCHOR: או DIFF: לפני המפתח, ומקור בלי עמודת חותמת בעוגן בלבד; מקור kv נכתב בלי שכבה
+-- מפתח שאינו ברשימה אינו מתפנה לעולם · והרשימה אחת לשני הפרויקטים — הבלוק זהה בית-לבית, ומפתח של הפרויקט השני אינו קיים כאן
+-- כל מקור נכתב בשכבה — ANCHOR: או DIFF: לפני המפתח, ומקור בלי עמודת חותמת בעוגן בלבד
 CREATE OR REPLACE FUNCTION public.bk_retention_keys()
  RETURNS text[]
  LANGUAGE sql
  IMMUTABLE
 AS $function$
   select array[
+    'ANCHOR:hr_sessions_rows', 'DIFF:hr_sessions_rows',
+    'ANCHOR:hr_marks_rows', 'DIFF:hr_marks_rows',
+    'ANCHOR:hr_students_rows', 'DIFF:hr_students_rows',
+    'ANCHOR:hr_sleep_sessions_rows', 'DIFF:hr_sleep_sessions_rows',
+    'ANCHOR:hr_sleep_marks_rows', 'DIFF:hr_sleep_marks_rows',
+    'ANCHOR:hr_settings', 'DIFF:hr_settings',
+    'ANCHOR:sl_students', 'DIFF:sl_students',
+    'ANCHOR:sl_transactions', 'DIFF:sl_transactions',
+    'ANCHOR:sl_settings', 'DIFF:sl_settings',
+    'ANCHOR:sl_lists', 'DIFF:sl_lists',
+    'ANCHOR:rishon_ya_entries_rows', 'DIFF:rishon_ya_entries_rows',
+    'ANCHOR:rishon_ya_settings', 'DIFF:rishon_ya_settings',
+    'ANCHOR:ramataviv_ya_entries_rows', 'DIFF:ramataviv_ya_entries_rows',
+    'ANCHOR:ramataviv_ya_settings', 'DIFF:ramataviv_ya_settings',
     'ANCHOR:g_donors', 'DIFF:g_donors',
     'ANCHOR:g_pledges', 'DIFF:g_pledges',
     'ANCHOR:g_txns', 'DIFF:g_txns',
@@ -93,7 +107,9 @@ $function$;
 revoke all on function public.bk_retention_keys() from public, anon, authenticated, service_role;
 grant execute on function public.bk_retention_keys() to anon, authenticated, service_role;
 
-CREATE OR REPLACE FUNCTION public.bk_retention_sweep(p_days integer DEFAULT 30, p_keep integer DEFAULT 7)
+-- חתימה אחת — הגרסה בת שני הפרמטרים יורדת, וקריאה בחתימה הישנה נכשלת ברעש
+drop function if exists public.bk_retention_sweep(integer, integer);
+CREATE OR REPLACE FUNCTION public.bk_retention_sweep(p_days integer DEFAULT 30)
  RETURNS integer
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -109,9 +125,6 @@ begin
   end if;
   if p_days is null or p_days < 7 then
     raise exception 'bk_retention_sweep: חלון קצר מ-7 ימים — מסרב לרוץ';
-  end if;
-  if p_keep is null or p_keep < 1 then
-    raise exception 'bk_retention_sweep: תקרת עותקים קטנה מ-1 — מסרב לרוץ';
   end if;
 
   delete from public.sh_backup
@@ -131,25 +144,24 @@ begin
    using ranked r
    where b.id = r.id
      and r.rn > case when r.key like 'ANCHOR:%' then 4
-                     when r.key like 'DIFF:%'   then 30
-                     else p_keep end;
+                     when r.key like 'DIFF:%'   then 30 end;
   get diagnostics v_cap = row_count;
 
   if (v_age + v_cap) > 0 then
     insert into public.sh_sync_log (device_id, user_name, action, key, record_count, details)
     values ('pg_cron', null, 'retention', null, v_age + v_cap,
-            jsonb_build_object('days', p_days, 'keep', p_keep,
+            jsonb_build_object('days', p_days,
                                'keys', cardinality(v_keys), 'aged', v_age, 'capped', v_cap));
   end if;
 
   return v_age + v_cap;
 end;
 $function$;
-revoke all on function public.bk_retention_sweep(integer,integer) from public, anon, authenticated, service_role;
-grant execute on function public.bk_retention_sweep(integer,integer) to service_role;
+revoke all on function public.bk_retention_sweep(integer) from public, anon, authenticated, service_role;
+grant execute on function public.bk_retention_sweep(integer) to service_role;
 
 -- cron.schedule בשם קיים מעדכן את המשימה ואינו מוסיף שנייה
-select cron.schedule('bk_retention_daily', '0 3 * * *', 'select public.bk_retention_sweep(30, 7);');
+select cron.schedule('bk_retention_daily', '0 3 * * *', 'select public.bk_retention_sweep(30);');
 select cron.schedule('sh_sync_log_retention', '20 3 * * *', 'delete from public.sh_sync_log where created_at < now() - interval ''30 days'';');
 select cron.schedule('cron_run_log_retention', '25 3 * * *', 'delete from cron.job_run_details where start_time < now() - interval ''30 days'' or jobid not in (select jobid from cron.job);');
 
