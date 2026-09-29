@@ -3,8 +3,8 @@ import { HE_COLLATOR, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, kvParse } from '../core/
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
-import { MSG_LS_FULL, hwNoteCloud } from '../core/storage.js';
-import { MIRROR, mirrorKey, mirrorSave } from '../core/mirror.js';
+import { MSG_LS_FULL } from '../core/storage.js';
+import { MIRROR, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
 import { authUsersTable, usersSanitize, usersSaveAll } from '../core/auth.js';
 import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from '../core/ui.js';
@@ -18,14 +18,6 @@ import { S, shell, state } from './state.js';
 var _gPushedAt = {};
 
 function _gMarkPushed(tbl) { _gPushedAt[tbl] = Date.now(); }
-
-// גבול השנה ספטמבר–אוגוסט — שנת הלימודים של המוסד ולא השנה האזרחית.
-function gAcadYearOf(iso) {
-  var d = new Date(String(iso == null ? '' : iso).slice(0, 10) + 'T00:00:00');
-  var y = d.getFullYear();
-  if (!isFinite(y)) return NaN;
-  return d.getMonth() >= 8 ? y : y - 1;
-}
 
 // ── סימוני ממתין ──
 // אין תור — האישור מגיע מ-pendClear על upsert מוצלח ומ-pendReconcile אחרי משיכה שהצליחה.
@@ -341,7 +333,6 @@ function syncPull() {
     list.forEach(function (x) {
       if (!x.res || x.res.error || !Array.isArray(x.res.data)) { errs.push(x.m.t); return; }
       var rows = stripRows(x.m.t, x.res.data);
-      hwNoteCloud(mirrorKey(x.m.t), rows); // ראיה עננית לשער הדיסק
       var merged = mergeCore(MIRROR[x.m.t], rows, { key: x.m.key,
         isPending: function (k) { return pendHas(pendRowKey(x.m.t, k)); } });
       // מראת המשתמשים נשמרת דרך הנתיב המלא של המודול שלה, שמסנן בדיוק כמו הנתיב החלקי.
@@ -583,7 +574,7 @@ function warnIfNoFp(r) {
 
 export { $, _gMarkPushed, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
          dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
-         emptyBox, gAcadYearOf, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
+         emptyBox, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
          monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
          pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, rowTs, saveConfigList,
          selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow, tableMeta,

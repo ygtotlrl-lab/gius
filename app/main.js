@@ -3,11 +3,10 @@ import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
          MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
          getDeviceId, uniqHas, withTimeout } from '../core/util.js';
 import { afterSave, ctxEpoch, ctxStale, ctxSwitch, eraKeys, eraKick, errToast, idEq,
-         pendAlertDismiss, pendBoot, pendCount, pendHas, pendRender, plBoot, plTouch,
+         pendAlertDismiss, pendBoot, pendCount, pendRender, plBoot, plTouch,
          pushDirty, rtyBoot, runSave, sbWatch, tombBoot } from '../core/sync.js';
 import { hwBoot, lsBoot, lsClearHorizons, lsRemove } from '../core/storage.js';
-import { MIRROR, mirrorBoot, mirrorKey, mirrorTables,
-         mirrorWrite } from '../core/mirror.js';
+import { MIRROR, mirrorBoot, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { bkBoot, logAwait } from '../core/backup.js';
 import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkBoot, lkReset,
          sessActive, sessGet, sessSet, usersGet, usersSaveOne,
@@ -26,7 +25,7 @@ import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          TABLES } from './constants.js';
 import { KDRAG, S, shell, state } from './state.js';
 import { $, _gMarkPushed, applyMirrorToState, donorById, donorMatches,
-         donorNewCancel, donorNewSave, gAcadYearOf, mirrorHasData, monthKeyOf, pendRowKey,
+         donorNewCancel, donorNewSave, mirrorHasData, monthKeyOf, pendRowKey,
          pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
          txnsOfDonor, update, val, viewBare, warnIfNoFp } from './domain.js';
@@ -191,33 +190,12 @@ var PUSH_CFG = {
   run:    function () { syncNow(); },
 };
 
-// החלון החם הוא תנועות שנת הפעילות הנוכחית — תורמים הם אבות המפתח הזר, והתחייבויות פתוחות לאורך שנים.
-// תנועה בלי תאריך תקין נשארת חמה — בספק לא מפנים.
+// החלון החם כבוי — כל טבלה שגדלה כאן נדרשת במלואה (fullHistory): «נגבה» להתחייבות רב-שנתית סוכם מכל תנועותיה,
+// ותנועה של שנה סגורה שפונתה מהדיסק היא סכום שגוי אופליין. המנגנון מחווט, ואין לו מה לצמצם.
 var HW_CFG = {
-  enabled: true,
+  enabled: false,
   admin: function () { return isAdmin(); },
-  specs: [{
-    key: mirrorKey('g_txns'),
-    label: 'תנועות שנים סגורות',
-    inWindow: function (t) {
-      var y = gAcadYearOf(t && t.txn_date);
-      if (!isFinite(y)) return true;
-      return y >= gAcadYearOf(dayToday());
-    },
-    idOf: function (r) { return r && r.client_id; },
-    ts: function (r) { return rowTs(r); },
-    isPending: function (r) { return pendHas(rowPendingKey('g_txns', r)); },
-    fetch: async function () {
-      try {
-        if (!S.sb) return { ok: false, rows: [] };
-        var res = await withTimeout(S.sb.from('g_txns').select('*'));
-        return (res && !res.error && Array.isArray(res.data))
-          ? { ok: true, rows: res.data } : { ok: false, rows: [] };
-      } catch (e) { return { ok: false, rows: [] }; }
-    },
-    rows: function () { return MIRROR.g_txns; },
-    apply: function (kept) { return mirrorWrite('g_txns', kept); }
-  }]
+  specs: []
 };
 
 var ERA_CFG = {
