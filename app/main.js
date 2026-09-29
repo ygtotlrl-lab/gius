@@ -2,18 +2,15 @@
 import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
          MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
          getDeviceId, uniqHas, withTimeout } from '../core/util.js';
-import { afterSave, ctxSwitch, eraKeys, eraKick, errToast, idEq, pendAlertDismiss, pendBoot,
-         pendCount, pendRender, plBoot, plTouch, pushDirty, rtyBoot, runSave, sbWatch,
-         tombBoot } from '../core/sync.js';
-import { hwBoot, lsBoot, lsClearHorizons, lsRemove } from '../core/storage.js';
-import { MIRROR, mirrorBoot, mirrorKey, mirrorTables } from '../core/mirror.js';
-import { bkBoot, logAwait } from '../core/backup.js';
-import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkBoot, lkReset,
-         sessActive, sessGet, sessSet, usersGet, usersSaveOne,
-         writeUser } from '../core/auth.js';
-import { actRun, ask, closeAsk, closeModal, comboFocus, comboInput, comboKey, comboMake,
-         comboOutside, comboPick, esc, ksKey, modalBackdrop, modalEsc, openModal,
-         shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
+import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCount, pendRender,
+         plTouch, pushDirty, runSave, sbWatch } from '../core/sync.js';
+
+import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
+import { coreBoot, logAwait } from '../core/backup.js';
+import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkReset, sessActive, sessGet,
+         sessSet, usersGet, usersSaveOne, writeUser } from '../core/auth.js';
+import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick, esc,
+         openModal, shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
 import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
          MSG_DEL_DONOR_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DEL_PLEDGE_TITLE,
          MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY, MSG_DEL_TASK_TITLE,
@@ -193,11 +190,6 @@ var ERA_CFG = {
   prefix: self.APP.prefix,
   client: function () { return S.sb; },
   table:  function () { return KV_TABLE; },
-  // גם אופק הפינוי נמחק — אופק ששרד מסנן את מה שהמשיכה מחזירה, והמכשיר היה נשאר ריק.
-  wipe:   function () {
-    mirrorTables().forEach(function (t) { MIRROR[t] = MIRROR_CFG.empty(); lsRemove(mirrorKey(t)); });
-    lsClearHorizons();
-  },
   // הדחיפה היא ראיה טרייה ולא זיכרון — מכשיר נקי מקבל ok עם still ריק.
   push:   function () { return pushDirty(null); },
   refresh: function () { return syncNow(); },
@@ -572,25 +564,8 @@ var DOM_ACTIONS = {
 };
 
 // ── מאזינים גלובליים ──
-// if (el.tagName === 'A') return אינו קישוט — אחרת קישור בתוך אזור data-act מקבל preventDefault; אין למחוק גם כשאין קישור כזה.
-// סגירת הרקע קודמת לניתוב — לחיצה על הרקע אינה נושאת data-act.
-document.addEventListener('click', function (e) {
-  comboOutside(e);
-  if (modalBackdrop(e)) return;
-  var el = e.target.closest('[data-act]');
-  if (!el) return;
-  var fn = DOM_ACTIONS[el.dataset.act];
-  if (!fn) return;
-  if (el.tagName === 'A') return;
-  e.preventDefault();
-  actRun(el, fn);
-});
+actWire(DOM_ACTIONS);
 
-// שמירה בשדה עריכה קודמת לסגירת חלון הדו-שיח — אחרת Escape בשדה שבתוך חלון דו-שיח היה סוגר אותו במקום לבטל את השדה.
-document.addEventListener('keydown', function (e) {
-  if (comboKey(e) || ksKey(e)) return;
-  modalEsc(e);
-});
 
 // החיפוש מרנדר רק את הרשימה והמונה — רינדור מלא בונה מחדש את השדה ומאבד את הפוקוס אחרי כל תו.
 document.addEventListener('input', function (e) {
@@ -667,19 +642,8 @@ function start() {
     auth: { persistSession: false, autoRefreshToken: false }
   }));
 
-  // מדידה ופינוי יזום לפני טעינת המראה — כדי שהמשיכה שאחריה תכתוב לאחסון שכבר יש בו מקום.
-  try { lsBoot(); } catch (e) { console.warn('[ls] lsBoot', e); }
-  mirrorBoot();
-  // סימוני ההמתנה נטענים לפני הרינדור הראשון — כך שפעולה שלא עלתה בסשן הקודם מוצגת כממתינה מיד.
-  try { pendBoot(); } catch (e) { console.warn('[pend] pendBoot', e); }
-  try { tombBoot(); } catch (e) { console.warn('[tomb] tombBoot', e); }
-  try { eraKick(); } catch (e) { console.warn('[era] eraKick', e); }
-  // הגיבוי מופעל בעלייה ולא אחרי משיכה שהצליחה — אחרת בתקופה בלי סנכרון הוא מושבת בלי שאיש יודע.
-  try { bkBoot(); } catch (e) { console.warn('[bk] bkBoot', e); }
-  try { rtyBoot(); } catch (e) { console.warn('[rty] rtyBoot', e); }
-  try { plBoot(); } catch (e) { console.warn('[pl] plBoot', e); }
-  try { hwBoot(); } catch (e) { console.warn('[hw] hwBoot', e); }
-  try { lkBoot(); } catch (e) { console.warn('[lk] lkBoot', e); }
+  // הליבה עולה לפני הכניסה — הסימונים, הגיבוי והמראה אינם תלויים בה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
+  coreBoot();
 
   // אין שחזור סשן — סשן מ-localStorage בלי תפוגה משאיר מחובר לנצח במכשיר משותף ומוריד את role לדיסק.
   // הכניסה האופליין אינה תלויה בסשן — היא מוכרעת ב-authVerify מול pass_fp שבמראה.
