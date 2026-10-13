@@ -319,6 +319,7 @@ create table if not exists public.g_users (
   updated_at bigint not null,
   pass_salt text,
   pass_fp text,
+  sort integer,
   constraint g_users_pkey PRIMARY KEY (client_id),
   constraint g_users_username_key UNIQUE (username),
   constraint g_users_role_check CHECK ((role = ANY (ARRAY['admin'::text, 'manager'::text, 'junior'::text])))
