@@ -115,12 +115,6 @@ function tableMeta(t) {
 
 // ── המראה ──
 // המראה היא העותק המלא כולל tombstones, ולא מטמון מהירות.
-function rowTs(r) {
-  if (!r || typeof r !== 'object') return 0;
-  // updated_at מספר ו-created_at ISO — Date.parse על מספר מחזיר NaN.
-  var x = r.updated_at != null ? Number(r.updated_at) : Date.parse(r.created_at || '');
-  return isFinite(x) ? x : 0;
-}
 
 // strip נאכף בשלוש נקודות — משיכה, upsertLocal ו-mirrorSave: כתיבה מקומית עוקפת את המשיכה, ושער הדיסק עוצר נתיב חדש שידליף.
 function stripCols(t, row) {
@@ -336,7 +330,6 @@ function syncPull() {
     if (!errs.length) {
       S._lastPullOk = Date.now();
       // הגיבוי היומי ותור היומן אינם תלויים במשיכה שהצליחה — אחרת כל יום בלי סנכרון מדולג.
-      // אין כאן כתיבת עד פינוי — משיכה אומרת «ראיתי את הענן» ולא «מה שאצלי עלה»; העד נכתב בסוף הדחיפה.
       if (!S._gPullLogged) { S._gPullLogged = true; gSyncLog('pull', null, null); }
       if (S._netWarned) { S._netWarned = false; toast(MSG_SYNC_BACK, null, 'good'); }
     } else {
@@ -365,7 +358,7 @@ function syncNow() {
   var _ep = ctxEpoch();
   return syncPull().then(function (res) {
     if (!res.ok || ctxStale(_ep)) { pullRender(shell.render); return false; }
-    // שער הרשת כאן ולא בשכבת הדחיפה — הוא תלוי בלקוח, ומעבר ריק היה מסמן עד פינוי בלי ראיה מהענן.
+    // שער הרשת כאן ולא בשכבת הדחיפה — הוא תלוי בלקוח.
     var p = (!S.sb || !navigator.onLine) ? Promise.resolve({ still: [] })
                                        : pushDirty(null);
     return p.then(function (r) {
@@ -569,6 +562,6 @@ export { $, agentPool, applyMirrorToState, checked, collectedForPledge, datalist
          dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
          emptyBox, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
          monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
-         pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, rowTs, saveConfigList,
+         pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, saveConfigList,
          selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow, tableMeta,
          targetFor, txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };

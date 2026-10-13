@@ -5,6 +5,7 @@ import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
 import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCount, pendRender,
          plTouch, pushDirty, runSave, sbWatch } from '../core/sync.js';
 
+import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
@@ -24,7 +25,7 @@ import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
 import { KDRAG, S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorMatches,
          donorNewCancel, donorNewSave, mirrorHasData, monthKeyOf, pendRowKey,
-         pledgeById, pledgesOfDonor, rowPendingKey, rowTs,
+         pledgeById, pledgesOfDonor, rowPendingKey,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
          txnsOfDonor, update, val, viewBare, warnIfNoFp } from './domain.js';
 import { donorRowsHTML, formDonor, formTxn, saveDonor, saveTxn, viewDonorCard,
@@ -45,7 +46,6 @@ appConfigure({
   get DEV_CFG() { return DEV_CFG; },
   get DOM_ACTIONS() { return DOM_ACTIONS; },
   get ERA_CFG() { return ERA_CFG; },
-  get HW_CFG() { return HW_CFG; },
   get LK_CFG() { return LK_CFG; },
   get LS_CFG() { return LS_CFG; },
   get MIRROR_CFG() { return MIRROR_CFG; },
@@ -64,7 +64,6 @@ var MIRROR_CFG = {
   tables: function () { return TABLES.map(function (m) { return m.t; }); },
   noPush: [{ t: 'g_users', via: 'writeUser', adds: 'secret' }],
   empty:  function () { return []; },
-  ts:     function (r) { return rowTs(r); },
   clean:  function (t, rows) { return stripRows(t, rows); },
   fail:   function (where, e) { console.error('[mirror] ' + where, e); },
 };
@@ -73,7 +72,6 @@ var LS_CFG = {
   // cachePrefix נגזר משם האפליקציה שבתצורה ולא מקידומת האחסון — שם אחסון שישתנה היה מחזיר רשימה ריקה, והבאנר היה חוזר בכל טעינה.
   cachePrefix: self.APP.id + '-',
   logKey: 'g_ls_log',
-  hzPrefix: 'g_ls_hz_',
   // הסימן נושא את תחילית האפליקציה — ה-origin משותף, וסימן אחד היה נדרס בכל דחייה.
   dismissKey: 'g_sw_dismissed',
   // מפתח שאינו במרשם נמחק בעלייה.
@@ -81,32 +79,7 @@ var LS_CFG = {
     return [LS_CFG.logKey, LS_CFG.dismissKey, DEV_CFG.key, PEND_CFG.key,
             BK_CFG.flagKey, BK_CFG.logQueueKey]
       .concat(eraKeys(), mirrorTables().map(mirrorKey));
-  },
-
-  // חלון הפינוי נגזר מסוג האפליקציה — אין מספר ימים באף רשומה.
-  appType: { type: 'annual', why: 'החישוב שלה נפרש על שנה — ⚠️ יעד החודש ו«מה שלי היום» נגזרים מהמשימות ומהתנועות של השנה' },
-
-  // wholeKeys ריק — מראת המשתמשים היא מסלול הכניסה האופליין, ופינויה נועל את המכשיר בלי רשת.
-  wholeKeys: [],
-
-  // oldRecords ריק ומוצהר — כל טבלה שגדלה כאן נדרשת במלואה.
-  // שדה חסר נקרא «לא נשאל», וריק נקרא «נמדד ואין».
-  oldRecords: [],
-  // «נגבה» להתחייבות הוא סכום כל תנועותיה, והתחייבות רב-שנתית חיה יותר מכל חלון — רשומה שפונתה היא סכום שגוי.
-  // משימה פתוחה מוצגת ב«מה שלי היום» בכל גיל — משימה שפונתה נעלמת.
-  fullHistory: [
-    { t: 'g_txns',    calc: 'collectedForPledge' },
-    { t: 'g_pledges', calc: 'collectedForPledge' },
-    { t: 'g_tasks',   calc: 'viewHome' }
-  ],
-
-  // טבלת מראה שאינה בפינוי קבועה בגודלה — טבלה שגדלה ואינה בפינוי ממלאת את האחסון המשותף וחונקת את כל האפליקציות.
-  fixedSize: [
-    { t: 'g_donors',  why: 'תורמים — שורה לתורם, ⛔ ואינם גדלים עם התנועות' },
-    { t: 'g_targets', why: 'יעדים — שורה לחודש, ⛔ שתים-עשרה בשנה' },
-    { t: KV_TABLE,    why: 'הגדרות — שורה למפתח, ⛔ ומספר המפתחות קבוע בקוד' },
-    { t: 'g_users',   why: 'משתמשים — שורה למשתמש, ⚠️ והיא מסלול הכניסה האופליין' }
-  ]
+  }
 };
 
 // האפליקציה בפרויקט Supabase נפרד — ולכן sh_backup ו-sh_sync_log נוצרות בקובץ הסכימה שלה.
@@ -179,12 +152,6 @@ var PUSH_CFG = {
     return netTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
   },
   run:    function () { syncNow(); },
-};
-
-// רשימה ריקה — כל טבלה שגדלה כאן נדרשת במלואה (LS_CFG.fullHistory): «נגבה» להתחייבות רב-שנתית סוכם מכל תנועותיה,
-// ותנועה של שנה סגורה שפונתה מהדיסק היא סכום שגוי אופליין.
-var HW_CFG = {
-  specs: []
 };
 
 var ERA_CFG = {
@@ -646,11 +613,13 @@ function start() {
   // הליבה עולה לפני הכניסה — הסימונים, הגיבוי והמראה אינם תלויים בה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
   bootRun();
 
-  // אין שחזור סשן — סשן מ-localStorage בלי תפוגה משאיר מחובר לנצח במכשיר משותף ומוריד את role לדיסק.
+  // אין שחזור סשן — סשן בדיסק בלי תפוגה משאיר מחובר לנצח במכשיר משותף ומוריד את role לדיסק.
   // הכניסה האופליין אינה תלויה בסשן — היא מוכרעת ב-authVerify מול pass_fp שבמראה.
   renderLogin();
 }
 
+// האחסון נפתח לפני כל קריאה ממנו — אחרי שה-CFG הוגדרו, כי המרשם והייבוא קוראים אותם.
+await lsOpen();
 start();
 
 window.bootOk();
