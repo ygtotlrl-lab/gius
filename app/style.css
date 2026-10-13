@@ -3,7 +3,7 @@
 /* ── אסימוני העיצוב ── */
 :root{
   /* המרחק מעל סרגל הלשוניות התחתון וסרגל הפעולה שמעליו. */
-  --toast-bottom:calc(var(--tab-h) + 88px);
+  --toast-bottom:calc(var(--tabbar-h) + 88px);
   --col:1180px;
   /* גוון האזהרה של אזור המצב נבדל, אך שמו אחד — כלל משותף אינו יכול לנקוב בשם פרטי.
      רכיב שמייצג את האפליקציה נגזר מצבע הזהות ולא מדיו הטקסט — באנר בדיו הטקסט נראה זהה בכל גוון.
@@ -21,7 +21,6 @@
   --radius:var(--r-5); --radius-sm:var(--r-4);
   --shadow:0 1px 2px rgba(16,32,48,.05), 0 8px 24px rgba(16,32,48,.06);
   --shadow-lg:0 12px 40px rgba(16,32,48,.18);
-  --tab-h:62px;
   --shadow-brand:rgba(15,118,110,.42);
 }
 
@@ -85,11 +84,11 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
   max-width:var(--col);margin-inline:auto;
   display:grid;grid-template-columns:repeat(5,1fr);
   background:var(--card);border-top:1px solid var(--border);
-  padding-bottom:env(safe-area-inset-bottom);
+  height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
 }
 .tabbar button{
   background:none;border:0;cursor:pointer;padding:var(--sp-4) var(--sp-1) var(--sp-4);
-  display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-2);
   font-size:var(--fs-1);font-weight:600;color:var(--text-3);
 }
 .tabbar button .ic{font-size:var(--fs-5);line-height:var(--lh-1)}
@@ -97,7 +96,8 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 .tabbar button.on .ic{transform:translateY(-1px)}
 /* מסך שלפני הכניסה ממלא את החלון כולו — בלי ריפוד המיכל. */
 #app.is-bare > main{padding:0;max-width:none}
-main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-area-inset-bottom));
+/* סוף התוכן מרוחק מסרגל הלשוניות כראשו מהכותרת — והכרטיס האחרון אינו מוסיף את המרווח שלו. */
+main{padding:var(--sp-6); padding-bottom:calc(var(--tabbar-h) + var(--sp-6) + env(safe-area-inset-bottom));
   max-width:var(--col);margin:0 auto}
 .who-id{text-align:end}
 
@@ -105,6 +105,7 @@ main{padding:var(--sp-6); padding-bottom:calc(var(--tab-h) + 84px + env(safe-are
 .card{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
   padding:var(--sp-6);box-shadow:var(--shadow);margin-bottom:var(--sp-6)}
+main .card:last-child{margin-bottom:0}
 .card > h2{font-size:var(--fs-4);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-5)}
 .card > h2 .cnt{
   font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text-3);
@@ -203,7 +204,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fab{
   /* צמוד לקצה העמודה ולא לקצה החלון — בחלון רחב הוא היה מתרחק מהתוכן שהוא פועל עליו. */
   position:fixed;inset-inline-end:calc(max(0px, (100% - var(--col)) / 2) + 18px);
-  bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom));
+  bottom:calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom));
   z-index:var(--z-2);width:60px;height:60px;border-radius:var(--r-7);border:0;cursor:pointer;
   background:var(--brand-fill);color:var(--on-brand);font-size:var(--fs-6);line-height:var(--lh-1);
   box-shadow:0 6px 22px var(--shadow-brand);display:grid;place-items:center;
@@ -317,8 +318,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @media (hover:hover){
   .combo-opt:hover{background:var(--card-2)}
 }
-.combo-list{position:static;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:var(--sp-3);
-  max-height:210px;background:var(--card)}
+.combo-list{--combo-gap:var(--sp-3);--combo-max:210px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--card)}
 .combo-opt{justify-content:flex-start;padding:var(--sp-4) var(--sp-5);border-bottom:1px solid var(--border-2);font-size:var(--fs-3)}
 .combo-opt:last-child{border-bottom:0}
 .combo-opt.is-on{background:var(--card-2)}
@@ -387,7 +388,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 }
 @media (min-width:900px){
   .tabbar{
-      position:static;display:flex;gap:var(--sp-2);border:0;background:none;padding:0;
+      position:static;display:flex;gap:var(--sp-2);border:0;background:none;padding:0;height:auto;
       margin-inline:var(--sp-6) 0;
     }
 }
