@@ -322,22 +322,6 @@ create table if not exists public.g_txns (
   constraint g_txns_pledge_client_id_fkey FOREIGN KEY (pledge_client_id) REFERENCES g_pledges(client_id) ON DELETE RESTRICT
 );
 
-create table if not exists public.g_users (
-  client_id text not null,
-  username text not null,
-  full_name text not null,
-  role text not null,
-  active boolean not null default true,
-  created_at timestamp with time zone not null default now(),
-  updated_at bigint not null,
-  pass_salt text,
-  pass_fp text,
-  sort integer,
-  constraint g_users_pkey PRIMARY KEY (client_id),
-  constraint g_users_username_key UNIQUE (username),
-  constraint g_users_role_check CHECK ((role = ANY (ARRAY['admin'::text, 'manager'::text, 'junior'::text])))
-);
-
 create index if not exists g_donors_live_idx ON public.g_donors USING btree (deleted, name);
 create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (kind, sort);
 create index if not exists g_pledges_donor_full_idx ON public.g_pledges USING btree (donor_client_id);
@@ -369,9 +353,6 @@ grant all on table public.g_tasks to service_role;
 revoke all on table public.g_txns from anon, authenticated;
 grant select, insert, update on table public.g_txns to anon, authenticated;
 grant all on table public.g_txns to service_role;
-revoke all on table public.g_users from anon, authenticated;
-grant select, insert, update on table public.g_users to anon, authenticated;
-grant all on table public.g_users to service_role;
 
 alter table public.g_donors enable row level security;
 drop policy if exists g_donors_all on public.g_donors;
@@ -394,6 +375,3 @@ create policy g_tasks_all on public.g_tasks as permissive for all to anon, authe
 alter table public.g_txns enable row level security;
 drop policy if exists g_txns_all on public.g_txns;
 create policy g_txns_all on public.g_txns as permissive for all to anon, authenticated using (true) with check (true);
-alter table public.g_users enable row level security;
-drop policy if exists g_users_all on public.g_users;
-create policy g_users_all on public.g_users as permissive for all to anon, authenticated using (true) with check (true);
