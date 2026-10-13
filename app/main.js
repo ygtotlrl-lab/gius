@@ -3,7 +3,7 @@ import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
          MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
          getDeviceId, uniqHas, netTimeout } from '../core/util.js';
 import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCount, pendRender,
-         plTouch, pushDirty, runSave, sbWatch } from '../core/sync.js';
+         plTouch, runSave, sbWatch } from '../core/sync.js';
 
 import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
@@ -158,8 +158,6 @@ var ERA_CFG = {
   prefix: self.APP.prefix,
   client: function () { return S.sb; },
   table:  function () { return KV_TABLE; },
-  // הדחיפה היא ראיה טרייה ולא זיכרון — מכשיר נקי מקבל ok עם still ריק.
-  push:   function () { return pushDirty(null); },
   refresh: function () { return syncNow(); },
   log:    function (action, entries) { return logAwait(action, entries); }
 };
