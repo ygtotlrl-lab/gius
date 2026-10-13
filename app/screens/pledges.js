@@ -95,7 +95,7 @@ function formPledge(existing, presetDonor) {
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>עילה</span>' + selectHTML('pl-cause', state.config.causes, p.cause, '— ללא עילה —') + '</label>' +
-      '<label class="fld"><span>שגריר</span><input class="inp" id="pl-agent" list="dl-agents" value="' + esc(p.agent || (p.client_id ? '' : state.user.full_name)) + '"></label>' +
+      '<label class="fld"><span>שגריר</span><input class="inp" id="pl-agent" list="dl-agents" value="' + esc(p.agent || '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערה</span><textarea class="inp" id="pl-note">' + esc(p.note || '') + '</textarea></label>' +
     (state.config.causes.length ? '' :

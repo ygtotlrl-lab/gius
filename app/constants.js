@@ -5,7 +5,7 @@ import { appConfigure } from '../core/util.js';
 // כאן הנתונים שהליבה קוראת, והחיווט — ב-main.js; הקובץ הזה נטען ראשון, לפני כל קריאה לליבה.
 // העידן עולה בשינוי צורת רשומה או מפתחה, ושינוי שם טבלה הוא שינוי כזה — המראה ממופתחת בשם.
 // עותק בעידן ישן אינו נדחף — הממתין בו נרשם ביומן, והוא נזרק ונמשך מלא.
-var DATA_ERA = 5;
+var DATA_ERA = 6;
 
 appConfigure({ DATA_ERA: DATA_ERA });
 
@@ -26,17 +26,8 @@ var CONFIG_KEYS = [
   { key: 'domains', label: 'תחומי משימות', hint: 'מזין את שדה "תחום" בטופס המשימה' }
 ];
 
-// ── עוזרי רשת ──
-// בלי תקרת זמן sb.from אינו מוגבל — ברשת חצי מחוברת ה-fetch לא מצליח ולא נכשל, והמשתמש ממתין לנצח.
-var MSG_BAD_LOGIN = '❌ שם משתמש או סיסמה שגויים';
-
-// משתמש מושבת מקבל הודעה משלו — עם «סיסמה שגויה» הוא מקליד שוב ושוב סיסמה נכונה.
-var MSG_USER_INACTIVE = '❌ המשתמש מושבת. פנו לבעלים.';
-
 // ── הודעות פר-אפליקציה ──
 var MSG_MAYBE_STALE = ') — המוצג עלול להיות לא מעודכן';
-
-var MSG_OWNER_ONLY = '⚠️ אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד';
 
 var MSG_NEED_DONOR_NAME = '⚠️ נא למלא שם תורם';
 
@@ -68,27 +59,9 @@ var MSG_NEW_DONOR = '🙋 תורם חדש';
 
 var MSG_NEED_NAME = '⚠️ נא למלא שם';
 
-var MSG_EDIT_USER = 'עריכת משתמש';
-
-var MSG_NEW_USER = '👤 משתמש חדש';
-
-var MSG_NEED_FULL_AND_USER = '⚠️ נא למלא שם מלא ושם משתמש';
-
-var MSG_NEED_PASS = '⚠️ נא להזין סיסמה';
-
-var MSG_SAVED_NO_FP = '⚠️ נשמר — אך ללא הכנה לכניסה ללא רשת';
-
-var MSG_PASS_CHANGE_FOR = 'שינוי סיסמה — ';
-
-var MSG_NO_OTHER_USER_LOCAL = '⚠️ אין משתמש אחר בעותק המקומי של המכשיר';
-
-var MSG_SWITCH_USER = '👥 החלפת משתמש';
-
 var MSG_MONTH_GOAL = '🎯 יעד חודשי';
 
 var MSG_PICK_VALID_MONTH = '⚠️ נא לבחור חודש תקין';
-
-var MSG_PICK_USER_AND_PASS = '⚠️ נא לבחור משתמש ולהזין סיסמה';
 
 var MSG_WHAT_TO_ADD = 'מה מוסיפים?';
 
@@ -116,10 +89,6 @@ var MSG_DEL_TASK_TITLE = 'מחיקת משימה';
 
 var MSG_DEL_TASK_BODY = 'למחוק את המשימה? המחיקה רכה.';
 
-var MSG_NO_SELF_DISABLE = '⚠️ אי אפשר להשבית את המשתמש המחובר';
-
-var MSG_UPDATED = 'עודכן';
-
 var MSG_NEED_VALUE = '⚠️ נא להזין ערך';
 
 var MSG_VALUE_EXISTS2 = '⚠️ הערך כבר קיים';
@@ -134,45 +103,59 @@ var MSG_REMOVE_QUOTE_POST = '" מהרשימה? רשומות קיימות שמש�
 
 var MSG_REMOVE_ACT = 'הסרה';
 
+// ── רשימת המנהלים — g_lookups ──
+var LK_MANAGER = 'manager';
+
+var MSG_MANAGERS = '👤 מנהלים';
+
+var MSG_MANAGER_NEW = '＋ מנהל חדש';
+
+var MSG_MANAGER_LABEL = 'שם המנהל';
+
+var MSG_NEED_MANAGER = '⚠️ נא למלא שם מנהל';
+
+var MSG_MANAGER_DUP = '⚠️ מנהל בשם הזה כבר קיים';
+
+var MSG_DEL_MANAGER_TITLE = 'מחיקת מנהל';
+
+var MSG_DEL_MANAGER_BODY = 'למחוק את המנהל מהרשימה? תנועות שכבר נרשמו על שמו יישארו כמות שהן.';
+
 // ── עמידות אחסון מקומי ──
 var KV_TABLE = 'g_settings';
 
 // ── PUSH_CFG ──
-// g_users אינה כאן ולא תידחף — המראה מסירה ממנה את הסיסמה, ודחיפה שלה הייתה כותבת סיסמאות ריקות; מסלולה writeUser.
 // הסדר שומר על המפתח הזר — תורמים לפני התחייבויות ותנועות.
-var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', KV_TABLE];
+var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_tasks', 'g_targets', KV_TABLE, 'g_lookups'];
 
 // ── מזהה מכשיר ──
 
 // אין מרווח בדיקה מחזורית משלו — המרווח היחיד הוא PL_CFG.every.
 
-// strip — עמודות שאינן נשמרות במראה: password נשלפת, ו-pass_salt ו-pass_fp לעולם לא — הן מה שמאפשר כניסה בלי רשת.
+// strip — עמודות שאינן נשמרות במראה; אין היום עמודה כזו, והמנגנון נשאר דרוך לסוד עתידי.
 var TABLES = [
   { t: 'g_donors',  key: 'client_id', soft: true,  order: 'name' },
   { t: 'g_pledges', key: 'client_id', soft: true,  order: 'due_date' },
   { t: 'g_txns',    key: 'client_id', soft: true,  order: 'txn_date', desc: true },
   { t: 'g_tasks',   key: 'client_id', soft: true,  order: 'due_date' },
   { t: 'g_targets', key: 'client_id', soft: true,  order: 'target_month', desc: true },
-  { t: 'g_users',   key: 'client_id', soft: false, order: 'created_at', strip: ['password'] },
-  { t: KV_TABLE,    key: 'key', soft: false }
+  { t: KV_TABLE,    key: 'key', soft: false },
+  { t: 'g_lookups', key: 'client_id', soft: true,  order: 'sort' }
 ];
 
 var EPS = 0.005;
 
-// נאכפת ביצירה ובשינוי בלבד — אכיפה במסלול הכניסה נועלת בחוץ סיסמה תקפה שנקבעה לפני התקן
-var PASS_SIX_RE = /^[0-9]{6}$/;
-
-export { CONFIG_KEYS, DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_AMOUNT_POSITIVE, MSG_BAD_LOGIN,
-         MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED, MSG_DEL_DONOR_TITLE, MSG_DEL_PLEDGE_BODY,
+export { CONFIG_KEYS, DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LK_MANAGER,
+         MSG_AMOUNT_POSITIVE, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED, MSG_DEL_DONOR_TITLE,
+         MSG_DEL_MANAGER_BODY, MSG_DEL_MANAGER_TITLE, MSG_DEL_PLEDGE_BODY,
          MSG_DEL_PLEDGE_TITLE, MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY,
          MSG_DEL_TASK_TITLE, MSG_DEL_TXN_BODY, MSG_DEL_TXN_TITLE, MSG_DONOR_CREATED,
-         MSG_EDIT_DONOR, MSG_EDIT_PLEDGE, MSG_EDIT_TASK, MSG_EDIT_TXN, MSG_EDIT_USER,
-         MSG_EDIT_VALUE, MSG_MAYBE_STALE, MSG_MONTH_GOAL, MSG_NEED_DONOR_NAME,
-         MSG_NEED_FULL_AND_USER, MSG_NEED_NAME, MSG_NEED_PASS, MSG_NEED_TITLE,
+         MSG_EDIT_DONOR, MSG_EDIT_PLEDGE, MSG_EDIT_TASK, MSG_EDIT_TXN,
+         MSG_EDIT_VALUE, MSG_MANAGERS, MSG_MANAGER_DUP, MSG_MANAGER_LABEL, MSG_MANAGER_NEW,
+         MSG_MAYBE_STALE, MSG_MONTH_GOAL, MSG_NEED_DONOR_NAME, MSG_NEED_MANAGER,
+         MSG_NEED_NAME, MSG_NEED_TITLE,
          MSG_NEED_VALUE, MSG_NEW_DONOR, MSG_NEW_PLEDGE, MSG_NEW_TASK, MSG_NEW_TXN,
-         MSG_NEW_USER, MSG_NOTES_SAVED, MSG_NO_OTHER_USER_LOCAL, MSG_NO_SELF_DISABLE,
-         MSG_OWNER_ONLY, MSG_PASS_CHANGE_FOR, MSG_PICK_DONOR, MSG_PICK_USER_AND_PASS,
+         MSG_NOTES_SAVED, MSG_PICK_DONOR,
          MSG_PICK_VALID_MONTH, MSG_REMOVE_ACT, MSG_REMOVE_QUOTE_POST,
-         MSG_REMOVE_QUOTE_PRE, MSG_REMOVE_VALUE_TITLE, MSG_SAVED_NO_FP, MSG_SWITCH_USER,
-         MSG_UPDATED, MSG_USER_INACTIVE, MSG_VALUE_EXISTS2, MSG_WHAT_TO_ADD, PASS_SIX_RE,
+         MSG_REMOVE_QUOTE_PRE, MSG_REMOVE_VALUE_TITLE,
+         MSG_VALUE_EXISTS2, MSG_WHAT_TO_ADD,
          PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES };

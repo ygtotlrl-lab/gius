@@ -6,10 +6,9 @@ import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore
 import { MSG_LS_FULL } from '../core/storage.js';
 import { MIRROR, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
-import { authUsersTable, usersSanitize, usersSaveAll } from '../core/auth.js';
 import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from '../core/ui.js';
-import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, MSG_DONOR_CREATED,
-         MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, MSG_SAVED_NO_FP, TABLES } from './constants.js';
+import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LK_MANAGER,
+         MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
 
 // ── סימוני ממתין ──
@@ -129,8 +128,6 @@ function stripRows(t, rows) {
   var m = tableMeta(t);
   // שורת החותמת אינה יורדת למראה — שורה במראה נדחפת חזרה, והמכשיר היה כותב לענן חותמת ישנה ומשתיק שינוי אמיתי.
   if (t === KV_TABLE) rows = (rows || []).filter(function (r) { return !(r && String(r.key) === PL_STAMP_KEY); });
-  // מראת המשתמשים עוברת ברשימת-ההיתר של המודול — strip הוא רשימת-איסור, ועמודה רגישה חדשה עוקפת אותה.
-  if (t === authUsersTable()) return usersSanitize(rows);
   if (!m.strip) return rows;
   return (rows || []).map(function (r) { return stripCols(t, r); });
 }
@@ -191,7 +188,6 @@ function applyMirrorToState() {
   state.txns    = gSortRows('g_txns',    liveRows('g_txns'));
   state.tasks   = gSortRows('g_tasks',   liveRows('g_tasks'));
   state.targets = gSortRows('g_targets', liveRows('g_targets'));
-  state.users   = gSortRows('g_users',   liveRows('g_users'));
   state.config  = configFromMirror();
 }
 
@@ -293,6 +289,31 @@ function saveConfigList(key, list) {
   return upsertBy(KV_TABLE, { key: key, value: JSON.stringify(list) });
 }
 
+// ── רשימות לסידור — g_lookups ──
+// הכתיבה של LOOKUP_CFG — השורה כבר נושאת את חותמתה (הזריעה והסידור שבליבה חותמים), ולכן לא דרך update.
+function lookupPut(row) {
+  var full = Object.assign({}, row);
+  if (full.updated_at == null) full.updated_at = Date.now();
+  upsertLocal('g_lookups', full);
+  markLocal('g_lookups', full.client_id);
+  applyMirrorToState();
+}
+
+// פריטי סוג אחד — בסדר הגרירה, ובשוויון לפי התווית.
+function lookupRows(kind) {
+  return liveRows('g_lookups').filter(function (r) { return r.kind === kind; }).sort(function (a, b) {
+    return ((+a.sort || 0) - (+b.sort || 0)) || sortCompare(a.label || '', b.label || '');
+  });
+}
+
+function lookupById(id) {
+  var l = liveRows('g_lookups');
+  for (var i = 0; i < l.length; i++) if (idEq(l[i].client_id, id)) return l[i];
+  return null;
+}
+
+function managerNames() { return lookupRows(LK_MANAGER).map(function (r) { return r.label; }); }
+
 // ── דחיפת-מצב ──
 // דחיפת-מצב ולא תור יוצא — בתור, כשל תוכן אחד חוסם את כל מה שאחריו; כאן כל רשומה עומדת בפני עצמה.
 function rowPendingKey(t, row) { return pendRowKey(t, row[tableMeta(t).key]); }
@@ -302,7 +323,7 @@ function rowPendingKey(t, row) { return pendRowKey(t, row[tableMeta(t).key]); }
 function syncPull() {
   if (S._pulling || !S.sb) return Promise.resolve({ ok: false, remote: {} });
   S._pulling = true;
-  // ההקשר נלכד בכניסה ונבדק לפני המיזוג — המשתמש יכול להתחלף בין המשיכה לכתיבה.
+  // ההקשר נלכד בכניסה לפונקציה ונבדק לפני המיזוג — עידן שנזרק בין המשיכה לכתיבה מבטל את המחזור.
   var _ep = ctxEpoch();
   return Promise.all(TABLES.map(function (m) {
     // בלי סינון deleted — בלי ה-tombstones מחיקה ממכשיר אחר לא תגיע לכאן לעולם.
@@ -322,9 +343,7 @@ function syncPull() {
       var rows = stripRows(x.m.t, x.res.data);
       var merged = mergeCore(MIRROR[x.m.t], rows, { key: x.m.key,
         isPending: function (k) { return pendHas(pendRowKey(x.m.t, k)); } });
-      // מראת המשתמשים נשמרת דרך הנתיב המלא של המודול שלה, שמסנן בדיוק כמו הנתיב החלקי.
-      if (x.m.t === authUsersTable()) usersSaveAll(merged);
-      else { MIRROR[x.m.t] = merged; mirrorSave(x.m.t); }
+      MIRROR[x.m.t] = merged; mirrorSave(x.m.t);
     });
     applyMirrorToState();
     if (!errs.length) {
@@ -421,14 +440,18 @@ function targetFor(m) {
   return 0;
 }
 
-// השגריר, המנהל והאחראי הם טקסט חופשי ולא מפתח זר — הרשימה כוללת גם ערכים שכבר נרשמו, כדי ששם ישן לא ייעלם מהבורר.
+// השגריר והאחראי הם טקסט חופשי עם הצעות ולא מפתח זר — ההצעות הן הערכים שכבר הוזנו ורשימת המנהלים, כדי ששם ישן לא ייעלם.
 function agentPool() {
   return uniqSorted(
-    state.users.map(function (u) { return u.full_name; })
+    managerNames()
       .concat(state.donors.map(function (d) { return d.agent; }))
       .concat(state.pledges.map(function (p) { return p.agent; }))
       .concat(state.txns.map(function (t) { return t.agent; }))
   );
+}
+
+function assigneePool() {
+  return uniqSorted(managerNames().concat(state.tasks.map(function (t) { return t.assignee; })));
 }
 
 // גם value וגם הטקסט עוברים esc — ערכי הרשימות נקבעים בידי המשתמש במסך ההגדרות.
@@ -552,16 +575,11 @@ function donorMatches(q) {
   });
 }
 
-// שמירה בלי טביעה אינה «נשמר בהצלחה» — הכניסה האופליין של המשתמש לא תעבוד, ואומרים את זה.
-function warnIfNoFp(r) {
-  if (r && r.noFp) toast(MSG_SAVED_NO_FP, null, 'bad');
-  return r;
-}
-
-export { $, agentPool, applyMirrorToState, checked, collectedForPledge, datalistHTML,
+export { $, agentPool, applyMirrorToState, assigneePool, checked, collectedForPledge, datalistHTML,
          dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
-         emptyBox, gSortGroups, gSortTxns, ils, initials, insert, mirrorHasData,
+         emptyBox, gSortGroups, gSortTxns, ils, initials, insert, lookupById, lookupPut, lookupRows,
+         managerNames, mirrorHasData,
          monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
          pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, saveConfigList,
          selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow, tableMeta,
-         targetFor, txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare, warnIfNoFp };
+         targetFor, txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare };

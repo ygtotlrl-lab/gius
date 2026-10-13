@@ -1,40 +1,31 @@
-// app/screens/settings.js — ההגדרות, המשתמשים והיעד
-import { MSG_OFF_USER_WRITE, MSG_PASS_SIX } from '../../core/util.js';
-import { plTouch } from '../../core/sync.js';
-import { authPassFields, isAdmin, isAdminOf, writeUser } from '../../core/auth.js';
-import { esc, openModal, toast } from '../../core/ui.js';
-import { CONFIG_KEYS, MSG_EDIT_USER, MSG_MONTH_GOAL, MSG_NEED_FULL_AND_USER,
-         MSG_NEED_PASS, MSG_NEW_USER, MSG_PASS_CHANGE_FOR, MSG_PICK_VALID_MONTH,
-         PASS_SIX_RE } from '../constants.js';
+// app/screens/settings.js — ההגדרות, המנהלים והיעד
+import { dragDef, esc, lookupDragApply, openModal, toast } from '../../core/ui.js';
+import { CONFIG_KEYS, LK_MANAGER, MSG_MANAGERS, MSG_MANAGER_LABEL, MSG_MANAGER_NEW, MSG_MONTH_GOAL,
+         MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
-import { $, checked, emptyBox, ils, monthLabel, monthTxns, num, sum, upsertBy, val,
-         warnIfNoFp } from '../domain.js';
+import { emptyBox, ils, lookupRows, monthLabel, monthTxns, num, sum, upsertBy,
+         val } from '../domain.js';
 
 // ── הגדרות ──
-// אין שער סיסמה מעל ההגדרות ואין ברירת מחדל לסיסמה או לתפקיד — בהתקנה טרייה הם נופלים לערך שכל אחד מקליד.
-// role הוא text not null בלי DEFAULT; הנפילה-חזרה ל-manager ב-saveUser היא הגנת טופס לתפקיד הנמוך.
+// המסך פתוח לכולם — אין כניסה, ואין תפקיד שאפשר לבדוק.
 function viewSettings() {
-  // שכבת הגנה שנייה — אין להסיר «כי go כבר בודק»: מסך שמרנדר בלי בדיקה נפתח לכל מי שהגיע אליו בדרך אחרת.
-  if (!isAdmin()) {
-    return '<section class="card">' + emptyBox('🔒', 'אין הרשאה — מסך ההגדרות פתוח לבעלים בלבד') + '</section>';
-  }
-
   var h = '';
 
-  // ── משתמשים ──
-  h += '<section class="card"><h2>👥 ניהול משתמשים<span class="cnt">' + state.users.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="user-new">＋ משתמש</button></span></h2>' +
-    '<div class="tw"><table><thead><tr><th>שם מלא</th><th>שם משתמש</th><th>תפקיד</th><th>סטטוס</th><th></th></tr></thead><tbody>';
-  state.users.forEach(function (u) {
-    h += '<tr><td><b>' + esc(u.full_name) + '</b></td><td>' + esc(u.username) + '</td>' +
-      '<td><span class="badge ' + (isAdminOf(u) ? 'brand' : '') + '">' + (isAdminOf(u) ? 'בעלים' : 'מנהל') + '</span></td>' +
-      '<td><span class="badge ' + (u.active ? 'ok' : 'bad') + '">' + (u.active ? 'פעיל' : 'מושבת') + '</span></td>' +
-      '<td><button class="btn ghost xs" data-act="user-edit" data-id="' + u.client_id + '">עריכה</button> ' +
-        '<button class="btn ghost xs" data-act="user-pass" data-id="' + u.client_id + '">סיסמה</button> ' +
-        '<button class="btn ' + (u.active ? 'danger' : 'soft') + ' xs" data-act="user-toggle" data-id="' + u.client_id + '">' +
-          (u.active ? 'השבתה' : 'הפעלה') + '</button></td></tr>';
-  });
-  h += '</tbody></table></div></section>';
+  // ── מנהלים ──
+  // הסידור בגרירה מהידית, והסדר נכתב לכל השורות מה-DOM הסופי — במנגנון שבליבה; לחיצה על שורה פותחת עריכה.
+  var mgr = lookupRows(LK_MANAGER);
+  h += '<section class="card"><h2>' + esc(MSG_MANAGERS) + '<span class="cnt">' + mgr.length + '</span>' +
+    '<span class="sp"><button class="btn sm" data-act="look-add" data-id="' + esc(LK_MANAGER) + '">' + esc(MSG_MANAGER_NEW) + '</button></span></h2>' +
+    '<div class="hint-lead">הרשימה מזינה את שדה «מנהל מטפל» בטופס התנועה, ואת ההצעות לשגריר ולאחראי.</div>';
+  if (!mgr.length) h += emptyBox('👤', 'הרשימה ריקה');
+  else {
+    h += '<div class="look-list">' + mgr.map(function (r) {
+      return '<div class="list-item" data-act="look-edit" data-drag="' + esc(LK_MANAGER) + '" data-id="' + esc(r.client_id) + '">' +
+        '<span class="grip" data-grip aria-hidden="true">⣿</span>' +
+        '<span class="list-val">' + esc(r.label) + '</span></div>';
+    }).join('') + '</div>';
+  }
+  h += '</section>';
 
   // ── רשימות ──
   h += '<section class="card"><h2>📋 ניהול רשימות</h2>' +
@@ -80,56 +71,19 @@ function viewSettings() {
   return h;
 }
 
-function formUser(existing) {
-  var u = existing || {};
-  var body =
-    '<div class="f2">' +
-      '<label class="fld"><span>שם מלא *</span><input class="inp" id="us-full" value="' + esc(u.full_name || '') + '"></label>' +
-      '<label class="fld"><span>שם משתמש *</span><input class="inp" id="us-name" autocapitalize="off" spellcheck="false" value="' + esc(u.username || '') + '"></label>' +
-    '</div>' +
-    (u.client_id ? '' : '<label class="fld"><span>סיסמה *</span><input class="inp" id="us-pass" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="pass-eye btn ghost sm" data-act="pass-eye" data-id="us-pass" title="הצג/הסתר סיסמה">👁</button></label>') +
-    '<div class="f2">' +
-      '<label class="fld"><span>תפקיד</span><select class="inp" id="us-role">' +
-        '<option value="manager"' + (isAdminOf(u) ? '' : ' selected') + '>מנהל</option>' +
-        '<option value="admin"' + (isAdminOf(u) ? ' selected' : '') + '>בעלים</option></select></label>' +
-      '<label class="active-chk fld chk"><input type="checkbox" id="us-active"' +
-        (u.client_id ? (u.active ? ' checked' : '') : ' checked') + '><span>משתמש פעיל</span></label>' +
-    '</div>';
-  var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="user-save" data-ksave data-id="' + (u.client_id || '') + '">שמירה</button>';
-  openModal(u.client_id ? MSG_EDIT_USER : MSG_NEW_USER, body, foot);
+dragDef(LK_MANAGER, lookupDragApply);
+
+// כפתור אחד לשני המסלולים, ומחיקה רק בעריכה — שני ליטרלים הם שני מקומות שבהם data-ksave יכול להישמט.
+function lookupFormHTML(r) {
+  return '<label class="fld"><span>' + esc(MSG_MANAGER_LABEL) + '</span>' +
+    '<input class="inp" id="l-label" autocomplete="off" value="' + esc(r ? r.label : '') + '"></label>';
 }
 
-function saveUser(id) {
-  var full = val('us-full'), uname = val('us-name');
-  if (!full || !uname) { toast(MSG_NEED_FULL_AND_USER, null, 'bad'); return Promise.resolve(); }
-  var row = {
-    full_name: full, username: uname,
-    role: val('us-role') || 'manager',
-    active: checked('us-active')
-  };
-  // כתיבת משתמש חייבת להגיע לענן כדי שהטביעה תגיע לשאר המכשירים — בלי רשת היא נכשלת ברעש.
-  if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return Promise.resolve(); }
-  if (!id) {
-    var p = $('#us-pass') ? $('#us-pass').value : '';
-    if (!p) { toast(MSG_NEED_PASS, null, 'bad'); return Promise.resolve(); }
-    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return Promise.resolve(); }
-    return authPassFields(p).then(function (pf) {
-      return writeUser(null, Object.assign({}, row, pf)).then(warnIfNoFp)
-        .then(function (r) { if (r && !r.error) plTouch(); return r; });
-    });
-  }
-  // עריכת משתמש קיים אינה נוגעת בסיסמה ולכן גם לא בטביעה.
-  // כתיבה שהצליחה מקדמת את אות הבדיקה המחזורית — g_users נמשכת כמו כל טבלה, ובלי הקידום השינוי אינו נראה במכשיר אחר.
-  return writeUser(id, row).then(function (r) { if (r && !r.error) plTouch(); return r; });
-}
-
-function formPassword(u) {
-  openModal(MSG_PASS_CHANGE_FOR + u.full_name,
-    '<label class="fld"><span>סיסמה חדשה *</span><input class="inp" id="pw-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password"><button type="button" class="pass-eye btn ghost sm" data-act="pass-eye" data-id="pw-new" title="הצג/הסתר סיסמה">👁</button></label>',
-    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="pass-save" data-ksave data-id="' + u.client_id + '">שמירה</button>');
-  var el = $('#pw-new'); if (el) el.focus();
+function lookupFootHTML(r, kind) {
+  return '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    (r ? '<button class="btn danger" data-act="look-del" data-id="' + esc(r.client_id) + '">מחיקה</button>' : '') +
+    '<button class="btn" data-act="look-save" data-id="' + esc(r ? r.client_id : '') +
+    '" data-k="' + esc(kind) + '" data-ksave>שמירה</button>';
 }
 
 function formTarget(month) {
@@ -153,4 +107,4 @@ function saveTarget() {
   return upsertBy('g_targets', { client_id: m, target_month: m, amount: amount });
 }
 
-export { formPassword, formTarget, formUser, saveTarget, saveUser, viewSettings };
+export { formTarget, lookupFootHTML, lookupFormHTML, saveTarget, viewSettings };

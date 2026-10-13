@@ -1,41 +1,36 @@
 // app/main.js — העלייה, הקליפה, מפת הפעולות והניווט
-import { MSG_OFF_NO_CRYPTO, MSG_OFF_NO_FP, MSG_OFF_UNKNOWN, MSG_OFF_USER_WRITE,
-         MSG_PASS_SIX, MSG_SERVER_ERR, MSG_SWITCHED_TO, appConfigure, dayToday,
-         getDeviceId, uniqHas, netTimeout } from '../core/util.js';
-import { afterSave, ctxSwitch, eraKeys, errToast, idEq, pendAlertDismiss, pendCount, pendRender,
-         plTouch, runSave, sbWatch } from '../core/sync.js';
+import { appConfigure, dayToday, getDeviceId, uniqHas,
+         netTimeout } from '../core/util.js';
+import { afterSave, eraKeys, errToast, idEq, newClientId, pendAlertDismiss, pendCount, pendRender,
+         runSave, sbWatch, schedulePush, tombKill } from '../core/sync.js';
 
 import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
-import { authLog, authPassFields, authUsersTable, authVerify, isAdmin, lkReset, sessActive, sessGet,
-         sessSet, usersGet, usersSaveOne, writeUser } from '../core/auth.js';
-import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick, esc,
-         openModal, shellBare, swApply, swHideUpdate, toast } from '../core/ui.js';
-import { KV_TABLE, MSG_BAD_LOGIN, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED,
-         MSG_DEL_DONOR_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DEL_PLEDGE_TITLE,
+import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick,
+         dragCancel, dragDown, dragMove, dragUp, esc, openModal, shellBare, swApply, swHideUpdate,
+         toast, uiNoDialog } from '../core/ui.js';
+import { KV_TABLE, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED, MSG_DEL_DONOR_TITLE,
+         MSG_DEL_MANAGER_BODY, MSG_DEL_MANAGER_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DEL_PLEDGE_TITLE,
          MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY, MSG_DEL_TASK_TITLE,
-         MSG_DEL_TXN_BODY, MSG_DEL_TXN_TITLE, MSG_EDIT_VALUE, MSG_NEED_PASS,
-         MSG_NEED_VALUE, MSG_NOTES_SAVED, MSG_NO_SELF_DISABLE, MSG_OWNER_ONLY,
-         MSG_PICK_USER_AND_PASS, MSG_REMOVE_ACT, MSG_REMOVE_QUOTE_POST,
-         MSG_REMOVE_QUOTE_PRE, MSG_REMOVE_VALUE_TITLE, MSG_UPDATED, MSG_VALUE_EXISTS2,
-         MSG_WHAT_TO_ADD, PASS_SIX_RE, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL,
+         MSG_DEL_TXN_BODY, MSG_DEL_TXN_TITLE, MSG_EDIT_VALUE, MSG_MANAGER_DUP, MSG_MANAGER_NEW,
+         MSG_NEED_MANAGER, MSG_NEED_VALUE, MSG_NOTES_SAVED, MSG_REMOVE_ACT, MSG_REMOVE_QUOTE_POST,
+         MSG_REMOVE_QUOTE_PRE, MSG_REMOVE_VALUE_TITLE, MSG_VALUE_EXISTS2,
+         MSG_WHAT_TO_ADD, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL,
          TABLES } from './constants.js';
 import { KDRAG, S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorMatches,
-         donorNewCancel, donorNewSave, mirrorHasData, monthKeyOf, pendRowKey,
-         pledgeById, pledgesOfDonor, rowPendingKey,
+         donorNewCancel, donorNewSave, lookupById, lookupPut, lookupRows, mirrorHasData,
+         monthKeyOf, pendRowKey, pledgeById, pledgesOfDonor, rowPendingKey,
          saveConfigList, shiftMonth, softDelete, stripRows, syncNow, tableMeta,
-         txnsOfDonor, update, val, viewBare, warnIfNoFp } from './domain.js';
+         txnsOfDonor, update, val, viewBare } from './domain.js';
 import { donorRowsHTML, formDonor, formTxn, saveDonor, saveTxn, viewDonorCard,
          viewDonors } from './screens/donors.js';
 import { viewHome } from './screens/home.js';
-import { doLogin, doLogout, formMyPassword, formSaveMyPassword, formSwitchUser, markSVG,
-         renderLogin } from './screens/login.js';
 import { formPledge, refreshPledges, savePledge,
          viewPledges } from './screens/pledges.js';
-import { formPassword, formTarget, formUser, saveTarget, saveUser,
+import { formTarget, lookupFootHTML, lookupFormHTML, saveTarget,
          viewSettings } from './screens/settings.js';
 import { formTask, kdragCol, moveTask, saveTask, viewTasks } from './screens/tasks.js';
 
@@ -46,23 +41,31 @@ appConfigure({
   get DEV_CFG() { return DEV_CFG; },
   get DOM_ACTIONS() { return DOM_ACTIONS; },
   get ERA_CFG() { return ERA_CFG; },
-  get LK_CFG() { return LK_CFG; },
+  get LOOKUP_CFG() { return LOOKUP_CFG; },
   get LS_CFG() { return LS_CFG; },
   get MIRROR_CFG() { return MIRROR_CFG; },
   get PEND_CFG() { return PEND_CFG; },
   get PL_CFG() { return PL_CFG; },
   get PUSH_CFG() { return PUSH_CFG; },
   get RTY_CFG() { return RTY_CFG; },
-  get USER_CFG() { return USER_CFG; },
   get saveRefresh() { return saveRefresh; }
 });
+
+// הרשימות לסידור — השורות והכתיבה של גיוס, והזריעה והסידור בליבה; הכתיבה המקומית כבר דורכת את הדחיפה.
+var LOOKUP_CFG = {
+  rows:   function (kind) { return lookupRows(kind); },
+  put:    function (row) { lookupPut(row); },
+  after:  function () { schedulePush(); },
+  render: function () { render(); }
+};
 
 // tables היא פונקציה ולא מערך — TABLES מוצהר אחרי הבלוק, וקריאה בו כאן הייתה מקבלת undefined.
 // טבלה שאינה נדחפת מוכרזת ב-noPush עם המסלול שדוחף אותה — רשומת אב או סוד.
 var MIRROR_CFG = {
   prefix: self.APP.prefix + 'mirror_',
   tables: function () { return TABLES.map(function (m) { return m.t; }); },
-  noPush: [{ t: 'g_users', via: 'writeUser', adds: 'secret' }],
+  // ריק ומוצהר — שדה חסר נקרא «לא נשאל», וריק נקרא «נמדד ואין».
+  noPush: [],
   empty:  function () { return []; },
   clean:  function (t, rows) { return stripRows(t, rows); },
   fail:   function (where, e) { console.error('[mirror] ' + where, e); },
@@ -83,15 +86,15 @@ var LS_CFG = {
 };
 
 // האפליקציה בפרויקט Supabase נפרד — ולכן sh_backup ו-sh_sync_log נוצרות בקובץ הסכימה שלה.
-// g_users נגבית ב-cols מפורש ולא ב-* — sh_backup קריאה ל-anon, ו-select('*') היה מעתיק את הסוד למקום שני.
 var BK_CFG = {
   client: function () { return S.sb; },
   flagKey: 'g_last_backup',
   logQueueKey: 'g_log_queue',
   prefix: '',
   device: function () { try { return getDeviceId(); } catch (e) { return null; } },
-  user: function () { try { return (state.user && state.user.full_name) ? state.user.full_name : null; } catch (e) { return null; } },
-  // secrets ריק — הסוד היחיד מוגן ב-cols שאינו שולף אותו, והמנגנון נשאר דרוך לסוד עתידי.
+  // אין כניסה ולכן אין שם משתמש — המכשיר הוא הזהות היחידה, ושדה מומצא היה עדות שאיש לא מסר.
+  user: function () { return null; },
+  // secrets ריק — אין היום סוד, והמנגנון נשאר דרוך לסוד עתידי.
   secrets: [],
   sources: function () {
     return [
@@ -101,8 +104,7 @@ var BK_CFG = {
       { name: 'g_tasks',   order: 'client_id', ts: 'updated_at' },
       { name: 'g_targets', order: 'client_id', ts: 'updated_at' },
       { name: KV_TABLE,    order: 'key',       ts: 'updated_at' },
-      { name: 'g_users',   order: 'client_id', ts: 'updated_at',
-        cols: 'client_id,username,full_name,role,active,created_at,updated_at' }
+      { name: 'g_lookups', order: 'client_id', ts: 'updated_at' }
     ];
   }
 };
@@ -122,17 +124,12 @@ var RTY_CFG = {
   pending: function () { try { return pendCount() > 0; } catch (e) { return false; } },
 };
 
-// אין להוסיף כאן הודעה — חלון האזהרה של הליבה הוא ההודעה, ונוסח שני נבדל ממנו בשקט.
-var LK_CFG = {
-  active: function () { return sessActive(); },
-  lock:   function () { doLogout(); },
-};
-
 // שורת החותמת מוחרגת מהמראה ב-stripRows — דחיפת-מצב שלה הייתה מחזירה לענן חותמת ישנה.
 // ok() אינו נוגע ב-_lastPullOk — הוא עד המשיכה המלאה, ושיחה מוצלחת אחרת אינה עדות על מצב הענן.
 var PL_CFG = {
   every:  3000,
-  active: function () { return sessActive(); },
+  // אין כניסה — הבדיקה המחזורית פעילה כל עוד הלשונית גלויה, ותנאי של משתמש מחובר לא היה מתקיים כאן לעולם.
+  active: function () { return document.visibilityState !== 'hidden'; },
   seen:   function () { return S._gSeenTs; },
   note:   function (ts) { S._gSeenTs = ts; },
   ok:     function () { S._lastSeenOk = Date.now(); },
@@ -166,32 +163,6 @@ var ERA_CFG = {
 // מזהה שכבר במכשיר אינו משתנה לעולם — החלפתו מנתקת רישומים קיימים ביומן ממקורם.
 var DEV_CFG = { key: 'g_device_id' };
 
-// הכתיבה נכנסת למראה בלי pendMark — מה שכבר בענן אינו ממתין, וסימון עליו היה גובר במיזוג ומסתיר את השורה שבענן.
-var USER_CFG = {
-  ready: function () { return !!S.sb && navigator.onLine; },
-  // ההודעה נקראת בזמן הקריאה ולא בזמן ההשמה — הקבוע מוצהר מתחת לבלוק, וקריאה בהשמה הייתה נותנת undefined.
-  offMsg: function () { return MSG_OFF_USER_WRITE; },
-  from: function () { return S.sb.from(authUsersTable()); },
-  run: function (q) { return netTimeout(q); },
-  refreshed: function () { applyMirrorToState(); },
-  revalidated: function (u) {
-    state.user = { client_id: u.client_id, username: u.username, full_name: u.full_name, role: u.role };
-    applyMirrorToState();
-  },
-  logout: function (msg) { doLogout(); toast(msg, null, 'bad'); },
-  after: function (res, body) {
-    // הכשל נזרק ולא מוחזר — הקוראים עובדים ב-catch, וכשל שמוחזר בשקט היה עובר אצלם כהצלחה.
-    if (!res || res.error) throw ((res && res.error) || new Error(MSG_SERVER_ERR));
-    var saved = (Array.isArray(res.data) && res.data[0]) || body;
-    usersSaveOne(saved);
-    applyMirrorToState();
-    // g_users נמשכת בבדיקה המחזורית, ולכן גם כתיבה אליה מקדמת את החותמת — אחרת משתמש חדש לא יגיע למכשיר אחר עד שינוי נתונים אחר.
-    plTouch();
-    // ללא טביעה: הגזירה נכשלה ו-pass_fp נכתב ריק לצד סיסמה חדשה; השדה נכנס ל-body רק כשנמסרה סיסמה.
-    return { noFp: Object.prototype.hasOwnProperty.call(body, 'pass_fp') && !body.pass_fp };
-  }
-};
-
 document.title = self.APP.name;
 
 // ── מעטפת המסך ──
@@ -205,6 +176,13 @@ var TABS = [
   { id: 'settings', ic: '⚙️', label: 'הגדרות' }
 ];
 
+function markSVG(cls) {
+  return '<svg class="' + cls + '" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<rect x="2" y="2" width="96" height="96" rx="24" fill="var(--brand-fill)"/>' +
+    '<circle cx="50" cy="50" r="26" fill="none" stroke="#fff" stroke-width="8"/>' +
+    '<circle cx="50" cy="50" r="10" fill="#fff"/></svg>';
+}
+
 function renderShell() {
   var tabsHTML = TABS.map(function (t) {
     return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
@@ -214,12 +192,7 @@ function renderShell() {
   shellBare(false);
   $('header.topbar').innerHTML =
       '<div class="brand">' + markSVG('') + '<span>גיוס<small> · ניהול גיוס כספים</small></span></div>' +
-      '<nav class="tabbar">' + tabsHTML + '</nav>' +
-      '<div class="who"><div class="who-id"><div class="nm">' + esc(state.user.full_name) + '</div>' +
-        '<span class="role">' + (isAdmin() ? 'בעלים' : 'מנהל') + '</span></div>' +
-        '<button class="btn ghost sm" data-act="switch-user" title="החלפת משתמש">👥</button>' +
-        '<button class="btn ghost sm" data-act="my-pass" title="שינוי סיסמה">🔑</button>' +
-        '<button class="btn ghost sm" data-act="logout">יציאה</button></div>';
+      '<nav class="tabbar">' + tabsHTML + '</nav>';
   // הכפתור הצף אינו בקליפה — מסך ההגדרות בלעדיו.
   var fab = $('#app > .fab');
   if (state.screen === 'settings') { if (fab) fab.remove(); }
@@ -227,7 +200,6 @@ function renderShell() {
 }
 
 function render() {
-  if (!state.user) { renderLogin(); return; }
   renderShell();
   var view = $('#view');
   if (state.screen === 'home') view.innerHTML = viewHome();
@@ -241,12 +213,7 @@ function render() {
   if (key !== S.lastViewKey) { window.scrollTo(0, 0); S.lastViewKey = key; }
 }
 
-// כפתור ההגדרות מוצג לכולם בכוונה — מי שאינו מורשה מקבל טוסט, ואין להסתיר את הטאב; האכיפה חוזרת גם ב-viewSettings.
 function go(screen) {
-  if (screen === 'settings' && !isAdmin()) {
-    toast(MSG_OWNER_ONLY, null, 'bad');
-    return;
-  }
   state.screen = screen;
   state.donorId = null;
   // הבית נפתח בחודש של היום — אחרת מי שחוזר לבית רואה יעד של חודש שדופדף אליו.
@@ -255,11 +222,14 @@ function go(screen) {
 }
 
 // הקנבן אינו הגרירה לסידור שבליבה — הכרטיס אינו זז בעץ, והשחרור מעביר אותו לשלב שב-data-drop של העמודה שמתחתיו, ולא לסדר שנקרא מה-DOM.
+// כל גרירה אחרת — רשימת המנהלים — עוברת במנגנון שבליבה, ומאזין אחד לכל אירוע מכריע ביניהן.
 document.addEventListener('pointerdown', function (e) {
   var g = e.target && e.target.closest ? e.target.closest('[data-grip]') : null;
   if (!g) return;
-  KDRAG.el = g.closest('[data-drag]');
-  if (!KDRAG.el) return;
+  var el = g.closest('[data-drag]');
+  if (!el) return;
+  if (el.getAttribute('data-drag') !== 'task') { dragDown(e); return; }
+  KDRAG.el = el;
   KDRAG.col = null;
   KDRAG.el.classList.add('dragging');
   // המצביע נלכד על הידית — בלעדיו אצבע שיוצאת מגבול הכרטיס מפסיקה לשדר והגרירה נתקעת.
@@ -268,7 +238,7 @@ document.addEventListener('pointerdown', function (e) {
 });
 
 document.addEventListener('pointermove', function (e) {
-  if (!KDRAG.el) return;
+  if (!KDRAG.el) { dragMove(e); return; }
   e.preventDefault();
   var col = kdragCol(e.clientX, e.clientY);
   if (col === KDRAG.col) return;
@@ -278,7 +248,7 @@ document.addEventListener('pointermove', function (e) {
 });
 
 document.addEventListener('pointerup', function (e) {
-  if (!KDRAG.el) return;
+  if (!KDRAG.el) { dragUp(e); return; }
   var el = KDRAG.el, col = kdragCol(e.clientX, e.clientY);
   if (KDRAG.col) KDRAG.col.classList.remove('over');
   KDRAG.el = null; KDRAG.col = null;
@@ -287,8 +257,8 @@ document.addEventListener('pointerup', function (e) {
 });
 
 // גרירה שבוטלה אינה מעבירה — בלי זה הכרטיס נשאר «נגרר», והשחרור הבא בכל מקום היה מעביר אותו.
-document.addEventListener('pointercancel', function () {
-  if (!KDRAG.el) return;
+document.addEventListener('pointercancel', function (e) {
+  if (!KDRAG.el) { dragCancel(e); return; }
   if (KDRAG.col) KDRAG.col.classList.remove('over');
   KDRAG.el.classList.remove('dragging');
   KDRAG.el = null; KDRAG.col = null;
@@ -303,11 +273,6 @@ function saveRefresh() {
   pendRender();
 }
 
-function findUser(id) {
-  for (var i = 0; i < state.users.length; i++) if (idEq(state.users[i].client_id, id)) return state.users[i];
-  return null;
-}
-
 function findTask(id) {
   for (var i = 0; i < state.tasks.length; i++) if (idEq(state.tasks[i].client_id, id)) return state.tasks[i];
   return null;
@@ -319,32 +284,7 @@ var DOM_ACTIONS = {
   // התראות התשתית מנותבות במפה — הכפתור נבנה ב-JS, ומאזין ישיר עליו היה מחוץ למנגנון.
   'ls-alert-close':      function () { var el = document.getElementById('ls-alert'); if (el) el.remove(); },
   'pend-alert-ok':       function () { pendAlertDismiss(); },
-  'lk-stay':             function () { lkReset(); },
   'tab': function (el) { go(el.dataset.tab); },
-  'switch-user': function () { formSwitchUser(); },
-  'switch-confirm': function (el) {
-    var id = $('#sw-user') ? $('#sw-user').value : '';
-    var p  = $('#sw-pass') ? $('#sw-pass').value : '';
-    if (!id || !p) { toast(MSG_PICK_USER_AND_PASS, null, 'bad'); return; }
-    var cu = null, arr = usersGet();
-    for (var i = 0; i < arr.length; i++) if (arr[i] && String(arr[i].client_id) === String(id)) cu = arr[i];
-    // ההודעות נשארות נבדלות — «אין במה לאמת» אינו «סיסמה שגויה», והודעה מאוחדת שולחת להקליד שוב סיסמה נכונה.
-    if (!cu) { authLog(false, 'switch_unknown_user_offline', String(id)); toast(MSG_OFF_UNKNOWN, null, 'bad'); return; }
-    return authVerify(cu, p).then(function (v) {
-      if (v === 'no-fp')     { authLog(false, 'switch_no_fp_offline', cu.username); toast(MSG_OFF_NO_FP, null, 'bad'); return; }
-      if (v === 'no-crypto') { authLog(false, 'switch_no_crypto_offline', cu.username); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); return; }
-      if (v !== 'ok')        { authLog(false, 'switch_wrong_credentials_offline', cu.username); toast(MSG_BAD_LOGIN, null, 'bad'); return; }
-      closeModal();
-      ctxSwitch();
-      state.user = { client_id: cu.client_id, username: cu.username, full_name: cu.full_name, role: cu.role };
-      authLog(true, 'switch_offline', cu.username);
-      state.screen = 'home';
-      state.donorId = null;
-      boot();
-      toast(MSG_SWITCHED_TO + (cu.full_name || cu.username), null, 'good');
-    }, function (e) { console.warn('[switch]', e); authLog(false, 'switch_no_crypto_offline', cu.username); toast(MSG_OFF_NO_CRYPTO, null, 'bad'); });
-  },
-  'logout': function () { doLogout(); },
   'modal-close': function () { closeModal(); },
   'ask-yes': function () { closeAsk(true); },
   'ask-no': function () { closeAsk(false); },
@@ -445,38 +385,43 @@ var DOM_ACTIONS = {
     });
   },
 
-  // ── הגדרות: משתמשים ──
-  'user-new': function () { formUser(null); },
-  'user-edit': function (el) { formUser(findUser(el.dataset.id)); },
-  'user-save': function (el) { return runSave(function () { return saveUser(el.dataset.id); }, 'המשתמש נשמר'); },
-  'user-pass': function (el) { var u = findUser(el.dataset.id); if (u) formPassword(u); },
-  'pass-save': function (el) {
-    var p = $('#pw-new') ? $('#pw-new').value : '';
-    if (!p) { toast(MSG_NEED_PASS, null, 'bad'); return; }
-    if (!PASS_SIX_RE.test(p)) { toast(MSG_PASS_SIX, null, 'bad'); return; }
-    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
+  // ── הגדרות: מנהלים ──
+  'look-add': function (el) {
+    openModal(MSG_MANAGER_NEW, lookupFormHTML(null), lookupFootHTML(null, el.dataset.id));
+    var inp = $('#l-label'); if (inp) inp.focus();
+  },
+  'look-edit': function (el) {
+    var r = lookupById(el.dataset.id);
+    if (!r) { uiNoDialog('look-edit', el.dataset.id); return; }
+    openModal(r.label, lookupFormHTML(r), lookupFootHTML(r, r.kind));
+  },
+  'look-save': function (el) {
+    var inp = $('#l-label');
+    if (!inp) { uiNoDialog('look-save', 'l-label'); return; }
+    var txt = inp.value.trim(), id = el.dataset.id, kind = el.dataset.k;
+    if (!txt) { toast(MSG_NEED_MANAGER, null, 'bad'); return; }
+    // השורה שנערכת מוחרגת מהבדיקה — אחרת היא מתנגשת בעצמה.
+    var others = lookupRows(kind).filter(function (x) { return !idEq(x.client_id, id); })
+      .map(function (x) { return x.label; });
+    if (uniqHas(others, txt)) { toast(MSG_MANAGER_DUP, null, 'bad'); return; }
     return runSave(function () {
-      return authPassFields(p).then(function (pf) {
-        return writeUser(el.dataset.id, pf).then(warnIfNoFp);
-      });
-    }, 'הסיסמה עודכנה');
+      var r = id ? lookupById(id) : null;
+      var row = r ? Object.assign({}, r, { label: txt, updated_at: Date.now() })
+                  : { client_id: newClientId(), kind: kind, label: txt,
+                      sort: lookupRows(kind).length + 1, deleted: false, deleted_at: null };
+      lookupPut(row);
+      return row;
+    }, 'נשמר');
   },
-  'my-pass': function () { formMyPassword(); },
-  // הצגת הסיסמה — לשדות שבהם הבעלים קובע סיסמה לאדם אחר אין שדה אימות, והסתרה בלי דרך לראות הייתה נועלת בחוץ בשקט.
-  'pass-eye': function (el) {
-    var f = $('#' + el.dataset.id);
-    if (f) f.type = (f.type === 'password' ? 'text' : 'password');
-  },
-  'my-pass-save': function () { return formSaveMyPassword(); },
-  'user-toggle': function (el) {
-    var u = findUser(el.dataset.id);
-    if (!u) return;
-    if (idEq(u.client_id, state.user.client_id) && u.active) { toast(MSG_NO_SELF_DISABLE, null, 'bad'); return; }
-    if (!navigator.onLine) { toast(MSG_OFF_USER_WRITE, null, 'bad'); return; }
-    // ההשבתה חייבת להגיע לענן — משתמש מושבת שנשאר במראה של מכשיר אחר נשאר בר-כניסה אופליין.
-    return writeUser(u.client_id, { active: !u.active })
-      .then(function () { render(); toast(MSG_UPDATED, null, 'good'); })
-      .catch(errToast);
+  'look-del': function (el) {
+    var r = lookupById(el.dataset.id);
+    if (!r) { uiNoDialog('look-del', el.dataset.id); return; }
+    return ask(MSG_DEL_MANAGER_TITLE, MSG_DEL_MANAGER_BODY, MSG_DELETE_ACT).then(function (yes) {
+      if (!yes) return;
+      // המחיקה סימון וחותמת על אותה שורה — tombKill חותם את deleted_at ברגע ה-updated_at שלה.
+      lookupPut(tombKill(Object.assign({}, r)));
+      return afterSave('נמחק');
+    });
   },
 
   // ── הגדרות: רשימות ──
@@ -522,7 +467,6 @@ var DOM_ACTIONS = {
   'target-set': function (el) { formTarget(el.dataset.month || state.month); },
   'target-save': function () { return runSave(saveTarget, 'היעד נשמר'); },
   'reload':            function () { location.reload(); },
-  'login':             function () { return doLogin(); },
   'combo-pick':        function (el) { return comboPick(el); },
   'combo-make':        function (el) { return comboMake(el); },
   'donor-new-cancel':  function (el) { donorNewCancel(el.dataset.id); },
@@ -568,8 +512,6 @@ document.addEventListener('focusin', comboFocus);
 // ── עלייה ──
 // אין להזיז את mirrorLoad אחרי הסנכרון הראשון — המסך עולה מהדיסק לפני שנוגעים ברשת.
 function boot() {
-  // שני מסלולי הכניסה, המקוון והאופליין, מגיעים לכאן — ולכן זו נקודת הדריכה האחת של הנעילה.
-  try { lkReset(); } catch (e) { console.warn('[lk] lkReset', e); }
   viewBare(VIEW_LOADING);
   // קריאה מהעותק המקומי לפני כל נגיעה ברשת — זה ההבדל בין עבודה אופליין לספינר.
   applyMirrorToState();
@@ -584,7 +526,7 @@ function boot() {
   // אין עותק מקומי כלל — כאן רשת היא חובה.
   return syncNow().then(function (okPull) {
     if (okPull || mirrorHasData()) { render(); return; }
-    viewBare('<div class="auth"><div class="auth-card">' +
+    viewBare('<div class="load-err"><div class="load-err-card">' +
       '<h1>שגיאת טעינה</h1><div class="sub">אין עדיין עותק מקומי של הנתונים, ולא הצלחנו לטעון מהשרת. ' +
       'התחברו לרשת פעם אחת — מכאן והלאה האפליקציה תעבוד גם בלעדיה.</div>' +
       '<button class="reload-btn btn block" data-act="reload">רענון</button>' +
@@ -594,12 +536,9 @@ function boot() {
 
 function start() {
   shell.render = render;
-  shell.boot = boot;
-  // state.user הוא חלון למודול הסשן — שדה רגיל היה מסלול שדרכו הסשן יורד לדיסק.
-  Object.defineProperty(state, 'user', { get: sessGet, set: sessSet, enumerable: true });
   state.month = monthKeyOf(dayToday());
   if (!window.supabase || !window.supabase.createClient) {
-    viewBare('<div class="auth"><div class="auth-card"><h1>שגיאת טעינה</h1>' +
+    viewBare('<div class="load-err"><div class="load-err-card"><h1>שגיאת טעינה</h1>' +
       '<div class="sub">ספריית Supabase לא נטענה. בדקו את החיבור לאינטרנט ורעננו.</div>' +
       '<button class="btn block" data-act="reload">רענון</button></div></div>');
     return;
@@ -608,12 +547,9 @@ function start() {
     auth: { persistSession: false, autoRefreshToken: false }
   }));
 
-  // הליבה עולה לפני הכניסה — הסימונים, הגיבוי והמראה אינם תלויים בה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
+  // הליבה עולה לפני המסך — הסימונים, הגיבוי והמראה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
   bootRun();
-
-  // אין שחזור סשן — סשן בדיסק בלי תפוגה משאיר מחובר לנצח במכשיר משותף ומוריד את role לדיסק.
-  // הכניסה האופליין אינה תלויה בסשן — היא מוכרעת ב-authVerify מול pass_fp שבמראה.
-  renderLogin();
+  boot();
 }
 
 // האחסון נפתח לפני כל קריאה ממנו — אחרי שה-CFG הוגדרו, כי המרשם קורא אותם.
