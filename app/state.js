@@ -6,7 +6,6 @@ const S = {
   _pulling: false,
   _netWarned: false,
   _lastPullOk: 0,
-  // _gSeenTs ו-_lastSeenOk מתקדמות גם במשיכה — אין להזין מהן את עד הפינוי; העד נרשם בליבה, בדחיפה עצמה.
   _gSeenTs: 0,
   _lastSeenOk: 0,
   _gPullLogged: false,
