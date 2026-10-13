@@ -95,7 +95,7 @@ AS $function$
     'ANCHOR:g_tasks', 'DIFF:g_tasks',
     'ANCHOR:g_targets', 'DIFF:g_targets',
     'ANCHOR:g_settings', 'DIFF:g_settings',
-    'ANCHOR:g_users', 'DIFF:g_users',
+    'ANCHOR:g_lookups', 'DIFF:g_lookups',
     'ANCHOR:k_settings', 'DIFF:k_settings',
     'ANCHOR:k_pledges', 'DIFF:k_pledges',
     'ANCHOR:k_standing_orders', 'DIFF:k_standing_orders',
@@ -228,6 +228,19 @@ create table if not exists public.g_donors (
   constraint g_donors_pkey PRIMARY KEY (client_id)
 );
 
+create table if not exists public.g_lookups (
+  client_id text not null,
+  kind text not null,
+  label text not null,
+  sort integer default 0,
+  created_at timestamp with time zone default now(),
+  updated_at bigint not null,
+  deleted boolean default false,
+  deleted_at timestamp with time zone,
+  deleted_by text,
+  constraint g_lookups_pkey PRIMARY KEY (client_id)
+);
+
 create table if not exists public.g_pledges (
   client_id text not null,
   donor_client_id text not null,
@@ -326,6 +339,7 @@ create table if not exists public.g_users (
 );
 
 create index if not exists g_donors_live_idx ON public.g_donors USING btree (deleted, name);
+create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (kind, sort);
 create index if not exists g_pledges_donor_full_idx ON public.g_pledges USING btree (donor_client_id);
 create index if not exists g_pledges_live_idx ON public.g_pledges USING btree (deleted, due_date);
 create index if not exists g_tasks_stage_idx ON public.g_tasks USING btree (deleted, stage);
@@ -337,6 +351,9 @@ create index if not exists g_txns_pledge_full_idx ON public.g_txns USING btree (
 revoke all on table public.g_donors from anon, authenticated;
 grant select, insert, update on table public.g_donors to anon, authenticated;
 grant all on table public.g_donors to service_role;
+revoke all on table public.g_lookups from anon, authenticated;
+grant select, insert, update on table public.g_lookups to anon, authenticated;
+grant all on table public.g_lookups to service_role;
 revoke all on table public.g_pledges from anon, authenticated;
 grant select, insert, update on table public.g_pledges to anon, authenticated;
 grant all on table public.g_pledges to service_role;
@@ -359,6 +376,9 @@ grant all on table public.g_users to service_role;
 alter table public.g_donors enable row level security;
 drop policy if exists g_donors_all on public.g_donors;
 create policy g_donors_all on public.g_donors as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_lookups enable row level security;
+drop policy if exists g_lookups_all on public.g_lookups;
+create policy g_lookups_all on public.g_lookups as permissive for all to anon, authenticated using (true) with check (true);
 alter table public.g_pledges enable row level security;
 drop policy if exists g_pledges_all on public.g_pledges;
 create policy g_pledges_all on public.g_pledges as permissive for all to anon, authenticated using (true) with check (true);
