@@ -7,8 +7,8 @@ import { MSG_AMOUNT_POSITIVE, MSG_EDIT_DONOR, MSG_EDIT_TXN, MSG_NEED_NAME, MSG_N
          MSG_NEW_TXN, MSG_PICK_DONOR } from '../constants.js';
 import { state } from '../state.js';
 import { $, agentPool, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
-         donorFieldHTML, donorMatches, emptyBox, gSortTxns, ils, initials, insert, monthLabel,
-         monthTxns, nullable, num, pendRowKey, pledgeOptionsFor, pledgeStatus, pledgesOfDonor,
+         donorFieldHTML, donorMatches, emptyBox, gSortTxns, ils, initials, insert, managerNames,
+         monthLabel, monthTxns, nullable, num, pendRowKey, pledgeOptionsFor, pledgeStatus, pledgesOfDonor,
          selectHTML, statusClass, sum, txnsOfDonor, update, val } from '../domain.js';
 
 // ── תורמים ──
@@ -128,6 +128,12 @@ function viewDonorCard() {
   return h;
 }
 
+// רשימת המנהלים מההגדרות, ושם שכבר נרשם על התנועה נשאר בה גם אחרי שירד מהרשימה — אחרת עריכה מוחקת אותו בשקט.
+function managerOptions(cur) {
+  var l = managerNames();
+  return (cur && l.indexOf(cur) < 0) ? l.concat([cur]) : l;
+}
+
 function formTxn(existing, presetDonor) {
   var t = existing || {};
   var donorId = t.donor_client_id || presetDonor || '';
@@ -143,8 +149,7 @@ function formTxn(existing, presetDonor) {
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>מנהל מטפל</span>' +
-        selectHTML('txn-manager', state.users.map(function (u) { return u.full_name; }),
-          t.manager != null ? t.manager : state.user.full_name, '— ללא —') + '</label>' +
+        selectHTML('txn-manager', managerOptions(t.manager), t.manager, '— ללא —') + '</label>' +
       '<label class="fld"><span>שיוך להתחייבות</span>' +
         '<select class="inp" id="txn-pledge">' + pledgeOptionsFor(donorId) + '</select></label>' +
     '</div>' +

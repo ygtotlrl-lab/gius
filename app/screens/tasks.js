@@ -4,7 +4,7 @@ import { errToast, idEq, pendTag, schedulePush } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
 import { MSG_EDIT_TASK, MSG_NEED_TITLE, MSG_NEW_TASK } from '../constants.js';
 import { shell, state } from '../state.js';
-import { $, datalistHTML, dmyDate, insert, nullable, pendRowKey, selectHTML, uniqSorted,
+import { $, assigneePool, datalistHTML, dmyDate, insert, nullable, pendRowKey, selectHTML,
          update, val } from '../domain.js';
 
 var STAGES = ['הכנה', 'הרצה', 'השלמה', 'חסומה'];
@@ -72,14 +72,12 @@ function moveTask(id, stage) {
 
 function formTask(existing) {
   var t = existing || {};
-  var people = uniqSorted(state.users.filter(function (u) { return u.active; })
-    .map(function (u) { return u.full_name; }));
   var body =
     '<label class="fld"><span>כותרת *</span><input class="inp" id="tk-title" value="' + esc(t.title || '') + '"></label>' +
     '<div class="f2">' +
       '<label class="fld"><span>שלב</span>' + selectHTML('tk-stage', STAGES, t.stage || 'הכנה', 'הכנה') + '</label>' +
       '<label class="fld"><span>אחראי</span><input class="inp" id="tk-assignee" list="dl-people" value="' +
-        esc(t.assignee != null ? t.assignee : (t.client_id ? '' : state.user.full_name)) + '"></label>' +
+        esc(t.assignee || '') + '"></label>' +
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>תחום</span>' + selectHTML('tk-domain', state.config.domains, t.domain, '— ללא תחום —') + '</label>' +
@@ -88,7 +86,7 @@ function formTask(existing) {
     (t.log ? '<div class="fld"><span>יומן</span><pre class="log">' + esc(t.log) + '</pre></div>' : '') +
     '<label class="fld"><span>הוספה ליומן</span>' +
       '<textarea aria-label="רישום חדש ליומן" class="inp" id="tk-log" placeholder="רישום חדש — יתווסף ליומן עם תאריך ושם…"></textarea></label>' +
-    datalistHTML('dl-people', people);
+    datalistHTML('dl-people', assigneePool());
 
   var foot = '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t.client_id ? '<button class="btn danger" data-act="task-del" data-id="' + t.client_id + '">מחיקה</button>' : '') +
@@ -115,7 +113,7 @@ function saveTask(id) {
   // היומן מצטבר ולא נדרס — row.log = entry היה מוחק את כל היסטוריית הטיפול, ואין גרסאות לשחזר ממנה.
   var entry = val('tk-log');
   if (entry) {
-    var stamp = '[' + dmyDate(dayToday()) + ' · ' + state.user.full_name + ']';
+    var stamp = '[' + dmyDate(dayToday()) + ']';
     var prev = (existing && existing.log) ? existing.log + '\n' : '';
     row.log = prev + stamp + ' ' + entry;
   }

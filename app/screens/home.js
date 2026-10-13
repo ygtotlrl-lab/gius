@@ -1,6 +1,5 @@
 // app/screens/home.js — מסך הבית
 import { dayToday } from '../../core/util.js';
-import { isAdmin } from '../../core/auth.js';
 import { esc } from '../../core/ui.js';
 import { bar } from '../../core/chart.js';
 import { EPS } from '../constants.js';
@@ -75,7 +74,7 @@ function viewHome() {
       '<b>' + esc(monthLabel(m)) + '</b>' +
       '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">‹</button>' +
       '<span class="grow"></span>' +
-      (isAdmin() ? '<button class="btn soft sm" data-act="target-set" data-month="' + m + '">קביעת יעד</button>' : '') +
+      '<button class="btn soft sm" data-act="target-set" data-month="' + m + '">קביעת יעד</button>' +
     '</div>' +
     '<div class="hero">' + ringHTML(pct) +
       '<div class="hero-stats">' +
@@ -98,20 +97,20 @@ function viewHome() {
     '</section>' +
   '</div>';
 
-  // ── היום שלי ──
-  var me = state.user.full_name;
-  var myTasks = state.tasks.filter(function (t) { return t.assignee === me && t.stage !== 'השלמה'; });
-  var myPledges = state.pledges.filter(function (p) {
-    return p.agent === me && collectedForPledge(p.client_id) + EPS < num(p.amount);
+  // ── פתוח ──
+  // כל הפתוח, של כולם ובלי קיבוץ — אין משתמש מחובר שאפשר לסנן לפיו.
+  var openTasks = state.tasks.filter(function (t) { return t.stage !== 'השלמה'; });
+  var openPledges = state.pledges.filter(function (p) {
+    return collectedForPledge(p.client_id) + EPS < num(p.amount);
   });
 
-  h += '<section class="card"><h2>☀️ מה שלי היום<span class="cnt">' + (myTasks.length + myPledges.length) + '</span></h2>';
-  if (!myTasks.length && !myPledges.length) {
-    h += emptyBox('✨', 'אין משימות פתוחות או התחייבויות ממתינות על שמך');
+  h += '<section class="card"><h2>☀️ פתוח<span class="cnt">' + (openTasks.length + openPledges.length) + '</span></h2>';
+  if (!openTasks.length && !openPledges.length) {
+    h += emptyBox('✨', 'אין משימות פתוחות או התחייבויות ממתינות');
   } else {
-    if (myTasks.length) {
+    if (openTasks.length) {
       h += '<div class="today-head">משימות פתוחות</div>';
-      myTasks.forEach(function (t) {
+      openTasks.forEach(function (t) {
         var late = t.due_date && t.due_date < dayToday();
         h += '<div class="row" data-act="task-open" data-id="' + t.client_id + '">' +
           '<div class="av">🗂️</div><div class="main"><b>' + esc(t.title) + '</b>' +
@@ -119,9 +118,9 @@ function viewHome() {
           '<div class="end"><span class="badge ' + (late ? 'bad' : '') + '">' + esc(dmyDate(t.due_date)) + '</span></div></div>';
       });
     }
-    if (myPledges.length) {
+    if (openPledges.length) {
       h += '<div class="today-head-next">התחייבויות שטרם נגבו במלואן</div>';
-      myPledges.forEach(function (p) {
+      openPledges.forEach(function (p) {
         var c = collectedForPledge(p.client_id);
         var left = Math.max(0, num(p.amount) - c);
         h += '<div class="row" data-act="donor-open" data-id="' + p.donor_client_id + '">' +
