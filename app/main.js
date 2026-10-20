@@ -10,7 +10,7 @@ import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick,
          dragCancel, dragDown, dragMove, dragUp, esc, openModal, shellBare, swApply, swHideUpdate,
-         toast, uiNoDialog } from '../core/ui.js';
+         toast, uiHold, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MSG_DELETE_ACT, MSG_DEL_DONOR_LINKED, MSG_DEL_DONOR_TITLE,
          MSG_DEL_MANAGER_BODY, MSG_DEL_MANAGER_TITLE, MSG_DEL_PLEDGE_BODY, MSG_DEL_PLEDGE_TITLE,
          MSG_DEL_QUOTE_POST, MSG_DEL_QUOTE_PRE, MSG_DEL_TASK_BODY, MSG_DEL_TASK_TITLE,
@@ -232,6 +232,7 @@ document.addEventListener('pointerdown', function (e) {
   KDRAG.el = el;
   KDRAG.col = null;
   KDRAG.el.classList.add('dragging');
+  uiHold(true);
   // המצביע נלכד על הידית — בלעדיו אצבע שיוצאת מגבול הכרטיס מפסיקה לשדר והגרירה נתקעת.
   try { g.setPointerCapture(e.pointerId); } catch (e1) {}
   e.preventDefault();
@@ -253,6 +254,7 @@ document.addEventListener('pointerup', function (e) {
   if (KDRAG.col) KDRAG.col.classList.remove('over');
   KDRAG.el = null; KDRAG.col = null;
   el.classList.remove('dragging');
+  uiHold(false);
   if (col && col.dataset.drop) moveTask(el.dataset.id, col.dataset.drop);
 });
 
@@ -262,6 +264,7 @@ document.addEventListener('pointercancel', function (e) {
   if (KDRAG.col) KDRAG.col.classList.remove('over');
   KDRAG.el.classList.remove('dragging');
   KDRAG.el = null; KDRAG.col = null;
+  uiHold(false);
 });
 
 // ── פעולות ──
