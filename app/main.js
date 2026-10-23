@@ -19,6 +19,7 @@ import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, pendRowKey, pledgeById, rowPendingKey,
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
+import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
 import { cardRowsHTML, formDonor, formPay, formPledge, saveDonor, savePay, savePledge,
          viewCards } from './screens/cards.js';
@@ -193,10 +194,10 @@ function markSVG(cls) {
 function renderShell() {
   var tabsHTML = TABS.map(function (t) {
     return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
-      '<span class="ic">' + t.ic + '</span><span>' + t.label + '</span></button>';
+      '<span class="ic">' + icon(t.ic) + '</span><span>' + t.label + '</span></button>';
   }).join('') +
     '<button data-act="more" class="' + (inMore(state.screen) ? 'on' : '') + '" aria-haspopup="dialog">' +
-      '<span class="ic">⋯</span><span>' + (inMore(state.screen) ? esc(tabOf(state.screen).label) : 'עוד') + '</span></button>';
+      '<span class="ic">' + icon('more') + '</span><span>' + (inMore(state.screen) ? esc(tabOf(state.screen).label) : 'עוד') + '</span></button>';
   var t = tabOf(state.screen);
 
   shellBare(false);
@@ -274,7 +275,7 @@ var DOM_ACTIONS = {
   'more': function () {
     openModal('עוד', '<div class="more-tiles">' + MORE.map(function (t) {
       return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
-        '<span class="ic">' + t.ic + '</span><span>' + esc(t.label) + '</span></button>';
+        '<span class="ic">' + icon(t.ic) + '</span><span>' + esc(t.label) + '</span></button>';
     }).join('') + '</div>', '');
   },
   'modal-close': function () { closeModal(); },

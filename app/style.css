@@ -94,7 +94,8 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-2);
   font-size:var(--fs-1);font-weight:600;color:var(--text-3);
 }
-.tabbar button .ic{font-size:var(--fs-5);line-height:var(--lh-1)}
+.tabbar button .ic{display:block;width:24px;height:24px}
+.ic .ico{display:block;width:100%;height:100%}
 .tabbar button.on{color:var(--brand-ink)}
 .tabbar button.on .ic{transform:translateY(-1px)}
 /* מסך שלפני העלייה ממלא את החלון כולו — בלי ריפוד המיכל. */
@@ -417,7 +418,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .more-tiles button{display:flex;flex-direction:column;align-items:center;gap:var(--sp-3);cursor:pointer;
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-6) var(--sp-4);
   font-size:var(--fs-3);font-weight:700}
-.more-tiles button .ic{font-size:var(--fs-6)}
+.more-tiles button .ic{display:block;width:30px;height:30px;color:var(--brand-ink)}
 .more-tiles button.on{border-color:var(--brand-ink);background:var(--brand-soft);color:var(--brand-ink)}
 /* ── הגדרות ── */
 
@@ -442,7 +443,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   .tabbar button{flex-direction:row;gap:var(--sp-3);font-size:var(--fs-3);padding:var(--sp-4) var(--sp-5);border-radius:var(--r-4)}
 }
 @media (min-width:900px){
-  .tabbar button .ic{font-size:var(--fs-4)}
+  .tabbar button .ic{width:20px;height:20px}
 }
 @media (min-width:900px){
   .tabbar button.on{background:var(--brand-soft)}

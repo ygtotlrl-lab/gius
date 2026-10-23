@@ -58,19 +58,19 @@ var LOAN_STATUSES = ['נמסר', 'לטיפול', 'להגשה', 'בהתראה'];
 var NOTE_COLORS = ['sand', 'terra', 'sage', 'sky', 'rose', 'plum'];
 
 // ── הניווט ──
-// ארבעה ראשיים ו«עוד» — והמשניים בלוח שנפתח מלמטה.
+// ארבעה ראשיים ו«עוד» — והמשניים בלוח שנפתח מלמטה. ic — שם אייקון מהסט שב-app/icons.js.
 var TABS = [
-  { id: 'dash', ic: '◔', label: 'דשבורד' },
-  { id: 'cards', ic: '🗂', label: 'כרטיסים', title: 'כרטיסים ותשלומים' },
-  { id: 'plan', ic: '🗓', label: 'תכנית' },
-  { id: 'tasks', ic: '☑', label: 'משימות' }
+  { id: 'dash', ic: 'dash', label: 'דשבורד' },
+  { id: 'cards', ic: 'cards', label: 'כרטיסים', title: 'כרטיסים ותשלומים' },
+  { id: 'plan', ic: 'plan', label: 'תכנית' },
+  { id: 'tasks', ic: 'tasks', label: 'משימות' }
 ];
 
 var MORE = [
-  { id: 'notes', ic: '✎', label: 'רשומות' },
-  { id: 'loans', ic: '⇄', label: 'הלוואות' },
-  { id: 'budget', ic: '🧾', label: 'תקציב אירוע' },
-  { id: 'settings', ic: '⚙', label: 'הגדרות' }
+  { id: 'notes', ic: 'notes', label: 'רשומות' },
+  { id: 'loans', ic: 'loans', label: 'הלוואות' },
+  { id: 'budget', ic: 'budget', label: 'תקציב אירוע' },
+  { id: 'settings', ic: 'settings', label: 'הגדרות' }
 ];
 
 // ── הודעות פר-אפליקציה ──
