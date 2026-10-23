@@ -96,6 +96,10 @@ AS $function$
     'ANCHOR:g_targets', 'DIFF:g_targets',
     'ANCHOR:g_settings', 'DIFF:g_settings',
     'ANCHOR:g_lookups', 'DIFF:g_lookups',
+    'ANCHOR:g_plan_items', 'DIFF:g_plan_items',
+    'ANCHOR:g_notes', 'DIFF:g_notes',
+    'ANCHOR:g_loans', 'DIFF:g_loans',
+    'ANCHOR:g_budget_items', 'DIFF:g_budget_items',
     'ANCHOR:k_settings', 'DIFF:k_settings',
     'ANCHOR:k_pledges', 'DIFF:k_pledges',
     'ANCHOR:k_standing_orders', 'DIFF:k_standing_orders',
@@ -216,10 +220,12 @@ create table if not exists public.g_donors (
   client_id text not null,
   name text not null,
   phone text,
-  agent text,
-  is_vip boolean not null default false,
+  ambassador text,
+  birth_date date,
+  role text,
   notes text,
-  tags text[] not null default '{}'::text[],
+  affiliations text[] not null default '{}'::text[],
+  starred boolean not null default false,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
@@ -244,11 +250,12 @@ create table if not exists public.g_lookups (
 create table if not exists public.g_pledges (
   client_id text not null,
   donor_client_id text not null,
+  section text,
+  pledge_type text,
+  detail text,
+  ambassador text,
   amount numeric(14,2) not null default 0,
-  cause text,
-  agent text,
   note text,
-  due_date date,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
@@ -287,30 +294,29 @@ create table if not exists public.g_targets (
 create table if not exists public.g_tasks (
   client_id text not null,
   title text not null,
-  stage text not null default 'הכנה'::text,
+  stage text not null default 'הרצה'::text,
   assignee text,
   domain text,
   due_date date,
-  log text not null default ''::text,
+  note text,
+  sort integer not null default 0,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
   deleted_by text,
   constraint g_tasks_pkey PRIMARY KEY (client_id),
-  constraint g_tasks_stage_check CHECK ((stage = ANY (ARRAY['הכנה'::text, 'הרצה'::text, 'השלמה'::text, 'חסומה'::text])))
+  constraint g_tasks_stage_check CHECK ((stage = ANY (ARRAY['הרצה'::text, 'השלמה'::text, 'חסומה'::text])))
 );
 
 create table if not exists public.g_txns (
   client_id text not null,
   donor_client_id text not null,
-  pledge_client_id text,
+  pledge_client_id text not null,
   amount numeric(14,2) not null default 0,
   txn_date date not null default CURRENT_DATE,
-  category text,
-  agent text,
-  manager text,
-  cleared boolean not null default true,
+  method text,
+  cleared boolean not null default false,
   note text,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
@@ -322,16 +328,87 @@ create table if not exists public.g_txns (
   constraint g_txns_pledge_client_id_fkey FOREIGN KEY (pledge_client_id) REFERENCES g_pledges(client_id) ON DELETE RESTRICT
 );
 
+create table if not exists public.g_plan_items (
+  client_id text not null,
+  donor_client_id text not null,
+  plan_month text not null,
+  kind text not null default 'גבייה'::text,
+  expected numeric(14,2),
+  ambassador text,
+  care_date date,
+  note text,
+  irrelevant boolean not null default false,
+  sort integer not null default 0,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_plan_items_pkey PRIMARY KEY (client_id),
+  constraint g_plan_items_donor_client_id_fkey FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT,
+  constraint g_plan_items_plan_month_check CHECK ((plan_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text)),
+  constraint g_plan_items_kind_check CHECK ((kind = ANY (ARRAY['גבייה'::text, 'התרמה'::text])))
+);
+
+create table if not exists public.g_notes (
+  client_id text not null,
+  title text not null default ''::text,
+  color text,
+  body text not null default ''::text,
+  sort integer not null default 0,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_notes_pkey PRIMARY KEY (client_id)
+);
+
+create table if not exists public.g_loans (
+  client_id text not null,
+  lender text not null,
+  amount numeric(14,2),
+  taken_date date,
+  repay_terms text,
+  last_check_date date,
+  status text,
+  note text,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_loans_pkey PRIMARY KEY (client_id),
+  constraint g_loans_status_check CHECK ((status IS NULL OR status = ANY (ARRAY['נמסר'::text, 'לטיפול'::text, 'להגשה'::text, 'בהתראה'::text])))
+);
+
+create table if not exists public.g_budget_items (
+  client_id text not null,
+  item text not null,
+  category text,
+  cost numeric(14,2),
+  note text,
+  sort integer not null default 0,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_budget_items_pkey PRIMARY KEY (client_id)
+);
+
 create index if not exists g_donors_live_idx ON public.g_donors USING btree (deleted, name);
 create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (kind, sort);
 create index if not exists g_pledges_donor_full_idx ON public.g_pledges USING btree (donor_client_id);
-create index if not exists g_pledges_live_idx ON public.g_pledges USING btree (deleted, due_date);
+create index if not exists g_pledges_live_idx ON public.g_pledges USING btree (deleted, donor_client_id);
 create index if not exists g_tasks_stage_idx ON public.g_tasks USING btree (deleted, stage);
 create index if not exists g_txns_date_idx ON public.g_txns USING btree (deleted, txn_date);
 create index if not exists g_txns_donor_full_idx ON public.g_txns USING btree (donor_client_id);
 create index if not exists g_txns_pledge_full_idx ON public.g_txns USING btree (pledge_client_id);
+create index if not exists g_plan_items_month_idx ON public.g_plan_items USING btree (plan_month);
+create index if not exists g_plan_items_donor_full_idx ON public.g_plan_items USING btree (donor_client_id);
 
--- revoke לפני grant — GRANT מוסיף ואינו מחליף, וטבלה חדשה ב-Supabase נולדת עם DELETE ו-TRUNCATE ל-anon.
+-- אין DELETE ל-anon — המחיקה רכה בלבד.
 revoke all on table public.g_donors from anon, authenticated;
 grant select, insert, update on table public.g_donors to anon, authenticated;
 grant all on table public.g_donors to service_role;
@@ -353,6 +430,18 @@ grant all on table public.g_tasks to service_role;
 revoke all on table public.g_txns from anon, authenticated;
 grant select, insert, update on table public.g_txns to anon, authenticated;
 grant all on table public.g_txns to service_role;
+revoke all on table public.g_plan_items from anon, authenticated;
+grant select, insert, update on table public.g_plan_items to anon, authenticated;
+grant all on table public.g_plan_items to service_role;
+revoke all on table public.g_notes from anon, authenticated;
+grant select, insert, update on table public.g_notes to anon, authenticated;
+grant all on table public.g_notes to service_role;
+revoke all on table public.g_loans from anon, authenticated;
+grant select, insert, update on table public.g_loans to anon, authenticated;
+grant all on table public.g_loans to service_role;
+revoke all on table public.g_budget_items from anon, authenticated;
+grant select, insert, update on table public.g_budget_items to anon, authenticated;
+grant all on table public.g_budget_items to service_role;
 
 alter table public.g_donors enable row level security;
 drop policy if exists g_donors_all on public.g_donors;
@@ -375,3 +464,15 @@ create policy g_tasks_all on public.g_tasks as permissive for all to anon, authe
 alter table public.g_txns enable row level security;
 drop policy if exists g_txns_all on public.g_txns;
 create policy g_txns_all on public.g_txns as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_plan_items enable row level security;
+drop policy if exists g_plan_items_all on public.g_plan_items;
+create policy g_plan_items_all on public.g_plan_items as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_notes enable row level security;
+drop policy if exists g_notes_all on public.g_notes;
+create policy g_notes_all on public.g_notes as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_loans enable row level security;
+drop policy if exists g_loans_all on public.g_loans;
+create policy g_loans_all on public.g_loans as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_budget_items enable row level security;
+drop policy if exists g_budget_items_all on public.g_budget_items;
+create policy g_budget_items_all on public.g_budget_items as permissive for all to anon, authenticated using (true) with check (true);

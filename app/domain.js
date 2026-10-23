@@ -1,14 +1,14 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
-import { DAY_MONTHS, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, kvParse, sortCompare } from '../core/util.js';
+import { DAY_MONTHS, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, sortCompare } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
 import { MSG_LS_FULL } from '../core/storage.js';
 import { MIRROR, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
-import { comboDef, comboHTML, comboSet, esc, pullRender, shellBare, toast } from '../core/ui.js';
-import { DEFAULT_CONFIG, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LK_MANAGER,
-         MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_DONOR_NAME, TABLES } from './constants.js';
+import { comboDef, comboHTML, comboSet, esc, lookupList, pullRender, shellBare, toast } from '../core/ui.js';
+import { DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS,
+         MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_NAME, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
 
 // ── סימוני ממתין ──
@@ -66,9 +66,20 @@ function initials(name) {
   return (parts[0] || '?').charAt(0) + (parts[1] ? parts[1].charAt(0) : '');
 }
 
-// תורמים — לפי השם, בסדר הא״ב.
-function gSortDonors(list) {
-  return list.slice().sort(function (a, b) { return sortCompare(a.name || '', b.name || ''); });
+// ── המיונים — פונקציה אחת לכל סוג רשומות ──
+function bySort(a, b) {
+  return ((+a.sort || 0) - (+b.sort || 0)) || sortCompare(String(a.created_at || ''), String(b.created_at || ''));
+}
+
+// כרטיסים — לפי א״ב, או לפי היתרה מהגבוהה לנמוכה ובשוויון לפי א״ב.
+function gSortDonors(list, mode) {
+  return list.slice().sort(function (a, b) {
+    if (mode === 'left') {
+      var d = donorLeft(b.client_id) - donorLeft(a.client_id);
+      if (Math.abs(d) > EPS) return d;
+    }
+    return sortCompare(a.name || '', b.name || '');
+  });
 }
 
 // שמות — בסדר הא״ב.
@@ -76,9 +87,33 @@ function gSortNames(list) {
   return list.slice().sort(function (a, b) { return sortCompare(a, b); });
 }
 
-// תנועות — החדשה ראשונה.
+// תשלומים — החדש ראשון.
 function gSortTxns(list) {
-  return list.slice().sort(function (a, b) { return sortCompare(b.txn_date, a.txn_date); });
+  return list.slice().sort(function (a, b) { return sortCompare(b.txn_date || '', a.txn_date || ''); });
+}
+
+// התחייבויות — בסדר הרישום.
+function gSortPledges(list) {
+  return list.slice().sort(function (a, b) {
+    return sortCompare(String(a.created_at || ''), String(b.created_at || ''));
+  });
+}
+
+// שורות תכנית — הרלוונטיות למעלה בסדר הרישום, ו«לא רלוונטי» למטה.
+function gSortPlan(list) {
+  return list.slice().sort(function (a, b) { return ((a.irrelevant ? 1 : 0) - (b.irrelevant ? 1 : 0)) || bySort(a, b); });
+}
+
+// משימות, פתקים והוצאות — בסדר שנקבע, ובשוויון בסדר הרישום.
+function gSortTasks(list) { return list.slice().sort(bySort); }
+
+function gSortNotes(list) { return list.slice().sort(bySort); }
+
+function gSortBudget(list) { return list.slice().sort(bySort); }
+
+// הלוואות — לפי שם המלווה.
+function gSortLoans(list) {
+  return list.slice().sort(function (a, b) { return sortCompare(a.lender || '', b.lender || ''); });
 }
 
 // קבוצות הפילוח — הסכום הגדול ראשון.
@@ -147,48 +182,16 @@ function liveRows(t) {
   return m.soft ? arr.filter(function (r) { return !r.deleted; }) : arr.slice();
 }
 
-// המיון בצד הלקוח — המראה נקראת מהדיסק, והסדר אינו מגיע מהשרת.
-function gSortRows(t, arr) {
-  var m = tableMeta(t);
-  if (!m.order) return arr;
-  var dir = m.desc ? -1 : 1;
-  return arr.sort(function (a, b) {
-    var x = a[m.order], y = b[m.order];
-    var xe = (x == null || x === ''), ye = (y == null || y === '');
-    if (xe && ye) return 0;
-    if (xe) return 1; // ריקים תמיד בסוף, כמו nullsFirst:false
-    if (ye) return -1;
-    if (m.order === 'name') return sortCompare(x, y) * dir;
-    return (x < y ? -1 : x > y ? 1 : 0) * dir;
-  });
-}
-
-// value הוא טקסט ולא jsonb — הלקוח מנתח אותו, וערך פגום נקרא כשורה חסרה ואינו מפיל מסך.
-function gCfgParse(key, v) {
-  var pr = kvParse(key, v);
-  return Array.isArray(pr.value) ? pr.value : null;
-}
-
-function configFromMirror() {
-  var cfg = { categories: [], causes: [], domains: [] }, seen = {};
-  (MIRROR[KV_TABLE] || []).forEach(function (row) {
-    var list = gCfgParse(row.key, row.value);
-    if (!list) return;
-    cfg[row.key] = list.slice();
-    seen[row.key] = true;
-  });
-  // ברירות מחדל רק כשהשורה חסרה — רשימה שרוקנה חוזרת ריקה ולא ברירות המחדל.
-  Object.keys(DEFAULT_CONFIG).forEach(function (k) { if (!seen[k]) cfg[k] = DEFAULT_CONFIG[k].slice(); });
-  return cfg;
-}
-
 function applyMirrorToState() {
-  state.donors  = gSortRows('g_donors',  liveRows('g_donors'));
-  state.pledges = gSortRows('g_pledges', liveRows('g_pledges'));
-  state.txns    = gSortRows('g_txns',    liveRows('g_txns'));
-  state.tasks   = gSortRows('g_tasks',   liveRows('g_tasks'));
-  state.targets = gSortRows('g_targets', liveRows('g_targets'));
-  state.config  = configFromMirror();
+  state.donors  = liveRows('g_donors');
+  state.pledges = liveRows('g_pledges');
+  state.txns    = liveRows('g_txns');
+  state.plan    = liveRows('g_plan_items');
+  state.tasks   = liveRows('g_tasks');
+  state.targets = liveRows('g_targets');
+  state.notes   = liveRows('g_notes');
+  state.loans   = liveRows('g_loans');
+  state.budget  = liveRows('g_budget_items');
 }
 
 // ── כתיבה מקומית ──
@@ -238,9 +241,11 @@ function update(table, id, patch) {
   return Promise.resolve(saved);
 }
 
-// לתנועה שני אבות — התורם חובה וההתחייבות אופציונלית, והתורם נשאל ראשון: מחיקתו מפילה את התנועה בכל מקרה.
+// לתשלום שני אבות — הכרטיס וההתחייבות, ושניהם חובה; הכרטיס נשאל ראשון: מחיקתו מפילה את התשלום בכל מקרה.
+// donor_client_id בתשלום — עמודת הסינון של האב בשרת, ומוצהרת: התשלום שייך לכרטיס דרך ההתחייבות.
 var PC_CHILDREN = {
-  g_donors: [{ t: 'g_pledges', fk: 'donor_client_id' }, { t: 'g_txns', fk: 'donor_client_id' }],
+  g_donors: [{ t: 'g_pledges', fk: 'donor_client_id' }, { t: 'g_txns', fk: 'donor_client_id' },
+             { t: 'g_plan_items', fk: 'donor_client_id' }],
   g_pledges: [{ t: 'g_txns', fk: 'pledge_client_id' }]
 };
 
@@ -285,11 +290,7 @@ function upsertBy(table, row) {
   return Promise.resolve(cur || full);
 }
 
-function saveConfigList(key, list) {
-  return upsertBy(KV_TABLE, { key: key, value: JSON.stringify(list) });
-}
-
-// ── רשימות לסידור — g_lookups ──
+// ── הרשימות — g_lookups ──
 // הכתיבה של LOOKUP_CFG — השורה כבר נושאת את חותמתה (הזריעה והסידור שבליבה חותמים), ולכן לא דרך update.
 function lookupPut(row) {
   var full = Object.assign({}, row);
@@ -312,7 +313,13 @@ function lookupById(id) {
   return null;
 }
 
-function managerNames() { return lookupRows(LK_MANAGER).map(function (r) { return r.label; }); }
+// תוויות הרשימה — מהטבלה, ובהתקנה טרייה מנקודת הפתיחה שבקבועים.
+function listDef(kind) {
+  for (var i = 0; i < LISTS.length; i++) if (LISTS[i].kind === kind) return LISTS[i];
+  return null;
+}
+
+function lookupLabels(kind) { var d = listDef(kind); return lookupList(kind, d ? d.dflt : []); }
 
 // ── דחיפת-מצב ──
 // דחיפת-מצב ולא תור יוצא — בתור, כשל תוכן אחד חוסם את כל מה שאחריו; כאן כל רשומה עומדת בפני עצמה.
@@ -328,7 +335,6 @@ function syncPull() {
   return Promise.all(TABLES.map(function (m) {
     // בלי סינון deleted — בלי ה-tombstones מחיקה ממכשיר אחר לא תגיע לכאן לעולם.
     // העימוד חובה: select('*') בבקשה אחת נחתך בשקט בתקרת db-max-rows.
-    // הסדר לפי m.key ולא m.order — m.order הוא סדר תצוגה שעשוי להיות ריק, והעימוד דורש מפתח יציב וייחודי.
     return _rowsPaged(function () {
       return S.sb.from(m.t).select('*');
     }, m.key, null)
@@ -401,27 +407,28 @@ function pendReconcile(still, t0) {
 }
 
 // ── נגזרות ──
-// כל סכום כסף מחושב בכל קריאה מ-state.txns — סכום שמור מתיישן בכל תנועה שנרשמה במכשיר אחר.
-function donorById(id) {
-  for (var i = 0; i < state.donors.length; i++) if (idEq(state.donors[i].client_id, id)) return state.donors[i];
+// כל סכום מחושב בכל קריאה מ-state.txns — סכום שמור מתיישן בכל תשלום שנרשם במכשיר אחר.
+function byId(list, id) {
+  for (var i = 0; i < list.length; i++) if (idEq(list[i].client_id, id)) return list[i];
   return null;
 }
 
-// מציין מקום ולא מחרוזת ריקה — שורת תנועה בלי שם נראית כבאג ומסתירה שהכסף עדיין רשום ומחושב.
-function donorName(id) { var d = donorById(id); return d ? d.name : '— תורם שנמחק —'; }
+function donorById(id) { return byId(state.donors, id); }
 
-function pledgeById(id) {
-  for (var i = 0; i < state.pledges.length; i++) if (idEq(state.pledges[i].client_id, id)) return state.pledges[i];
-  return null;
-}
+function pledgeById(id) { return byId(state.pledges, id); }
 
-function txnsOfDonor(id) { return state.txns.filter(function (t) { return t.donor_client_id === id; }); }
+// מציין מקום ולא מחרוזת ריקה — שורה בלי שם נראית כבאג ומסתירה שהכסף עדיין רשום ומחושב.
+function donorName(id) { var d = donorById(id); return d ? d.name : '— כרטיס שנמחק —'; }
 
-function pledgesOfDonor(id) { return state.pledges.filter(function (p) { return p.donor_client_id === id; }); }
+function pledgesOfDonor(id) { return state.pledges.filter(function (p) { return idEq(p.donor_client_id, id); }); }
 
-function collectedForPledge(pid) {
-  return sum(state.txns.filter(function (t) { return t.pledge_client_id === pid; }), function (t) { return t.amount; });
-}
+function txnsOfPledge(id) { return state.txns.filter(function (t) { return idEq(t.pledge_client_id, id); }); }
+
+function txnsOfDonor(id) { return state.txns.filter(function (t) { return idEq(t.donor_client_id, id); }); }
+
+function collectedForPledge(id) { return sum(txnsOfPledge(id), function (t) { return t.amount; }); }
+
+function leftForPledge(p) { return Math.max(0, num(p.amount) - collectedForPledge(p.client_id)); }
 
 // הסכומים numeric(14,2) חוזרים כ-float — בלי EPS התחייבות שנגבתה במלואה מוצגת «חלקי» בגלל שגיאת ייצוג.
 function pledgeStatus(p) {
@@ -433,6 +440,13 @@ function pledgeStatus(p) {
 
 function statusClass(s) { return s === 'בוצע' ? 'ok' : s === 'חלקי' ? 'warn' : ''; }
 
+// היתרה היא סכום היתרות של ההתחייבויות — תשלום עודף על אחת אינו מקזז התחייבות אחרת.
+function donorTotal(id) { return sum(pledgesOfDonor(id), function (p) { return p.amount; }); }
+
+function donorPaid(id) { return sum(txnsOfDonor(id), function (t) { return t.amount; }); }
+
+function donorLeft(id) { return sum(pledgesOfDonor(id), function (p) { return leftForPledge(p); }); }
+
 function monthTxns(m) { return state.txns.filter(function (t) { return monthKeyOf(t.txn_date) === m; }); }
 
 function targetFor(m) {
@@ -440,29 +454,33 @@ function targetFor(m) {
   return 0;
 }
 
-// השגריר והאחראי הם טקסט חופשי עם הצעות ולא מפתח זר — ההצעות הן הערכים שכבר הוזנו ורשימת המנהלים, כדי ששם ישן לא ייעלם.
-function agentPool() {
-  return uniqSorted(
-    managerNames()
-      .concat(state.donors.map(function (d) { return d.agent; }))
-      .concat(state.pledges.map(function (p) { return p.agent; }))
-      .concat(state.txns.map(function (t) { return t.agent; }))
-  );
+// «בפועל» בשורת תכנית — התשלומים של הכרטיס בחודש התכנית; נגזר ואינו מוקלד.
+function planActual(it) {
+  return sum(txnsOfDonor(it.donor_client_id).filter(function (t) { return monthKeyOf(t.txn_date) === it.plan_month; }),
+             function (t) { return t.amount; });
 }
 
-function assigneePool() {
-  return uniqSorted(managerNames().concat(state.tasks.map(function (t) { return t.assignee; })));
+function planOfMonth(m) { return state.plan.filter(function (r) { return r.plan_month === m; }); }
+
+// הסדר הבא ברשימה שנקבעת ידנית — אחרי האחרון.
+function nextSort(list) {
+  var m = 0;
+  for (var i = 0; i < list.length; i++) m = Math.max(m, +list[i].sort || 0);
+  return m + 1;
 }
 
 // גם value וגם הטקסט עוברים esc — ערכי הרשימות נקבעים בידי המשתמש במסך ההגדרות.
+// ערך שכבר רשום ואינו ברשימה נשאר בבורר — שם שירד מהרשימה אינו נמחק מהרשומה בשמירה הבאה.
 function selectHTML(name, options, value, placeholder, chg) {
+  var opts = options.slice(), v = value == null ? '' : String(value);
+  if (v && opts.indexOf(v) < 0) opts.push(v);
   // ה-placeholder הוא השם הנגיש של הבורר — ה-id נגזר מהקורא ואין label צמוד.
   var h = '<select class="inp" aria-label="' + esc(placeholder || 'בחירה') + '" id="' + name + '"' +
     (chg ? ' data-chg="' + chg + '"' : '') + '>';
   h += '<option value="">' + esc(placeholder || '— ללא —') + '</option>';
-  for (var i = 0; i < options.length; i++) {
-    var o = options[i];
-    h += '<option value="' + esc(o) + '"' + (String(o) === String(value == null ? '' : value) ? ' selected' : '') + '>' + esc(o) + '</option>';
+  for (var i = 0; i < opts.length; i++) {
+    var o = opts[i];
+    h += '<option value="' + esc(o) + '"' + (String(o) === v ? ' selected' : '') + '>' + esc(o) + '</option>';
   }
   return h + '</select>';
 }
@@ -483,26 +501,25 @@ function emptyBox(icon, text) {
   return '<div class="empty"><span class="big">' + icon + '</span>' + esc(text) + '</div>';
 }
 
-// ── בורר התורם ──
+// ── בורר הכרטיס ──
 // רשימה שנבנית בכל הקלדה ולא select — בורר עם מאות אפשרויות אינו שמיש במובייל.
 function donorComboItems() {
-  return gSortDonors(state.donors).map(function (d) {
+  return gSortDonors(state.donors, 'abc').map(function (d) {
     return { value: d.client_id, label: d.name, sub: d.phone || DONOR_NO_PHONE,
-             find: [d.name, d.phone || '', d.agent || ''].join('\n') };
+             find: [d.name, d.phone || '', d.ambassador || ''].join('\n') };
   });
 }
 var DONOR_COMBO = { val: true, max: 30, items: donorComboItems, make: donorNewOpen,
   makeLabel: function (q) { return DONOR_NEW_LABEL + (q ? ' — "' + q + '"' : ''); } };
-comboDef('donor', DONOR_COMBO);
-// התלות של #txn-pledge בתורם יושבת כאן ולא בסגור שנמסר בכל פתיחת חלון דו-שיח — סגור פר-פתיחה מתיישן כשהרכיב משתנה.
-comboDef('donor-txn', Object.assign({}, DONOR_COMBO, { pick: function (it) {
-  var sel = $('#txn-pledge');
-  if (sel) sel.innerHTML = pledgeOptionsFor(it ? it.value : '');
+// בתכנית — בחירת הכרטיס ממלאת את השגריר מהכרטיס, וניתן לשנותו; התלות כאן ולא בסגור פר-פתיחה, שמתיישן כשהרכיב משתנה.
+comboDef('donor-plan', Object.assign({}, DONOR_COMBO, { pick: function (it) {
+  var d = it ? donorById(it.value) : null, sel = $('#pl-amb');
+  if (sel && d && d.ambassador) sel.value = d.ambassador;
 } }));
 
 function donorFieldHTML(id, kind, donorId) {
   var d = donorId ? donorById(donorId) : null;
-  return comboHTML(kind, { id: id, label: 'חיפוש תורם לפי שם או טלפון', placeholder: 'חיפוש תורם לפי שם או טלפון…',
+  return comboHTML(kind, { id: id, label: 'חיפוש כרטיס לפי שם או טלפון', placeholder: 'חיפוש כרטיס לפי שם או טלפון…',
                            picked: d ? { value: d.client_id, label: d.name } : null }) +
     '<div class="new-donor" data-new-donor="' + esc(id) + '"></div>';
 }
@@ -510,11 +527,11 @@ function donorFieldHTML(id, kind, donorId) {
 // הטופס נבנה כשנפתח ויורד בביטול — כפתור שמירה מוסתר שנשאר בעץ היה נבחר במקש.
 function donorNewOpen(q, root) {
   var box = $('[data-new-donor="' + root.id + '"]');
-  if (!box) { console.error('[donor] אין מקום לטופס תורם חדש — #' + root.id); return; }
+  if (!box) { console.error('[donor] אין מקום לטופס כרטיס חדש — #' + root.id); return; }
   box.innerHTML = '<div class="new-donor-form" data-ks>' +
-      '<div class="new-donor-title">תורם חדש</div>' +
+      '<div class="new-donor-title">כרטיס חדש</div>' +
       '<div class="f2">' +
-        '<label class="fld"><span>שם התורם</span><input class="inp" data-new-donor-name value="' + esc(q) + '"></label>' +
+        '<label class="fld"><span>שם</span><input class="inp" data-new-donor-name value="' + esc(q) + '"></label>' +
         '<label class="fld"><span>טלפון</span><input class="inp" data-new-donor-phone inputmode="tel"></label>' +
       '</div>' +
       '<div class="btnrow"><button type="button" class="btn sm" data-act="donor-new-save" data-id="' + esc(root.id) + '" data-ksave>שמירה ובחירה</button>' +
@@ -531,29 +548,17 @@ function donorNewCancel(id) {
 
 function donorNewSave(id) {
   var box = $('[data-new-donor="' + id + '"]');
-  if (!box) { console.error('[donor] אין טופס תורם חדש — #' + id); return; }
+  if (!box) { console.error('[donor] אין טופס כרטיס חדש — #' + id); return; }
   var name = $('[data-new-donor-name]', box).value.trim();
   var phone = $('[data-new-donor-phone]', box).value.trim();
-  if (!name) { toast(MSG_NEED_DONOR_NAME, null, 'bad'); return; }
-  return insert('g_donors', { name: name, phone: phone || null })
+  if (!name) { toast(MSG_NEED_NAME, null, 'bad'); return; }
+  return insert('g_donors', { name: name, phone: phone || null, affiliations: [], starred: false })
     .then(function (d) {
       box.innerHTML = '';
       comboSet(id, { value: d.client_id, label: d.name });
       toast(MSG_DONOR_CREATED, null, 'good');
     })
     .catch(errToast);
-}
-
-// saveX שמחזירה undefined היא ולידציה שעצרה, ו-runSave אינה סוגרת את חלון הדו-שיח — אין להחזיר משם ערך «בשביל האחידות».
-function pledgeOptionsFor(donorId) {
-  var list = donorId ? pledgesOfDonor(donorId) : [];
-  var h = '<option value="">— ללא שיוך —</option>';
-  list.forEach(function (p) {
-    var left = Math.max(0, num(p.amount) - collectedForPledge(p.client_id));
-    h += '<option value="' + p.client_id + '">' + esc(p.cause || 'התחייבות') + ' · ' + ils(p.amount) +
-      ' (נותר ' + ils(left) + ')</option>';
-  });
-  return h;
 }
 
 // ── משותף למסכים ──
@@ -564,22 +569,24 @@ function viewBare(html) {
   $('#view').innerHTML = html;
 }
 
-function donorMatches(q) {
+// חיפוש וסינון הכרטיסים — לפי שם, טלפון, תפקיד או שגריר, ולפי שייכות.
+function donorMatches(q, aff, mode) {
   q = String(q || '').trim().toLowerCase();
-  var list = gSortDonors(state.donors);
-  if (!q) return list;
-  return list.filter(function (d) {
-    return String(d.name || '').toLowerCase().indexOf(q) >= 0 ||
-      String(d.phone || '').indexOf(q) >= 0 ||
-      String(d.agent || '').toLowerCase().indexOf(q) >= 0;
+  var list = state.donors.filter(function (d) {
+    if (aff && (d.affiliations || []).indexOf(aff) < 0) return false;
+    if (!q) return true;
+    return [d.name, d.phone, d.role, d.ambassador].some(function (v) {
+      return String(v || '').toLowerCase().indexOf(q) >= 0;
+    });
   });
+  return gSortDonors(list, mode);
 }
 
-export { $, agentPool, applyMirrorToState, assigneePool, checked, collectedForPledge, datalistHTML,
-         dmyDate, donorById, donorFieldHTML, donorMatches, donorName, donorNewCancel, donorNewSave,
-         emptyBox, gSortGroups, gSortTxns, ils, initials, insert, lookupById, lookupPut, lookupRows,
-         managerNames, mirrorHasData,
-         monthKeyOf, monthLabel, monthTxns, nullable, num, ok, pendRowKey, pledgeById,
-         pledgeOptionsFor, pledgeStatus, pledgesOfDonor, rowPendingKey, saveConfigList,
-         selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow, tableMeta,
-         targetFor, txnsOfDonor, uniqSorted, update, upsertBy, val, viewBare };
+export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
+         donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
+         donorTotal, emptyBox, gSortBudget, gSortGroups, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
+         gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,
+         lookupPut, lookupRows, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nextSort, nullable,
+         num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
+         rowPendingKey, selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow,
+         tableMeta, targetFor, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };

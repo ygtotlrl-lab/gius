@@ -1,4 +1,5 @@
 // app/state.js — המצב המשותף בין המודולים
+import { ASSIGNEES } from './constants.js';
 
 // מצב שמודולים שונים כותבים — אובייקט אחד, כי קישור מיובא אינו ניתן להשמה.
 const S = {
@@ -13,26 +14,23 @@ const S = {
 };
 
 // ── מצב האפליקציה ──
-// state הוא תצוגה ולא מקור אמת — applyMirrorToState היא הדרך היחידה למלא אותו.
+// state הוא תצוגה ולא מקור אמת — applyMirrorToState היא הדרך היחידה למלא את הנתונים בו.
 // אין לכתוב ישירות ל-state.donors — כתיבה כזו אינה מגיעה לדיסק ואינה נדחפת, ונעלמת בסנכרון הבא.
-// החודש של היום מותקן בעלייה — מקורו בתחום, והקובץ הזה אינו מייבא ממנו.
+// החודשים של היום מותקנים בעלייה — מקורם בתחום, והקובץ הזה אינו מייבא ממנו.
 var state = {
-  screen: 'home',
+  screen: 'dash',
   month: '',
-  config: { categories: [], causes: [], domains: [] },
-  donors: [], pledges: [], txns: [], tasks: [], targets: [],
-  donorId: null,
-  donorSearch: '',
-  pf: { agent: '', status: '', cause: '', from: '', to: '' }
+  planMonth: '',
+  donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
+  notes: [], loans: [], budget: [],
+  // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
+  cards: { q: '', aff: '', sort: 'abc', open: null },
+  // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
+  tasks_ui: { who: ASSIGNEES[0], stage: null }
 };
-
-// גרירה על אירועי מצביע — dragstart, dragover ו-drop אינם נורים במגע.
-// הגרירה מתחילה מהידית בלבד — כרטיס שכולו נגרר חוטף את גלילת המסך.
-// הגרירה היא העברת שלב ולא שינוי סדר — הנמדד הוא העמודה שמתחת לשחרור.
-var KDRAG = { el: null, col: null };
 
 // ── מה שמסך צריך מ-main ──
 // main רושם כאן בעלייה — מודול שמייבא מ-main סוגר מעגל, והרישום הוא הכיוון האחד.
 const shell = { render: null };
 
-export { KDRAG, S, shell, state };
+export { S, shell, state };

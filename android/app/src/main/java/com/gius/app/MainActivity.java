@@ -10,5 +10,5 @@ public class MainActivity extends ShellActivity {
     protected String offlineLine() { return "גיוס לא הצליח להתחבר."; }
 
     @Override
-    protected String accentColor() { return "#0f766e"; }
+    protected String accentColor() { return "#c8553d"; }
 }
