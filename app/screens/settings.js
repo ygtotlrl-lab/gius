@@ -1,10 +1,10 @@
 // app/screens/settings.js — ההגדרות: שש הרשימות והיעד החודשי
 import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../../core/ui.js';
 import { readNum } from '../../core/util.js';
-import { LISTS, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
+import { KV_TABLE, LISTS, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
-import { $, emptyBox, ils, listDef, lookupRows, monthLabel, monthTxns, num, sum, upsertBy,
-         val } from '../domain.js';
+import { $, TARGET_DEFAULT_KEY, emptyBox, ils, listDef, lookupRows, monthLabel, monthTxns, num, sum,
+         targetDefault, targetOwn, upsertBy, val } from '../domain.js';
 
 // ── הרשימות ──
 // רשימה שעוד לא נזרעה מוצגת מנקודת הפתיחה, במזהים שהזריעה תיתן לה — עריכה וגרירה זורעות קודם.
@@ -34,10 +34,16 @@ function viewSettings() {
   var h = '<div class="grid2">' + LISTS.map(lookupCardHTML).join('') + '</div>';
 
   // ── היעד החודשי ──
+  // יעד קבוע לכל החודשים, וחודש שנקבע לו יעד משלו — גובר עליו.
+  var dflt = targetDefault();
   var tg = state.targets.slice().sort(function (a, b) { return a.target_month < b.target_month ? 1 : -1; });
-  h += '<section class="card"><h2>יעד חודשי<span class="cnt">' + tg.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="target-set">קביעת יעד</button></span></h2>';
-  if (!tg.length) h += emptyBox('🎯', 'עדיין לא הוגדרו יעדים');
+  h += '<section class="card"><h2>יעד חודשי</h2>' +
+    '<div class="row" data-act="target-default">' +
+      '<div class="main"><b>יעד קבוע</b><small>חל על כל חודש שאין לו יעד משלו</small></div>' +
+      '<div class="end">' + (dflt > 0 ? ils(dflt) : '— לא הוגדר —') + '</div></div>' +
+    '<div class="sec-t tg-own">חודשים עם יעד משלהם<span class="cnt">' + tg.length + '</span>' +
+      '<button class="btn sm" data-act="target-set">＋ יעד לחודש</button></div>';
+  if (!tg.length) h += '<div class="hint">אין — כל החודשים ביעד הקבוע.</div>';
   else h += tg.map(function (t) {
     var got = sum(monthTxns(t.target_month), function (x) { return x.amount; });
     var pct = num(t.amount) > 0 ? got / num(t.amount) * 100 : 0;
@@ -61,14 +67,15 @@ function lookupForm(kind, r) {
 }
 
 function formTarget(month) {
-  var m = month || state.month, cur = 0;
-  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].target_month === m) cur = num(state.targets[i].amount);
+  var m = month || state.month, own = targetOwn(m);
   openModal(MSG_MONTH_GOAL,
     '<div class="f2">' +
       '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="tg-month" value="' + esc(m) + '"></label>' +
-      '<label class="fld"><span>סכום יעד *</span><input class="inp" id="tg-amount" inputmode="decimal" value="' + (cur || '') + '"></label>' +
-    '</div>',
+      '<label class="fld"><span>סכום יעד *</span><input class="inp" id="tg-amount" inputmode="decimal" value="' + (own ? num(own.amount) : '') + '"></label>' +
+    '</div>' +
+    '<div class="hint">היעד הקבוע: ' + ils(targetDefault()) + '. יעד שנקבע כאן חל על החודש הזה בלבד.</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    (own ? '<button class="btn danger" data-act="target-clear" data-id="' + esc(own.client_id) + '">חזרה ליעד הקבוע</button>' : '') +
     '<button class="btn" data-act="target-save" data-ksave>שמירה</button>');
 }
 
@@ -76,7 +83,20 @@ function saveTarget() {
   var m = val('tg-month');
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return; }
   // המזהה הוא החודש — שני מכשירים שקובעים את אותו חודש מגיעים לאותה שורה.
-  return upsertBy('g_targets', { client_id: m, target_month: m, amount: readNum($('#tg-amount'), 0), deleted: false });
+  return upsertBy('g_targets', { client_id: m, target_month: m, amount: readNum($('#tg-amount'), 0), deleted: false, deleted_at: null });
 }
 
-export { formTarget, lookupForm, saveTarget, viewSettings };
+function formTargetDefault() {
+  openModal('יעד חודשי קבוע',
+    '<label class="fld"><span>סכום *</span><input class="inp" id="tgd-amount" inputmode="decimal" value="' + (targetDefault() || '') + '"></label>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="target-default-save" data-ksave>שמירה</button>');
+}
+
+function saveTargetDefault() {
+  var n = readNum($('#tgd-amount'), 0);
+  if (!(n > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+  return upsertBy(KV_TABLE, { key: TARGET_DEFAULT_KEY, value: JSON.stringify(n) });
+}
+
+export { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault, viewSettings };

@@ -449,10 +449,20 @@ function donorLeft(id) { return sum(pledgesOfDonor(id), function (p) { return le
 
 function monthTxns(m) { return state.txns.filter(function (t) { return monthKeyOf(t.txn_date) === m; }); }
 
-function targetFor(m) {
-  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].target_month === m) return num(state.targets[i].amount);
-  return 0;
+// היעד הקבוע — מפתח בטבלת ההגדרות, וחל על כל חודש שאין לו יעד משלו.
+var TARGET_DEFAULT_KEY = 'target_default';
+
+function targetDefault() {
+  var r = findRow(liveRows(KV_TABLE), 'key', TARGET_DEFAULT_KEY);
+  return r ? num(r.value) : 0;
 }
+
+function targetOwn(m) {
+  for (var i = 0; i < state.targets.length; i++) if (state.targets[i].target_month === m) return state.targets[i];
+  return null;
+}
+
+function targetFor(m) { var t = targetOwn(m); return t ? num(t.amount) : targetDefault(); }
 
 // «בפועל» בשורת תכנית — התשלומים של הכרטיס בחודש התכנית; נגזר ואינו מוקלד.
 function planActual(it) {
@@ -589,4 +599,4 @@ export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDa
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nextSort, nullable,
          num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
          rowPendingKey, selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow,
-         tableMeta, targetFor, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };
+         tableMeta, TARGET_DEFAULT_KEY, targetDefault, targetFor, targetOwn, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };

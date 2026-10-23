@@ -365,6 +365,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pay-cl{color:var(--text-3)}
 .ctotals{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);padding-top:var(--sp-5);border-top:1px solid var(--border)}
 .copen-ft{margin-top:var(--sp-5)}
+.tg-own{margin-top:var(--sp-6)}
 /* ── תכנית ── */
 .prow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-4);padding:var(--sp-5) 0;border-bottom:1px solid var(--border-2)}
 .prow:last-child{border-bottom:0}

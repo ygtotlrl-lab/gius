@@ -27,7 +27,8 @@ import { formTask, saveTask, viewTasks } from './screens/tasks.js';
 import { formNote, saveNote, viewNotes } from './screens/notes.js';
 import { formLoan, saveLoan, viewLoans } from './screens/loans.js';
 import { formBudget, saveBudget, viewBudget } from './screens/budget.js';
-import { formTarget, lookupForm, saveTarget, viewSettings } from './screens/settings.js';
+import { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
+         viewSettings } from './screens/settings.js';
 
 // ── החיווט ──
 // החיווט נמסר בשומרי קריאה — ה-CFG מוגדרים בהמשך, והשומר קורא אותם בזמן הקריאה ולא בזמן המסירה.
@@ -401,6 +402,11 @@ var DOM_ACTIONS = {
   // ── הגדרות: יעד ──
   'target-set': function (el) { formTarget(el.dataset.month || state.month); },
   'target-save': function () { return runSave(saveTarget, 'היעד נשמר'); },
+  'target-clear': function (el) {
+    return softDelete('g_targets', el.dataset.id).then(function () { return afterSave('החודש חזר ליעד הקבוע'); }).catch(errToast);
+  },
+  'target-default': function () { formTargetDefault(); },
+  'target-default-save': function () { return runSave(saveTargetDefault, 'היעד הקבוע נשמר'); },
   'reload':            function () { location.reload(); },
   'combo-pick':        function (el) { return comboPick(el); },
   'combo-make':        function (el) { return comboMake(el); },
