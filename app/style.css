@@ -257,23 +257,27 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .load-err-card h1{font-size:var(--fs-6);letter-spacing:var(--ls-n1)}
 .load-err-card .sub{color:var(--text-3);font-size:var(--fs-3);margin:var(--sp-2) 0 var(--sp-7)}
 /* ── בית ──
-   המד בחצי עיגול במרכז, «נותר» ו«תשלומים» משני צדיו; בטלפון הם יורדים לשורה מתחתיו. */
-.gauge-row{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"g g" "a b";gap:var(--sp-4) var(--sp-6);align-items:end}
-.gauge{grid-area:g;position:relative;width:100%;max-width:400px;justify-self:center}
+   המד בחצי עיגול והנגבה במרכזו; לצדו רשימה אחידה — אחוז · יעד · נותר · תשלומים, בלי צבע. בטלפון הרשימה מתחת. */
+.gauge-row{display:grid;gap:var(--sp-6);align-items:center}
+.gauge{position:relative;width:100%;max-width:400px;justify-self:center}
 .gauge svg{display:block;width:100%;height:auto}
 .gauge path{fill:none;stroke-width:30;stroke-linecap:round}
 .gauge .bg{stroke:var(--brand-soft)}
 .gauge .fg{stroke:var(--brand-fill);transition:stroke-dasharray var(--dur-5) var(--ease)}
-.gauge-val{position:absolute;inset-inline:0;bottom:2%;display:flex;flex-direction:column;align-items:center;gap:var(--sp-1);text-align:center}
-.gauge-val span{font-size:var(--fs-2);color:var(--text-3);font-weight:600}
-.gauge-val b{font-size:clamp(26px,8vw,40px);font-weight:800;letter-spacing:var(--ls-n2);line-height:var(--lh-1);font-variant-numeric:tabular-nums}
-.gauge-val small{font-size:var(--fs-2);color:var(--brand-ink);font-weight:700}
-.g-side{display:flex;flex-direction:column;gap:var(--sp-1);padding-bottom:var(--sp-3)}
-.g-side:first-child{grid-area:a}
-.g-side.end{grid-area:b;align-items:flex-end}
-.g-side span{font-size:var(--fs-2);color:var(--text-3);font-weight:600}
-.g-side b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums}
-.g-side b.warn{color:var(--warn)}
+.gauge-val{position:absolute;inset-inline:0;bottom:4%;text-align:center;
+  font-size:clamp(28px,9vw,44px);font-weight:800;letter-spacing:var(--ls-n2);line-height:var(--lh-1);font-variant-numeric:tabular-nums}
+/* צבע הנגבה לפי שלב ההתקדמות — אותם ספים כמו הודעת המומנטום. */
+.gauge-val.st-start{color:var(--bad)}
+.gauge-val.st-low{color:var(--warn)}
+.gauge-val.st-mid{color:var(--brand-ink)}
+.gauge-val.st-done{color:var(--ok)}
+.g-list{margin:0;display:flex;flex-direction:column}
+.g-list > div{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-5);
+  padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2)}
+.g-list > div:last-child{border-bottom:0}
+.g-list dt,.g-list dd{margin:0;font-size:var(--fs-4)}
+.g-list dt{color:var(--text-2)}
+.g-list dd{font-weight:700;font-variant-numeric:tabular-nums}
 .hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
 .stat{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5)}
 .stat span{display:block;font-size:var(--fs-2);color:var(--text-3);font-weight:600;margin-bottom:var(--sp-1)}
@@ -468,7 +472,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   main{padding:var(--sp-7);padding-bottom:var(--sp-7)}
 }
 @media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
-@media (min-width:640px){.gauge-row{grid-template-columns:1fr minmax(0,400px) 1fr;grid-template-areas:"a g b";max-width:760px;margin-inline:auto}}
+@media (min-width:640px){.gauge-row{grid-template-columns:minmax(0,400px) minmax(0,300px);justify-content:center;gap:var(--sp-7)}}
 @media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
 @media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
 @media (min-width:640px){.notes{grid-template-columns:1fr 1fr}}
