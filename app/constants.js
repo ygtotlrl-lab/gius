@@ -100,6 +100,8 @@ var MSG_DEL_TASK = 'למחוק את המשימה?';
 var MSG_DEL_NOTE = 'למחוק את הפתק?';
 var MSG_DEL_LOAN = 'למחוק את ההלוואה?';
 var MSG_DEL_BUDGET = 'למחוק את ההוצאה?';
+var MSG_DEL_EVENT = 'למחוק את האירוע וכל ההוצאות שבו?';
+var MSG_NEED_EVENT_NAME = '⚠️ נא למלא את שם האירוע';
 var MSG_DEL_LOOKUP = 'להסיר את הערך מהרשימה? רשומות שכבר משתמשות בו יישארו כמות שהן.';
 var MSG_MONTH_GOAL = '🎯 יעד חודשי';
 
@@ -109,7 +111,7 @@ var KV_TABLE = 'g_settings';
 // ── PUSH_CFG ──
 // הסדר שומר על המפתח הזר — כרטיסים לפני התחייבויות ושורות תכנית, והתחייבויות לפני תשלומים.
 var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_plan_items', 'g_tasks', 'g_targets',
-                   'g_notes', 'g_loans', 'g_budget_items', KV_TABLE, 'g_lookups'];
+                   'g_notes', 'g_loans', 'g_events', 'g_budget_items', KV_TABLE, 'g_lookups'];
 
 // strip — עמודות שאינן נשמרות במראה; אין היום עמודה כזו, והמנגנון נשאר דרוך לסוד עתידי.
 // אין כאן סדר תצוגה — המיון של כל רשומה בפונקציה אחת בתחום.
@@ -122,6 +124,7 @@ var TABLES = [
   { t: 'g_targets',      key: 'client_id', soft: true },
   { t: 'g_notes',        key: 'client_id', soft: true },
   { t: 'g_loans',        key: 'client_id', soft: true },
+  { t: 'g_events',       key: 'client_id', soft: true },
   { t: 'g_budget_items', key: 'client_id', soft: true },
   { t: KV_TABLE,         key: 'key',       soft: false },
   { t: 'g_lookups',      key: 'client_id', soft: true }
@@ -131,7 +134,7 @@ var EPS = 0.005;
 
 export { ASSIGNEES, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LK_AFFIL, LK_AMBASSADOR,
          LK_DOMAIN, LK_METHOD, LK_PTYPE, LK_SECTION, LOAN_STATUSES, MORE,
-         MSG_AMOUNT_POSITIVE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_LOAN,
+         MSG_AMOUNT_POSITIVE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_EVENT, MSG_NEED_EVENT_NAME, MSG_DEL_LOAN,
          MSG_DEL_LOOKUP, MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT,
          MSG_DEL_TASK, MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_MONTH_GOAL, MSG_NEED_DATE,
          MSG_NEED_ITEM, MSG_NEED_NAME, MSG_NEED_TITLE, MSG_NEED_VALUE, MSG_PICK_AMB, MSG_PICK_DONOR,

@@ -29,20 +29,29 @@ function viewPlan() {
   h += '<section class="card"><h2>התכנית<span class="cnt">' + list.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="plan-new">＋ שורה</button></span></h2>';
   if (!list.length) h += emptyBox('🗓', 'אין עדיין שורות בתכנית של החודש');
-  else h += list.map(function (r) {
-    var a = planActual(r), id = esc(r.client_id);
-    return '<div class="prow' + (r.irrelevant ? ' irr' : '') + '">' +
-      '<div class="prow-main" data-act="plan-edit" data-id="' + id + '">' +
-        '<b>' + esc(donorName(r.donor_client_id)) + pendTag(pendRowKey('g_plan_items', r.client_id)) + '</b>' +
-        '<small><span class="badge ' + (r.kind === 'התרמה' ? 'gold' : 'brand') + '">' + esc(r.kind || '—') + '</span> ' +
-          esc([r.ambassador, r.care_date ? 'טיפול ' + dmyDate(r.care_date) : '', r.note].filter(Boolean).join(' · ')) + '</small>' +
-      '</div>' +
-      '<div class="prow-nums"><span>צפי <b>' + ils(r.expected) + '</b></span>' +
-        '<span class="' + (a > 0 ? 'ok' : '') + '">בפועל <b>' + ils(a) + '</b></span></div>' +
-      '<button class="btn ghost xs" data-act="plan-irr" data-id="' + id + '" aria-pressed="' + !!r.irrelevant + '">' +
-        (r.irrelevant ? 'רלוונטי' : 'לא רלוונטי') + '</button>' +
-    '</div>';
-  }).join('');
+  else {
+    // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה.
+    var lastAmb = null;
+    h += list.map(function (r) {
+      var a = planActual(r), id = esc(r.client_id), amb = r.ambassador || 'ללא שגריר', head = '';
+      if (amb !== lastAmb) {
+        var grp = list.filter(function (x) { return (x.ambassador || 'ללא שגריר') === amb; });
+        head = '<div class="list-sub plan-sub"><span>' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span></div>';
+        lastAmb = amb;
+      }
+      return head + '<div class="prow' + (r.irrelevant ? ' irr' : '') + '">' +
+        '<div class="prow-main" data-act="plan-edit" data-id="' + id + '">' +
+          '<b>' + esc(donorName(r.donor_client_id)) + pendTag(pendRowKey('g_plan_items', r.client_id)) + '</b>' +
+          '<small><span class="badge ' + (r.kind === 'התרמה' ? 'gold' : 'brand') + '">' + esc(r.kind || '—') + '</span> ' +
+            esc([r.care_date ? 'טיפול ' + dmyDate(r.care_date) : '', r.note].filter(Boolean).join(' · ')) + '</small>' +
+        '</div>' +
+        '<div class="prow-nums"><span>צפי <b>' + ils(r.expected) + '</b></span>' +
+          '<span class="' + (a > 0 ? 'ok' : '') + '">בפועל <b>' + ils(a) + '</b></span></div>' +
+        '<button class="btn ghost xs" data-act="plan-irr" data-id="' + id + '" aria-pressed="' + !!r.irrelevant + '">' +
+          (r.irrelevant ? 'רלוונטי' : 'לא רלוונטי') + '</button>' +
+      '</div>';
+    }).join('');
+  }
   h += '</section>';
   return h;
 }

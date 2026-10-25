@@ -111,8 +111,15 @@ function gSortPledges(list) {
 }
 
 // שורות תכנית — הרלוונטיות למעלה בסדר הרישום, ו«לא רלוונטי» למטה.
+// תכנית — קבוצה לכל שגריר (איש הקשר) בסדר הא״ב, ו«ללא שגריר» בסוף; בתוך הקבוצה — «לא רלוונטי» למטה,
+// והשאר לפי שם הכרטיס בסדר הא״ב.
 function gSortPlan(list) {
-  return list.slice().sort(function (a, b) { return ((a.irrelevant ? 1 : 0) - (b.irrelevant ? 1 : 0)) || bySort(a, b); });
+  return list.slice().sort(function (a, b) {
+    var aa = a.ambassador || '', ba = b.ambassador || '';
+    if (!aa !== !ba) return aa ? -1 : 1;
+    return sortCompare(aa, ba) || ((a.irrelevant ? 1 : 0) - (b.irrelevant ? 1 : 0)) ||
+      sortCompare(donorName(a.donor_client_id) || '', donorName(b.donor_client_id) || '') || bySort(a, b);
+  });
 }
 
 // משימות, פתקים והוצאות — בסדר שנקבע, ובשוויון בסדר הרישום.
@@ -121,6 +128,8 @@ function gSortTasks(list) { return list.slice().sort(bySort); }
 function gSortNotes(list) { return list.slice().sort(bySort); }
 
 function gSortBudget(list) { return list.slice().sort(bySort); }
+
+function gSortEvents(list) { return list.slice().sort(bySort); }
 
 // הלוואות — לפי שם המלווה.
 function gSortLoans(list) {
@@ -202,6 +211,7 @@ function applyMirrorToState() {
   state.targets = liveRows('g_targets');
   state.notes   = liveRows('g_notes');
   state.loans   = liveRows('g_loans');
+  state.events  = liveRows('g_events');
   state.budget  = liveRows('g_budget_items');
 }
 
@@ -257,7 +267,8 @@ function update(table, id, patch) {
 var PC_CHILDREN = {
   g_donors: [{ t: 'g_pledges', fk: 'donor_client_id' }, { t: 'g_txns', fk: 'donor_client_id' },
              { t: 'g_plan_items', fk: 'donor_client_id' }],
-  g_pledges: [{ t: 'g_txns', fk: 'pledge_client_id' }]
+  g_pledges: [{ t: 'g_txns', fk: 'pledge_client_id' }],
+  g_events: [{ t: 'g_budget_items', fk: 'event_client_id' }]
 };
 
 // הכתיבה לבנים עוברת ב-upsertLocal ולא ב-update — update חותם Date.now() ומבטל את ירושת החותמת.
@@ -614,7 +625,7 @@ function donorMatches(q, aff, mode) {
 
 export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
-         donorTotal, emptyBox, gSortBudget, gSortGroups, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
+         donorTotal, emptyBox, gSortBudget, gSortEvents, gSortGroups, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
          gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, monthLabel, monthTxns, monthTxnsInit, nextSort, nullable,
          num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,

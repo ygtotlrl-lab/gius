@@ -217,6 +217,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   box-shadow:0 6px 22px var(--shadow-brand);display:grid;place-items:center;
   transition:transform var(--dur-3)
 }
+.fab .ico{width:28px;height:28px;stroke-width:2.4}
 .fab:active{transform:scale(.93)}
 .veil{align-items:flex-end;backdrop-filter:blur(2px)}
 .sheet{
@@ -351,6 +352,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .list-sub{font-size:var(--fs-2);font-weight:800;color:var(--brand-ink);padding:var(--sp-6) var(--sp-2) var(--sp-3);border-bottom:2px solid var(--brand-soft)}
 .list-sub:first-child{padding-top:0}
 .list-sub.general{margin-top:var(--sp-6)}
+.plan-sub{display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-5)}
+.plan-sub:first-of-type{margin-top:0}
+.plan-sub .cnt{font-size:var(--fs-1);background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-4)}
 .tools-row{display:flex;gap:var(--sp-4);align-items:center}
 .tools-row select{flex:1;min-width:0}
 .seg{display:inline-flex;background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1);gap:var(--sp-1);flex:none}
@@ -461,6 +465,18 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ctotals{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);padding-top:var(--sp-5);border-top:1px solid var(--border)}
 .copen-ft{margin-top:var(--sp-5)}
 .tg-own{margin-top:var(--sp-6)}
+/* ── תקציב אירוע — כרטיס סגור לכל אירוע ── */
+.evs{display:grid;gap:var(--sp-5)}
+.ev{border:1px solid var(--border);border-radius:var(--r-6);background:var(--card);overflow:hidden}
+.ev.open{border-color:var(--brand-fill);box-shadow:0 0 0 1px var(--brand-fill)}
+.ev-hd{display:flex;align-items:center;gap:var(--sp-5);width:100%;background:none;border:0;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-6)}
+.ev-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1)}
+.ev-name b{font-size:var(--fs-4);font-weight:800}
+.ev-name small{font-size:var(--fs-2);color:var(--text-3)}
+.ev-total{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums}
+.ev-chev{color:var(--text-3)}
+.ev-body{border-top:1px solid var(--border);padding:var(--sp-3) var(--sp-6) var(--sp-6);background:var(--card-2)}
+.ev-acts{margin-top:var(--sp-5)}
 /* ── תכנית ── */
 .prow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-4);padding:var(--sp-5) 0;border-bottom:1px solid var(--border-2)}
 .prow:last-child{border-bottom:0}
@@ -504,6 +520,19 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sw input{appearance:none;margin:0;width:100%;height:100%;border-radius:var(--r-7);cursor:pointer}
 .sw input:checked{box-shadow:0 0 0 3px var(--brand-ink)}
 .note-ta{min-height:220px}
+/* הפתק הפתוח — על כל המסך, בצבע הפתק; מעל הסרגל ומתחת לחלון האישור. */
+.note-full{position:fixed;inset:0;z-index:var(--z-3);display:flex;justify-content:center;overflow-y:auto;
+  padding:calc(var(--sp-6) + env(safe-area-inset-top)) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom))}
+.nf-in{width:100%;max-width:760px;display:flex;flex-direction:column;gap:var(--sp-5);min-height:100%}
+.nf-bar{display:flex;align-items:center;gap:var(--sp-4)}
+.nf-grow{flex:1}
+.nf-btn{height:42px;min-width:42px;padding:0 var(--sp-5);border:0;border-radius:var(--r-6);background:rgba(0,0,0,.06);color:var(--text);
+  font:inherit;font-size:var(--fs-4);font-weight:700;cursor:pointer}
+.nf-del{color:var(--bad);font-size:var(--fs-3)}
+.nf-title{border:0;background:none;font:inherit;font-size:var(--fs-6);font-weight:800;color:var(--text);outline:none;padding:var(--sp-3) 0}
+.nf-body{flex:1;min-height:50vh;border:0;background:none;font:inherit;font-size:var(--fs-4);line-height:1.7;color:var(--text);outline:none;resize:none;padding:0}
+.nf-title::placeholder,.nf-body::placeholder{color:var(--text-3)}
+.nf-colors{padding-top:var(--sp-4);border-top:1px solid rgba(0,0,0,.08)}
 /* ── סיכום רשימה ── */
 .total-row{display:flex;justify-content:space-between;padding:var(--sp-5) var(--sp-2) 0;margin-top:var(--sp-3);
   border-top:1px solid var(--border);font-weight:700;font-variant-numeric:tabular-nums}

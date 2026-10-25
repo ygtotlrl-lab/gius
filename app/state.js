@@ -24,7 +24,9 @@ var state = {
   dashPayAll: false,
   planMonth: '',
   donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
-  notes: [], loans: [], budget: [],
+  notes: [], loans: [], budget: [], events: [],
+  // תקציב אירוע — האירוע הפתוח; כל האירועים סגורים בכניסה.
+  budgetOpen: null,
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
   cards: { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' },
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.

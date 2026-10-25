@@ -100,6 +100,7 @@ AS $function$
     'ANCHOR:g_notes', 'DIFF:g_notes',
     'ANCHOR:g_loans', 'DIFF:g_loans',
     'ANCHOR:g_budget_items', 'DIFF:g_budget_items',
+    'ANCHOR:g_events', 'DIFF:g_events',
     'ANCHOR:k_settings', 'DIFF:k_settings',
     'ANCHOR:k_pledges', 'DIFF:k_pledges',
     'ANCHOR:k_standing_orders', 'DIFF:k_standing_orders',
@@ -387,8 +388,24 @@ create table if not exists public.g_loans (
   constraint g_loans_status_check CHECK ((status IS NULL OR status = ANY (ARRAY['נמסר'::text, 'לטיפול'::text, 'להגשה'::text, 'בהתראה'::text])))
 );
 
+-- אירוע — כרטיס בתקציב האירועים; ההוצאות שלו ב-g_budget_items.
+create table if not exists public.g_events (
+  client_id text not null,
+  name text not null,
+  event_date date,
+  note text,
+  sort integer not null default 0,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_events_pkey PRIMARY KEY (client_id)
+);
+
 create table if not exists public.g_budget_items (
   client_id text not null,
+  event_client_id text not null,
   item text not null,
   category text,
   cost numeric(14,2),
@@ -399,8 +416,10 @@ create table if not exists public.g_budget_items (
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
   deleted_by text,
-  constraint g_budget_items_pkey PRIMARY KEY (client_id)
+  constraint g_budget_items_pkey PRIMARY KEY (client_id),
+  constraint g_budget_items_event_fk FOREIGN KEY (event_client_id) REFERENCES public.g_events(client_id) ON DELETE RESTRICT
 );
+create index if not exists g_budget_items_event_idx ON public.g_budget_items USING btree (event_client_id);
 
 create index if not exists g_donors_live_idx ON public.g_donors USING btree (deleted, name);
 create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (kind, sort);
@@ -444,6 +463,9 @@ grant all on table public.g_notes to service_role;
 revoke all on table public.g_loans from anon, authenticated;
 grant select, insert, update on table public.g_loans to anon, authenticated;
 grant all on table public.g_loans to service_role;
+revoke all on table public.g_events from anon, authenticated;
+grant select, insert, update on table public.g_events to anon, authenticated;
+grant all on table public.g_events to service_role;
 revoke all on table public.g_budget_items from anon, authenticated;
 grant select, insert, update on table public.g_budget_items to anon, authenticated;
 grant all on table public.g_budget_items to service_role;
@@ -478,6 +500,9 @@ create policy g_notes_all on public.g_notes as permissive for all to anon, authe
 alter table public.g_loans enable row level security;
 drop policy if exists g_loans_all on public.g_loans;
 create policy g_loans_all on public.g_loans as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_events enable row level security;
+drop policy if exists g_events_all on public.g_events;
+create policy g_events_all on public.g_events as permissive for all to anon, authenticated using (true) with check (true);
 alter table public.g_budget_items enable row level security;
 drop policy if exists g_budget_items_all on public.g_budget_items;
 create policy g_budget_items_all on public.g_budget_items as permissive for all to anon, authenticated using (true) with check (true);
