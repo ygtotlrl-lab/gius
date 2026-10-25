@@ -262,7 +262,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .load-err-card .sub{color:var(--text-3);font-size:var(--fs-3);margin:var(--sp-2) 0 var(--sp-7)}
 /* ── בית ──
    המד בחצי עיגול והנגבה במרכזו; לצדו רשימה אחידה — אחוז · יעד · נותר · תשלומים, בלי צבע. בטלפון הרשימה מתחת. */
-.gauge-row{display:grid;gap:var(--sp-6);align-items:center}
+/* אוויר מעל המד ומתחתיו — מהחודש שלמעלה ומהבאנר שלמטה. */
+.gauge-row{display:grid;gap:var(--sp-6);align-items:center;padding-block:var(--sp-7)}
+.gauge-row + .momentum{margin-top:var(--sp-6)}
 .gauge{position:relative;width:100%;max-width:400px;justify-self:center}
 .gauge svg{display:block;width:100%;height:auto}
 .gauge path{fill:none;stroke-width:30;stroke-linecap:round}
