@@ -98,6 +98,7 @@ function pledgeRowHTML(p) {
       '<span class="badge brand">' + esc(p.section || 'ללא סעיף') + '</span>' +
       '<b>' + esc(p.pledge_type || '—') + '</b>' +
       pendTag(pendRowKey('g_pledges', p.client_id)) +
+      (p.initiated === true ? '<span class="badge ok">יזום</span>' : p.initiated === false ? '<span class="badge">לא יזום</span>' : '') +
       '<span class="pl-amt">' + ils(p.amount) + '</span>' +
     '</div>' +
     (p.detail ? '<div class="pl-detail">' + esc(p.detail) + '</div>' : '') +
@@ -164,7 +165,12 @@ function formPledge(p, donorId) {
     '</div>' +
     '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
     '<label class="fld"><span>שגריר</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), '— ללא —') + '</label>' +
-    '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>';
+    '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>' +
+    '<label class="fld"><span>יזום</span><select class="inp" id="p-init">' +
+      [['', '— טרם הוגדר —'], ['1', 'כן — יזום'], ['0', 'לא יזום']].map(function (o) {
+        var cur = p && p.initiated === true ? '1' : p && p.initiated === false ? '0' : '';
+        return '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>';
+      }).join('') + '</select></label>';
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now"><span>תרומה חד-פעמית — שולמה עכשיו</span></label>' +
     whenHTML('p', null) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label>';
@@ -179,16 +185,40 @@ function savePledge(id, donorId) {
   if (!type) { toast(MSG_PICK_TYPE, null, 'bad'); return; }
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
   var row = { section: nullable(val('p-section')), pledge_type: type, detail: nullable(val('p-detail')),
-              ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')) };
+              ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')),
+              initiated: initVal(val('p-init')) };
   if (id) return update('g_pledges', id, row);
   var now = checked('p-now'), when = now ? readWhen('p') : null;
   if (now && !when) return;
-  return insert('g_pledges', Object.assign(row, { donor_client_id: donorId })).then(function (p) {
-    if (!now) return p;
-    return insert('g_txns', { donor_client_id: donorId, pledge_client_id: p.client_id, amount: amount,
-                              txn_month: when.txn_month, txn_date: when.txn_date,
-                              method: nullable(val('p-method')), cleared: false });
-  });
+  var go = function (initiated) {
+    return insert('g_pledges', Object.assign({}, row, { donor_client_id: donorId, initiated: initiated })).then(function (p) {
+      if (!now) return p;
+      return insert('g_txns', { donor_client_id: donorId, pledge_client_id: p.client_id, amount: amount,
+                                txn_month: when.txn_month, txn_date: when.txn_date,
+                                method: nullable(val('p-method')), cleared: false });
+    });
+  };
+  // תשלום אינו נסגר בלי הכרעה על «יזום» — רק מה שיזום נספר בדשבורד.
+  if (now && row.initiated == null) return initAsk(go);
+  return go(row.initiated);
+}
+
+function initVal(v) { return v === '1' ? true : v === '0' ? false : null; }
+
+// השאלה בחלון משלה; ערכי הטופס כבר נקראו, והשמירה רצה אחרי הבחירה.
+var _initPending = null;
+function initAsk(go) {
+  _initPending = go;
+  openModal('ההתחייבות יזומה?',
+    '<div class="hint">רק תשלומים של התחייבות יזומה — שבאה מהעבודה — נספרים בדשבורד וביעד. ההכרעה נשמרת בהתחייבות.</div>',
+    '<button class="btn ghost" data-act="init-pick" data-v="0">לא יזום</button>' +
+    '<button class="btn" data-act="init-pick" data-v="1">יזום</button>');
+}
+
+function initPick(v) {
+  var go = _initPending; _initPending = null;
+  if (!go) return;
+  return go(v === '1');
 }
 
 // ── חודש ותאריך ──
@@ -231,8 +261,15 @@ function savePay(id, pledgeId) {
   var when = readWhen('t');
   if (!when) return;
   var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: nullable(val('t-method')), cleared: checked('t-cleared') };
-  if (id) return update('g_txns', id, row);
-  return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
+  var go = function (initiated) {
+    var w = initiated == null || p.initiated === initiated ? Promise.resolve() : update('g_pledges', p.client_id, { initiated: initiated });
+    return w.then(function () {
+      if (id) return update('g_txns', id, row);
+      return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
+    });
+  };
+  if (p.initiated == null) return initAsk(go);
+  return go(null);
 }
 
-export { cardRowsHTML, formDonor, formPay, formPledge, saveDonor, savePay, savePledge, viewCards };
+export { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge, viewCards };

@@ -452,6 +452,11 @@ function donorLeft(id) { return sum(pledgesOfDonor(id), function (p) { return le
 // החודש של תשלום — שדה משלו ולא נגזר מהתאריך: תשלום בלי תאריך עדיין שייך לחודש שבו נרשם.
 function monthTxns(m) { return state.txns.filter(function (t) { return t.txn_month === m; }); }
 
+// «יזום» — התחייבות שבאה מהעבודה; הדשבורד והיעד סופרים רק את תשלומיה, והכרטיס מציג הכל.
+function isInitiated(t) { var p = pledgeById(t.pledge_client_id); return !!(p && p.initiated === true); }
+
+function monthTxnsInit(m) { return monthTxns(m).filter(isInitiated); }
+
 // מתי — התאריך, ובלעדיו החודש; תשלום בלי חודש הוא מה שנגבה לפני המעבר לאפליקציה.
 function txnWhen(t) {
   if (t.txn_date) return dmyDate(t.txn_date);
@@ -605,7 +610,7 @@ export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDa
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortGroups, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
          gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,
-         lookupPut, lookupRows, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nextSort, nullable,
+         lookupPut, lookupRows, mirrorHasData, monthKeyOf, monthLabel, monthTxns, monthTxnsInit, nextSort, nullable,
          num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
          rowPendingKey, selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow,
          tableMeta, TARGET_DEFAULT_KEY, txnWhen, targetDefault, targetFor, targetOwn, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };

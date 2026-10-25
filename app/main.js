@@ -21,7 +21,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, formDonor, formPay, formPledge, saveDonor, savePay, savePledge,
+import { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge,
          viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, viewTasks } from './screens/tasks.js';
@@ -317,6 +317,7 @@ var DOM_ACTIONS = {
     return runSave(function () { return savePay(el.dataset.id, el.dataset.pledge); }, 'התשלום נשמר');
   },
   'pay-del': function (el) { return delAsk(MSG_DEL_PAY, 'g_txns', el.dataset.id); },
+  'init-pick': function (el) { return runSave(function () { return initPick(el.dataset.v); }, 'נשמר'); },
 
   // ── תכנית ──
   'plan-month': function (el) { state.planMonth = shiftMonth(state.planMonth, +el.dataset.d); render(); },

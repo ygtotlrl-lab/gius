@@ -4,7 +4,7 @@ import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthLabel, monthTxns, num,
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthLabel, monthTxnsInit, num,
          pendRowKey, pledgeById, sum, targetFor, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
@@ -68,7 +68,7 @@ function tasksHTML() {
 
 function viewDash() {
   var m = state.month;
-  var txns = monthTxns(m);
+  var txns = monthTxnsInit(m);
   var collected = sum(txns, function (t) { return t.amount; });
   var target = targetFor(m);
   var remaining = Math.max(0, target - collected);
