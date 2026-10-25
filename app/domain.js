@@ -8,7 +8,7 @@ import { MIRROR, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
 import { comboDef, comboHTML, comboSet, esc, lookupList, pullRender, shellBare, toast } from '../core/ui.js';
 import { DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS,
-         MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_NAME, TABLES } from './constants.js';
+         MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_NAME, STAGES, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
 
 // ── סימוני ממתין ──
@@ -122,8 +122,19 @@ function gSortPlan(list) {
   });
 }
 
-// משימות, פתקים והוצאות — בסדר שנקבע, ובשוויון בסדר הרישום.
-function gSortTasks(list) { return list.slice().sort(bySort); }
+// משימות — לפי הסוג (התחום, בסדר הרשימה שבהגדרות; בלי סוג — בסוף), אחר כך לפי השלב (הרצה · השלמה · חסומה),
+// ואז א״ב של שם המשימה; בשוויון — בסדר הרישום.
+function gSortTasks(list) {
+  var doms = lookupLabels('domain');
+  var di = function (t) { var i = t.domain ? doms.indexOf(t.domain) : -1; return i < 0 ? (t.domain ? doms.length : doms.length + 1) : i; };
+  var si = function (t) { for (var i = 0; i < STAGES.length; i++) if (STAGES[i].id === t.stage) return i; return STAGES.length; };
+  return list.slice().sort(function (a, b) {
+    return (di(a) - di(b)) || sortCompare(a.domain || '', b.domain || '') || (si(a) - si(b)) ||
+      sortCompare(a.title || '', b.title || '') || bySort(a, b);
+  });
+}
+
+// פתקים והוצאות — בסדר שנקבע, ובשוויון בסדר הרישום.
 
 function gSortNotes(list) { return list.slice().sort(bySort); }
 
