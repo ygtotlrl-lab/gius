@@ -11,8 +11,8 @@ android {
         applicationId "com.gius.app"
         minSdk 21
         targetSdk 34
-        versionCode 27
-        versionName "18.0"
+        versionCode 28
+        versionName "19.0"
     }
 
     buildTypes {

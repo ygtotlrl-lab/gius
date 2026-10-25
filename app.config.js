@@ -23,8 +23,8 @@ self.APP = Object.freeze({
     // צבע כפתור הניסיון החוזר בדף האופליין של המעטפת
     accent: '#2b4f8a',
     // לעולם אינו יורד — בלי קידום המכשיר המותקן אינו מקבל את ה-APK החדש.
-    versionCode: 27,
-    versionName: '18.0',
+    versionCode: 28,
+    versionName: '19.0',
     launcherBg: { kind: 'solid', color: '#2B4F8A' },
     // FileProvider ו-androidx — רק באפליקציה שמייצאת קובץ
     share: false
