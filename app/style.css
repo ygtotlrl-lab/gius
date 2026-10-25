@@ -326,12 +326,13 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .brk-lab small,.brk-val small{display:block;font-size:var(--fs-1);color:var(--text-3);font-weight:500}
 .brk-val{text-align:end;font-size:var(--fs-3);font-variant-numeric:tabular-nums}
 .who-grid{display:grid;gap:var(--sp-4)}
-.who-card{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-4);text-align:start;cursor:pointer;
+/* השם והשלבים מימין; הסה״כ משמאל, ממורכז לגובה הכרטיס. */
+.who-card{display:flex;align-items:center;gap:var(--sp-5);text-align:start;cursor:pointer;
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-5)}
-.who-card b{flex:1;font-size:var(--fs-4)}
-.who-total{font-size:var(--fs-5);font-weight:800;color:var(--brand-ink)}
-.who-total small{font-size:var(--fs-1);color:var(--text-3);font-weight:600;margin-inline-start:var(--sp-2)}
-.who-stages{display:flex;gap:var(--sp-3);width:100%}
+.who-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-4)}
+.who-card b{font-size:var(--fs-4)}
+.who-total{flex:none;font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);color:var(--brand-ink);font-variant-numeric:tabular-nums}
+.who-stages{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
 .pill{font-size:var(--fs-2);font-weight:700;border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .pill.run{background:var(--warn-soft);color:var(--warn)}
 .pill.done{background:var(--ok-soft);color:var(--ok)}

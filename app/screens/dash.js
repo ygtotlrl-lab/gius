@@ -62,11 +62,11 @@ function tasksHTML() {
     var mine = state.tasks.filter(function (t) { return t.assignee === who; });
     var cnt = function (st) { return mine.filter(function (t) { return t.stage === st; }).length; };
     return '<button class="who-card" data-act="dash-who" data-who="' + esc(who) + '">' +
-      '<b>' + esc(who) + '</b>' +
-      '<span class="who-total">' + mine.length + '<small>משימות</small></span>' +
-      '<span class="who-stages">' + STAGES.slice(0, 2).map(function (s) {
-        return '<span class="pill ' + s.cls + '">' + esc(s.id) + ' · ' + cnt(s.id) + '</span>';
-      }).join('') + '</span></button>';
+      '<span class="who-main"><b>' + esc(who) + '</b>' +
+        '<span class="who-stages">' + STAGES.slice(0, 2).map(function (s) {
+          return '<span class="pill ' + s.cls + '">' + esc(s.id) + ' · ' + cnt(s.id) + '</span>';
+        }).join('') + '</span></span>' +
+      '<span class="who-total" aria-label="' + mine.length + ' משימות">' + mine.length + '</span></button>';
   }).join('') + '</div>';
 }
 
@@ -86,20 +86,20 @@ function viewDash() {
     '</div>' +
     '<div class="gauge-row">' + gaugeHTML(collected, target > 0 ? pct : 0) +
       '<dl class="g-list">' +
-        '<div><dt>מהיעד</dt><dd>' + (target > 0 ? Math.round(pct) + '%' : '—') + '</dd></div>' +
-        '<div><dt>יעד החודש</dt><dd>' + (target > 0 ? ils(target) : 'לא הוגדר') + '</dd></div>' +
-        '<div><dt>נותר ליעד</dt><dd>' + (target > 0 ? ils(remaining) : '—') + '</dd></div>' +
-        '<div><dt>תשלומים</dt><dd>' + txns.length + '</dd></div>' +
+        '<div><dt>אחוזים</dt><dd>' + (target > 0 ? Math.round(pct) + '%' : '—') + '</dd></div>' +
+        '<div><dt>יעד</dt><dd>' + (target > 0 ? ils(target) : 'לא הוגדר') + '</dd></div>' +
+        '<div><dt>סכום שנותר</dt><dd>' + (target > 0 ? ils(remaining) : '—') + '</dd></div>' +
+        '<div><dt>מספר תשלומים</dt><dd>' + txns.length + '</dd></div>' +
       '</dl>' +
     '</div>' +
     '<div class="momentum">' + momentumMsg(target > 0 ? pct : 0) + '</div>' +
   '</section>';
 
   h += '<div class="grid2">' +
-    '<section class="card"><h2>פילוח לפי סעיף</h2>' +
+    '<section class="card"><h2>פילוח סעיפים</h2>' +
       breakdownHTML(groupBy(txns, function (t) { return pledgeField(t, 'section'); }, 'ללא סעיף'), collected) +
     '</section>' +
-    '<section class="card"><h2>פילוח לפי שגריר</h2>' +
+    '<section class="card"><h2>פילוח שגרירים</h2>' +
       breakdownHTML(groupBy(txns, function (t) { return pledgeField(t, 'ambassador'); }, 'ללא שגריר'), collected) +
     '</section>' +
   '</div>';
