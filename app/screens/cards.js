@@ -6,13 +6,15 @@ import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, MSG_AMOUNT_PO
          MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
+import { bar } from '../../core/chart.js';
 import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
          monthKeyOf, statusClass, txnWhen, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
-// הכרטיס נפתח בתוך הרשימה, מתחת לשורה שלו, והרשימה נשארת מעליו ומתחתיו; כרטיס אחד פתוח בכל פעם.
+// אריחים — שלושה בשורה במסך רחב, אחד בטלפון. הכרטיס הפתוח נפרש לכל רוחב הרשת, בשורה שמתחת לאריח שלו
+// (grid-auto-flow: dense — האריחים שאחריו ממלאים את המקומות שנותרו בשורה); כרטיס אחד פתוח בכל פעם.
 // כרטיס כללי (`is_general`) — מגבית, פרויקט או «תורמים לא מזוהים» — תמיד בנפרד, בתחתית הרשימה.
 // במיון לפי שגריר — כותרת לכל שגריר.
 function cardRowsHTML() {
@@ -20,31 +22,45 @@ function cardRowsHTML() {
   if (c.open && !list.some(function (d) { return d.client_id === c.open; })) c.open = null;
   if (!list.length) return emptyBox('🗂', state.donors.length ? 'אין כרטיס התואם את החיפוש' : 'עדיין אין כרטיסים');
   var people = list.filter(function (d) { return !d.is_general; }), general = list.filter(function (d) { return d.is_general; });
-  var h = '', lastAmb = null;
+  // קבוצה — רשת משלה, כדי שהאריחים לא יעברו בין כותרות בזמן שהכרטיס הפתוח נפרש.
+  var groups = [];
   people.forEach(function (d) {
-    if (c.sort === 'amb') {
-      var a = d.ambassador || 'ללא שגריר';
-      if (a !== lastAmb) { h += '<div class="list-sub">' + esc(a) + '</div>'; lastAmb = a; }
-    }
-    h += cardRowHTML(d);
+    var t = c.sort === 'amb' ? (d.ambassador || 'ללא שגריר') : '';
+    if (!groups.length || groups[groups.length - 1].title !== t) groups.push({ title: t, items: [] });
+    groups[groups.length - 1].items.push(d);
   });
-  if (general.length) h += '<div class="list-sub general">כרטיסים כלליים</div>' + general.map(cardRowHTML).join('');
-  return h;
+  if (general.length) groups.push({ title: 'כרטיסים כלליים', items: general, cls: ' general' });
+  return groups.map(function (g) {
+    return (g.title ? '<div class="list-sub' + (g.cls || '') + '">' + esc(g.title) + '</div>' : '') +
+      '<div class="ctiles">' + g.items.map(cardTileHTML).join('') + '</div>';
+  }).join('');
 }
 
-function cardRowHTML(d) {
-  var c = state.cards;
-  var open = d.client_id === c.open, left = donorLeft(d.client_id), total = donorTotal(d.client_id);
-  return '<div class="crow' + (d.starred ? ' star' : '') + (open ? ' open' : '') + '">' +
-    '<div class="row" data-act="card-toggle" data-id="' + esc(d.client_id) + '" aria-expanded="' + open + '">' +
-      '<div class="av">' + esc(initials(d.name)) + '</div>' +
-      '<div class="main"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">★</span> ' : '') + esc(d.name) +
+// גוון הסמל לפי השגריר — אותו שגריר, אותו גוון, בכל הרשימה.
+var AV_TONES = 5;
+function avTone(s) {
+  var h = 0, t = String(s || '');
+  for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 997;
+  return t ? 'tone-' + (h % AV_TONES) : 'tone-none';
+}
+
+function cardTileHTML(d) {
+  var c = state.cards, open = d.client_id === c.open;
+  var left = donorLeft(d.client_id), total = donorTotal(d.client_id), paid = Math.max(0, total - left);
+  var pct = total > 0 ? Math.round(paid / total * 1000) / 10 : 0;
+  var tile = '<button class="ctile' + (d.is_general ? ' general' : '') + (d.starred ? ' star' : '') + (open ? ' open' : '') + '"' +
+      ' data-act="card-toggle" data-id="' + esc(d.client_id) + '" aria-expanded="' + open + '">' +
+    '<span class="ct-hd"><span class="ct-av ' + (d.is_general ? 'tone-gen' : avTone(d.ambassador)) + '">' + esc(initials(d.name)) + '</span>' +
+      '<span class="ct-name"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">★</span> ' : '') + esc(d.name) +
         pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
-        '<small>' + esc([d.role, d.ambassador].filter(Boolean).join(' · ') || d.phone || '—') + '</small></div>' +
-      '<div class="end">' + (total > 0 ? ils(total) + '<small>' + (left > 0 ? 'נותר ' + ils(left) : 'שולם') + '</small>' : '<small>—</small>') + '</div>' +
-    '</div>' +
-    (open ? cardOpenHTML(d) : '') +
-  '</div>';
+        '<small>' + esc(d.ambassador || d.role || '—') + '</small></span></span>' +
+    '<span class="ct-amt"><small>' + (left > 0 ? 'נותר' : total > 0 ? 'שולם במלואו' : 'אין התחייבות') + '</small>' +
+      '<b>' + (left > 0 ? ils(left) : total > 0 ? ils(total) : '—') + '</b></span>' +
+    (total > 0 ? bar(pct) +
+      '<span class="ct-ft"><span>נגבה ' + ils(paid) + ' מתוך ' + ils(total) + '</span>' +
+        '<span>' + pledgesOfDonor(d.client_id).length + ' התחייבויות</span></span>' : '') +
+  '</button>';
+  return tile + (open ? '<div class="ctile-open">' + cardOpenHTML(d) + '</div>' : '');
 }
 
 function viewCards() {

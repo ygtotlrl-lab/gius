@@ -360,6 +360,37 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .seg button small{display:block;font-size:var(--fs-1);color:var(--text-3)}
 .seg-wide{display:flex;width:100%;margin-bottom:var(--sp-6)}
 .seg-wide button{flex:1}
+/* ── אריחי הכרטיסים ── */
+.ctiles{display:grid;grid-template-columns:1fr;gap:var(--sp-5);grid-auto-flow:row dense}
+.ctile-open{grid-column:1 / -1}
+.ctiles + .list-sub{margin-top:var(--sp-6)}
+.list-sub + .ctiles{margin-top:var(--sp-5)}
+.ctile{display:flex;flex-direction:column;gap:var(--sp-5);text-align:start;font:inherit;color:inherit;cursor:pointer;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-6);box-shadow:var(--shadow)}
+.ctile.open{border-color:var(--brand-fill);box-shadow:0 0 0 2px var(--brand-fill)}
+.ctile.star{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.ctile.general{border-style:dashed;border-color:var(--accent-2);box-shadow:none}
+.ct-hd{display:flex;align-items:center;gap:var(--sp-5);min-width:0}
+.ct-av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;font-size:var(--fs-4)}
+.ct-av.tone-0{background:var(--brand-soft);color:var(--brand-ink)}
+.ct-av.tone-1{background:var(--ok-soft);color:var(--ok)}
+.ct-av.tone-2{background:var(--accent-2-soft);color:var(--warn)}
+.ct-av.tone-3{background:var(--nc-plum);color:var(--text)}
+.ct-av.tone-4{background:var(--nc-sky);color:var(--text)}
+.ct-av.tone-none{background:var(--border-2);color:var(--text-2)}
+.ct-av.tone-gen{border-radius:var(--r-4);background:var(--accent-2-soft);color:var(--warn)}
+.ct-name{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.ct-name b{font-size:var(--fs-4);font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-name small{font-size:var(--fs-2);color:var(--text-3)}
+.ct-amt{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-4)}
+.ct-amt small{font-size:var(--fs-2);color:var(--text-3)}
+.ct-amt b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums}
+.ctile .btrack{background:var(--brand-soft)}
+.ct-ft{display:flex;justify-content:space-between;gap:var(--sp-4);font-size:var(--fs-2);color:var(--text-3)}
+.ctile-open > .copen{margin:0}
+@media (hover:hover){.ctile:hover{border-color:var(--brand-fill)}}
+@media (min-width:640px){.ctiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:900px){.ctiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .crow{border-bottom:1px solid var(--border-2)}
 .crow:last-child{border-bottom:0}
 .crow > .row{border-bottom:0}

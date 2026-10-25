@@ -71,11 +71,11 @@ function bySort(a, b) {
   return ((+a.sort || 0) - (+b.sort || 0)) || sortCompare(String(a.created_at || ''), String(b.created_at || ''));
 }
 
-// כרטיסים — לפי סכום ההתחייבויות מהגבוה (ברירת המחדל), לפי א״ב, או לפי שגריר ובתוכו לפי סכום;
-// בכל שוויון — א״ב. כרטיס בלי שגריר בסוף מיון השגרירים.
+// כרטיסים — לפי הסכום שנותר לגבות, מהגבוה (ברירת המחדל; הוא המספר שעל האריח), לפי א״ב, או לפי שגריר
+// ובתוכו לפי הנותר; בכל שוויון — א״ב. כרטיס בלי שגריר בסוף מיון השגרירים.
 function gSortDonors(list, mode) {
   var tot = {};
-  var total = function (d) { return tot[d.client_id] != null ? tot[d.client_id] : (tot[d.client_id] = donorTotal(d.client_id)); };
+  var total = function (d) { return tot[d.client_id] != null ? tot[d.client_id] : (tot[d.client_id] = donorLeft(d.client_id)); };
   return list.slice().sort(function (a, b) {
     if (mode === 'amb') {
       var aa = a.ambassador || '', ba = b.ambassador || '';
