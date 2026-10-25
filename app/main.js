@@ -430,6 +430,12 @@ document.addEventListener('change', function (e) {
   var el = e.target;
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
+  // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
+  if (el.dataset.chg === 'when-date') {
+    var mInp = document.getElementById(el.dataset.m);
+    if (mInp && el.value) mInp.value = monthKeyOf(el.value);
+    return;
+  }
   // שייכות — סימון ישיר בכרטיס הפתוח, נשמר בשינוי.
   if (el.dataset.chg === 'aff') {
     var d = donorById(el.dataset.id);

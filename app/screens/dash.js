@@ -4,8 +4,8 @@ import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
-import { dmyDate, donorName, emptyBox, gSortGroups, gSortTxns, ils, monthLabel, monthTxns, num,
-         pendRowKey, pledgeById, sum, targetFor } from '../domain.js';
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthLabel, monthTxns, num,
+         pendRowKey, pledgeById, sum, targetFor, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
 function momentumMsg(pct) {
@@ -110,7 +110,7 @@ function viewDash() {
     var p = pledgeById(t.pledge_client_id);
     return '<div class="row' + (t.cleared ? '' : ' uncleared') + '" data-act="card-go" data-id="' + esc(t.donor_client_id) + '">' +
       '<div class="main"><b>' + esc(donorName(t.donor_client_id)) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
-      '<small>' + esc(dmyDate(t.txn_date)) + ' · ' + esc((p && (p.pledge_type || p.section)) || '—') +
+      '<small>' + esc(txnWhen(t)) + ' · ' + esc((p && (p.pledge_type || p.section)) || '—') +
         (t.method ? ' · ' + esc(t.method) : '') + (t.cleared ? '' : ' · טרם נסלק') + '</small></div>' +
       '<div class="end">' + ils(t.amount) + '</div></div>';
   }).join('');

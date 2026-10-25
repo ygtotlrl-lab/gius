@@ -89,7 +89,9 @@ function gSortNames(list) {
 
 // תשלומים — החדש ראשון.
 function gSortTxns(list) {
-  return list.slice().sort(function (a, b) { return sortCompare(b.txn_date || '', a.txn_date || ''); });
+  return list.slice().sort(function (a, b) {
+    return sortCompare(b.txn_month || '', a.txn_month || '') || sortCompare(b.txn_date || '', a.txn_date || '');
+  });
 }
 
 // התחייבויות — בסדר הרישום.
@@ -447,7 +449,14 @@ function donorPaid(id) { return sum(txnsOfDonor(id), function (t) { return t.amo
 
 function donorLeft(id) { return sum(pledgesOfDonor(id), function (p) { return leftForPledge(p); }); }
 
-function monthTxns(m) { return state.txns.filter(function (t) { return monthKeyOf(t.txn_date) === m; }); }
+// החודש של תשלום — שדה משלו ולא נגזר מהתאריך: תשלום בלי תאריך עדיין שייך לחודש שבו נרשם.
+function monthTxns(m) { return state.txns.filter(function (t) { return t.txn_month === m; }); }
+
+// מתי — התאריך, ובלעדיו החודש; תשלום בלי חודש הוא מה שנגבה לפני המעבר לאפליקציה.
+function txnWhen(t) {
+  if (t.txn_date) return dmyDate(t.txn_date);
+  return t.txn_month ? monthLabel(t.txn_month) : 'לפני המעבר';
+}
 
 // היעד הקבוע — מפתח בטבלת ההגדרות, וחל על כל חודש שאין לו יעד משלו.
 var TARGET_DEFAULT_KEY = 'target_default';
@@ -466,7 +475,7 @@ function targetFor(m) { var t = targetOwn(m); return t ? num(t.amount) : targetD
 
 // «בפועל» בשורת תכנית — התשלומים של הכרטיס בחודש התכנית; נגזר ואינו מוקלד.
 function planActual(it) {
-  return sum(txnsOfDonor(it.donor_client_id).filter(function (t) { return monthKeyOf(t.txn_date) === it.plan_month; }),
+  return sum(txnsOfDonor(it.donor_client_id).filter(function (t) { return t.txn_month === it.plan_month; }),
              function (t) { return t.amount; });
 }
 
@@ -599,4 +608,4 @@ export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDa
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, monthLabel, monthTxns, nextSort, nullable,
          num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
          rowPendingKey, selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow,
-         tableMeta, TARGET_DEFAULT_KEY, targetDefault, targetFor, targetOwn, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };
+         tableMeta, TARGET_DEFAULT_KEY, txnWhen, targetDefault, targetFor, targetOwn, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };

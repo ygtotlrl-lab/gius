@@ -314,7 +314,8 @@ create table if not exists public.g_txns (
   donor_client_id text not null,
   pledge_client_id text not null,
   amount numeric(14,2) not null default 0,
-  txn_date date not null default CURRENT_DATE,
+  txn_month text,
+  txn_date date,
   method text,
   cleared boolean not null default false,
   note text,
@@ -324,6 +325,7 @@ create table if not exists public.g_txns (
   updated_at bigint not null,
   deleted_by text,
   constraint g_txns_pkey PRIMARY KEY (client_id),
+  constraint g_txns_txn_month_check CHECK ((txn_month IS NULL) OR (txn_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text)),
   constraint g_txns_donor_client_id_fkey FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT,
   constraint g_txns_pledge_client_id_fkey FOREIGN KEY (pledge_client_id) REFERENCES g_pledges(client_id) ON DELETE RESTRICT
 );
@@ -402,7 +404,7 @@ create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (k
 create index if not exists g_pledges_donor_full_idx ON public.g_pledges USING btree (donor_client_id);
 create index if not exists g_pledges_live_idx ON public.g_pledges USING btree (deleted, donor_client_id);
 create index if not exists g_tasks_stage_idx ON public.g_tasks USING btree (deleted, stage);
-create index if not exists g_txns_date_idx ON public.g_txns USING btree (deleted, txn_date);
+create index if not exists g_txns_month_idx ON public.g_txns USING btree (deleted, txn_month);
 create index if not exists g_txns_donor_full_idx ON public.g_txns USING btree (donor_client_id);
 create index if not exists g_txns_pledge_full_idx ON public.g_txns USING btree (pledge_client_id);
 create index if not exists g_plan_items_month_idx ON public.g_plan_items USING btree (plan_month);

@@ -3,12 +3,12 @@ import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, MSG_AMOUNT_POSITIVE,
-         MSG_NEED_DATE, MSG_NEED_NAME, MSG_PICK_TYPE } from '../constants.js';
+         MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
 import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
-         statusClass, txnsOfPledge, update, val } from '../domain.js';
+         monthKeyOf, statusClass, txnWhen, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
 // הכרטיס נפתח בתוך הרשימה, מתחת לשורה שלו, והרשימה נשארת מעליו ומתחתיו; כרטיס אחד פתוח בכל פעם.
@@ -115,7 +115,7 @@ function pledgeRowHTML(p) {
     '</div>' +
     (tx.length ? '<div class="pays">' + tx.map(function (t) {
       return '<button class="pay' + (t.cleared ? '' : ' uncleared') + '" data-act="pay-edit" data-id="' + esc(t.client_id) + '">' +
-        '<span>' + esc(dmyDate(t.txn_date)) + '</span><span>' + esc(t.method || '—') + '</span>' +
+        '<span>' + esc(txnWhen(t)) + '</span><span>' + esc(t.method || '—') + '</span>' +
         '<span class="pay-cl">' + (t.cleared ? '✓ נסלק' : 'טרם נסלק') + '</span>' +
         pendTag(pendRowKey('g_txns', t.client_id)) +
         '<b>' + ils(t.amount) + '</b></button>';
@@ -166,8 +166,8 @@ function formPledge(p, donorId) {
     '<label class="fld"><span>שגריר</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), '— ללא —') + '</label>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>';
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now"><span>תרומה חד-פעמית — שולמה עכשיו</span></label>' +
-    '<div class="f2"><label class="fld"><span>תאריך התשלום</span><input class="inp" type="date" id="p-date" value="' + dayToday() + '"></label>' +
-    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label></div>';
+    whenHTML('p', null) +
+    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label>';
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="pledge-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
@@ -181,13 +181,31 @@ function savePledge(id, donorId) {
   var row = { section: nullable(val('p-section')), pledge_type: type, detail: nullable(val('p-detail')),
               ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')) };
   if (id) return update('g_pledges', id, row);
-  var now = checked('p-now'), date = val('p-date');
-  if (now && !date) { toast(MSG_NEED_DATE, null, 'bad'); return; }
+  var now = checked('p-now'), when = now ? readWhen('p') : null;
+  if (now && !when) return;
   return insert('g_pledges', Object.assign(row, { donor_client_id: donorId })).then(function (p) {
     if (!now) return p;
     return insert('g_txns', { donor_client_id: donorId, pledge_client_id: p.client_id, amount: amount,
-                              txn_date: date, method: nullable(val('p-method')), cleared: false });
+                              txn_month: when.txn_month, txn_date: when.txn_date,
+                              method: nullable(val('p-method')), cleared: false });
   });
+}
+
+// ── חודש ותאריך ──
+// החודש חובה ובברירת המחדל החודש הנוכחי; התאריך רשות, וכשממולא — החודש עובר אחריו.
+function whenHTML(px, t) {
+  var m = t ? (t.txn_month || '') : monthKeyOf(dayToday());
+  return '<div class="f2">' +
+    '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="' + px + '-month" value="' + esc(m) + '"></label>' +
+    '<label class="fld"><span>תאריך</span><input class="inp" type="date" id="' + px + '-date" data-chg="when-date" data-m="' + px + '-month" value="' + esc(t && t.txn_date ? t.txn_date : '') + '"></label>' +
+  '</div>';
+}
+
+// פיירפוקס נופל לטקסט ב-type=month — החודש נבדק כאן ולא נסמך על הדפדפן.
+function readWhen(px) {
+  var date = val(px + '-date'), m = date ? monthKeyOf(date) : val(px + '-month');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return null; }
+  return { txn_month: m, txn_date: date || null };
 }
 
 // ── תשלום ──
@@ -196,10 +214,8 @@ function formPay(t, pledgeId) {
   if (!p) return;
   var amt = t ? t.amount : (leftForPledge(p) || '');
   openModal((t ? 'עריכת תשלום — ' : 'תשלום — ') + (p.pledge_type || ''),
-    '<div class="f2">' +
-      '<label class="fld"><span>תאריך *</span><input class="inp" type="date" id="t-date" value="' + esc(t ? t.txn_date : dayToday()) + '"></label>' +
-      '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"></label>' +
-    '</div>' +
+    '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"></label>' +
+    whenHTML('t', t) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('t-method', lookupLabels(LK_METHOD), t ? t.method : '', 'אמצעי') + '</label>' +
     '<label class="fld chk"><input type="checkbox" id="t-cleared"' + (t && t.cleared ? ' checked' : '') + '><span>סליקה בפועל</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -210,10 +226,11 @@ function formPay(t, pledgeId) {
 function savePay(id, pledgeId) {
   var p = pledgeById(pledgeId);
   if (!p) return;
-  var date = val('t-date'), amount = readNum($('#t-amount'), 0);
-  if (!date) { toast(MSG_NEED_DATE, null, 'bad'); return; }
+  var amount = readNum($('#t-amount'), 0);
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
-  var row = { txn_date: date, amount: amount, method: nullable(val('t-method')), cleared: checked('t-cleared') };
+  var when = readWhen('t');
+  if (!when) return;
+  var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: nullable(val('t-method')), cleared: checked('t-cleared') };
   if (id) return update('g_txns', id, row);
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
