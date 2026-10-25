@@ -20,6 +20,8 @@
   --warn:#8a5a0b; --warn-soft:#fbf0da;
   --bad:#b3361e; --bad-soft:#f8e1da;
   --gold:#a8760a; --gold-soft:#f7ecc9;
+  /* צהוב־חרדל לשלב 25–50% במד — צהוב בהיר אינו נקרא על לבן. */
+  --stage-low:#b58a00;
   --radius:22px; --radius-sm:var(--r-4);
   --shadow:0 1px 2px rgba(30,38,51,.05), 0 8px 24px rgba(30,38,51,.06);
   --shadow-lg:0 12px 40px rgba(30,38,51,.18);
@@ -41,6 +43,7 @@
       --warn:#e8b25c; --warn-soft:#352a17;
       --bad:#f08a72; --bad-soft:#3a1f19;
       --gold:#e6c35c; --gold-soft:#352d15;
+      --stage-low:#e8c547;
       --nc-sand:#3a3024; --nc-terra:#43281f; --nc-sage:#2c3324; --nc-sky:#243139; --nc-rose:#3d262a; --nc-plum:#342b39;
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
       --shadow-lg:0 12px 40px rgba(0,0,0,.5);
@@ -112,7 +115,8 @@ main{padding:var(--sp-6); padding-bottom:calc(var(--tabbar-h) + var(--sp-6) + en
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
   padding:var(--sp-6);box-shadow:var(--shadow);margin-bottom:var(--sp-6)}
 main .card:last-child{margin-bottom:0}
-.card > h2{font-size:var(--fs-4);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-5)}
+/* כותרת כרטיס — גדולה, כבדה ובכחול הזהות, כדי שלא תיבלע בתוכן שמתחתיה. */
+.card > h2{font-size:var(--fs-5);font-weight:800;color:var(--brand-ink);letter-spacing:var(--ls-n1);display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-6)}
 .card > h2 .cnt{
   font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text-3);
   border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
@@ -268,7 +272,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   font-size:clamp(28px,9vw,44px);font-weight:800;letter-spacing:var(--ls-n2);line-height:var(--lh-1);font-variant-numeric:tabular-nums}
 /* צבע הנגבה לפי שלב ההתקדמות — אותם ספים כמו הודעת המומנטום. */
 .gauge-val.st-start{color:var(--bad)}
-.gauge-val.st-low{color:var(--warn)}
+.gauge-val.st-low{color:var(--stage-low)}
 .gauge-val.st-mid{color:var(--brand-ink)}
 .gauge-val.st-done{color:var(--ok)}
 .g-list{margin:0;display:flex;flex-direction:column}
