@@ -117,7 +117,10 @@ main .card:last-child{margin-bottom:0}
   font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text-3);
   border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .card > h2 .sp{margin-inline-start:auto;font-weight:500;font-size:var(--fs-3);color:var(--text-3)}
-.grid2{display:grid;gap:var(--sp-6)}
+/* בתוך רשת — הרווח של הרשת בלבד; אחרת הכרטיס האחרון מאבד את שוליו ונדבק לשורה שמתחת. */
+.grid2{display:grid;gap:var(--sp-6);margin-bottom:var(--sp-6)}
+.grid2 > .card{margin-bottom:0}
+main .grid2:last-child{margin-bottom:0}
 .empty{color:var(--text-3);text-align:center;padding:var(--sp-7) var(--sp-5);font-size:var(--fs-3)}
 .empty .big{font-size:var(--fs-6);display:block;margin-bottom:var(--sp-3);opacity:var(--op-5)}
 
@@ -254,19 +257,23 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .load-err-card h1{font-size:var(--fs-6);letter-spacing:var(--ls-n1)}
 .load-err-card .sub{color:var(--text-3);font-size:var(--fs-3);margin:var(--sp-2) 0 var(--sp-7)}
 /* ── בית ──
-   מתחת לנקודת השבירה הטבעת נערמת מעל המחוונים — אחרת «100,000 ₪» נשבר בין שורות. */
-.hero{display:flex;flex-direction:column;gap:var(--sp-6);align-items:center}
-.ring{width:132px;height:132px;flex:none}
-.ring circle{fill:none;stroke-width:11;stroke-linecap:round}
-.ring .bg{stroke:var(--border)}
-.ring .fg{stroke:var(--brand-ink);transform:rotate(-90deg);transform-origin:50% 50%;
-  transition:stroke-dasharray var(--dur-5) var(--ease)}
-.ring-wrap{position:relative;flex:none}
-.ring-val{
-  position:absolute;inset:0;display:grid;place-content:center;text-align:center
-}
-.ring-val b{font-size:var(--fs-6);letter-spacing:var(--ls-n2);display:block;line-height:var(--lh-1)}
-.ring-val span{font-size:var(--fs-1);color:var(--text-3);font-weight:600}
+   המד בחצי עיגול במרכז, «נותר» ו«תשלומים» משני צדיו; בטלפון הם יורדים לשורה מתחתיו. */
+.gauge-row{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"g g" "a b";gap:var(--sp-4) var(--sp-6);align-items:end}
+.gauge{grid-area:g;position:relative;width:100%;max-width:400px;justify-self:center}
+.gauge svg{display:block;width:100%;height:auto}
+.gauge path{fill:none;stroke-width:30;stroke-linecap:round}
+.gauge .bg{stroke:var(--brand-soft)}
+.gauge .fg{stroke:var(--brand-fill);transition:stroke-dasharray var(--dur-5) var(--ease)}
+.gauge-val{position:absolute;inset-inline:0;bottom:2%;display:flex;flex-direction:column;align-items:center;gap:var(--sp-1);text-align:center}
+.gauge-val span{font-size:var(--fs-2);color:var(--text-3);font-weight:600}
+.gauge-val b{font-size:clamp(26px,8vw,40px);font-weight:800;letter-spacing:var(--ls-n2);line-height:var(--lh-1);font-variant-numeric:tabular-nums}
+.gauge-val small{font-size:var(--fs-2);color:var(--brand-ink);font-weight:700}
+.g-side{display:flex;flex-direction:column;gap:var(--sp-1);padding-bottom:var(--sp-3)}
+.g-side:first-child{grid-area:a}
+.g-side.end{grid-area:b;align-items:flex-end}
+.g-side span{font-size:var(--fs-2);color:var(--text-3);font-weight:600}
+.g-side b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums}
+.g-side b.warn{color:var(--warn)}
 .hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
 .stat{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5)}
 .stat span{display:block;font-size:var(--fs-2);color:var(--text-3);font-weight:600;margin-bottom:var(--sp-1)}
@@ -274,9 +281,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .stat.ok b{color:var(--ok)} 
 .stat.warn b{color:var(--warn)}
 .momentum{
-  margin-top:var(--sp-6);background:var(--brand-soft);color:var(--brand-ink);
+  margin-top:var(--sp-6);background:var(--brand-fill);color:var(--on-brand);
   border-radius:var(--radius-sm);padding:var(--sp-5) var(--sp-6);font-weight:700;text-align:center;font-size:var(--fs-4)}
-.monthnav{display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-6)}
+.monthnav{display:flex;align-items:center;justify-content:center;gap:var(--sp-4);margin-bottom:var(--sp-6)}
 .monthnav b{font-size:var(--fs-4);min-width:130px;text-align:center}
 .monthnav .grow{margin-inline-start:auto}
 
@@ -461,7 +468,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   main{padding:var(--sp-7);padding-bottom:var(--sp-7)}
 }
 @media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
-@media (min-width:640px){.hero{flex-direction:row;gap:var(--sp-6)}}
+@media (min-width:640px){.gauge-row{grid-template-columns:1fr minmax(0,400px) 1fr;grid-template-areas:"a g b";max-width:760px;margin-inline:auto}}
 @media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
 @media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
 @media (min-width:640px){.notes{grid-template-columns:1fr 1fr}}

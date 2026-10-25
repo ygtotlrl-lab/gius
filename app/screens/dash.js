@@ -16,15 +16,19 @@ function momentumMsg(pct) {
   return '🚀 מתחילים!';
 }
 
-function ringHTML(pct) {
-  var R = 52, C = 2 * Math.PI * R;
-  var dash = C * Math.max(0, Math.min(100, pct)) / 100;
-  return '<div class="ring-wrap">' +
-    '<svg class="ring" viewBox="0 0 120 120" aria-hidden="true">' +
-      '<circle class="bg" cx="60" cy="60" r="' + R + '"></circle>' +
-      '<circle class="fg" cx="60" cy="60" r="' + R + '" stroke-dasharray="' + dash.toFixed(1) + ' ' + C.toFixed(1) + '"></circle>' +
+// מד בחצי עיגול שמתמלא מימין לשמאל, כיוון הקריאה; הנגבה במרכזו. מעל 100% הקשת נשארת מלאה.
+var GAUGE_LEN = Math.PI * 170;
+function gaugeHTML(m, collected, target, pct) {
+  var fill = GAUGE_LEN * Math.max(0, Math.min(100, pct)) / 100;
+  var arc = 'M370,200 A170,170 0 0 0 30,200';
+  return '<div class="gauge">' +
+    '<svg viewBox="0 0 400 220" aria-hidden="true">' +
+      '<path class="bg" d="' + arc + '"></path>' +
+      (fill > 0 ? '<path class="fg" d="' + arc + '" stroke-dasharray="' + fill.toFixed(1) + ' ' + GAUGE_LEN.toFixed(1) + '"></path>' : '') +
     '</svg>' +
-    '<div class="ring-val"><b>' + Math.round(pct) + '%</b><span>מהיעד</span></div>' +
+    '<div class="gauge-val"><span>נגבה ב' + esc(monthLabel(m).split(' ')[0]) + '</span>' +
+      '<b>' + ils(collected) + '</b>' +
+      '<small>' + (target > 0 ? Math.round(pct) + '% מתוך ' + ils(target) : 'לא הוגדר יעד') + '</small></div>' +
   '</div>';
 }
 
@@ -80,13 +84,10 @@ function viewDash() {
       '<b>' + esc(monthLabel(m)) + '</b>' +
       '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">‹</button>' +
     '</div>' +
-    '<div class="hero">' + ringHTML(pct) +
-      '<div class="hero-stats">' +
-        '<div class="stat"><span>יעד החודש</span><b>' + (target > 0 ? ils(target) : '— לא הוגדר —') + '</b></div>' +
-        '<div class="stat ok"><span>נגבה</span><b>' + ils(collected) + '</b></div>' +
-        '<div class="stat warn"><span>נותר</span><b>' + (target > 0 ? ils(remaining) : '—') + '</b></div>' +
-        '<div class="stat"><span>תשלומים</span><b>' + txns.length + '</b></div>' +
-      '</div>' +
+    '<div class="gauge-row">' +
+      '<div class="g-side"><span>נותר ליעד</span><b class="warn">' + (target > 0 ? ils(remaining) : '—') + '</b></div>' +
+      gaugeHTML(m, collected, target, pct) +
+      '<div class="g-side end"><span>תשלומים</span><b>' + txns.length + '</b></div>' +
     '</div>' +
     '<div class="momentum">' + momentumMsg(target > 0 ? pct : 0) + '</div>' +
   '</section>';
