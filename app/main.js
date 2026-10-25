@@ -192,11 +192,13 @@ function markSVG(cls) {
 }
 
 function renderShell() {
-  var tabsHTML = TABS.map(function (t) {
-    return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
+  // המשניים נצבעים גם הם, ומוצגים רק במסך רחב — שם «עוד» נעלם והסרגל פורס את כל המסכים.
+  var tabsHTML = TABS.concat(MORE).map(function (t) {
+    var cls = (state.screen === t.id ? 'on' : '') + (inMore(t.id) ? ' wide-only' : '');
+    return '<button data-act="tab" data-tab="' + t.id + '" class="' + cls.trim() + '">' +
       '<span class="ic">' + icon(t.ic) + '</span><span>' + t.label + '</span></button>';
   }).join('') +
-    '<button data-act="more" class="' + (inMore(state.screen) ? 'on' : '') + '" aria-haspopup="dialog">' +
+    '<button data-act="more" class="narrow-only' + (inMore(state.screen) ? ' on' : '') + '" aria-haspopup="dialog">' +
       '<span class="ic">' + icon('more') + '</span><span>' + (inMore(state.screen) ? esc(tabOf(state.screen).label) : 'עוד') + '</span></button>';
   var t = tabOf(state.screen);
 

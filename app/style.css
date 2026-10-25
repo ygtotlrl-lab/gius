@@ -82,6 +82,9 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 .brand svg{width:26px;height:26px;flex:none}
 .brand-t{display:flex;flex-direction:column;line-height:var(--lh-2)}
 .brand-t small{font-weight:600;color:var(--text-3);font-size:var(--fs-1)}
+/* רוחב קבוע לשם המסך — שם ארוך או קצר אינו מזיז את סרגל הניווט שלצדו. */
+.brand-t{width:9.5em;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabbar .wide-only{display:none}
 .tabbar{
   position:fixed;inset-inline:0;bottom:0;z-index:var(--z-2);
   max-width:var(--col);margin-inline:auto;
@@ -433,6 +436,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .reload-btn{margin-top:var(--sp-6)}
 
 /* ── נקודות שבירה ── */
+/* מסך רחב — כל המסכים בסרגל, בלי «עוד». */
+@media (min-width:1100px){
+  .tabbar .wide-only{display:flex}
+  .tabbar .narrow-only{display:none}
+}
 @media (min-width:900px){
   .tabbar{
       position:static;display:flex;gap:var(--sp-2);border:0;background:none;padding:0;height:auto;
