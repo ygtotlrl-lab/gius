@@ -5,6 +5,7 @@ import { esc, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB, MSG_PLEDGE_NO_AMB,
          MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
@@ -12,34 +13,51 @@ import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMat
 
 // ── הרשימה ──
 // הכרטיס נפתח בתוך הרשימה, מתחת לשורה שלו, והרשימה נשארת מעליו ומתחתיו; כרטיס אחד פתוח בכל פעם.
+// כרטיס כללי (`is_general`) — מגבית, פרויקט או «תורמים לא מזוהים» — תמיד בנפרד, בתחתית הרשימה.
+// במיון לפי שגריר — כותרת לכל שגריר.
 function cardRowsHTML() {
   var c = state.cards, list = donorMatches(c.q, c.aff, c.sort);
   if (c.open && !list.some(function (d) { return d.client_id === c.open; })) c.open = null;
   if (!list.length) return emptyBox('🗂', state.donors.length ? 'אין כרטיס התואם את החיפוש' : 'עדיין אין כרטיסים');
-  return list.map(function (d) {
-    var open = d.client_id === c.open, left = donorLeft(d.client_id);
-    return '<div class="crow' + (d.starred ? ' star' : '') + (open ? ' open' : '') + '">' +
-      '<div class="row" data-act="card-toggle" data-id="' + esc(d.client_id) + '" aria-expanded="' + open + '">' +
-        '<div class="av">' + esc(initials(d.name)) + '</div>' +
-        '<div class="main"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">★</span> ' : '') + esc(d.name) +
-          pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
-          '<small>' + esc([d.role, d.ambassador].filter(Boolean).join(' · ') || d.phone || '—') + '</small></div>' +
-        '<div class="end">' + (left > 0 ? ils(left) + '<small>נותר</small>' : '<small>—</small>') + '</div>' +
-      '</div>' +
-      (open ? cardOpenHTML(d) : '') +
-    '</div>';
-  }).join('');
+  var people = list.filter(function (d) { return !d.is_general; }), general = list.filter(function (d) { return d.is_general; });
+  var h = '', lastAmb = null;
+  people.forEach(function (d) {
+    if (c.sort === 'amb') {
+      var a = d.ambassador || 'ללא שגריר';
+      if (a !== lastAmb) { h += '<div class="list-sub">' + esc(a) + '</div>'; lastAmb = a; }
+    }
+    h += cardRowHTML(d);
+  });
+  if (general.length) h += '<div class="list-sub general">כרטיסים כלליים</div>' + general.map(cardRowHTML).join('');
+  return h;
+}
+
+function cardRowHTML(d) {
+  var c = state.cards;
+  var open = d.client_id === c.open, left = donorLeft(d.client_id), total = donorTotal(d.client_id);
+  return '<div class="crow' + (d.starred ? ' star' : '') + (open ? ' open' : '') + '">' +
+    '<div class="row" data-act="card-toggle" data-id="' + esc(d.client_id) + '" aria-expanded="' + open + '">' +
+      '<div class="av">' + esc(initials(d.name)) + '</div>' +
+      '<div class="main"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">★</span> ' : '') + esc(d.name) +
+        pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
+        '<small>' + esc([d.role, d.ambassador].filter(Boolean).join(' · ') || d.phone || '—') + '</small></div>' +
+      '<div class="end">' + (total > 0 ? ils(total) + '<small>' + (left > 0 ? 'נותר ' + ils(left) : 'שולם') + '</small>' : '<small>—</small>') + '</div>' +
+    '</div>' +
+    (open ? cardOpenHTML(d) : '') +
+  '</div>';
 }
 
 function viewCards() {
   var c = state.cards, affs = lookupLabels(LK_AFFIL);
   return '<section class="card cards-tools">' +
-      '<input aria-label="חיפוש כרטיס" class="inp search" id="cards-q" data-inp="cards-q" placeholder="חיפוש לפי שם, טלפון, תפקיד או שגריר…" value="' + esc(c.q) + '">' +
+      '<label class="search-box"><input aria-label="חיפוש לפי שם" class="inp search" id="cards-q" data-inp="cards-q" placeholder="חיפוש לפי שם" value="' + esc(c.q) + '">' +
+        '<span class="search-ic">' + icon('search') + '</span></label>' +
       '<div class="tools-row">' +
-        selectHTML('cards-aff', affs, c.aff, 'כל השייכויות', 'cards-aff') +
+        selectHTML('cards-aff', affs, c.aff, 'אפשרויות סינון', 'cards-aff') +
         '<div class="seg" role="group" aria-label="מיון">' +
-          '<button class="' + (c.sort === 'abc' ? 'on' : '') + '" data-act="cards-sort" data-v="abc">א״ב</button>' +
-          '<button class="' + (c.sort === 'left' ? 'on' : '') + '" data-act="cards-sort" data-v="left">לפי נותר</button>' +
+          [['abc', 'סדר'], ['sum', 'סכום'], ['amb', 'שגריר']].map(function (o) {
+            return '<button class="' + (c.sort === o[0] ? 'on' : '') + '" data-act="cards-sort" data-v="' + o[0] + '">' + o[1] + '</button>';
+          }).join('') +
         '</div>' +
       '</div>' +
     '</section>' +
@@ -135,7 +153,8 @@ function formDonor(d) {
       '<label class="fld"><span>תפקיד</span><input class="inp" id="d-role" value="' + esc(d ? d.role || '' : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>טלפון</span><input class="inp" id="d-phone" inputmode="tel" value="' + esc(d ? d.phone || '' : '') + '"></label>' +
-    '<label class="fld"><span>הערות</span><textarea class="inp" id="d-notes">' + esc(d ? d.notes || '' : '') + '</textarea></label>',
+    '<label class="fld"><span>הערות</span><textarea class="inp" id="d-notes">' + esc(d ? d.notes || '' : '') + '</textarea></label>' +
+    '<label class="fld chk"><input type="checkbox" id="d-general"' + (d && d.is_general ? ' checked' : '') + '><span>כרטיס כללי — מגבית, פרויקט וכדומה; מוצג בנפרד בתחתית הרשימה</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="donor-save" data-id="' + esc(d ? d.client_id : '') + '" data-ksave>שמירה</button>');
   var n = $('#d-name'); if (n && !d) n.focus();
@@ -145,7 +164,8 @@ function saveDonor(id) {
   var name = val('d-name');
   if (!name) { toast(MSG_NEED_NAME, null, 'bad'); return; }
   var row = { name: name, ambassador: nullable(val('d-amb')), birth_date: nullable(val('d-birth')),
-              role: nullable(val('d-role')), phone: nullable(val('d-phone')), notes: nullable(val('d-notes')) };
+              role: nullable(val('d-role')), phone: nullable(val('d-phone')), notes: nullable(val('d-notes')),
+              is_general: checked('d-general') };
   if (id) return update('g_donors', id, row);
   return insert('g_donors', Object.assign(row, { affiliations: [], starred: false })).then(function (d) {
     state.cards.open = d.client_id;

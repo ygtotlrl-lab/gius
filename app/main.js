@@ -226,7 +226,7 @@ function go(screen) {
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') state.planMonth = m;
-  if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'abc', open: null };
+  if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'sum', open: null };
   if (screen === 'tasks') state.tasks_ui.stage = null;
   closeModal();
   render();

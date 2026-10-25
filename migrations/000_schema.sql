@@ -226,6 +226,8 @@ create table if not exists public.g_donors (
   notes text,
   affiliations text[] not null default '{}'::text[],
   starred boolean not null default false,
+  -- כרטיס כללי — מגבית, פרויקט, «תורמים לא מזוהים»; מוצג בנפרד בתחתית רשימת הכרטיסים.
+  is_general boolean not null default false,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),

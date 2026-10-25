@@ -9,6 +9,7 @@ var PATHS = {
   notes:    '<path d="M6 4h12a2 2 0 0 1 2 2v8.5L14.5 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M20 14.5h-3.5a2 2 0 0 0-2 2V20"/><path d="M8 9h8M8 12.5h5"/>',
   loans:    '<path d="M4 8h13"/><path d="M14 4.5L17.5 8 14 11.5"/><path d="M20 16H7"/><path d="M10 12.5L6.5 16l3.5 3.5"/>',
   budget:   '<path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/>',
+  search:   '<circle cx="10.8" cy="10.8" r="6.3"/><path d="M15.6 15.6l4.6 4.6"/>',
   settings: '<path d="M4 6h8.5M16.5 6H20M4 12h2.5M10.5 12H20M4 18h6.5M14.5 18H20"/><circle cx="14.5" cy="6" r="2"/><circle cx="8.5" cy="12" r="2"/><circle cx="12.5" cy="18" r="2"/>'
 };
 

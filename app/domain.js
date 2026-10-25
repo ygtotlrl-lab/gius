@@ -71,11 +71,20 @@ function bySort(a, b) {
   return ((+a.sort || 0) - (+b.sort || 0)) || sortCompare(String(a.created_at || ''), String(b.created_at || ''));
 }
 
-// כרטיסים — לפי א״ב, או לפי היתרה מהגבוהה לנמוכה ובשוויון לפי א״ב.
+// כרטיסים — לפי סכום ההתחייבויות מהגבוה (ברירת המחדל), לפי א״ב, או לפי שגריר ובתוכו לפי סכום;
+// בכל שוויון — א״ב. כרטיס בלי שגריר בסוף מיון השגרירים.
 function gSortDonors(list, mode) {
+  var tot = {};
+  var total = function (d) { return tot[d.client_id] != null ? tot[d.client_id] : (tot[d.client_id] = donorTotal(d.client_id)); };
   return list.slice().sort(function (a, b) {
-    if (mode === 'left') {
-      var d = donorLeft(b.client_id) - donorLeft(a.client_id);
+    if (mode === 'amb') {
+      var aa = a.ambassador || '', ba = b.ambassador || '';
+      if (!aa !== !ba) return aa ? -1 : 1;
+      var c = sortCompare(aa, ba);
+      if (c) return c;
+    }
+    if (mode !== 'abc') {
+      var d = total(b) - total(a);
       if (Math.abs(d) > EPS) return d;
     }
     return sortCompare(a.name || '', b.name || '');
@@ -593,15 +602,12 @@ function viewBare(html) {
   $('#view').innerHTML = html;
 }
 
-// חיפוש וסינון הכרטיסים — לפי שם, טלפון, תפקיד או שגריר, ולפי שייכות.
+// חיפוש וסינון הכרטיסים — לפי שם, ולפי שייכות.
 function donorMatches(q, aff, mode) {
   q = String(q || '').trim().toLowerCase();
   var list = state.donors.filter(function (d) {
     if (aff && (d.affiliations || []).indexOf(aff) < 0) return false;
-    if (!q) return true;
-    return [d.name, d.phone, d.role, d.ambassador].some(function (v) {
-      return String(v || '').toLowerCase().indexOf(q) >= 0;
-    });
+    return !q || String(d.name || '').toLowerCase().indexOf(q) >= 0;
   });
   return gSortDonors(list, mode);
 }

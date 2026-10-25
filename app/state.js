@@ -26,7 +26,7 @@ var state = {
   donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
   notes: [], loans: [], budget: [],
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
-  cards: { q: '', aff: '', sort: 'abc', open: null },
+  cards: { q: '', aff: '', sort: 'sum', open: null },
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
   tasks_ui: { who: ASSIGNEES[0], stage: null }
 };
