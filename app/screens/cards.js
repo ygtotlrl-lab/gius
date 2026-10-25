@@ -2,7 +2,7 @@
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, MSG_AMOUNT_POSITIVE,
+import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB, MSG_PLEDGE_NO_AMB,
          MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
 import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMatches, donorPaid,
@@ -154,7 +154,7 @@ function saveDonor(id) {
 }
 
 // ── התחייבות ──
-// השגריר נלקח מהכרטיס וניתן לשינוי; תרומה חד-פעמית — התחייבות ותשלום מלא באותה שמירה.
+// השגריר חובה — נלקח מהכרטיס וניתן לשינוי; תרומה חד-פעמית — התחייבות ותשלום מלא באותה שמירה.
 function formPledge(p, donorId) {
   var d = donorById(p ? p.donor_client_id : donorId);
   if (!d) return;
@@ -164,7 +164,7 @@ function formPledge(p, donorId) {
       '<label class="fld"><span>סכום *</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p ? p.amount : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
-    '<label class="fld"><span>שגריר</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), '— ללא —') + '</label>' +
+    '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>' +
     '<label class="fld"><span>יזום</span><select class="inp" id="p-init">' +
       [['', '— טרם הוגדר —'], ['1', 'כן — יזום'], ['0', 'לא יזום']].map(function (o) {
@@ -184,6 +184,7 @@ function savePledge(id, donorId) {
   var type = val('p-type'), amount = readNum($('#p-amount'), 0);
   if (!type) { toast(MSG_PICK_TYPE, null, 'bad'); return; }
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+  if (!val('p-amb')) { toast(MSG_PICK_AMB, null, 'bad'); return; }
   var row = { section: nullable(val('p-section')), pledge_type: type, detail: nullable(val('p-detail')),
               ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')),
               initiated: initVal(val('p-init')) };
@@ -256,6 +257,8 @@ function formPay(t, pledgeId) {
 function savePay(id, pledgeId) {
   var p = pledgeById(pledgeId);
   if (!p) return;
+  // כל תשלום נושא שגריר — דרך ההתחייבות שלו.
+  if (!p.ambassador) { toast(MSG_PLEDGE_NO_AMB, null, 'bad'); return; }
   var amount = readNum($('#t-amount'), 0);
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
   var when = readWhen('t');
