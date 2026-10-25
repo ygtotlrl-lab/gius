@@ -476,7 +476,12 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   main{padding:var(--sp-7);padding-bottom:var(--sp-7)}
 }
 @media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
-@media (min-width:640px){.gauge-row{grid-template-columns:minmax(0,400px) minmax(0,300px);justify-content:center;gap:var(--sp-7)}}
+/* מסך רחב — המד במרכז הכרטיס, והרשימה צמודה לשוליים השמאליים (העמודה השלישית ב-RTL). */
+@media (min-width:900px){
+  .gauge-row{grid-template-columns:1fr minmax(0,400px) 1fr;gap:var(--sp-6)}
+  .gauge{grid-column:2}
+  .g-list{grid-column:3;justify-self:end;width:min(100%,280px)}
+}
 @media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
 @media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
 @media (min-width:640px){.notes{grid-template-columns:1fr 1fr}}
