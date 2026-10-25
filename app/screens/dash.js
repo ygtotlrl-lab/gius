@@ -4,7 +4,7 @@ import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthLabel, monthTxnsInit, num,
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, initials, monthLabel, monthTxnsInit, num,
          pendRowKey, pledgeById, sum, targetFor, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
@@ -103,17 +103,21 @@ function viewDash() {
   h += '<section class="card"><h2>משימות</h2>' + tasksHTML() + '</section>';
 
   // תשלום שלא סומן «סליקה בפועל» — שקוף מעט; הוא נספר בנגבה כמו כל תשלום.
-  var list = gSortTxns(txns);
+  // שלושה אחרונים, והשאר בלחיצה — הרשימה המלאה ארוכה מדי לראש הלוח.
+  var list = gSortTxns(txns), shown = state.dashPayAll ? list : list.slice(0, 3);
   h += '<section class="card"><h2>תשלומי החודש<span class="cnt">' + list.length + '</span></h2>';
   if (!list.length) h += emptyBox('💰', 'אין תשלומים בחודש זה');
-  else h += list.map(function (t) {
-    var p = pledgeById(t.pledge_client_id);
+  else h += shown.map(function (t) {
+    var p = pledgeById(t.pledge_client_id), nm = donorName(t.donor_client_id);
     return '<div class="row' + (t.cleared ? '' : ' uncleared') + '" data-act="card-go" data-id="' + esc(t.donor_client_id) + '">' +
-      '<div class="main"><b>' + esc(donorName(t.donor_client_id)) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
+      '<span class="av">' + esc(initials(nm)) + '</span>' +
+      '<div class="main"><b>' + esc(nm) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
       '<small>' + esc(txnWhen(t)) + ' · ' + esc((p && (p.pledge_type || p.section)) || '—') +
         (t.method ? ' · ' + esc(t.method) : '') + (t.cleared ? '' : ' · טרם נסלק') + '</small></div>' +
       '<div class="end">' + ils(t.amount) + '</div></div>';
   }).join('');
+  if (list.length > 3) h += '<button class="btn ghost pay-more" data-act="dash-pay-all" aria-expanded="' + (state.dashPayAll ? 'true' : 'false') + '">' +
+    (state.dashPayAll ? 'הצג פחות ▴' : 'הצג את כל ' + list.length + ' התשלומים ▾') + '</button>';
   h += '</section>';
   return h;
 }

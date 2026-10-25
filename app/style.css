@@ -10,20 +10,20 @@
      הדיו שעל --brand הוא צמד הפוך, ומתחלף איתו יחד. */
   --brand:var(--brand-fill); --on-brand:#ffffff;
 
-  /* «חם — חול וטרקוטה»: רקע חולי, כרטיסים שמנתיים, טרקוטה לזהות וענבר משלים. */
-  --bg:#f7f1e8; --card:#fffaf3; --card-2:#f9f2e7;
-  --text:#3a2a1e; --text-2:#6b5646; --text-3:#8a7462;
-  --border:#efe3d2; --border-2:#f4eadc;
-  --brand-ink:#b8432c; --brand-fill:#c8553d; --brand-soft:#f6e0d6;
-  --accent-2:#e0a458; --accent-2-soft:#f8ead3;
-  --ok:#4f7a3a; --ok-soft:#e7efdc;
-  --warn:#a8670f; --warn-soft:#f8ead3;
+  /* «כחול אמון»: הכחול של סמל רמת אביב לזהות, זהב לנדיבות ולהישג, רקע אפרפר-כחלחל וכרטיסים לבנים. */
+  --bg:#f3f5f9; --card:#ffffff; --card-2:#f6f8fb;
+  --text:#1e2633; --text-2:#4c5669; --text-3:#6b7486;
+  --border:#e1e7f0; --border-2:#eaeef4;
+  --brand-ink:#24467d; --brand-fill:#2b4f8a; --brand-soft:#e4ebf6;
+  --accent-2:#d9a13b; --accent-2-soft:#fbf0da;
+  --ok:#2f7a4b; --ok-soft:#e3f1e8;
+  --warn:#8a5a0b; --warn-soft:#fbf0da;
   --bad:#b3361e; --bad-soft:#f8e1da;
-  --gold:#b8860b; --gold-soft:#f7ecc9;
+  --gold:#a8760a; --gold-soft:#f7ecc9;
   --radius:22px; --radius-sm:var(--r-4);
-  --shadow:0 1px 2px rgba(58,42,30,.05), 0 8px 24px rgba(58,42,30,.06);
-  --shadow-lg:0 12px 40px rgba(58,42,30,.18);
-  --shadow-brand:rgba(200,85,61,.42);
+  --shadow:0 1px 2px rgba(30,38,51,.05), 0 8px 24px rgba(30,38,51,.06);
+  --shadow-lg:0 12px 40px rgba(30,38,51,.18);
+  --shadow-brand:rgba(43,79,138,.42);
   --nc-sand:#f4e9d6; --nc-terra:#f6dccf; --nc-sage:#e3ead6; --nc-sky:#dde8ee; --nc-rose:#f5dde0; --nc-plum:#e8dfec;
 }
 
@@ -32,12 +32,12 @@
     :root{
       --on-brand:#ffffff;
 
-      --bg:#1e1814; --card:#29211b; --card-2:#30271f;
-      --text:#f3e9de; --text-2:#d8c8b6; --text-3:#a8927e;
-      --border:#3d3128; --border-2:#342a22;
-      --brand-ink:#e9846c; --brand-fill:#b8432c; --brand-soft:#3b231b;
-      --accent-2:#e0a458; --accent-2-soft:#3a2c18;
-      --ok:#9cc483; --ok-soft:#232c1b;
+      --bg:#12171f; --card:#1a212c; --card-2:#202835;
+      --text:#e8edf5; --text-2:#c2cbd9; --text-3:#97a2b4;
+      --border:#2a3444; --border-2:#232c3a;
+      --brand-ink:#9cb9ea; --brand-fill:#3a64a8; --brand-soft:#1e2b42;
+      --accent-2:#e3b04b; --accent-2-soft:#3a2e14;
+      --ok:#8fd0a5; --ok-soft:#18291f;
       --warn:#e8b25c; --warn-soft:#352a17;
       --bad:#f08a72; --bad-soft:#3a1f19;
       --gold:#e6c35c; --gold-soft:#352d15;
@@ -146,6 +146,7 @@ tbody tr.click{cursor:pointer}
   border-bottom:1px solid var(--border-2);cursor:pointer
 }
 .row:last-child{border-bottom:0}
+.pay-more{display:block;width:100%;margin-top:var(--sp-4);color:var(--brand-ink);font-weight:700}
 .row .av{
   width:37px;height:37px;border-radius:var(--r-4);flex:none;display:grid;place-items:center;
   background:var(--brand-soft);color:var(--brand-ink);font-weight:800;font-size:var(--fs-3)}

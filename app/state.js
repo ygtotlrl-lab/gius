@@ -20,6 +20,8 @@ const S = {
 var state = {
   screen: 'dash',
   month: '',
+  // תשלומי החודש בלוח — שלושה אחרונים, או כולם אחרי «הצג את כל»; מתאפס בכל מעבר חודש.
+  dashPayAll: false,
   planMonth: '',
   donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
   notes: [], loans: [], budget: [],

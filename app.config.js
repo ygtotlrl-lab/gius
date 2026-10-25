@@ -6,9 +6,9 @@ self.APP = Object.freeze({
   shortName: 'גיוס',
   description: 'ניהול כרטיסים, התחייבויות, תשלומים, תכנית ומשימות גיוס כספים.',
   prefix: 'g_',
-  colors: { theme: '#c8553d', background: '#f7f1e8' },
+  colors: { theme: '#2b4f8a', background: '#f3f5f9' },
   // דף האופליין של ה-service worker — הכהה לפי אסימוני הערכה הכהה של האפליקציה
-  offline: { light: { bg: '#f7f1e8', ink: '#3a2a1e' }, dark: { bg: '#1e1814', ink: '#f3e9de' }, mark: '📴' },
+  offline: { light: { bg: '#f3f5f9', ink: '#1e2633' }, dark: { bg: '#12171f', ink: '#e8edf5' }, mark: '📴' },
   // מפתח anon ציבורי ולא מפתח שירות — ההרשאות נאכפות במסד.
   supabase: {
     url: 'https://zrftjkghhjhqzopvdzou.supabase.co',
@@ -21,11 +21,11 @@ self.APP = Object.freeze({
     // משפט שלם ולא שם בלבד — הפועל מתאים למין השם
     offlineLine: 'גיוס לא הצליח להתחבר.',
     // צבע כפתור הניסיון החוזר בדף האופליין של המעטפת
-    accent: '#c8553d',
+    accent: '#2b4f8a',
     // לעולם אינו יורד — בלי קידום המכשיר המותקן אינו מקבל את ה-APK החדש.
     versionCode: 27,
     versionName: '18.0',
-    launcherBg: { kind: 'solid', color: '#C8553D' },
+    launcherBg: { kind: 'solid', color: '#2B4F8A' },
     // FileProvider ו-androidx — רק באפליקציה שמייצאת קובץ
     share: false
   },

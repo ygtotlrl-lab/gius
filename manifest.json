@@ -7,14 +7,14 @@
   "start_url": "./index.html",
   "scope": "/gius/",
   "display": "standalone",
-  "background_color": "#f7f1e8",
-  "theme_color": "#c8553d",
+  "background_color": "#f3f5f9",
+  "theme_color": "#2b4f8a",
   "lang": "he",
   "dir": "rtl",
   "orientation": "portrait",
   "icons": [
-    { "src": "icons/icon-192.3a82c56c.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.47d21aa1.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-maskable-512.20271e57.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/icon-192.e44ab5b9.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.0ed0bb3c.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.1d8b3d4b.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
