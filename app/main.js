@@ -226,7 +226,7 @@ function go(screen) {
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') state.planMonth = m;
-  if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'sum', open: null };
+  if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' };
   if (screen === 'tasks') state.tasks_ui.stage = null;
   closeModal();
   render();
@@ -295,8 +295,10 @@ var DOM_ACTIONS = {
   'cards-sort': function (el) { state.cards.sort = el.dataset.v; render(); },
   'card-toggle': function (el) {
     state.cards.open = state.cards.open === el.dataset.id ? null : el.dataset.id;
+    state.cards.tab = 'pl';
     cardsRefresh();
   },
+  'card-tab': function (el) { state.cards.tab = el.dataset.v; cardsRefresh(); },
   'card-close': function () { state.cards.open = null; cardsRefresh(); },
   'card-star': function (el) {
     var d = donorById(el.dataset.id);
