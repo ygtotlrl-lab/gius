@@ -150,14 +150,17 @@ function gSortEvents(list) { return list.slice().sort(bySort); }
 // בלי ערך — בסוף, ובכל שוויון — א״ב.
 function gSortLoans(list, mode) {
   var st = function (l) { var i = LOAN_STATUSES.indexOf(l.status); return i < 0 ? LOAN_STATUSES.length : i; };
+  // תאריך מלא, או חודש בלבד — והחודש נמדד מתחילתו.
+  var when = function (l, k) { return l[k + '_date'] || (l[k + '_month'] ? l[k + '_month'] + '-01' : ''); };
   var dt = function (a, b, k, dir) {
-    if (!a[k] || !b[k]) return (a[k] ? 0 : 1) - (b[k] ? 0 : 1);
-    return dir * sortCompare(a[k], b[k]);
+    var x = when(a, k), y = when(b, k);
+    if (!x || !y) return (x ? 0 : 1) - (y ? 0 : 1);
+    return dir * sortCompare(x, y);
   };
   return list.slice().sort(function (a, b) {
     var r = 0;
-    if (mode === 'taken') r = dt(a, b, 'taken_date', -1);
-    else if (mode === 'end') r = dt(a, b, 'last_check_date', 1);
+    if (mode === 'taken') r = dt(a, b, 'taken', -1);
+    else if (mode === 'end') r = dt(a, b, 'last_check', 1);
     else if (mode === 'status') r = st(a) - st(b);
     return r || sortCompare(a.lender || '', b.lender || '');
   });
