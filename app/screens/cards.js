@@ -51,7 +51,7 @@ function cardTileHTML(d) {
   var tile = '<button class="ctile' + (d.is_general ? ' general' : '') + (d.starred ? ' star' : '') + (open ? ' open' : '') + '"' +
       ' data-act="card-toggle" data-id="' + esc(d.client_id) + '" aria-expanded="' + open + '">' +
     '<span class="ct-hd"><span class="ct-av ' + (d.is_general ? 'tone-gen' : avTone(d.ambassador)) + '">' + esc(initials(d.name)) + '</span>' +
-      '<span class="ct-name"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">★</span> ' : '') + esc(d.name) +
+      '<span class="ct-name"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">' + icon('star') + '</span> ' : '') + esc(d.name) +
         pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
         '<small>' + esc(d.ambassador || d.role || '—') + '</small></span></span>' +
     '<span class="ct-amt"><small>' + (left > 0 ? 'נותר' : total > 0 ? 'שולם במלואו' : 'אין התחייבות') + '</small>' +
@@ -95,8 +95,8 @@ function cardOpenHTML(d) {
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3><div class="cp-chips">' +
         (d.ambassador ? '<span>שגריר: ' + esc(d.ambassador) + '</span>' : '') +
         '<span>' + pl.length + ' התחייבויות</span></div></div>' +
-      '<button class="cp-btn star' + (d.starred ? ' on' : '') + '" data-act="card-star" data-id="' + id + '" aria-pressed="' + !!d.starred + '" aria-label="כוכב">' + (d.starred ? '★' : '☆') + '</button>' +
-      '<button class="cp-btn" data-act="card-close" aria-label="סגירה">✕</button>' +
+      '<button class="cp-btn star' + (d.starred ? ' on' : '') + '" data-act="card-star" data-id="' + id + '" aria-pressed="' + !!d.starred + '" aria-label="כוכב">' + icon('star') + '</button>' +
+      '<button class="cp-btn" data-act="card-close" aria-label="סגירה">' + icon('close') + '</button>' +
     '</div>' +
     '<div class="cp-kpis">' +
       '<div><span>התחייב</span><b>' + ils(total) + '</b></div>' +
@@ -107,7 +107,7 @@ function cardOpenHTML(d) {
       [['pl', 'התחייבויות · ' + pl.length], ['tx', 'תשלומים · ' + tx.length], ['info', 'פרטים']].map(function (t) {
         return '<button role="tab" class="' + (tab === t[0] ? 'on' : '') + '" aria-selected="' + (tab === t[0]) + '" data-act="card-tab" data-v="' + t[0] + '">' + t[1] + '</button>';
       }).join('') +
-      '<button class="btn sm" data-act="pledge-new" data-donor="' + id + '">＋ התחייבות</button>' +
+      '<button class="btn sm" data-act="pledge-new" data-donor="' + id + '">' + icon('plus') + 'התחייבות</button>' +
     '</div><div class="cp-body">';
 
   if (tab === 'pl') {

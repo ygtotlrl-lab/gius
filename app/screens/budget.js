@@ -4,6 +4,7 @@ import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
 import { MSG_NEED_EVENT_NAME, MSG_NEED_ITEM } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { $, dmyDate, emptyBox, gSortBudget, gSortEvents, ils, insert, nextSort, nullable, pendRowKey, sum, uniqSorted,
          update, val } from '../domain.js';
 
@@ -13,7 +14,7 @@ function itemsOf(evId) { return gSortBudget(state.budget.filter(function (b) { r
 function viewBudget() {
   var evs = gSortEvents(state.events);
   var h = '<section class="card"><h2>אירועים<span class="cnt">' + evs.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="event-new">＋ אירוע</button></span></h2>';
+    '<span class="sp"><button class="btn sm" data-act="event-new">' + icon('plus') + 'אירוע</button></span></h2>';
   if (!evs.length) return h + emptyBox('🎉', 'אין עדיין אירועים') + '</section>';
   h += '<div class="evs">' + evs.map(function (e) {
     var items = itemsOf(e.client_id), open = state.budgetOpen === e.client_id, id = esc(e.client_id);
@@ -23,7 +24,7 @@ function viewBudget() {
         '<span class="ev-name"><b>' + esc(e.name) + pendTag(pendRowKey('g_events', e.client_id)) + '</b>' +
           '<small>' + esc([e.event_date ? dmyDate(e.event_date) : '', items.length + ' הוצאות', e.note].filter(Boolean).join(' · ')) + '</small></span>' +
         '<span class="ev-total">' + ils(total) + '</span>' +
-        '<span class="ev-chev" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>' +
+        '<span class="ev-chev" aria-hidden="true">' + icon(open ? 'up' : 'down') + '</span>' +
       '</button>';
     if (open) {
       r += '<div class="ev-body">' +
@@ -35,7 +36,7 @@ function viewBudget() {
         }).join('') + '<div class="total-row"><span>סה״כ</span><b>' + ils(total) + '</b></div>'
         : emptyBox('🧾', 'אין עדיין הוצאות באירוע')) +
         '<div class="btnrow ev-acts">' +
-          '<button class="btn sm" data-act="budget-new" data-event="' + id + '">＋ הוצאה</button>' +
+          '<button class="btn sm" data-act="budget-new" data-event="' + id + '">' + icon('plus') + 'הוצאה</button>' +
           '<button class="btn ghost sm" data-act="event-edit" data-id="' + id + '">עריכת האירוע</button>' +
         '</div></div>';
     }

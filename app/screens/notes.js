@@ -3,12 +3,13 @@ import { pendTag } from '../../core/sync.js';
 import { dragDef, dragOrder, esc } from '../../core/ui.js';
 import { NOTE_COLORS } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { $, emptyBox, gSortNotes, insert, nextSort, pendRowKey, update, val } from '../domain.js';
 
 function viewNotes() {
   var list = gSortNotes(state.notes);
   var h = '<section class="card"><h2>רשומות<span class="cnt">' + list.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="note-new">＋ פתק</button></span></h2>';
+    '<span class="sp"><button class="btn sm" data-act="note-new">' + icon('plus') + 'פתק</button></span></h2>';
   if (!list.length) return h + emptyBox('✎', 'אין עדיין רשומות') + '</section>';
   h += '<div class="notes">' + list.map(function (n) {
     return '<article class="note-card nc-' + esc(n.color || NOTE_COLORS[0]) + '" data-drag="note" data-id="' + esc(n.client_id) + '">' +
@@ -46,7 +47,7 @@ function formNote(n) {
   el.setAttribute('aria-label', n ? 'עריכת פתק' : 'פתק חדש');
   el.innerHTML = '<div class="nf-in">' +
     '<div class="nf-bar">' +
-      '<button class="nf-btn" data-act="note-close" aria-label="סגירה ושמירה">✕</button>' +
+      '<button class="nf-btn" data-act="note-close" aria-label="סגירה ושמירה">' + icon('close') + '</button>' +
       '<span class="nf-grow"></span>' +
       (n ? '<button class="nf-btn nf-del" data-act="note-del" data-id="' + esc(n.client_id) + '">מחיקה</button>' : '') +
     '</div>' +

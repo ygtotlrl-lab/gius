@@ -4,6 +4,7 @@ import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
 import { LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_NEED_NAME } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { $, dmyDate, emptyBox, gSortLoans, ils, insert, nullable, pendRowKey, sum, update, val } from '../domain.js';
 
 // תאריך מלא, או חודש בלבד כשהיום אינו ידוע.
@@ -30,7 +31,7 @@ function viewLoans() {
       return '<button class="' + (state.loansSort === o[0] ? 'on' : '') + '" data-act="loans-sort" data-v="' + o[0] + '">' + o[1] + '</button>';
     }).join('') + '</div></div></section>' +
     '<section class="card"><h2>הלוואות<span class="cnt">' + list.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="loan-new">＋ הלוואה</button></span></h2>';
+    '<span class="sp"><button class="btn sm" data-act="loan-new">' + icon('plus') + 'הלוואה</button></span></h2>';
   if (!list.length) return h + emptyBox('⇄', 'אין הלוואות רשומות') + '</section>';
   h += list.map(function (l) {
     return '<div class="row" data-act="loan-edit" data-id="' + esc(l.client_id) + '">' +

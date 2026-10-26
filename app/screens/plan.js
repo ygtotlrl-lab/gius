@@ -5,6 +5,7 @@ import { pendTag } from '../../core/sync.js';
 import { comboValue, esc, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { $, dmyDate, donorById, donorFieldHTML, donorName, emptyBox, gSortPlan, ils, insert,
          lookupLabels, monthLabel, nextSort, nullable, pendRowKey, planActual, planOfMonth,
          selectHTML, sum, update, val } from '../domain.js';
@@ -15,9 +16,9 @@ function viewPlan() {
   var exp = sum(live, function (r) { return r.expected; }), act = sum(live, planActual);
   var h = '<section class="card">' +
     '<div class="monthnav">' +
-      '<button class="btn ghost sm" data-act="plan-month" data-d="-1" aria-label="חודש קודם">›</button>' +
+      '<button class="btn ghost sm" data-act="plan-month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
       '<b>' + esc(monthLabel(m)) + '</b>' +
-      '<button class="btn ghost sm" data-act="plan-month" data-d="1" aria-label="חודש הבא">‹</button>' +
+      '<button class="btn ghost sm" data-act="plan-month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
     '</div>' +
     '<div class="hero-stats stats-3">' +
       '<div class="stat"><span>שורות</span><b>' + live.length + '</b></div>' +
@@ -27,7 +28,7 @@ function viewPlan() {
   '</section>';
 
   h += '<section class="card"><h2>התכנית<span class="cnt">' + list.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="plan-new">＋ שורה</button></span></h2>';
+    '<span class="sp"><button class="btn sm" data-act="plan-new">' + icon('plus') + 'שורה</button></span></h2>';
   if (!list.length) h += emptyBox('🗓', 'אין עדיין שורות בתכנית של החודש');
   else {
     // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה.

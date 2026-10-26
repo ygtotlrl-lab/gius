@@ -3,6 +3,7 @@ import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../
 import { readNum } from '../../core/util.js';
 import { KV_TABLE, LISTS, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { $, TARGET_DEFAULT_KEY, emptyBox, ils, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
          targetDefault, targetOwn, upsertBy, val } from '../domain.js';
 
@@ -17,7 +18,7 @@ function lookupShown(l) {
 function lookupCardHTML(l) {
   var rows = lookupShown(l);
   var h = '<section class="card look-card"><h2>' + esc(l.title) + '<span class="cnt">' + rows.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="look-add" data-k="' + esc(l.kind) + '">＋ ' + esc(l.one) + '</button></span></h2>';
+    '<span class="sp"><button class="btn sm" data-act="look-add" data-k="' + esc(l.kind) + '">' + icon('plus') + esc(l.one) + '</button></span></h2>';
   if (!rows.length) return h + emptyBox('📋', 'הרשימה ריקה') + '</section>';
   return h + '<div class="look-list">' + rows.map(function (r) {
     return '<div class="list-item" data-act="look-edit" data-k="' + esc(l.kind) + '" data-drag="' + esc(l.kind) + '" data-id="' + esc(r.client_id) + '">' +
@@ -42,7 +43,7 @@ function viewSettings() {
       '<div class="main"><b>יעד קבוע</b><small>חל על כל חודש שאין לו יעד משלו</small></div>' +
       '<div class="end">' + (dflt > 0 ? ils(dflt) : '— לא הוגדר —') + '</div></div>' +
     '<div class="sec-t tg-own">חודשים עם יעד משלהם<span class="cnt">' + tg.length + '</span>' +
-      '<button class="btn sm" data-act="target-set">＋ יעד לחודש</button></div>';
+      '<button class="btn sm" data-act="target-set">' + icon('plus') + 'יעד לחודש</button></div>';
   if (!tg.length) h += '<div class="hint">אין — כל החודשים ביעד הקבוע.</div>';
   else h += tg.map(function (t) {
     var got = sum(monthTxnsInit(t.target_month), monthAmount);

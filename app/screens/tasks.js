@@ -36,7 +36,7 @@ function taskRowHTML(t) {
     '<div class="end">' + (t.due_date ? '<span class="badge">' + esc(dmyDate(t.due_date)) + '</span>' : '') +
       (made ? '<small>נוצרה ' + esc(made) + '</small>' : '') + '</div>' +
     '<button class="task-star' + (t.starred ? ' on' : '') + '" data-act="task-star" data-id="' + esc(t.client_id) +
-      '" aria-pressed="' + !!t.starred + '" aria-label="עדיפות">' + (t.starred ? '★' : '☆') + '</button>' +
+      '" aria-pressed="' + !!t.starred + '" aria-label="עדיפות">' + icon('star') + '</button>' +
   '</div>';
 }
 

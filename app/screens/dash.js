@@ -4,6 +4,7 @@ import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
+import { icon } from '../icons.js';
 import { donorName, emptyBox, gSortGroups, gSortTxns, ils, initials, monthAmount, monthLabel, monthTxnsInit,
          pendRowKey, pledgeById, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
@@ -80,9 +81,9 @@ function viewDash() {
 
   var h = '<section class="card">' +
     '<div class="monthnav">' +
-      '<button class="btn ghost sm" data-act="month" data-d="-1" aria-label="חודש קודם">›</button>' +
+      '<button class="btn ghost sm" data-act="month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
       '<b>' + esc(monthLabel(m)) + '</b>' +
-      '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">‹</button>' +
+      '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
     '</div>' +
     '<div class="gauge-row">' + gaugeHTML(collected, target > 0 ? pct : 0) +
       '<dl class="g-list">' +
@@ -122,7 +123,7 @@ function viewDash() {
       '<div class="end">' + ils(monthAmount(t)) + '</div></div>';
   }).join('');
   if (list.length > 3) h += '<button class="btn ghost pay-more" data-act="dash-pay-all" aria-expanded="' + (state.dashPayAll ? 'true' : 'false') + '">' +
-    (state.dashPayAll ? 'הצג פחות ▴' : 'הצג את כל ' + list.length + ' התשלומים ▾') + '</button>';
+    (state.dashPayAll ? 'הצג פחות' + icon('up') : 'הצג את כל ' + list.length + ' התשלומים' + icon('down')) + '</button>';
   h += '</section>';
   return h;
 }
