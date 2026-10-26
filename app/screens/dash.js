@@ -4,8 +4,8 @@ import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, initials, monthLabel, monthTxnsInit, num,
-         pendRowKey, pledgeById, sum, targetFor, txnWhen } from '../domain.js';
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, initials, monthAmount, monthLabel, monthTxnsInit,
+         pendRowKey, pledgeById, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
 function momentumMsg(pct) {
@@ -38,7 +38,7 @@ function groupBy(list, pick, fallback) {
   list.forEach(function (t) {
     var k = String(pick(t) || '').trim() || fallback;
     if (!map[k]) { map[k] = { key: k, total: 0, count: 0 }; order.push(k); }
-    map[k].total += num(t.amount);
+    map[k].total += monthAmount(t);
     map[k].count++;
   });
   return gSortGroups(order.map(function (k) { return map[k]; }));
@@ -73,7 +73,7 @@ function tasksHTML() {
 function viewDash() {
   var m = state.month;
   var txns = monthTxnsInit(m);
-  var collected = sum(txns, function (t) { return t.amount; });
+  var collected = sum(txns, monthAmount);
   var target = targetFor(m);
   var remaining = Math.max(0, target - collected);
   var pct = target > 0 ? collected / target * 100 : 0;
@@ -117,8 +117,9 @@ function viewDash() {
       '<span class="av">' + esc(initials(nm)) + '</span>' +
       '<div class="main"><b>' + esc(nm) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
       '<small>' + esc(txnWhen(t)) + ' · ' + esc((p && (p.pledge_type || p.section)) || '—') +
-        (t.method ? ' · ' + esc(t.method) : '') + (t.cleared ? '' : ' · טרם נסלק') + '</small></div>' +
-      '<div class="end">' + ils(t.amount) + '</div></div>';
+        (t.method ? ' · ' + esc(t.method) : '') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') +
+        (t.cleared ? '' : ' · טרם נסלק') + '</small></div>' +
+      '<div class="end">' + ils(monthAmount(t)) + '</div></div>';
   }).join('');
   if (list.length > 3) h += '<button class="btn ghost pay-more" data-act="dash-pay-all" aria-expanded="' + (state.dashPayAll ? 'true' : 'false') + '">' +
     (state.dashPayAll ? 'הצג פחות ▴' : 'הצג את כל ' + list.length + ' התשלומים ▾') + '</button>';

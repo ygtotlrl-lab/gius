@@ -30,7 +30,7 @@ var LISTS = [
            'הוראת קבע', 'מגבית', 'חוב ישן', 'כללי', 'מפטיר יונה', 'כל נדרי', 'פתיחת נעילה', 'חתן תורה',
            'פתיחת הגשם', 'קופת צדקה', 'מקווה'] },
   { kind: LK_METHOD, title: 'אמצעי תשלום', one: 'אמצעי',
-    dflt: ['העברה בנקאית', 'צ׳ק', 'ביט ופייבוקס', 'מזומן', 'אשראי'] },
+    dflt: ['העברה בנקאית', 'צ׳ק', 'ביט ופייבוקס', 'מזומן', 'אשראי', 'הו״ק'] },
   { kind: LK_AFFIL, title: 'שייכויות', one: 'שייכות',
     dflt: ['קיץ פ״ו', 'דינר פ״ז', 'מכירת מצוות פ״ז', 'אנשי מפתח', 'אגודת הנשים'] },
   { kind: LK_AMBASSADOR, title: 'שגרירים', one: 'שגריר', dflt: [] },
@@ -86,6 +86,9 @@ var MSG_PICK_TYPE = '⚠️ נא לבחור סוג';
 var MSG_PICK_AMB = '⚠️ נא לבחור שגריר';
 var MSG_PLEDGE_NO_AMB = '⚠️ להתחייבות אין שגריר — יש לבחור אותו בעריכת ההתחייבות';
 var MSG_AMOUNT_POSITIVE = '⚠️ נא להזין סכום גדול מאפס';
+var MSG_SO_COUNT = '⚠️ מספר הפעימות — 2 לפחות';
+// האמצעי שפותח את הפעימות — שורה ברשימת האמצעים, והתשלום עצמו מסווג לפי installments ולא לפי התווית.
+var METHOD_SO = 'הו״ק';
 var MSG_NEED_DATE = '⚠️ נא לבחור תאריך';
 var MSG_PICK_VALID_MONTH = '⚠️ נא לבחור חודש תקין';
 var MSG_DONOR_CREATED = 'הכרטיס נוצר';
@@ -135,7 +138,7 @@ var EPS = 0.005;
 
 export { ASSIGNEES, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LK_AFFIL, LK_AMBASSADOR,
          LK_DOMAIN, LK_METHOD, LK_PTYPE, LK_SECTION, LOAN_STATUSES, MORE,
-         MSG_AMOUNT_POSITIVE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_EVENT, MSG_NEED_EVENT_NAME, MSG_DEL_LOAN,
+         METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_SO_COUNT, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_EVENT, MSG_NEED_EVENT_NAME, MSG_DEL_LOAN,
          MSG_DEL_LOOKUP, MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT,
          MSG_DEL_TASK, MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_MONTH_GOAL, MSG_NEED_DATE,
          MSG_NEED_ITEM, MSG_NEED_NAME, MSG_NEED_TITLE, MSG_NEED_VALUE, MSG_PICK_AMB, MSG_PICK_DONOR,

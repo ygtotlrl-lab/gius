@@ -2,15 +2,15 @@
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB, MSG_PLEDGE_NO_AMB,
-         MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH } from '../constants.js';
+import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
+         MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
 import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
-         lookupLabels, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
-         monthKeyOf, statusClass, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
+         lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
+         monthKeyOf, statusClass, txnSoLabel, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
 // אריחים — שלושה בשורה במסך רחב, אחד בטלפון. הכרטיס הפתוח נפרש לכל רוחב הרשת, בשורה שמתחת לאריח שלו
@@ -117,7 +117,7 @@ function cardOpenHTML(d) {
       var p = pledgeById(t.pledge_client_id);
       return '<button class="pay' + (t.cleared ? '' : ' uncleared') + '" data-act="pay-edit" data-id="' + esc(t.client_id) + '">' +
         '<span>' + esc(txnWhen(t)) + '</span><span>' + esc((p && (p.pledge_type || p.section)) || '—') + '</span>' +
-        '<span>' + esc(t.method || '—') + '</span>' +
+        '<span>' + esc(t.method || '—') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') + '</span>' +
         '<span class="pay-cl">' + (t.cleared ? '✓ נסלק' : 'טרם נסלק') + '</span>' +
         pendTag(pendRowKey('g_txns', t.client_id)) +
         '<b>' + ils(t.amount) + '</b></button>';
@@ -169,7 +169,7 @@ function pledgeRowHTML(p) {
     '</div>' +
     (tx.length ? '<div class="pays">' + tx.map(function (t) {
       return '<button class="pay' + (t.cleared ? '' : ' uncleared') + '" data-act="pay-edit" data-id="' + esc(t.client_id) + '">' +
-        '<span>' + esc(txnWhen(t)) + '</span><span>' + esc(t.method || '—') + '</span>' +
+        '<span>' + esc(txnWhen(t)) + '</span><span>' + esc(t.method || '—') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') + '</span>' +
         '<span class="pay-cl">' + (t.cleared ? '✓ נסלק' : 'טרם נסלק') + '</span>' +
         pendTag(pendRowKey('g_txns', t.client_id)) +
         '<b>' + ils(t.amount) + '</b></button>';
@@ -295,14 +295,41 @@ function readWhen(px) {
 }
 
 // ── תשלום ──
+// הו״ק — פעימות וסכום לפעימה, והסכום הכולל נגזר מהם ונעול לעריכה ישירה.
+function soHTML(t, open) {
+  var has = !!t && +t.installments > 1;
+  return '<div class="f2' + (open ? '' : ' hidden') + '" id="t-so">' +
+    '<label class="fld"><span>פעימות *</span><input class="inp" id="t-so-n" inputmode="numeric" data-inp="pay-so" value="' +
+      (has ? esc(t.installments) : '') + '"></label>' +
+    '<label class="fld"><span>סכום לפעימה *</span><input class="inp" id="t-so-amt" inputmode="decimal" data-inp="pay-so" value="' +
+      (has ? esc(monthAmount(t)) : '') + '"></label>' +
+  '</div>';
+}
+
+// הסכום הכולל בטופס — פעימות × סכום לפעימה, בכל הקלדה.
+function soSync() {
+  var n = readNum($('#t-so-n'), 0), per = readNum($('#t-so-amt'), 0), a = $('#t-amount');
+  if (a && n > 0 && per > 0) a.value = String(Math.round(n * per * 100) / 100);
+}
+
+function soToggle(method) {
+  var on = method === METHOD_SO, box = $('#t-so'), a = $('#t-amount');
+  if (box) box.classList.toggle('hidden', !on);
+  if (a) a.readOnly = on;
+  if (on) soSync();
+}
+
 function formPay(t, pledgeId) {
   var p = pledgeById(t ? t.pledge_client_id : pledgeId);
   if (!p) return;
   var amt = t ? t.amount : (leftForPledge(p) || '');
+  var so = !!t && t.method === METHOD_SO;
   openModal((t ? 'עריכת תשלום — ' : 'תשלום — ') + (p.pledge_type || ''),
-    '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"></label>' +
+    '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
+      (so ? ' readonly' : '') + '></label>' +
     whenHTML('t', t) +
-    '<label class="fld"><span>אמצעי</span>' + selectHTML('t-method', lookupLabels(LK_METHOD), t ? t.method : '', 'אמצעי') + '</label>' +
+    '<label class="fld"><span>אמצעי</span>' + selectHTML('t-method', lookupLabels(LK_METHOD), t ? t.method : '', 'אמצעי', 'pay-method') + '</label>' +
+    soHTML(t, so) +
     '<label class="fld chk"><input type="checkbox" id="t-cleared"' + (t && t.cleared ? ' checked' : '') + '><span>סליקה בפועל</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t ? '<button class="btn danger" data-act="pay-del" data-id="' + esc(t.client_id) + '">מחיקה</button>' : '') +
@@ -314,11 +341,19 @@ function savePay(id, pledgeId) {
   if (!p) return;
   // כל תשלום נושא שגריר — דרך ההתחייבות שלו.
   if (!p.ambassador) { toast(MSG_PLEDGE_NO_AMB, null, 'bad'); return; }
-  var amount = readNum($('#t-amount'), 0);
+  var method = nullable(val('t-method')), n = null, amount;
+  if (method === METHOD_SO) {
+    n = readNum($('#t-so-n'), 0);
+    var per = readNum($('#t-so-amt'), 0);
+    if (!(n >= 2 && n === Math.floor(n))) { toast(MSG_SO_COUNT, null, 'bad'); return; }
+    if (!(per > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+    amount = Math.round(n * per * 100) / 100;
+  } else amount = readNum($('#t-amount'), 0);
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
   var when = readWhen('t');
   if (!when) return;
-  var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: nullable(val('t-method')), cleared: checked('t-cleared') };
+  var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: method, installments: n,
+              cleared: checked('t-cleared') };
   var go = function (initiated) {
     var w = initiated == null || p.initiated === initiated ? Promise.resolve() : update('g_pledges', p.client_id, { initiated: initiated });
     return w.then(function () {
@@ -330,4 +365,4 @@ function savePay(id, pledgeId) {
   return go(null);
 }
 
-export { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge, viewCards };
+export { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };

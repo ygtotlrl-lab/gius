@@ -3,7 +3,7 @@ import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../
 import { readNum } from '../../core/util.js';
 import { KV_TABLE, LISTS, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
-import { $, TARGET_DEFAULT_KEY, emptyBox, ils, listDef, lookupRows, monthLabel, monthTxnsInit, num, sum,
+import { $, TARGET_DEFAULT_KEY, emptyBox, ils, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
          targetDefault, targetOwn, upsertBy, val } from '../domain.js';
 
 // ── הרשימות ──
@@ -45,7 +45,7 @@ function viewSettings() {
       '<button class="btn sm" data-act="target-set">＋ יעד לחודש</button></div>';
   if (!tg.length) h += '<div class="hint">אין — כל החודשים ביעד הקבוע.</div>';
   else h += tg.map(function (t) {
-    var got = sum(monthTxnsInit(t.target_month), function (x) { return x.amount; });
+    var got = sum(monthTxnsInit(t.target_month), monthAmount);
     var pct = num(t.amount) > 0 ? got / num(t.amount) * 100 : 0;
     return '<div class="row" data-act="target-set" data-month="' + esc(t.target_month) + '">' +
       '<div class="main"><b>' + esc(monthLabel(t.target_month)) + '</b><small>נגבה ' + ils(got) + ' · ' + pct.toFixed(0) + '%</small></div>' +

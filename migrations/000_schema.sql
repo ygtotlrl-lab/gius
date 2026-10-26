@@ -322,6 +322,7 @@ create table if not exists public.g_txns (
   txn_month text,
   txn_date date,
   method text,
+  installments integer,
   cleared boolean not null default false,
   note text,
   deleted boolean not null default false,
@@ -331,6 +332,7 @@ create table if not exists public.g_txns (
   deleted_by text,
   constraint g_txns_pkey PRIMARY KEY (client_id),
   constraint g_txns_txn_month_check CHECK ((txn_month IS NULL) OR (txn_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text)),
+  constraint g_txns_installments_check CHECK ((installments IS NULL) OR (installments >= 2)),
   constraint g_txns_donor_client_id_fkey FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT,
   constraint g_txns_pledge_client_id_fkey FOREIGN KEY (pledge_client_id) REFERENCES g_pledges(client_id) ON DELETE RESTRICT
 );
