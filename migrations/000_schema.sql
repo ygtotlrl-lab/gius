@@ -299,19 +299,20 @@ create table if not exists public.g_targets (
 create table if not exists public.g_tasks (
   client_id text not null,
   title text not null,
-  stage text not null default 'הרצה'::text,
+  stage text not null default 'בהרצה'::text,
   assignee text,
   domain text,
   due_date date,
   note text,
   sort integer not null default 0,
+  starred boolean not null default false,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
   deleted_by text,
   constraint g_tasks_pkey PRIMARY KEY (client_id),
-  constraint g_tasks_stage_check CHECK ((stage = ANY (ARRAY['הרצה'::text, 'השלמה'::text, 'חסומה'::text])))
+  constraint g_tasks_stage_check CHECK ((stage = ANY (ARRAY['בהרצה'::text, 'הושלם'::text, 'לא רלוונטי'::text])))
 );
 
 create table if not exists public.g_txns (

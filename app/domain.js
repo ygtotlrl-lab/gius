@@ -125,14 +125,15 @@ function gSortPlan(list) {
   });
 }
 
-// משימות — לפי הסוג (התחום, בסדר הרשימה שבהגדרות; בלי סוג — בסוף), אחר כך לפי השלב (הרצה · השלמה · חסומה),
-// ואז א״ב של שם המשימה; בשוויון — בסדר הרישום.
+// משימות — המסומנות כעדיפות בראש, וכל קבוצה באותו סדר: הסוג (התחום, בסדר הרשימה שבהגדרות; בלי סוג — בסוף),
+// השלב (בהרצה · הושלם · לא רלוונטי), ואז א״ב של שם המשימה; בשוויון — בסדר הרישום.
 function gSortTasks(list) {
   var doms = lookupLabels('domain');
   var di = function (t) { var i = t.domain ? doms.indexOf(t.domain) : -1; return i < 0 ? (t.domain ? doms.length : doms.length + 1) : i; };
   var si = function (t) { for (var i = 0; i < STAGES.length; i++) if (STAGES[i].id === t.stage) return i; return STAGES.length; };
   return list.slice().sort(function (a, b) {
-    return (di(a) - di(b)) || sortCompare(a.domain || '', b.domain || '') || (si(a) - si(b)) ||
+    return ((b.starred ? 1 : 0) - (a.starred ? 1 : 0)) ||
+      (di(a) - di(b)) || sortCompare(a.domain || '', b.domain || '') || (si(a) - si(b)) ||
       sortCompare(a.title || '', b.title || '') || bySort(a, b);
   });
 }

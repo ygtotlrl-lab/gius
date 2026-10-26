@@ -34,12 +34,15 @@ function viewTasks() {
     h += '<section class="card"><h2>' + esc(ui.stage) + ' · ' + esc(ui.who) + '<span class="cnt">' + list.length + '</span></h2>';
     if (!list.length) h += emptyBox('☑', 'אין משימות בשלב הזה');
     else h += list.map(function (t) {
-      var late = ui.stage !== 'השלמה' && t.due_date && t.due_date < today;
-      return '<div class="row" data-act="task-open" data-id="' + esc(t.client_id) + '">' +
+      // באיחור — רק משימה שבהרצה; שהושלמה או שאינה רלוונטית כבר אינה ממתינה לתאריך.
+      var late = ui.stage === STAGES[0].id && t.due_date && t.due_date < today;
+      return '<div class="row' + (t.starred ? ' star' : '') + '" data-act="task-open" data-id="' + esc(t.client_id) + '">' +
         '<span class="stage-dot ' + stageOf(t.stage).cls + '"></span>' +
         '<div class="main"><b>' + esc(t.title) + pendTag(pendRowKey('g_tasks', t.client_id)) + '</b>' +
           '<small>' + esc([t.domain, t.note].filter(Boolean).join(' · ') || '—') + '</small></div>' +
         (t.due_date ? '<div class="end"><span class="badge' + (late ? ' bad' : '') + '">' + esc(dmyDate(t.due_date)) + '</span></div>' : '') +
+        '<button class="task-star' + (t.starred ? ' on' : '') + '" data-act="task-star" data-id="' + esc(t.client_id) +
+          '" aria-pressed="' + !!t.starred + '" aria-label="עדיפות">' + (t.starred ? '★' : '☆') + '</button>' +
       '</div>';
     }).join('');
     h += '</section>';
@@ -78,7 +81,7 @@ function saveTask(id) {
               due_date: nullable(val('k-due')), note: nullable(val('k-note')) };
   state.tasks_ui.who = row.assignee;
   if (id) return update('g_tasks', id, row);
-  return insert('g_tasks', Object.assign(row, { sort: nextSort(state.tasks) }));
+  return insert('g_tasks', Object.assign(row, { sort: nextSort(state.tasks), starred: false }));
 }
 
 export { formTask, saveTask, viewTasks };

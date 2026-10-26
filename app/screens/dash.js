@@ -56,7 +56,7 @@ function breakdownHTML(rows, total) {
   }).join('') + '</div>';
 }
 
-// מצב המשימות לכל אחראי — סה״כ פתוחות, ובהרצה ובהשלמה; מנותב למסך המשימות.
+// מצב המשימות לכל אחראי — הסה״כ, ובהרצה והושלם; מנותב למסך המשימות.
 function tasksHTML() {
   return '<div class="who-grid">' + ASSIGNEES.map(function (who) {
     var mine = state.tasks.filter(function (t) { return t.assignee === who; });

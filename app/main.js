@@ -349,6 +349,11 @@ var DOM_ACTIONS = {
   },
   'task-new': function () { formTask(null); },
   'task-open': function (el) { var t = findIn(state.tasks, el.dataset.id); if (t) formTask(t); },
+  'task-star': function (el) {
+    var t = findIn(state.tasks, el.dataset.id);
+    if (!t) return;
+    return update('g_tasks', t.client_id, { starred: !t.starred }).then(function () { render(); }).catch(errToast);
+  },
   'task-save': saver(saveTask, 'המשימה נשמרה'),
   'task-del': function (el) { return delAsk(MSG_DEL_TASK, 'g_tasks', el.dataset.id); },
 

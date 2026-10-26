@@ -43,9 +43,9 @@ var LISTS = [
 var ASSIGNEES = ['הרב יוסי', 'אלישע', 'מענדי פרידמן'];
 
 var STAGES = [
-  { id: 'הרצה', cls: 'run' },
-  { id: 'השלמה', cls: 'done' },
-  { id: 'חסומה', cls: 'blocked' }
+  { id: 'בהרצה', cls: 'run' },
+  { id: 'הושלם', cls: 'done' },
+  { id: 'לא רלוונטי', cls: 'off' }
 ];
 
 // ── התכנית ──
