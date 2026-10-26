@@ -104,9 +104,12 @@ function gSortTxns(list) {
 }
 
 // התחייבויות — בסדר הרישום.
+// התחייבויות בכרטיס — לפי הנותר לגבות, מהגבוה; בשוויון — בסדר הרישום.
 function gSortPledges(list) {
+  var left = {};
+  var lf = function (p) { return left[p.client_id] != null ? left[p.client_id] : (left[p.client_id] = leftForPledge(p)); };
   return list.slice().sort(function (a, b) {
-    return sortCompare(String(a.created_at || ''), String(b.created_at || ''));
+    return (lf(b) - lf(a)) || sortCompare(String(a.created_at || ''), String(b.created_at || ''));
   });
 }
 
