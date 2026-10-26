@@ -152,7 +152,7 @@ function pledgeRowHTML(p) {
       '<b>' + esc(p.pledge_type || '—') + '</b>' +
       pendTag(pendRowKey('g_pledges', p.client_id)) +
       (p.initiated === true ? '<span class="badge ok">יזום</span>' : p.initiated === false ? '<span class="badge">לא יזום</span>' : '') +
-      '<span class="pl-amt">' + ils(p.amount) + '</span>' +
+      '<span class="pl-amt" title="נותר">' + ils(leftForPledge(p)) + '</span>' +
     '</div>' +
     (p.detail ? '<div class="pl-detail">' + esc(p.detail) + '</div>' : '') +
     '<div class="pl-meta">' +
@@ -161,7 +161,7 @@ function pledgeRowHTML(p) {
     '</div>' +
     '<div class="pl-st">' +
       '<span>נגבה ' + ils(collectedForPledge(p.client_id)) + '</span>' +
-      '<span>נותר ' + ils(leftForPledge(p)) + '</span>' +
+      '<span>סה״כ ' + ils(p.amount) + '</span>' +
       '<span class="badge ' + statusClass(st) + '">' + esc(st) + '</span>' +
       '<span class="grow"></span>' +
       '<button class="btn soft xs" data-act="pay-new" data-pledge="' + id + '">תשלום</button>' +
