@@ -65,7 +65,7 @@ function cardTileHTML(d) {
 
 function viewCards() {
   var c = state.cards, affs = lookupLabels(LK_AFFIL);
-  return '<section class="card cards-tools">' +
+  return '<section class="card list-tools">' +
       '<label class="search-box"><input aria-label="חיפוש לפי שם" class="inp search" id="cards-q" data-inp="cards-q" placeholder="חיפוש לפי שם" value="' + esc(c.q) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
       '<div class="tools-row">' +

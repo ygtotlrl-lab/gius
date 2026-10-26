@@ -337,11 +337,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pill{font-size:var(--fs-2);font-weight:700;border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .pill.run{background:var(--warn-soft);color:var(--warn)}
 .pill.done{background:var(--ok-soft);color:var(--ok)}
-.pill.off{background:var(--card-2);color:var(--text-3)}
+.pill.off{background:var(--bad-soft);color:var(--bad)}
 /* תשלום שטרם נסלק בפועל — שקוף מעט; הוא נספר כמו כל תשלום. */
 .uncleared{opacity:var(--op-5)}
 /* ── כרטיסים ── */
-.cards-tools{display:grid;gap:var(--sp-4)}
+.list-tools{display:grid;gap:var(--sp-4)}
 /* אייקון החיפוש בקצה השמאלי של השדה, ומסגרת בכחול הזהות — שהשדה יבלוט. */
 .search-box{position:relative;display:block}
 .search-box .search{padding-inline-end:44px;border-color:var(--brand-soft);border-width:2px}
@@ -500,13 +500,13 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .stage-dot{width:10px;height:10px;border-radius:var(--r-7);flex:none;background:var(--text-3)}
 .run .stage-dot,.stage-dot.run{background:var(--warn)}
 .done .stage-dot,.stage-dot.done{background:var(--ok)}
-.off .stage-dot,.stage-dot.off{background:var(--text-3)}
+.off .stage-dot,.stage-dot.off{background:var(--bad)}
 .stage-card.run .stage-n{color:var(--warn)}
 .stage-card.done .stage-n{color:var(--ok)}
-.stage-card.off .stage-n{color:var(--text-3)}
+.stage-card.off .stage-n{color:var(--bad)}
 .stage-card.on.run{background:var(--warn-soft);border-color:var(--warn)}
 .stage-card.on.done{background:var(--ok-soft);border-color:var(--ok)}
-.stage-card.on.off{background:var(--card-2);border-color:var(--text-3)}
+.stage-card.on.off{background:var(--bad-soft);border-color:var(--bad)}
 .stage-hint{text-align:center}
 /* ── רשומות ── */
 .notes{display:grid;gap:var(--sp-5)}

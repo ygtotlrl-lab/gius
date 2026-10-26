@@ -24,7 +24,7 @@ import { viewDash } from './screens/dash.js';
 import { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
          soToggle, viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
-import { formTask, saveTask, viewTasks } from './screens/tasks.js';
+import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { formLoan, saveLoan, viewLoans } from './screens/loans.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -230,9 +230,15 @@ function go(screen) {
   if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' };
   if (screen === 'loans') state.loansSort = 'name';
   if (screen === 'budget') state.budgetOpen = null;
-  if (screen === 'tasks') state.tasks_ui.stage = null;
+  if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
   closeModal();
   render();
+}
+
+// החיפוש מצייר את גוף המסך בלבד — ציור מלא היה מחליף את השדה ומפיל את המקלדת באמצע ההקלדה.
+function tasksRefresh() {
+  var box = $('#tasks-body');
+  if (box) box.innerHTML = tasksBodyHTML(); else render();
 }
 
 function cardsRefresh() {
@@ -447,6 +453,7 @@ document.addEventListener('input', function (e) {
   var el = e.target;
   if (!el.dataset) return;
   if (el.dataset.inp === 'cards-q') { state.cards.q = el.value; cardsRefresh(); }
+  if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
 });
 

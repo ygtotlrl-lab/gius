@@ -32,7 +32,7 @@ var state = {
   // מיון ההלוואות — name · taken · end · status.
   loansSort: 'name',
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
-  tasks_ui: { who: ASSIGNEES[0], stage: null }
+  tasks_ui: { who: ASSIGNEES[0], stage: null, q: '' }
 };
 
 // ── מה שמסך צריך מ-main ──
