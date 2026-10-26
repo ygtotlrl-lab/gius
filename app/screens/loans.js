@@ -9,14 +9,18 @@ import { $, dmyDate, emptyBox, gSortLoans, ils, insert, nullable, pendRowKey, su
 var LOAN_CLS = { 'נמסר': 'ok', 'לטיפול': 'warn', 'להגשה': 'brand', 'בהתראה': 'bad' };
 
 function viewLoans() {
-  var list = gSortLoans(state.loans);
-  var h = '<section class="card"><h2>הלוואות<span class="cnt">' + list.length + '</span>' +
+  var list = gSortLoans(state.loans, state.loansSort);
+  var h = '<section class="card cards-tools"><div class="tools-row"><div class="seg" role="group" aria-label="מיון">' +
+    [['name', 'שם'], ['taken', 'תאריך לקיחה'], ['end', 'תאריך סיום'], ['status', 'סטטוס']].map(function (o) {
+      return '<button class="' + (state.loansSort === o[0] ? 'on' : '') + '" data-act="loans-sort" data-v="' + o[0] + '">' + o[1] + '</button>';
+    }).join('') + '</div></div></section>' +
+    '<section class="card"><h2>הלוואות<span class="cnt">' + list.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="loan-new">＋ הלוואה</button></span></h2>';
   if (!list.length) return h + emptyBox('⇄', 'אין הלוואות רשומות') + '</section>';
   h += list.map(function (l) {
     return '<div class="row" data-act="loan-edit" data-id="' + esc(l.client_id) + '">' +
       '<div class="main"><b>' + esc(l.lender) + pendTag(pendRowKey('g_loans', l.client_id)) + '</b>' +
-        '<small>' + esc(['נלקחה ' + dmyDate(l.taken_date), l.repay_terms, l.last_check_date ? 'נבדק ' + dmyDate(l.last_check_date) : '', l.note]
+        '<small>' + esc(['נלקחה ' + dmyDate(l.taken_date), l.repay_terms, l.last_check_date ? 'סיום ' + dmyDate(l.last_check_date) : '', l.note]
           .filter(Boolean).join(' · ')) + '</small></div>' +
       '<div class="end">' + ils(l.amount) + (l.status ? '<small><span class="badge ' + (LOAN_CLS[l.status] || '') + '">' + esc(l.status) + '</span></small>' : '') + '</div>' +
     '</div>';
@@ -33,7 +37,7 @@ function formLoan(l) {
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>תאריך לקיחה</span><input class="inp" type="date" id="o-taken" value="' + esc(l && l.taken_date ? l.taken_date : '') + '"></label>' +
-      '<label class="fld"><span>תאריך בדיקה אחרון</span><input class="inp" type="date" id="o-check" value="' + esc(l && l.last_check_date ? l.last_check_date : '') + '"></label>' +
+      '<label class="fld"><span>תאריך סיום (צ׳ק אחרון)</span><input class="inp" type="date" id="o-check" value="' + esc(l && l.last_check_date ? l.last_check_date : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>תנאי החזר</span><input class="inp" id="o-terms" value="' + esc(l ? l.repay_terms || '' : '') + '"></label>' +
     '<label class="fld"><span>סטטוס</span><select class="inp" id="o-status"><option value="">— ללא —</option>' + LOAN_STATUSES.map(function (s) {

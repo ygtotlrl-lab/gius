@@ -228,6 +228,7 @@ function go(screen) {
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') state.planMonth = m;
   if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' };
+  if (screen === 'loans') state.loansSort = 'name';
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'tasks') state.tasks_ui.stage = null;
   closeModal();
@@ -357,6 +358,7 @@ var DOM_ACTIONS = {
   'note-close': function () { return runSave(function () { return closeNoteFull(true); }, 'נשמר'); },
   'note-del': function (el) { return delAsk(MSG_DEL_NOTE, 'g_notes', el.dataset.id, function () { closeNoteFull(false); }); },
   'loan-new': function () { formLoan(null); },
+  'loans-sort': function (el) { state.loansSort = el.dataset.v; render(); },
   'loan-edit': function (el) { var l = findIn(state.loans, el.dataset.id); if (l) formLoan(l); },
   'loan-save': saver(saveLoan, 'נשמר'),
   'loan-del': function (el) { return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id); },

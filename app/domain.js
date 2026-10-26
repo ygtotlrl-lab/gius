@@ -7,7 +7,7 @@ import { MSG_LS_FULL } from '../core/storage.js';
 import { MIRROR, mirrorSave } from '../core/mirror.js';
 import { logAction } from '../core/backup.js';
 import { comboDef, comboHTML, comboSet, esc, lookupList, pullRender, shellBare, toast } from '../core/ui.js';
-import { DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS,
+import { DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LOAN_STATUSES,
          MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_NAME, STAGES, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
 
@@ -146,8 +146,21 @@ function gSortBudget(list) { return list.slice().sort(bySort); }
 function gSortEvents(list) { return list.slice().sort(bySort); }
 
 // הלוואות — לפי שם המלווה.
-function gSortLoans(list) {
-  return list.slice().sort(function (a, b) { return sortCompare(a.lender || '', b.lender || ''); });
+// הלוואות — לפי שם (א״ב) · תאריך לקיחה (החדש ראשון) · תאריך סיום (הקרוב ראשון) · סטטוס (בסדר הרשימה);
+// בלי ערך — בסוף, ובכל שוויון — א״ב.
+function gSortLoans(list, mode) {
+  var st = function (l) { var i = LOAN_STATUSES.indexOf(l.status); return i < 0 ? LOAN_STATUSES.length : i; };
+  var dt = function (a, b, k, dir) {
+    if (!a[k] || !b[k]) return (a[k] ? 0 : 1) - (b[k] ? 0 : 1);
+    return dir * sortCompare(a[k], b[k]);
+  };
+  return list.slice().sort(function (a, b) {
+    var r = 0;
+    if (mode === 'taken') r = dt(a, b, 'taken_date', -1);
+    else if (mode === 'end') r = dt(a, b, 'last_check_date', 1);
+    else if (mode === 'status') r = st(a) - st(b);
+    return r || sortCompare(a.lender || '', b.lender || '');
+  });
 }
 
 // קבוצות הפילוח — הסכום הגדול ראשון.

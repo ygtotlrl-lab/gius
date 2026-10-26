@@ -29,6 +29,8 @@ var state = {
   budgetOpen: null,
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
   cards: { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' },
+  // מיון ההלוואות — name · taken · end · status.
+  loansSort: 'name',
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
   tasks_ui: { who: ASSIGNEES[0], stage: null }
 };
