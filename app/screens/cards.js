@@ -55,7 +55,7 @@ function cardTileHTML(d) {
         pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
         '<small>' + esc(d.ambassador || d.role || '—') + '</small></span></span>' +
     '<span class="ct-amt"><small>' + (left > 0 ? 'נותר' : total > 0 ? 'שולם במלואו' : 'אין התחייבות') + '</small>' +
-      '<b>' + (left > 0 ? ils(left) : total > 0 ? ils(total) : '—') + '</b></span>' +
+      '<b>' + (total > 0 ? ils(left) : '—') + '</b></span>' +
     (total > 0 ? bar(pct) +
       '<span class="ct-ft"><span>נגבה ' + ils(paid) + ' מתוך ' + ils(total) + '</span>' +
         '<span>' + pledgesOfDonor(d.client_id).length + ' התחייבויות</span></span>' : '') +
