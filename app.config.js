@@ -26,6 +26,8 @@ self.APP = Object.freeze({
     versionCode: 28,
     versionName: '19.0',
     launcherBg: { kind: 'solid', color: '#2B4F8A' },
+    // אפליקציות אחרות שקישור intent: רשאי לפתוח — שם ⟵ חבילה; ריק — המעטפת אינה פותחת אף אחת
+    launch: {},
     // FileProvider ו-androidx — רק באפליקציה שמייצאת קובץ
     share: false
   },
