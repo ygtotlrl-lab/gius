@@ -70,10 +70,9 @@ function loansBodyHTML() {
     if (open) {
       r += '<div class="ev-body">' +
         (moves.length ? moves.map(function (m) {
-          return '<div class="row">' +
+          return '<div class="row" data-act="loan-move-edit" data-id="' + esc(m.client_id) + '">' +
             '<div class="main"><b>' + ils(m.amount) + pendTag(pendRowKey('g_loan_moves', m.client_id)) + '</b>' +
-              '<small>' + esc(m.note || '—') + '</small></div>' +
-            '<div class="end"><button class="btn ghost sm" data-act="loan-move-del" data-id="' + esc(m.client_id) + '" aria-label="מחיקת התנועה">✕</button></div></div>';
+              '<small>' + esc(m.note || '—') + '</small></div></div>';
         }).join('') : emptyBox('⇄', 'אין עדיין תנועות בהלוואה')) +
         '<div class="total-row"><span>יתרה</span><b>' + ils(bal) + '</b></div>' +
         '<div class="lm-add" data-ks>' +
@@ -88,6 +87,24 @@ function loansBodyHTML() {
   }).join('') + '</div>';
   h += '<div class="total-row"><span>סה״כ יתרה</span><b>' + ils(sum(list, loanBalance)) + '</b></div>';
   return h;
+}
+
+// עריכת תנועה — סכום והערה, ומחיקה.
+function formLoanMove(m) {
+  openModal('עריכת תנועה',
+    '<div class="f2">' +
+      '<label class="fld"><span>סכום *</span><input class="inp" id="lm-e-amt" inputmode="decimal" value="' + esc(m.amount) + '"></label>' +
+      '<label class="fld"><span>הערה</span><input class="inp" id="lm-e-note" value="' + esc(m.note || '') + '"></label>' +
+    '</div>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn danger" data-act="loan-move-del" data-id="' + esc(m.client_id) + '">מחיקה</button>' +
+    '<button class="btn" data-act="loan-move-save" data-id="' + esc(m.client_id) + '" data-ksave>שמירה</button>');
+}
+
+function saveLoanMove(id) {
+  var amount = readNum($('#lm-e-amt'), 0);
+  if (!amount) { toast(MSG_NEED_MOVE_AMOUNT, null, 'bad'); return; }
+  return update('g_loan_moves', id, { amount: amount, note: nullable(val('lm-e-note')) });
 }
 
 // תנועה — סכום (חובה, לא אפס; שלילי מגדיל את היתרה) והערה.
@@ -127,4 +144,4 @@ function saveLoan(id) {
   return id ? update('g_loans', id, row) : insert('g_loans', row);
 }
 
-export { addLoanMove, formLoan, loansBodyHTML, saveLoan, viewLoans };
+export { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans };

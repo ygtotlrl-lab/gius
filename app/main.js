@@ -26,7 +26,7 @@ import { cardRowsHTML, formDonor, initPick, initSwitchChange, payPledgePick, for
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { addLoanMove, formLoan, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
+import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
 import { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
          viewSettings } from './screens/settings.js';
@@ -386,6 +386,8 @@ var DOM_ACTIONS = {
   },
   'loan-toggle': function (el) { state.loansOpen = state.loansOpen === el.dataset.id ? null : el.dataset.id; render(); },
   'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, 'נשמר'); },
+  'loan-move-edit': function (el) { var m = findIn(state.loanMoves, el.dataset.id); if (m) formLoanMove(m); },
+  'loan-move-save': saver(saveLoanMove, 'נשמר'),
   'loan-move-del': function (el) { return delAsk(MSG_DEL_LOAN_MOVE, 'g_loan_moves', el.dataset.id); },
   'event-new': function () { formEvent(null); },
   'event-edit': function (el) { var e = findIn(state.events, el.dataset.id); if (e) formEvent(e); },
