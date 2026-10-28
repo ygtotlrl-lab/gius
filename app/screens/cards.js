@@ -237,11 +237,7 @@ function formPledge(p, donorId) {
     '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
     '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>' +
-    '<label class="fld"><span>יזום</span><select class="inp" id="p-init">' +
-      [['', '— טרם הוגדר —'], ['1', 'כן — יזום'], ['0', 'לא יזום']].map(function (o) {
-        var cur = p && p.initiated === true ? '1' : p && p.initiated === false ? '0' : '';
-        return '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>';
-      }).join('') + '</select></label>';
+    initSwitchHTML(p ? p.initiated : null);
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now"><span>תרומה חד-פעמית — שולמה עכשיו</span></label>' +
     whenHTML('p', null) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label>';
@@ -258,7 +254,7 @@ function savePledge(id, donorId) {
   if (!val('p-amb')) { toast(MSG_PICK_AMB, null, 'bad'); return; }
   var row = { section: nullable(val('p-section')), pledge_type: type, detail: nullable(val('p-detail')),
               ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')),
-              initiated: initVal(val('p-init')) };
+              initiated: initRead() };
   if (id) return update('g_pledges', id, row);
   var now = checked('p-now'), when = now ? readWhen('p') : null;
   if (now && !when) return;
@@ -275,7 +271,19 @@ function savePledge(id, donorId) {
   return go(row.initiated);
 }
 
-function initVal(v) { return v === '1' ? true : v === '0' ? false : null; }
+// «יזום» — מתג. התחייבות שטרם הוכרעה — המתג כבוי ו«טרם הוכרע», ונשארת ריקה עד שנוגעים בו.
+function initNote(v) { return v === true ? 'יזום' : v === false ? 'לא יזום' : 'טרם הוכרע'; }
+function initSwitchHTML(v) {
+  return '<label class="fld tgl-row"><span>יזום</span>' +
+    '<small class="tgl-note" id="p-init-note">' + initNote(v) + '</small>' +
+    '<input type="checkbox" role="switch" class="tgl" id="p-init" data-chg="p-init"' + (v === true ? ' checked' : '') +
+      (v == null ? '' : ' data-set="1"') + '></label>';
+}
+function initSwitchChange(el) {
+  el.dataset.set = '1';
+  var n = $('#p-init-note'); if (n) n.textContent = initNote(el.checked);
+}
+function initRead() { var el = $('#p-init'); return !el || !el.dataset.set ? null : el.checked; }
 
 // השאלה בחלון משלה; ערכי הטופס כבר נקראו, והשמירה רצה אחרי הבחירה.
 var _initPending = null;
@@ -381,4 +389,4 @@ function savePay(id, pledgeId) {
   return go(null);
 }
 
-export { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };
+export { cardRowsHTML, formDonor, initPick, initSwitchChange, formPay, formPledge, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };

@@ -190,6 +190,17 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fld.chk{display:flex;align-items:center;gap:var(--sp-4);cursor:pointer}
 .fld.chk input{width:19px;height:19px;accent-color:var(--brand-fill);flex:none;margin:0}
 .fld.chk > span{margin:0;font-size:var(--fs-3)}
+/* מתג — כבוי/דולק; הידית זזה מצד ההתחלה לצד הסוף */
+.fld.tgl-row{display:flex;align-items:center;gap:var(--sp-4);cursor:pointer}
+.fld.tgl-row > span{margin:0;font-size:var(--fs-3);font-weight:650}
+.tgl-note{flex:1;font-size:var(--fs-2);color:var(--text-3)}
+.tgl{appearance:none;-webkit-appearance:none;flex:none;margin:0;position:relative;width:46px;height:26px;border-radius:999px;
+  background:var(--border);cursor:pointer;transition:background .15s}
+.tgl::before{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;
+  background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:inset-inline-start .15s}
+.tgl:checked{background:var(--brand-fill)}
+.tgl:checked::before{inset-inline-start:23px}
+.tgl:focus-visible{outline:2px solid var(--brand-ink);outline-offset:2px}
 .f2{display:grid;gap:0 var(--sp-5)}
 .btn{
   background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;

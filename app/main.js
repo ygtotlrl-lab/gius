@@ -21,7 +21,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
+import { cardRowsHTML, formDonor, initPick, initSwitchChange, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
          soToggle, viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
@@ -475,6 +475,7 @@ document.addEventListener('change', function (e) {
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
+  if (el.dataset.chg === 'p-init') { initSwitchChange(el); return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
   if (el.dataset.chg === 'pay-method') { soToggle(el.value); return; }
