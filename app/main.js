@@ -229,7 +229,7 @@ function go(screen) {
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') state.planMonth = m;
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, tab: 'pl' };
-  if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansOpen = null; }
+  if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
   closeModal();
@@ -474,6 +474,7 @@ document.addEventListener('change', function (e) {
   var el = e.target;
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
+  if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'p-init') { initSwitchChange(el); return; }
