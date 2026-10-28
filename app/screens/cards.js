@@ -272,18 +272,13 @@ function savePledge(id, donorId) {
   return go(row.initiated);
 }
 
-// «יזום» — מתג. התחייבות שטרם הוכרעה — המתג כבוי ו«טרם הוכרע», ונשארת ריקה עד שנוגעים בו.
-function initNote(v) { return v === true ? 'יזום' : v === false ? 'לא יזום' : 'טרם הוכרע'; }
+// «יזום» — מתג צמוד למילה. התחייבות שטרם הוכרעה — המתג כבוי, ונשארת ריקה עד שנוגעים בו.
 function initSwitchHTML(v) {
   return '<label class="fld tgl-row"><span>יזום</span>' +
-    '<small class="tgl-note" id="p-init-note">' + initNote(v) + '</small>' +
     '<input type="checkbox" role="switch" class="tgl" id="p-init" data-chg="p-init"' + (v === true ? ' checked' : '') +
       (v == null ? '' : ' data-set="1"') + '></label>';
 }
-function initSwitchChange(el) {
-  el.dataset.set = '1';
-  var n = $('#p-init-note'); if (n) n.textContent = initNote(el.checked);
-}
+function initSwitchChange(el) { el.dataset.set = '1'; }
 function initRead() { var el = $('#p-init'); return !el || !el.dataset.set ? null : el.checked; }
 
 // השאלה בחלון משלה; ערכי הטופס כבר נקראו, והשמירה רצה אחרי הבחירה.
