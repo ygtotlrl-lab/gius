@@ -623,3 +623,4 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* הכוכב המסומן מלא — אותו קו, ומילוי בצבע הטקסט. */
 .star-ic .ico,.cp-btn.star.on .ico,.task-star.on .ico{fill:currentColor}
 .cp-btn .ico,.nf-btn .ico,.task-star .ico{width:20px;height:20px}
+#p-now-box:not([hidden]){display:contents}

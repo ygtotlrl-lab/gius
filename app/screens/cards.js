@@ -238,9 +238,10 @@ function formPledge(p, donorId) {
     '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>' +
     initSwitchHTML(p ? p.initiated : null);
-  if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now"><span>תרומה חד-פעמית — שולמה עכשיו</span></label>' +
-    whenHTML('p', null) +
-    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label>';
+  // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
+  if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>תרומה חד-פעמית — שולמה עכשיו</span></label>' +
+    '<div id="p-now-box" hidden>' + whenHTML('p', null) +
+    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label></div>';
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="pledge-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
