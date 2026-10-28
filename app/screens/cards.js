@@ -126,7 +126,7 @@ function cardOpenHTML(d) {
       '<button class="btn soft sm" data-act="pay-new" data-donor="' + id + '">' + icon('plus') + 'תשלום</button>' +
       '<button class="btn sm" data-act="pledge-new" data-donor="' + id + '">' + icon('plus') + 'התחייבות</button>' +
     '</div><div class="cp-body">' +
-    (pl.length ? pl.map(pledgeRowHTML).join('') : '<div class="hint">אין התחייבויות. תרומה חד-פעמית נרשמת כהתחייבות ששולמה מיד.</div>');
+    (pl.length ? pl.map(pledgeRowHTML).join('') : '<div class="hint">אין התחייבויות. תרומה ששולמה מיד — התחייבות חדשה עם «הוספת תשלום מיידי».</div>');
   return h + '</div></div>';
 }
 
@@ -228,7 +228,7 @@ function formPledge(p, donorId) {
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>' +
     initSwitchHTML(p ? p.initiated : null);
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
-  if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>תרומה חד-פעמית — שולמה עכשיו</span></label>' +
+  if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>הוספת תשלום מיידי</span></label>' +
     '<div id="p-now-box" hidden>' + whenHTML('p', null) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label></div>';
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
@@ -335,7 +335,7 @@ function payPickHTML(pls, cur) {
       return '<option value="' + esc(q.client_id) + '"' + (q.client_id === cur ? ' selected' : '') + '>' +
         esc([q.pledge_type, q.section, q.detail].filter(Boolean).join(' · ') + ' — נותר ' + ils(leftForPledge(q))) + '</option>';
     }).join('') +
-    '<option value="__new">＋ התחייבות חדשה</option><option value="__now">＋ תרומה חד-פעמית</option></select></label>';
+    '<option value="__new">＋ התחייבות חדשה</option><option value="__now">＋ התחייבות חדשה עם תשלום מיידי</option></select></label>';
 }
 
 function formPay(t, pledgeId, donorId) {
