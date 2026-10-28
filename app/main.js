@@ -11,7 +11,7 @@ import { bootRun } from '../core/boot-run.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick,
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, openModal, shellBare, swApply,
          swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
-import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOOKUP,
+import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
          MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
          MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
          TABS } from './constants.js';
@@ -26,7 +26,7 @@ import { cardRowsHTML, formDonor, initPick, formPay, formPledge, saveDonor, save
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { formLoan, saveLoan, viewLoans } from './screens/loans.js';
+import { addLoanMove, formLoan, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
 import { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
          viewSettings } from './screens/settings.js';
@@ -103,6 +103,7 @@ var BK_CFG = {
       { name: 'g_targets',      order: 'client_id', ts: 'updated_at' },
       { name: 'g_notes',        order: 'client_id', ts: 'updated_at' },
       { name: 'g_loans',        order: 'client_id', ts: 'updated_at' },
+      { name: 'g_loan_moves',   order: 'client_id', ts: 'updated_at' },
       { name: 'g_events',       order: 'client_id', ts: 'updated_at' },
       { name: 'g_budget_items', order: 'client_id', ts: 'updated_at' },
       { name: KV_TABLE,         order: 'key',       ts: 'updated_at' },
@@ -227,8 +228,8 @@ function go(screen) {
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') state.planMonth = m;
-  if (screen === 'cards') state.cards = { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' };
-  if (screen === 'loans') state.loansSort = 'name';
+  if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, tab: 'pl' };
+  if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
   closeModal();
@@ -239,6 +240,11 @@ function go(screen) {
 function tasksRefresh() {
   var box = $('#tasks-body');
   if (box) box.innerHTML = tasksBodyHTML(); else render();
+}
+
+function loansRefresh() {
+  var box = $('#loans-list');
+  if (box) box.innerHTML = loansBodyHTML(); else render();
 }
 
 function cardsRefresh() {
@@ -372,7 +378,12 @@ var DOM_ACTIONS = {
   'loans-sort': function (el) { state.loansSort = el.dataset.v; render(); },
   'loan-edit': function (el) { var l = findIn(state.loans, el.dataset.id); if (l) formLoan(l); },
   'loan-save': saver(saveLoan, 'נשמר'),
-  'loan-del': function (el) { return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id); },
+  'loan-del': function (el) {
+    return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id, function () { if (state.loansOpen === el.dataset.id) state.loansOpen = null; });
+  },
+  'loan-toggle': function (el) { state.loansOpen = state.loansOpen === el.dataset.id ? null : el.dataset.id; render(); },
+  'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, 'נשמר'); },
+  'loan-move-del': function (el) { return delAsk(MSG_DEL_LOAN_MOVE, 'g_loan_moves', el.dataset.id); },
   'event-new': function () { formEvent(null); },
   'event-edit': function (el) { var e = findIn(state.events, el.dataset.id); if (e) formEvent(e); },
   'event-save': saver(saveEvent, 'נשמר'),
@@ -453,6 +464,7 @@ document.addEventListener('input', function (e) {
   var el = e.target;
   if (!el.dataset) return;
   if (el.dataset.inp === 'cards-q') { state.cards.q = el.value; cardsRefresh(); }
+  if (el.dataset.inp === 'loans-q') { state.loansQ = el.value; loansRefresh(); }
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
 });
@@ -462,6 +474,7 @@ document.addEventListener('change', function (e) {
   var el = e.target;
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
+  if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
   if (el.dataset.chg === 'pay-method') { soToggle(el.value); return; }

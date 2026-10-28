@@ -24,13 +24,13 @@ var state = {
   dashPayAll: false,
   planMonth: '',
   donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
-  notes: [], loans: [], budget: [], events: [],
+  notes: [], loans: [], loanMoves: [], budget: [], events: [],
   // תקציב אירוע — האירוע הפתוח; כל האירועים סגורים בכניסה.
   budgetOpen: null,
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
-  cards: { q: '', aff: '', sort: 'sum', open: null, tab: 'pl' },
+  cards: { q: '', aff: '', pf: '', sort: 'sum', open: null, tab: 'pl' },
   // מיון ההלוואות — name · taken · end · status.
-  loansSort: 'name',
+  loansSort: 'name', loansQ: '', loansOpen: null,
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
   tasks_ui: { who: ASSIGNEES[0], stage: null, q: '' }
 };

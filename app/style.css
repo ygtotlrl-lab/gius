@@ -355,8 +355,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .plan-sub{display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-5)}
 .plan-sub:first-of-type{margin-top:0}
 .plan-sub .cnt{font-size:var(--fs-1);background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-4)}
-.tools-row{display:flex;gap:var(--sp-4);align-items:center}
-.tools-row select{flex:1;min-width:0}
+.tools-row{display:flex;flex-wrap:wrap;gap:var(--sp-4);align-items:center}
+.tools-row select{flex:1 1 9rem;min-width:0}
 .seg{display:inline-flex;background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1);gap:var(--sp-1);flex:none}
 .seg button{border:0;background:none;cursor:pointer;border-radius:var(--r-6);padding:var(--sp-3) var(--sp-5);
   font-size:var(--fs-3);font-weight:650;color:var(--text-2)}
@@ -481,6 +481,13 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ev-chev{color:var(--text-3)}
 .ev-body{border-top:1px solid var(--border);padding:var(--sp-3) var(--sp-6) var(--sp-6);background:var(--card-2)}
 .ev-acts{margin-top:var(--sp-5)}
+.ln-amt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-variant-numeric:tabular-nums}
+.ln-amt b{font-size:var(--fs-5);font-weight:800;color:var(--brand-ink)}
+.ln-amt small{font-size:var(--fs-1);color:var(--text-3)}
+.lm-add{display:flex;gap:var(--sp-3);align-items:center;margin-top:var(--sp-5)}
+.lm-add #lm-amt{flex:0 1 8rem;min-width:0}
+.lm-add #lm-note{flex:1;min-width:0}
+.lm-add .btn{flex:none}
 /* ── תכנית ── */
 .prow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-4);padding:var(--sp-5) 0;border-bottom:1px solid var(--border-2)}
 .prow:last-child{border-bottom:0}

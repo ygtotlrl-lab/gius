@@ -100,6 +100,7 @@ AS $function$
     'ANCHOR:g_notes', 'DIFF:g_notes',
     'ANCHOR:g_loans', 'DIFF:g_loans',
     'ANCHOR:g_budget_items', 'DIFF:g_budget_items',
+    'ANCHOR:g_loan_moves', 'DIFF:g_loan_moves',
     'ANCHOR:g_events', 'DIFF:g_events',
     'ANCHOR:k_settings', 'DIFF:k_settings',
     'ANCHOR:k_pledges', 'DIFF:k_pledges',
@@ -431,6 +432,23 @@ create table if not exists public.g_budget_items (
 );
 create index if not exists g_budget_items_event_idx ON public.g_budget_items USING btree (event_client_id);
 
+-- תנועה בהלוואה — סכום והערה; היתרה = סכום ההלוואה − Σ התנועות, ואינה נשמרת.
+create table if not exists public.g_loan_moves (
+  client_id text not null,
+  loan_client_id text not null,
+  amount numeric(14,2) not null,
+  note text,
+  sort integer not null default 0,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_loan_moves_pkey PRIMARY KEY (client_id),
+  constraint g_loan_moves_loan_fk FOREIGN KEY (loan_client_id) REFERENCES public.g_loans(client_id) ON DELETE RESTRICT
+);
+create index if not exists g_loan_moves_loan_idx ON public.g_loan_moves USING btree (loan_client_id);
+
 create index if not exists g_donors_live_idx ON public.g_donors USING btree (deleted, name);
 create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (kind, sort);
 create index if not exists g_pledges_donor_full_idx ON public.g_pledges USING btree (donor_client_id);
@@ -479,6 +497,9 @@ grant all on table public.g_events to service_role;
 revoke all on table public.g_budget_items from anon, authenticated;
 grant select, insert, update on table public.g_budget_items to anon, authenticated;
 grant all on table public.g_budget_items to service_role;
+revoke all on table public.g_loan_moves from anon, authenticated;
+grant select, insert, update on table public.g_loan_moves to anon, authenticated;
+grant all on table public.g_loan_moves to service_role;
 
 alter table public.g_donors enable row level security;
 drop policy if exists g_donors_all on public.g_donors;
@@ -516,3 +537,6 @@ create policy g_events_all on public.g_events as permissive for all to anon, aut
 alter table public.g_budget_items enable row level security;
 drop policy if exists g_budget_items_all on public.g_budget_items;
 create policy g_budget_items_all on public.g_budget_items as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_loan_moves enable row level security;
+drop policy if exists g_loan_moves_all on public.g_loan_moves;
+create policy g_loan_moves_all on public.g_loan_moves as permissive for all to anon, authenticated using (true) with check (true);

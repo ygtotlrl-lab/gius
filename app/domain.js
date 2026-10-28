@@ -146,6 +146,9 @@ function gSortBudget(list) { return list.slice().sort(bySort); }
 
 function gSortEvents(list) { return list.slice().sort(bySort); }
 
+// תנועות בהלוואה — בסדר ההוספה.
+function gSortLoanMoves(list) { return list.slice().sort(bySort); }
+
 // הלוואות — לפי שם המלווה.
 // הלוואות — לפי שם (א״ב) · תאריך לקיחה (החדש ראשון) · תאריך סיום (הקרוב ראשון) · סטטוס (בסדר הרשימה);
 // בלי ערך — בסוף, ובכל שוויון — א״ב.
@@ -242,6 +245,7 @@ function applyMirrorToState() {
   state.targets = liveRows('g_targets');
   state.notes   = liveRows('g_notes');
   state.loans   = liveRows('g_loans');
+  state.loanMoves = liveRows('g_loan_moves');
   state.events  = liveRows('g_events');
   state.budget  = liveRows('g_budget_items');
 }
@@ -299,7 +303,8 @@ var PC_CHILDREN = {
   g_donors: [{ t: 'g_pledges', fk: 'donor_client_id' }, { t: 'g_txns', fk: 'donor_client_id' },
              { t: 'g_plan_items', fk: 'donor_client_id' }],
   g_pledges: [{ t: 'g_txns', fk: 'pledge_client_id' }],
-  g_events: [{ t: 'g_budget_items', fk: 'event_client_id' }]
+  g_events: [{ t: 'g_budget_items', fk: 'event_client_id' }],
+  g_loans: [{ t: 'g_loan_moves', fk: 'loan_client_id' }]
 };
 
 // הכתיבה לבנים עוברת ב-upsertLocal ולא ב-update — update חותם Date.now() ומבטל את ירושת החותמת.
@@ -657,10 +662,13 @@ function viewBare(html) {
 }
 
 // חיפוש וסינון הכרטיסים — לפי שם, ולפי שייכות.
-function donorMatches(q, aff, mode) {
+// סינון ההתחייבויות — סעיף (`s:`) או סוג (`t:`): כרטיס שיש לו התחייבות כזו.
+function donorMatches(q, aff, mode, pf) {
   q = String(q || '').trim().toLowerCase();
+  var pk = pf ? (pf.slice(0, 2) === 's:' ? 'section' : 'pledge_type') : '', pv = pf ? pf.slice(2) : '';
   var list = state.donors.filter(function (d) {
     if (aff && (d.affiliations || []).indexOf(aff) < 0) return false;
+    if (pk && !pledgesOfDonor(d.client_id).some(function (p) { return p[pk] === pv; })) return false;
     return !q || String(d.name || '').toLowerCase().indexOf(q) >= 0;
   });
   return gSortDonors(list, mode);
@@ -668,7 +676,7 @@ function donorMatches(q, aff, mode) {
 
 export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
-         donorTotal, emptyBox, gSortBudget, gSortEvents, gSortGroups, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
+         donorTotal, emptyBox, gSortBudget, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
          gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,
          lookupPut, lookupRows, mirrorHasData, monthAmount, monthKeyOf, monthLabel, monthTxns, monthTxnsInit, nextSort, nullable,
          num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,

@@ -18,7 +18,7 @@ import { $, checked, collectedForPledge, dmyDate, donorById, donorLeft, donorMat
 // כרטיס כללי (`is_general`) — מגבית, פרויקט או «תורמים לא מזוהים» — תמיד בנפרד, בתחתית הרשימה.
 // במיון לפי שגריר — כותרת לכל שגריר.
 function cardRowsHTML() {
-  var c = state.cards, list = donorMatches(c.q, c.aff, c.sort);
+  var c = state.cards, list = donorMatches(c.q, c.aff, c.sort, c.pf);
   if (c.open && !list.some(function (d) { return d.client_id === c.open; })) c.open = null;
   if (!list.length) return emptyBox('🗂', state.donors.length ? 'אין כרטיס התואם את החיפוש' : 'עדיין אין כרטיסים');
   var people = list.filter(function (d) { return !d.is_general; }), general = list.filter(function (d) { return d.is_general; });
@@ -63,6 +63,21 @@ function cardTileHTML(d) {
   return tile + (open ? '<div class="ctile-open">' + cardOpenHTML(d) + '</div>' : '');
 }
 
+// סינון לפי ההתחייבויות — בורר אחד בשתי רמות: סעיף או סוג. ערך שכבר נרשם ואינו ברשימה נשאר.
+function pledgeFilterHTML(v) {
+  function grp(label, short, pre, list, field) {
+    var opts = list.slice();
+    state.pledges.forEach(function (p) { if (p[field] && opts.indexOf(p[field]) < 0) opts.push(p[field]); });
+    return '<optgroup label="' + esc(label) + '">' + opts.map(function (o) {
+      return '<option value="' + esc(pre + o) + '"' + (pre + o === v ? ' selected' : '') + '>' + esc(short + ' · ' + o) + '</option>';
+    }).join('') + '</optgroup>';
+  }
+  return '<select class="inp" id="cards-pf" aria-label="סינון לפי סעיף או סוג" data-chg="cards-pf">' +
+    '<option value="">סעיף או סוג</option>' +
+    grp('סעיפים', 'סעיף', 's:', lookupLabels(LK_SECTION), 'section') +
+    grp('סוגי התחייבויות', 'סוג', 't:', lookupLabels(LK_PTYPE), 'pledge_type') + '</select>';
+}
+
 function viewCards() {
   var c = state.cards, affs = lookupLabels(LK_AFFIL);
   return '<section class="card list-tools">' +
@@ -70,6 +85,7 @@ function viewCards() {
         '<span class="search-ic">' + icon('search') + '</span></label>' +
       '<div class="tools-row">' +
         selectHTML('cards-aff', affs, c.aff, 'אפשרויות סינון', 'cards-aff') +
+        pledgeFilterHTML(c.pf) +
         '<div class="seg" role="group" aria-label="מיון">' +
           [['abc', 'סדר'], ['sum', 'סכום'], ['amb', 'שגריר']].map(function (o) {
             return '<button class="' + (c.sort === o[0] ? 'on' : '') + '" data-act="cards-sort" data-v="' + o[0] + '">' + o[1] + '</button>';
