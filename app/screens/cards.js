@@ -135,6 +135,7 @@ function payRowHTML(t) {
   return '<button class="pay' + (t.cleared ? ' cleared' : ' uncleared') + '" data-act="pay-edit" data-id="' + esc(t.client_id) + '"' +
       ' title="' + (t.cleared ? 'נסלק' : 'טרם נסלק') + '">' +
     '<span>' + esc(txnWhen(t)) + '</span><span>' + esc(t.method || '—') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') + '</span>' +
+    (t.note ? '<span class="pay-note">' + esc(t.note) + '</span>' : '') +
     pendTag(pendRowKey('g_txns', t.client_id)) +
     '<b>' + ils(t.amount) + '</b></button>';
 }
@@ -353,6 +354,7 @@ function formPay(t, pledgeId, donorId) {
     whenHTML('t', t) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('t-method', lookupLabels(LK_METHOD), t ? t.method : '', 'אמצעי', 'pay-method') + '</label>' +
     soHTML(t, so) +
+    '<label class="fld"><span>הערות</span><input class="inp" id="t-note" value="' + esc(t && t.note ? t.note : '') + '"></label>' +
     '<label class="fld chk"><input type="checkbox" id="t-cleared"' + (t && t.cleared ? ' checked' : '') + '><span>סליקה בפועל</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t ? '<button class="btn danger" data-act="pay-del" data-id="' + esc(t.client_id) + '">מחיקה</button>' : '') +
@@ -390,7 +392,7 @@ function savePay(id, pledgeId) {
   var when = readWhen('t');
   if (!when) return;
   var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: method, installments: n,
-              cleared: checked('t-cleared') };
+              cleared: checked('t-cleared'), note: nullable(val('t-note')) };
   var go = function (initiated) {
     var w = initiated == null || p.initiated === initiated ? Promise.resolve() : update('g_pledges', p.client_id, { initiated: initiated });
     return w.then(function () {
