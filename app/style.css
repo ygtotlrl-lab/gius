@@ -375,7 +375,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .seg-wide{display:flex;width:100%;margin-bottom:var(--sp-6)}
 .seg-wide button{flex:1}
 /* ── אריחי הכרטיסים ── */
-.ctiles{display:grid;grid-template-columns:1fr;gap:var(--sp-5);grid-auto-flow:row dense}
+.ctiles{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-5);grid-auto-flow:row dense}
 .ctile-open{grid-column:1 / -1}
 .ctiles + .list-sub{margin-top:var(--sp-6)}
 .list-sub + .ctiles{margin-top:var(--sp-5)}
@@ -427,26 +427,31 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .cp-btn{width:40px;height:40px;flex:none;border:0;border-radius:var(--r-4);background:rgba(255,255,255,.16);color:inherit;font-size:var(--fs-4);cursor:pointer;display:grid;place-items:center}
 .cp-btn.star{color:var(--accent-2)}
 .cp-btn.star.on{background:var(--accent-2);color:#2a1e05}
-.cp-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4);padding:var(--sp-6) var(--sp-7) var(--sp-3)}
-.cp-kpis > div{background:var(--card-2);border-radius:var(--r-5);padding:var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
-.cp-kpis span{font-size:var(--fs-2);color:var(--text-3)}
-.cp-kpis b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cp-tabs{display:flex;align-items:flex-end;gap:var(--sp-2);padding:var(--sp-5) var(--sp-7) 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.cp-tabs [role=tab]{border:0;background:none;font:inherit;font-size:var(--fs-3);font-weight:700;color:var(--text-3);cursor:pointer;
-  padding:var(--sp-4) var(--sp-5);border-bottom:3px solid transparent;margin-bottom:-1px}
-.cp-tabs [role=tab].on{color:var(--brand-ink);border-bottom-color:var(--brand-fill)}
-.cp-tabs .btn{margin-inline-start:auto;align-self:center;margin-bottom:var(--sp-3)}
-.cp-body{padding:var(--sp-6) var(--sp-7)}
-.cp-info{display:grid;grid-template-columns:1fr;gap:0 var(--sp-7);margin-bottom:var(--sp-6)}
-@media (min-width:640px){.cp-info{grid-template-columns:1fr 1fr}.cp-wide{grid-column:1 / -1}}
+.cp-band{flex-wrap:wrap}
+.cp-note{font-size:var(--fs-2);opacity:.85;overflow-wrap:anywhere}
+/* התחייב · נגבה · נותר — בשורת הפס, קטנים; הנותר בולט */
+.cp-sum{display:flex;gap:var(--sp-2);flex:none;background:rgba(255,255,255,.1);border-radius:var(--r-5);padding:var(--sp-2)}
+.cp-sum span{display:flex;flex-direction:column;align-items:center;padding:var(--sp-2) var(--sp-4);border-radius:var(--r-4);min-width:0}
+.cp-sum small{font-size:var(--fs-1);opacity:.8}
+.cp-sum b{font-size:var(--fs-3);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cp-sum .left{background:rgba(255,255,255,.18)}
+.cp-sum .left b{font-size:var(--fs-4)}
+.cp-acts{display:flex;gap:var(--sp-3);flex:none}
+.cp-bar{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-5) var(--sp-7) 0}
+.cp-bar h4{flex:1;display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}
+.cp-bar .cnt{font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text-3);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.cp-body{padding:var(--sp-5) var(--sp-7) var(--sp-6)}
 @media (max-width:639px){
-  .cp-band,.cp-kpis,.cp-tabs,.cp-body{padding-inline:var(--sp-5)}
+  .cp-band,.cp-bar,.cp-body{padding-inline:var(--sp-5)}
   .cp-band{gap:var(--sp-4)}
   .cp-av{width:44px;height:44px;font-size:var(--fs-4)}
   .cp-who h3{font-size:var(--fs-5)}
-  .cp-kpis{gap:var(--sp-3)}
-  .cp-kpis > div{padding:var(--sp-4)}
-  .cp-kpis b{font-size:var(--fs-3);white-space:normal;overflow:visible}
+  .cp-sum{order:5;width:100%;justify-content:space-between}
+  .cp-sum span{flex:1}
+  .cp-band{position:relative;align-items:flex-start}
+  .cp-acts{position:absolute;top:var(--sp-5);inset-inline-end:var(--sp-5)}
+  .cp-btn{width:34px;height:34px}
+  .cp-who h3{padding-inline-end:116px;min-height:34px;display:flex;align-items:center}
 }
 .copen-hd{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4)}
 .copen-hd h3{flex:1;font-size:var(--fs-5)}
@@ -464,18 +469,31 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   border:1px solid var(--border);background:var(--card);border-radius:var(--r-6);padding:var(--sp-2) var(--sp-5)}
 .chip input{accent-color:var(--brand-fill);margin:0}
 .chip.on{background:var(--brand-soft);border-color:var(--brand-ink);color:var(--brand-ink);font-weight:650}
-.pl{background:var(--card);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-5);margin-bottom:var(--sp-4)}
-.pl-top{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap}
-.pl-amt{margin-inline-start:auto;font-weight:800;font-variant-numeric:tabular-nums}
-.pl-detail{font-size:var(--fs-3);margin-top:var(--sp-3)}
-.pl-meta{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-5);font-size:var(--fs-2);color:var(--text-3);margin-top:var(--sp-3)}
-.pl-st{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-4);font-size:var(--fs-2);margin-top:var(--sp-4);font-variant-numeric:tabular-nums}
-.pl-st .grow{flex:1}
+/* התחייבות — שורה אחת נפרשת: סעיף (תגית) · סוג (מודגש) · פירוט (טקסט חופשי, נטוי ואפור) · הנותר */
+.pl{background:var(--card);border:1px solid var(--border);border-radius:var(--r-5);margin-bottom:var(--sp-3);overflow:hidden}
+.pl.open{border-color:var(--brand-fill)}
+.pl-hd{display:flex;align-items:center;gap:var(--sp-4);width:100%;background:none;border:0;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-4) var(--sp-5)}
+.pl-what{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3)}
+.pl-what > b{font-size:var(--fs-3);font-weight:750}
+.pl-detail{font-size:var(--fs-2);color:var(--text-3);font-style:italic}
+.pl-end{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;font-variant-numeric:tabular-nums}
+.pl-end b{font-size:var(--fs-4);font-weight:800}
+.pl-end small{font-size:var(--fs-1);color:var(--text-3);white-space:nowrap}
+.pl-end .badge{font-size:var(--fs-1);padding:0 var(--sp-3)}
+.pl-chev{color:var(--text-3);flex:none}
+.pl-body{border-top:1px solid var(--border-2);background:var(--card-2);padding:var(--sp-4) var(--sp-5)}
+.pl-body .pays{margin-top:0}
+.pl-note{font-size:var(--fs-2);color:var(--text-3);margin-top:var(--sp-3)}
+.pl-acts{margin-top:var(--sp-3)}
 .pays{margin-top:var(--sp-4);display:grid;gap:var(--sp-2)}
 .pay{display:flex;align-items:center;gap:var(--sp-4);width:100%;text-align:start;cursor:pointer;font-size:var(--fs-2);
-  background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-3);padding:var(--sp-3) var(--sp-4)}
+  background:var(--card);border:1px solid var(--border-2);border-radius:var(--r-3);padding:var(--sp-3) var(--sp-4);color:var(--text)}
 .pay b{margin-inline-start:auto;font-variant-numeric:tabular-nums}
-.pay-cl{color:var(--text-3)}
+/* מוסלק — מודגש; טרם נסלק — חיוור */
+.pay.cleared{font-weight:700}
+.pay.cleared b{font-weight:800}
+.pay.uncleared{opacity:var(--op-5);font-weight:400}
+.pay.uncleared b{font-weight:600}
 .ctotals{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);padding-top:var(--sp-5);border-top:1px solid var(--border)}
 .copen-ft{margin-top:var(--sp-5)}
 .tg-own{margin-top:var(--sp-6)}

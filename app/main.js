@@ -21,7 +21,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, formDonor, initPick, initSwitchChange, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
+import { cardRowsHTML, formDonor, initPick, initSwitchChange, payPledgePick, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
          soToggle, viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
@@ -228,7 +228,7 @@ function go(screen) {
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') state.planMonth = m;
-  if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, tab: 'pl' };
+  if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null };
   if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
@@ -310,10 +310,13 @@ var DOM_ACTIONS = {
   'cards-sort': function (el) { state.cards.sort = el.dataset.v; render(); },
   'card-toggle': function (el) {
     state.cards.open = state.cards.open === el.dataset.id ? null : el.dataset.id;
-    state.cards.tab = 'pl';
+    state.cards.plOpen = null;
     cardsRefresh();
   },
-  'card-tab': function (el) { state.cards.tab = el.dataset.v; cardsRefresh(); },
+  'pledge-toggle': function (el) {
+    state.cards.plOpen = state.cards.plOpen === el.dataset.id ? null : el.dataset.id;
+    cardsRefresh();
+  },
   'card-close': function () { state.cards.open = null; cardsRefresh(); },
   'card-star': function (el) {
     var d = donorById(el.dataset.id);
@@ -332,7 +335,7 @@ var DOM_ACTIONS = {
     return runSave(function () { return savePledge(el.dataset.id, el.dataset.donor); }, 'ההתחייבות נשמרה');
   },
   'pledge-del': function (el) { return delAsk(MSG_DEL_PLEDGE, 'g_pledges', el.dataset.id); },
-  'pay-new': function (el) { formPay(null, el.dataset.pledge); },
+  'pay-new': function (el) { formPay(null, el.dataset.pledge, el.dataset.donor); },
   'pay-edit': function (el) { var t = findIn(state.txns, el.dataset.id); if (t) formPay(t); },
   'pay-save': function (el) {
     return runSave(function () { return savePay(el.dataset.id, el.dataset.pledge); }, 'התשלום נשמר');
@@ -486,14 +489,9 @@ document.addEventListener('change', function (e) {
     if (mInp && el.value) mInp.value = monthKeyOf(el.value);
     return;
   }
-  // שייכות — סימון ישיר בכרטיס הפתוח, נשמר בשינוי.
-  if (el.dataset.chg === 'aff') {
-    var d = donorById(el.dataset.id);
-    if (!d) return;
-    var list = (d.affiliations || []).filter(function (a) { return a !== el.value; });
-    if (el.checked) list.push(el.value);
-    update('g_donors', d.client_id, { affiliations: list }).then(function () { cardsRefresh(); }).catch(errToast);
-  }
+  // שייכות — בטופס הכרטיס; נשמרת עם השמירה.
+  if (el.dataset.chg === 'aff-pick') { var ch = el.closest('.chip'); if (ch) ch.classList.toggle('on', el.checked); return; }
+  if (el.dataset.chg === 'pay-pledge') { payPledgePick(el); return; }
 });
 
 // focusin ולא focus — focus אינו עולה בעץ, ומאזין על השדה עצמו מת עם חלון הדו-שיח שנבנה מחדש.
