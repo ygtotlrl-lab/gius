@@ -80,6 +80,8 @@ AS $function$
     'ANCHOR:hr_students_rows', 'DIFF:hr_students_rows',
     'ANCHOR:hr_sleep_sessions', 'DIFF:hr_sleep_sessions',
     'ANCHOR:hr_sleep_marks', 'DIFF:hr_sleep_marks',
+    'ANCHOR:hr_exams', 'DIFF:hr_exams',
+    'ANCHOR:hr_exam_marks', 'DIFF:hr_exam_marks',
     'ANCHOR:hr_settings', 'DIFF:hr_settings',
     'ANCHOR:sl_students', 'DIFF:sl_students',
     'ANCHOR:sl_transactions', 'DIFF:sl_transactions',
