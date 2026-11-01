@@ -37,19 +37,22 @@ function viewPlan() {
       var a = planActual(r), id = esc(r.client_id), amb = r.ambassador || 'ללא שגריר', head = '';
       if (amb !== lastAmb) {
         var grp = list.filter(function (x) { return (x.ambassador || 'ללא שגריר') === amb; });
-        head = '<div class="list-sub plan-sub"><span>' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span></div>';
+        var ge = 0, ga = 0;
+        grp.forEach(function (x) { if (!x.irrelevant) { ge += +x.expected || 0; ga += planActual(x); } });
+        head = '<div class="list-sub plan-sub"><span>' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span>' +
+          '<span class="sum">' + ils(ga) + ' / ' + ils(ge) + (ge > 0 ? ' · ' + Math.round(ga / ge * 100) + '%' : '') + '</span></div>';
         lastAmb = amb;
       }
-      return head + '<div class="prow' + (r.irrelevant ? ' irr' : '') + '">' +
-        '<div class="prow-main" data-act="plan-edit" data-id="' + id + '">' +
+      var pct = r.expected > 0 ? Math.min(100, Math.round(a / r.expected * 100)) : (a > 0 ? 100 : 0);
+      return head + '<div class="pr' + (r.kind === 'התרמה' ? ' k-raise' : '') + (r.irrelevant ? ' irr' : '') + '">' +
+        '<div class="pr-main" data-act="plan-edit" data-id="' + id + '">' +
           '<b>' + esc(donorName(r.donor_client_id)) + pendTag(pendRowKey('g_plan_items', r.client_id)) + '</b>' +
-          '<small><span class="badge ' + (r.kind === 'התרמה' ? 'gold' : 'brand') + '">' + esc(r.kind || '—') + '</span> ' +
-            esc([r.care_date ? 'טיפול ' + dmyDate(r.care_date) : '', r.note].filter(Boolean).join(' · ')) + '</small>' +
+          '<small>' + esc([r.kind || '', r.care_date ? 'טיפול ' + dmyDate(r.care_date) : '', r.note].filter(Boolean).join(' · ')) + '</small>' +
         '</div>' +
-        '<div class="prow-nums"><span>צפי <b>' + ils(r.expected) + '</b></span>' +
-          '<span class="' + (a > 0 ? 'ok' : '') + '">בפועל <b>' + ils(a) + '</b></span></div>' +
-        '<button class="btn ghost xs" data-act="plan-irr" data-id="' + id + '" aria-pressed="' + !!r.irrelevant + '">' +
-          (r.irrelevant ? 'רלוונטי' : 'לא רלוונטי') + '</button>' +
+        '<span class="pr-fig"><b>' + ils(a) + '</b> / ' + ils(r.expected) + '</span>' +
+        '<div class="pr-bar"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct + '%"></i></div>' +
+        '<button class="pr-menu" data-act="plan-irr" data-id="' + id + '" aria-pressed="' + !!r.irrelevant + '" title="' +
+          (r.irrelevant ? 'סימון כרלוונטי' : 'סימון כלא רלוונטי') + '" aria-label="' + (r.irrelevant ? 'סימון כרלוונטי' : 'סימון כלא רלוונטי') + '">' + icon('dots') + '</button>' +
       '</div>';
     }).join('');
   }

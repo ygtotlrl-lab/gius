@@ -5,7 +5,7 @@ import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, initials, monthAmount, monthLabel, monthTxnsInit,
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthLabel, monthTxnsInit,
          pendRowKey, pledgeById, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
@@ -112,20 +112,36 @@ function viewDash() {
   var list = gSortTxns(txns), shown = state.dashPayAll ? list : list.slice(0, 3);
   h += '<section class="card"><h2>תשלומי החודש<span class="cnt">' + list.length + '</span></h2>';
   if (!list.length) h += emptyBox('💰', 'אין תשלומים בחודש זה');
-  else h += shown.map(function (t) {
-    var p = pledgeById(t.pledge_client_id), nm = donorName(t.donor_client_id);
-    return '<div class="row' + (t.cleared ? '' : ' uncleared') + '" data-act="card-go" data-id="' + esc(t.donor_client_id) + '">' +
-      '<span class="av">' + esc(initials(nm)) + '</span>' +
-      '<div class="main"><b>' + esc(nm) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
-      '<small>' + esc(txnWhen(t)) + ' · ' + esc((p && (p.pledge_type || p.section)) || '—') +
-        (t.method ? ' · ' + esc(t.method) : '') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') +
-        (t.cleared ? '' : ' · טרם נסלק') + '</small></div>' +
-      '<div class="end">' + ils(monthAmount(t)) + '</div></div>';
-  }).join('');
+  else {
+    // קבוצה לכל יום — התאריך של התשלום, ובלעדיו החודש.
+    var lastDay = null;
+    h += shown.map(function (t) {
+      var p = pledgeById(t.pledge_client_id), nm = donorName(t.donor_client_id), day = txnWhen(t), head = '';
+      if (day !== lastDay) { head = '<div class="rc-day">' + esc(day) + '</div>'; lastDay = day; }
+      return head + '<div class="rc' + (t.cleared ? '' : ' uncleared') + '" data-act="card-go" data-id="' + esc(t.donor_client_id) + '"' +
+          (t.cleared ? '' : ' title="טרם נסלק"') + '>' +
+        '<span class="rc-amt">' + ils(monthAmount(t)) + '</span>' +
+        '<div class="rc-who"><b>' + esc(nm) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
+          '<small>' + esc((p && (p.pledge_type || p.section)) || '—') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') + '</small></div>' +
+        '<span class="rc-end" title="' + esc(t.method || '') + '">' + icon(methodIcon(t.method)) + '<span>' + esc(t.method || '') + '</span></span></div>';
+    }).join('');
+  }
   if (list.length > 3) h += '<button class="btn ghost pay-more" data-act="dash-pay-all" aria-expanded="' + (state.dashPayAll ? 'true' : 'false') + '">' +
     (state.dashPayAll ? 'הצג פחות' + icon('up') : 'הצג את כל ' + list.length + ' התשלומים' + icon('down')) + '</button>';
   h += '</section>';
   return h;
+}
+
+// אייקון לאמצעי התשלום — לפי מילה בשם, כי הרשימה נערכת בהגדרות.
+function methodIcon(m) {
+  m = String(m || '');
+  if (/אשראי/.test(m)) return 'credit';
+  if (/העברה|בנק/.test(m)) return 'bank';
+  if (/מזומן/.test(m)) return 'cash';
+  if (/צ׳ק|צ'ק|צק/.test(m)) return 'cheque';
+  if (/ביט|פייבוקס/.test(m)) return 'phone';
+  if (/הו״ק|הו"ק|קבע/.test(m)) return 'repeat';
+  return 'cards';
 }
 
 export { viewDash };

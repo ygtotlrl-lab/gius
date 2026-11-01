@@ -413,7 +413,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .crow.star .av{background:var(--gold-soft);color:var(--gold)}
 .star-ic{color:var(--gold)}
 /* משימה בעדיפות — אותה מסגרת זהובה; הכוכב בשורה מחליף את הסימון. */
-.row.star{box-shadow:inset 0 0 0 2px var(--gold);border-radius:var(--r-4);padding-inline:var(--sp-4);margin:var(--sp-2) 0}
 .task-star{flex:none;background:none;border:0;font:inherit;font-size:var(--fs-5);line-height:var(--lh-1);color:var(--text-3);cursor:pointer;padding:var(--sp-2)}
 .task-star.on{color:var(--gold)}
 .copen{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:0 0 var(--sp-5);box-shadow:var(--shadow)}
@@ -481,6 +480,17 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pl-end small{font-size:var(--fs-1);color:var(--text-3);white-space:nowrap}
 .pl-end .badge{font-size:var(--fs-1);padding:0 var(--sp-3)}
 .pl-chev{color:var(--text-3);flex:none}
+/* בטלפון — שתי קומות: הסעיף, הסוג והפירוט על כל הרוחב, ומתחתם הנותר והנגבה בשורה אחת; כך השם אינו נדחס לעמודה צרה. */
+@media (max-width:639px){
+  .pl-hd{flex-wrap:wrap;row-gap:var(--sp-3)}
+  .pl-what{flex:1 1 calc(100% - 40px)}
+  .pl-chev{order:2}
+  .pl-end{order:3;flex:1 1 100%;flex-direction:row-reverse;justify-content:space-between;align-items:baseline}
+  .pl-end small{white-space:normal}
+  .cp-bar{flex-wrap:wrap}
+  .cp-bar h4{flex:1 1 100%}
+  .cp-bar .btn{flex:1;justify-content:center}
+}
 .pl-body{border-top:1px solid var(--border-2);background:var(--card-2);padding:var(--sp-4) var(--sp-5)}
 .pl-body .pays{margin-top:0}
 .pl-note{font-size:var(--fs-2);color:var(--text-3);margin-top:var(--sp-3)}
@@ -518,15 +528,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .lm-add #lm-note{flex:1;min-width:0}
 .lm-add .btn{flex:none}
 /* ── תכנית ── */
-.prow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-4);padding:var(--sp-5) 0;border-bottom:1px solid var(--border-2)}
-.prow:last-child{border-bottom:0}
-.prow.irr{opacity:var(--op-4)}
-.prow-main{flex:1 1 200px;min-width:0;cursor:pointer}
-.prow-main b{display:block;font-weight:650}
-.prow-main small{color:var(--text-3);font-size:var(--fs-2)}
-.prow-nums{display:flex;gap:var(--sp-5);font-size:var(--fs-2);color:var(--text-3);font-variant-numeric:tabular-nums}
-.prow-nums b{color:var(--text)}
-.prow-nums .ok b{color:var(--ok)}
 /* ── משימות ── */
 .stage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-bottom:var(--sp-6)}
 .stage-card{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-2);cursor:pointer;text-align:start;
@@ -642,3 +643,54 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .star-ic .ico,.cp-btn.star.on .ico,.task-star.on .ico{fill:currentColor}
 .cp-btn .ico,.nf-btn .ico,.task-star .ico{width:20px;height:20px}
 #p-now-box:not([hidden]){display:contents}
+
+/* ── תשלומי החודש — «קבלה»: הסכום בראש השורה, בירוק; קבוצה לכל יום; אמצעי התשלום באייקון. ── */
+.rc-day{font-size:var(--fs-1);font-weight:800;color:var(--text-3);letter-spacing:.02em;padding:var(--sp-4) var(--sp-2) var(--sp-2);
+  border-bottom:1px solid var(--border-2)}
+.rc{display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-4) var(--sp-3);border-bottom:1px solid var(--border-2);cursor:pointer}
+.rc:last-child{border-bottom:0}
+.rc-amt{flex:none;min-width:5.5em;font-size:var(--fs-5);font-weight:850;color:var(--ok);font-variant-numeric:tabular-nums}
+.rc-who{flex:1;min-width:0}
+.rc-who b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-who small{display:block;color:var(--text-3);font-size:var(--fs-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-end{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;color:var(--text-3);font-size:var(--fs-1)}
+.rc-end .ico{width:18px;height:18px;color:var(--brand-ink)}
+.rc.uncleared{border:1.5px dashed var(--border);border-radius:var(--r-4);margin:var(--sp-2) 0}
+.rc.uncleared .rc-amt{color:var(--text-3)}
+
+/* ── התכנית — «צפי מול בפועל»: פס התקדמות לכל שורה, הסוג בפס צבע בקצה, וסיכום לכל שגריר. ── */
+.plan-sub .sum{margin-inline-start:auto;font-size:var(--fs-1);color:var(--text-3);font-variant-numeric:tabular-nums}
+.pr{position:relative;display:grid;grid-template-columns:1fr auto;gap:var(--sp-2) var(--sp-4);align-items:center;
+  padding:var(--sp-4) 40px var(--sp-4) var(--sp-3);border-bottom:1px solid var(--border-2)}
+.pr::before{content:"";position:absolute;inset-block:var(--sp-3);inset-inline-start:0;width:4px;border-radius:2px;background:var(--brand-fill)}
+.pr.k-raise::before{background:var(--gold)}
+.pr-main{min-width:0;cursor:pointer}
+.pr-main b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-main small{display:block;color:var(--text-3);font-size:var(--fs-2)}
+.pr-fig{font-size:var(--fs-2);color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pr-fig b{color:var(--text);font-size:var(--fs-3)}
+.pr-bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--border-2);overflow:hidden}
+.pr-bar i{display:block;height:100%;border-radius:3px;background:var(--gold)}
+.pr-bar i.full{background:var(--ok)}
+.pr-menu{position:absolute;inset-inline-end:0;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--text-3);cursor:pointer;padding:var(--sp-2)}
+.pr-menu .ico{width:18px;height:18px}
+.pr.irr{padding-block:var(--sp-2);opacity:var(--op-4)}
+.pr.irr .pr-bar,.pr.irr .pr-main small{display:none}
+.pr.irr .pr-main b{font-weight:500;font-size:var(--fs-2)}
+
+/* ── המשימות — «רשימת עבודה»: עיגול סימון בצבע השלב, ותאריך היעד בשבב שמזהיר. ── */
+.tk{display:flex;align-items:flex-start;gap:var(--sp-4);padding:var(--sp-4) var(--sp-2);border-bottom:1px solid var(--border-2);cursor:pointer}
+.tk:last-child{border-bottom:0}
+.tk-check{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--warn);background:none;display:grid;place-items:center;
+  color:transparent;cursor:pointer;padding:0;margin-top:2px}
+.tk-check .ico{width:18px;height:18px}
+.tk-check.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.tk-check.off{border-color:var(--bad);border-style:dashed;color:var(--bad)}
+.tk-main{flex:1;min-width:0}
+.tk-main b{font-weight:700}
+.tk.done .tk-main b{text-decoration:line-through;color:var(--text-3)}
+.tk-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-2)}
+.tk-chips span{font-size:var(--fs-1);font-weight:700;border-radius:var(--r-6);padding:0 var(--sp-3);background:var(--border-2);color:var(--text-3)}
+.tk-chips .due.late{background:var(--bad-soft);color:var(--bad)}
+.tk-chips .due.soon{background:var(--gold-soft,var(--warn-soft));color:var(--gold)}
+.tk-meta{display:block;color:var(--text-3);font-size:var(--fs-1);margin-top:var(--sp-2)}

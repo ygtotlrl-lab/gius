@@ -13,7 +13,7 @@ import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, 
          swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
          MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
-         MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
+         MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
          TABS } from './constants.js';
 import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
@@ -364,6 +364,13 @@ var DOM_ACTIONS = {
   },
   'task-new': function () { formTask(null); },
   'task-open': function (el) { var t = findIn(state.tasks, el.dataset.id); if (t) formTask(t); },
+  // העיגול שבשורת המשימה — בהרצה ⟵ הושלם, ומהושלם או מלא רלוונטי — חזרה להרצה.
+  'task-step': function (el) {
+    var t = findIn(state.tasks, el.dataset.id);
+    if (!t) return;
+    var next = t.stage === STAGES[0].id ? STAGES[1].id : STAGES[0].id;
+    return update('g_tasks', t.client_id, { stage: next }).then(function () { render(); }).catch(errToast);
+  },
   'task-star': function (el) {
     var t = findIn(state.tasks, el.dataset.id);
     if (!t) return;

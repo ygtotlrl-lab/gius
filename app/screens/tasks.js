@@ -27,14 +27,24 @@ function createdLabel(t) {
   return d && !isNaN(d) ? (d.getMonth() + 1) + '/' + d.getFullYear() : '';
 }
 
+// שורת משימה — עיגול סימון בצבע השלב (לחיצה מעבירה שלב, בלי לפתוח), הכותרת, וכוכב העדיפות בקצה,
+// ושבבים: התחום ותאריך היעד — שעבר באדום, ושבוע קרוב בזהב.
+function dueCls(iso) {
+  if (!iso) return '';
+  var d = new Date(iso + 'T12:00:00'), now = new Date(), days = (d - now) / 864e5;
+  return days < -0.5 ? ' late' : days <= 7 ? ' soon' : '';
+}
 function taskRowHTML(t) {
-  var meta = [t.domain, t.note].filter(Boolean).join(' · ') || '—', made = createdLabel(t);
-  return '<div class="row' + (t.starred ? ' star' : '') + '" data-act="task-open" data-id="' + esc(t.client_id) + '">' +
-    '<span class="stage-dot ' + stageOf(t.stage).cls + '"></span>' +
-    '<div class="main"><b>' + esc(t.title) + pendTag(pendRowKey('g_tasks', t.client_id)) + '</b>' +
-      '<small>' + esc(meta) + '</small></div>' +
-    '<div class="end">' + (t.due_date ? '<span class="badge">' + esc(dmyDate(t.due_date)) + '</span>' : '') +
-      (made ? '<small>נוצרה ' + esc(made) + '</small>' : '') + '</div>' +
+  var st = stageOf(t.stage), made = createdLabel(t);
+  return '<div class="tk ' + st.cls + '" data-act="task-open" data-id="' + esc(t.client_id) + '">' +
+    '<button class="tk-check ' + st.cls + '" data-act="task-step" data-id="' + esc(t.client_id) + '" aria-label="' + esc('שלב: ' + st.id) + '" title="' + esc(st.id) + '">' +
+      icon(st.cls === 'off' ? 'close' : 'check') + '</button>' +
+    '<div class="tk-main"><b>' + esc(t.title) + '</b>' +
+      pendTag(pendRowKey('g_tasks', t.client_id)) +
+      '<div class="tk-chips">' + (t.domain ? '<span>' + esc(t.domain) + '</span>' : '') +
+        (t.due_date ? '<span class="due' + dueCls(t.due_date) + '">יעד ' + esc(dmyDate(t.due_date)) + '</span>' : '') + '</div>' +
+      '<small class="tk-meta">' + esc([t.note, made ? 'נוצרה ' + made : ''].filter(Boolean).join(' · ')) + '</small>' +
+    '</div>' +
     '<button class="task-star' + (t.starred ? ' on' : '') + '" data-act="task-star" data-id="' + esc(t.client_id) +
       '" aria-pressed="' + !!t.starred + '" aria-label="עדיפות">' + icon('star') + '</button>' +
   '</div>';
