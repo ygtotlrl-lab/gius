@@ -11,11 +11,11 @@ import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthLab
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
 function momentumMsg(pct) {
-  if (pct >= 100) return momentumHTML('trophy', 'עמדנו ביעד!');
-  if (pct >= 75) return momentumHTML('zap', 'כמעט שם — דחיפה אחרונה!');
-  if (pct >= 50) return momentumHTML('flame', 'מעל המחצית — ממשיכים!');
-  if (pct >= 25) return momentumHTML('dumbbell', 'רבע דרך — מומנטום!');
-  return momentumHTML('rocket', 'מתחילים!');
+  if (pct >= 100) return momentumHTML('summit', 'עמדנו ביעד!');
+  if (pct >= 75) return momentumHTML('climb3', 'כמעט שם — דחיפה אחרונה!');
+  if (pct >= 50) return momentumHTML('climb2', 'מעל המחצית — ממשיכים!');
+  if (pct >= 25) return momentumHTML('climb1', 'רבע דרך — מומנטום!');
+  return momentumHTML('climb0', 'מתחילים!');
 }
 function momentumHTML(ic, text) { return stIcon(icon(ic)) + esc(text); }
 

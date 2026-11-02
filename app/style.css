@@ -295,6 +295,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .momentum{
   margin-top:var(--sp-6);background:var(--brand-fill);color:var(--on-brand);
   border-radius:var(--radius-sm);padding:var(--sp-5) var(--sp-6);font-weight:700;text-align:center;font-size:var(--fs-4)}
+.momentum .st-ic .ico{width:26px;height:26px}
 .monthnav{display:flex;align-items:center;justify-content:center;gap:var(--sp-4);margin-bottom:var(--sp-6)}
 .monthnav b{font-size:var(--fs-4);min-width:130px;text-align:center}
 .monthnav .grow{margin-inline-start:auto}
