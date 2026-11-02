@@ -83,9 +83,9 @@ function viewDash() {
 
   var h = '<section class="card">' +
     '<div class="monthnav">' +
-      '<button class="btn ghost sm" data-act="month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
+      '<button class="btn ghost sm ic" data-act="month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
       '<b>' + esc(monthLabel(m)) + '</b>' +
-      '<button class="btn ghost sm" data-act="month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
+      '<button class="btn ghost sm ic" data-act="month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
     '</div>' +
     '<div class="gauge-row">' + gaugeHTML(collected, target > 0 ? pct : 0) +
       '<dl class="g-list">' +

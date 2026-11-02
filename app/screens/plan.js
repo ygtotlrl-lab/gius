@@ -16,9 +16,9 @@ function viewPlan() {
   var exp = sum(live, function (r) { return r.expected; }), act = sum(live, planActual);
   var h = '<section class="card">' +
     '<div class="monthnav">' +
-      '<button class="btn ghost sm" data-act="plan-month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
+      '<button class="btn ghost sm ic" data-act="plan-month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
       '<b>' + esc(monthLabel(m)) + '</b>' +
-      '<button class="btn ghost sm" data-act="plan-month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
+      '<button class="btn ghost sm ic" data-act="plan-month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
     '</div>' +
     '<div class="hero-stats stats-3">' +
       '<div class="stat"><span>שורות</span><b>' + live.length + '</b></div>' +

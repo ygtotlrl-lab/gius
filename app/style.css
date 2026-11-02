@@ -205,6 +205,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .btn.soft{background:var(--brand-soft);color:var(--brand-ink)}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
 .btn.sm{padding:var(--sp-3) var(--sp-5);font-size:var(--fs-3);border-radius:var(--r-3)}
+/* כפתור שכולו אייקון — ריבוע, בלי ריפוד, והאייקון במרכזו */
+.btn.ic{padding:0;width:34px;height:34px;justify-content:center}
+.btn.ic .ico{margin:0}
 .btn.xs{padding:var(--sp-2) var(--sp-4);font-size:var(--fs-2);border-radius:var(--r-3);font-weight:650}
 .btn.block{width:100%}
 .btn.icon{padding:var(--sp-4) var(--sp-5)}
@@ -666,7 +669,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pr-bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--border-2);overflow:hidden}
 .pr-bar i{display:block;height:100%;border-radius:3px;background:var(--gold)}
 .pr-bar i.full{background:var(--ok)}
-.pr-menu{position:absolute;inset-inline-end:var(--sp-1);top:50%;transform:translateY(-50%);background:none;border:0;color:var(--text-3);cursor:pointer;padding:var(--sp-2)}
+.pr-menu{position:absolute;inset-inline-end:var(--sp-1);top:50%;transform:translateY(-50%);background:none;border:0;color:var(--text-3);cursor:pointer;padding:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
 .pr-menu .ico{width:18px;height:18px}
 .pr.irr{padding-block:var(--sp-2);opacity:var(--op-4)}
 .pr.irr .pr-bar,.pr.irr .pr-main small{display:none}
