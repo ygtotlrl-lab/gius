@@ -557,9 +557,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .nf-in{width:100%;max-width:760px;display:flex;flex-direction:column;gap:var(--sp-5);min-height:100%}
 .nf-bar{display:flex;align-items:center;gap:var(--sp-4)}
 .nf-grow{flex:1}
-.nf-btn{height:42px;min-width:42px;padding:0 var(--sp-5);border:0;border-radius:var(--r-6);background:rgba(0,0,0,.06);color:var(--text);
+.nf-btn{height:42px;min-width:42px;padding:0 var(--sp-5);border:0;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-6);background:rgba(0,0,0,.06);color:var(--text);
   font:inherit;font-size:var(--fs-4);font-weight:700;cursor:pointer}
 .nf-del{color:var(--bad);font-size:var(--fs-3)}
+/* כפתור אייקון בלבד (✕) — עיגול מלא, האייקון במרכזו ולא על קו הבסיס של הטקסט */
+.nf-btn:has(> .ico:only-child){width:42px;padding:0}
 .nf-title{border:0;background:none;font:inherit;font-size:var(--fs-6);font-weight:800;color:var(--text);outline:none;padding:var(--sp-3) 0}
 .nf-body{flex:1;min-height:50vh;border:0;background:none;font:inherit;font-size:var(--fs-4);line-height:1.7;color:var(--text);outline:none;resize:none;padding:0}
 .nf-title::placeholder,.nf-body::placeholder{color:var(--text-3)}
