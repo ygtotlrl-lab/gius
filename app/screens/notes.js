@@ -10,7 +10,7 @@ function viewNotes() {
   var list = gSortNotes(state.notes);
   var h = '<section class="card"><h2>רשומות<span class="cnt">' + list.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="note-new">' + icon('plus') + 'פתק</button></span></h2>';
-  if (!list.length) return h + emptyBox('✎', 'אין עדיין רשומות') + '</section>';
+  if (!list.length) return h + emptyBox('notes', 'אין עדיין רשומות') + '</section>';
   h += '<div class="notes">' + list.map(function (n) {
     return '<article class="note-card nc-' + esc(n.color || NOTE_COLORS[0]) + '" data-drag="note" data-id="' + esc(n.client_id) + '">' +
       '<span class="grip" data-grip aria-hidden="true">⣿</span>' +

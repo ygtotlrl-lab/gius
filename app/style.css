@@ -126,7 +126,8 @@ main .card:last-child{margin-bottom:0}
 .grid2 > .card{margin-bottom:0}
 main .grid2:last-child{margin-bottom:0}
 .empty{color:var(--text-3);text-align:center;padding:var(--sp-7) var(--sp-5);font-size:var(--fs-3)}
-.empty .big{font-size:var(--fs-6);display:block;margin-bottom:var(--sp-3);opacity:var(--op-5)}
+.empty .big{display:flex;justify-content:center;margin-bottom:var(--sp-3);opacity:var(--op-5)}
+.empty .big .ico{width:36px;height:36px}
 
 td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 tbody tr.click{cursor:pointer}

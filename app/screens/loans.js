@@ -55,7 +55,7 @@ function loansBodyHTML() {
   if (state.loansOpen && !list.some(function (l) { return l.client_id === state.loansOpen; })) state.loansOpen = null;
   var h = '<h2>הלוואות<span class="cnt">' + list.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="loan-new">' + icon('plus') + 'הלוואה</button></span></h2>';
-  if (!list.length) return h + emptyBox('⇄', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות');
+  if (!list.length) return h + emptyBox('loans', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות');
   h += '<div class="evs">' + list.map(function (l) {
     var open = state.loansOpen === l.client_id, id = esc(l.client_id), moves = movesOf(l.client_id), bal = loanBalance(l);
     var r = '<div class="ev' + (open ? ' open' : '') + '">' +
@@ -73,7 +73,7 @@ function loansBodyHTML() {
           return '<div class="row" data-act="loan-move-edit" data-id="' + esc(m.client_id) + '">' +
             '<div class="main"><b>' + ils(m.amount) + pendTag(pendRowKey('g_loan_moves', m.client_id)) + '</b>' +
               '<small>' + esc(m.note || '—') + '</small></div></div>';
-        }).join('') : emptyBox('⇄', 'אין עדיין תנועות בהלוואה')) +
+        }).join('') : emptyBox('loans', 'אין עדיין תנועות בהלוואה')) +
         '<div class="total-row"><span>יתרה</span><b>' + ils(bal) + '</b></div>' +
         '<div class="lm-add" data-ks>' +
           '<input class="inp" id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
@@ -103,14 +103,14 @@ function formLoanMove(m) {
 
 function saveLoanMove(id) {
   var amount = readNum($('#lm-e-amt'), 0);
-  if (!amount) { toast(MSG_NEED_MOVE_AMOUNT, null, 'bad'); return; }
+  if (!amount) { toast(MSG_NEED_MOVE_AMOUNT, null, 'warn'); return; }
   return update('g_loan_moves', id, { amount: amount, note: nullable(val('lm-e-note')) });
 }
 
 // תנועה — סכום (חובה, לא אפס; שלילי מגדיל את היתרה) והערה.
 function addLoanMove(id) {
   var amount = readNum($('#lm-amt'), 0);
-  if (!amount) { toast(MSG_NEED_MOVE_AMOUNT, null, 'bad'); return; }
+  if (!amount) { toast(MSG_NEED_MOVE_AMOUNT, null, 'warn'); return; }
   return insert('g_loan_moves', { loan_client_id: id, amount: amount, note: nullable(val('lm-note')), sort: nextSort(movesOf(id)) });
 }
 
@@ -134,8 +134,8 @@ function formLoan(l) {
 
 function saveLoan(id) {
   var lender = val('o-lender'), amount = readNum($('#o-amount'), 0);
-  if (!lender) { toast(MSG_NEED_NAME, null, 'bad'); return; }
-  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+  if (!lender) { toast(MSG_NEED_NAME, null, 'warn'); return; }
+  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   var td = nullable(val('o-taken')), cd = nullable(val('o-check'));
   var row = { lender: lender, amount: amount,
               taken_date: td, taken_month: td ? null : nullable(val('o-taken-m')),

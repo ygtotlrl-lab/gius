@@ -1,5 +1,6 @@
 // app/screens/dash.js — לוח הבקרה: קריאה בלבד, והכל נגזר מהתשלומים
 import { esc } from '../../core/ui.js';
+import { stIcon } from '../../core/icons.js';
 import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
@@ -10,12 +11,13 @@ import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthLab
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
 function momentumMsg(pct) {
-  if (pct >= 100) return '🏆 עמדנו ביעד!';
-  if (pct >= 75) return '⚡ כמעט שם — דחיפה אחרונה!';
-  if (pct >= 50) return '🔥 מעל המחצית — ממשיכים!';
-  if (pct >= 25) return '💪 רבע דרך — מומנטום!';
-  return '🚀 מתחילים!';
+  if (pct >= 100) return momentumHTML('trophy', 'עמדנו ביעד!');
+  if (pct >= 75) return momentumHTML('zap', 'כמעט שם — דחיפה אחרונה!');
+  if (pct >= 50) return momentumHTML('flame', 'מעל המחצית — ממשיכים!');
+  if (pct >= 25) return momentumHTML('dumbbell', 'רבע דרך — מומנטום!');
+  return momentumHTML('rocket', 'מתחילים!');
 }
+function momentumHTML(ic, text) { return stIcon(icon(ic)) + esc(text); }
 
 // מד בחצי עיגול שמתמלא מימין לשמאל, כיוון הקריאה; במרכזו הנגבה בלבד, בצבע שלב ההתקדמות.
 // מעל 100% הקשת נשארת מלאה.
@@ -48,7 +50,7 @@ function groupBy(list, pick, fallback) {
 function pledgeField(t, f) { var p = pledgeById(t.pledge_client_id); return p ? p[f] : ''; }
 
 function breakdownHTML(rows, total) {
-  if (!rows.length) return emptyBox('📊', 'אין תשלומים בחודש זה');
+  if (!rows.length) return emptyBox('dash', 'אין תשלומים בחודש זה');
   return '<div class="brk">' + rows.map(function (r) {
     var share = total > 0 ? r.total / total * 100 : 0;
     return '<div class="brk-row"><span class="brk-lab">' + esc(r.key) + '<small>' + r.count + ' תשלומים</small></span>' +
@@ -111,7 +113,7 @@ function viewDash() {
   // שלושה אחרונים, והשאר בלחיצה — הרשימה המלאה ארוכה מדי לראש הלוח.
   var list = gSortTxns(txns), shown = state.dashPayAll ? list : list.slice(0, 3);
   h += '<section class="card"><h2>תשלומי החודש<span class="cnt">' + list.length + '</span></h2>';
-  if (!list.length) h += emptyBox('💰', 'אין תשלומים בחודש זה');
+  if (!list.length) h += emptyBox('cash', 'אין תשלומים בחודש זה');
   else {
     // קבוצה לכל יום — התאריך של התשלום, ובלעדיו החודש.
     var lastDay = null;

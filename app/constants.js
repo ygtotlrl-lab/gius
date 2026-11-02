@@ -75,21 +75,21 @@ var MORE = [
 
 // ── הודעות פר-אפליקציה ──
 var MSG_MAYBE_STALE = ') — המוצג עלול להיות לא מעודכן';
-var MSG_NEED_NAME = '⚠️ נא למלא שם';
-var MSG_NEED_TITLE = '⚠️ נא למלא כותרת';
-var MSG_NEED_ITEM = '⚠️ נא למלא את פרטי ההוצאה';
-var MSG_NEED_VALUE = '⚠️ נא להזין ערך';
-var MSG_VALUE_EXISTS = '⚠️ הערך כבר קיים ברשימה';
-var MSG_PICK_DONOR = '⚠️ נא לבחור כרטיס';
-var MSG_PICK_TYPE = '⚠️ נא לבחור סוג';
-var MSG_PICK_AMB = '⚠️ נא לבחור שגריר';
-var MSG_PLEDGE_NO_AMB = '⚠️ להתחייבות אין שגריר — יש לבחור אותו בעריכת ההתחייבות';
-var MSG_AMOUNT_POSITIVE = '⚠️ נא להזין סכום גדול מאפס';
-var MSG_SO_COUNT = '⚠️ מספר הפעימות — 2 לפחות';
+var MSG_NEED_NAME = 'נא למלא שם';
+var MSG_NEED_TITLE = 'נא למלא כותרת';
+var MSG_NEED_ITEM = 'נא למלא את פרטי ההוצאה';
+var MSG_NEED_VALUE = 'נא להזין ערך';
+var MSG_VALUE_EXISTS = 'הערך כבר קיים ברשימה';
+var MSG_PICK_DONOR = 'נא לבחור כרטיס';
+var MSG_PICK_TYPE = 'נא לבחור סוג';
+var MSG_PICK_AMB = 'נא לבחור שגריר';
+var MSG_PLEDGE_NO_AMB = 'להתחייבות אין שגריר — יש לבחור אותו בעריכת ההתחייבות';
+var MSG_AMOUNT_POSITIVE = 'נא להזין סכום גדול מאפס';
+var MSG_SO_COUNT = 'מספר הפעימות — 2 לפחות';
 // האמצעי שפותח את הפעימות — שורה ברשימת האמצעים, והתשלום עצמו מסווג לפי installments ולא לפי התווית.
 var METHOD_SO = 'הו״ק';
-var MSG_NEED_DATE = '⚠️ נא לבחור תאריך';
-var MSG_PICK_VALID_MONTH = '⚠️ נא לבחור חודש תקין';
+var MSG_NEED_DATE = 'נא לבחור תאריך';
+var MSG_PICK_VALID_MONTH = 'נא לבחור חודש תקין';
 var MSG_DONOR_CREATED = 'הכרטיס נוצר';
 var DONOR_NEW_LABEL = '＋ כרטיס חדש';
 var DONOR_NO_PHONE = 'ללא טלפון';
@@ -103,12 +103,12 @@ var MSG_DEL_TASK = 'למחוק את המשימה?';
 var MSG_DEL_NOTE = 'למחוק את הפתק?';
 var MSG_DEL_LOAN = 'למחוק את ההלוואה וכל התנועות שבה?';
 var MSG_DEL_LOAN_MOVE = 'למחוק את התנועה?';
-var MSG_NEED_MOVE_AMOUNT = '⚠️ נא להזין את סכום התנועה';
+var MSG_NEED_MOVE_AMOUNT = 'נא להזין את סכום התנועה';
 var MSG_DEL_BUDGET = 'למחוק את ההוצאה?';
 var MSG_DEL_EVENT = 'למחוק את האירוע וכל ההוצאות שבו?';
-var MSG_NEED_EVENT_NAME = '⚠️ נא למלא את שם האירוע';
+var MSG_NEED_EVENT_NAME = 'נא למלא את שם האירוע';
 var MSG_DEL_LOOKUP = 'להסיר את הערך מהרשימה? רשומות שכבר משתמשות בו יישארו כמות שהן.';
-var MSG_MONTH_GOAL = '🎯 יעד חודשי';
+var MSG_MONTH_GOAL = 'יעד חודשי';
 
 // ── עמידות אחסון מקומי ──
 var KV_TABLE = 'g_settings';

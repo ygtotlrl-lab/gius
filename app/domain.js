@@ -10,6 +10,7 @@ import { comboDef, comboHTML, comboSet, esc, lookupList, pullRender, shellBare, 
 import { DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LOAN_STATUSES,
          MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_NEED_NAME, STAGES, TABLES } from './constants.js';
 import { S, shell, state } from './state.js';
+import { icon } from './icons.js';
 
 // ── סימוני ממתין ──
 // אין תור — האישור מגיע מ-pendClear על upsert מוצלח ומ-pendReconcile אחרי משיכה שהצליחה.
@@ -419,7 +420,7 @@ function syncPull() {
       console.warn('[sync] נכשלו:', errs.join(', '));
       if (!S._netWarned) {
         S._netWarned = true;
-        toast(MSG_LOAD_FAIL_PRE + errs.join(', ') + MSG_MAYBE_STALE, null, 'bad');
+        toast(MSG_LOAD_FAIL_PRE + errs.join(', ') + MSG_MAYBE_STALE, null, 'warn');
       }
     }
     return { ok: !errs.length };
@@ -589,8 +590,9 @@ function checked(id) { var el = $('#' + id); return !!(el && el.checked); }
 
 function nullable(v) { return v === '' ? null : v; }
 
-function emptyBox(icon, text) {
-  return '<div class="empty"><span class="big">' + icon + '</span>' + esc(text) + '</div>';
+// ic — שם אייקון מהסט (מסך ריק נושא את אייקון המסך שלו).
+function emptyBox(ic, text) {
+  return '<div class="empty"><span class="big">' + icon(ic) + '</span>' + esc(text) + '</div>';
 }
 
 // ── בורר הכרטיס ──
@@ -643,7 +645,7 @@ function donorNewSave(id) {
   if (!box) { console.error('[donor] אין טופס כרטיס חדש — #' + id); return; }
   var name = $('[data-new-donor-name]', box).value.trim();
   var phone = $('[data-new-donor-phone]', box).value.trim();
-  if (!name) { toast(MSG_NEED_NAME, null, 'bad'); return; }
+  if (!name) { toast(MSG_NEED_NAME, null, 'warn'); return; }
   return insert('g_donors', { name: name, phone: phone || null, affiliations: [], starred: false })
     .then(function (d) {
       box.innerHTML = '';

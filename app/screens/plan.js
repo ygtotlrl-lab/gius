@@ -29,7 +29,7 @@ function viewPlan() {
 
   h += '<section class="card"><h2>התכנית<span class="cnt">' + list.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="plan-new">' + icon('plus') + 'שורה</button></span></h2>';
-  if (!list.length) h += emptyBox('🗓', 'אין עדיין שורות בתכנית של החודש');
+  if (!list.length) h += emptyBox('plan', 'אין עדיין שורות בתכנית של החודש');
   else {
     // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה.
     var lastAmb = null;
@@ -83,7 +83,7 @@ function formPlan(r) {
 
 function savePlan(id) {
   var donor = comboValue('pl-donor');
-  if (!donor) { toast(MSG_PICK_DONOR, null, 'bad'); return; }
+  if (!donor) { toast(MSG_PICK_DONOR, null, 'warn'); return; }
   var exp = $('#pl-exp');
   var row = { donor_client_id: donor, kind: val('pl-kind') || PLAN_KINDS[0],
               expected: exp && exp.value.trim() !== '' ? readNum(exp, 0) : null,

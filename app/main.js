@@ -431,11 +431,11 @@ var DOM_ACTIONS = {
     var inp = $('#l-label');
     if (!inp) { uiNoDialog('look-save', 'l-label'); return; }
     var txt = inp.value.trim(), id = el.dataset.id, kind = el.dataset.k;
-    if (!txt) { toast(MSG_NEED_VALUE, null, 'bad'); return; }
+    if (!txt) { toast(MSG_NEED_VALUE, null, 'warn'); return; }
     // השורה שנערכת מוחרגת מהבדיקה — אחרת היא מתנגשת בעצמה.
     var others = lookupRows(kind).filter(function (x) { return !idEq(x.client_id, id); })
       .map(function (x) { return x.label; });
-    if (uniqHas(others, txt)) { toast(MSG_VALUE_EXISTS, null, 'bad'); return; }
+    if (uniqHas(others, txt)) { toast(MSG_VALUE_EXISTS, null, 'warn'); return; }
     return runSave(function () {
       var r = id ? lookupById(id) : null;
       var row = r ? Object.assign({}, r, { label: txt, updated_at: Date.now() })

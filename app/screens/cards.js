@@ -20,7 +20,7 @@ import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, don
 function cardRowsHTML() {
   var c = state.cards, list = donorMatches(c.q, c.aff, c.sort, c.pf);
   if (c.open && !list.some(function (d) { return d.client_id === c.open; })) c.open = null;
-  if (!list.length) return emptyBox('🗂', state.donors.length ? 'אין כרטיס התואם את החיפוש' : 'עדיין אין כרטיסים');
+  if (!list.length) return emptyBox('cards', state.donors.length ? 'אין כרטיס התואם את החיפוש' : 'עדיין אין כרטיסים');
   var people = list.filter(function (d) { return !d.is_general; }), general = list.filter(function (d) { return d.is_general; });
   // קבוצה — רשת משלה, כדי שהאריחים לא יעברו בין כותרות בזמן שהכרטיס הפתוח נפרש.
   var groups = [];
@@ -202,7 +202,7 @@ function formDonor(d) {
 
 function saveDonor(id) {
   var name = val('d-name');
-  if (!name) { toast(MSG_NEED_NAME, null, 'bad'); return; }
+  if (!name) { toast(MSG_NEED_NAME, null, 'warn'); return; }
   var row = { name: name, ambassador: nullable(val('d-amb')), birth_date: nullable(val('d-birth')),
               role: nullable(val('d-role')), phone: nullable(val('d-phone')), notes: nullable(val('d-notes')),
               is_general: checked('d-general'), affiliations: affRead() };
@@ -239,9 +239,9 @@ function formPledge(p, donorId) {
 
 function savePledge(id, donorId) {
   var type = val('p-type'), amount = readNum($('#p-amount'), 0);
-  if (!type) { toast(MSG_PICK_TYPE, null, 'bad'); return; }
-  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
-  if (!val('p-amb')) { toast(MSG_PICK_AMB, null, 'bad'); return; }
+  if (!type) { toast(MSG_PICK_TYPE, null, 'warn'); return; }
+  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+  if (!val('p-amb')) { toast(MSG_PICK_AMB, null, 'warn'); return; }
   var row = { section: nullable(val('p-section')), pledge_type: type, detail: nullable(val('p-detail')),
               ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')) };
   if (id) return update('g_pledges', id, row);
@@ -274,7 +274,7 @@ function whenHTML(px, t) {
 // פיירפוקס נופל לטקסט ב-type=month — החודש נבדק כאן ולא נסמך על הדפדפן.
 function readWhen(px) {
   var date = val(px + '-date'), m = date ? monthKeyOf(date) : val(px + '-month');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return null; }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'warn'); return null; }
   return { txn_month: m, txn_date: date || null };
 }
 
@@ -355,16 +355,16 @@ function savePay(id, pledgeId) {
   var p = pledgeById(pledgeId);
   if (!p) return;
   // כל תשלום נושא שגריר — דרך ההתחייבות שלו.
-  if (!p.ambassador) { toast(MSG_PLEDGE_NO_AMB, null, 'bad'); return; }
+  if (!p.ambassador) { toast(MSG_PLEDGE_NO_AMB, null, 'warn'); return; }
   var method = nullable(val('t-method')), n = null, amount;
   if (method === METHOD_SO) {
     n = readNum($('#t-so-n'), 0);
     var per = readNum($('#t-so-amt'), 0);
-    if (!(n >= 2 && n === Math.floor(n))) { toast(MSG_SO_COUNT, null, 'bad'); return; }
-    if (!(per > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+    if (!(n >= 2 && n === Math.floor(n))) { toast(MSG_SO_COUNT, null, 'warn'); return; }
+    if (!(per > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
     amount = Math.round(n * per * 100) / 100;
   } else amount = readNum($('#t-amount'), 0);
-  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   var when = readWhen('t');
   if (!when) return;
   var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: method, installments: n,

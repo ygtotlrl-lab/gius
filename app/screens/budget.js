@@ -15,7 +15,7 @@ function viewBudget() {
   var evs = gSortEvents(state.events);
   var h = '<section class="card"><h2>אירועים<span class="cnt">' + evs.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="event-new">' + icon('plus') + 'אירוע</button></span></h2>';
-  if (!evs.length) return h + emptyBox('🎉', 'אין עדיין אירועים') + '</section>';
+  if (!evs.length) return h + emptyBox('budget', 'אין עדיין אירועים') + '</section>';
   h += '<div class="evs">' + evs.map(function (e) {
     var items = itemsOf(e.client_id), open = state.budgetOpen === e.client_id, id = esc(e.client_id);
     var total = sum(items, function (b) { return b.cost; });
@@ -34,7 +34,7 @@ function viewBudget() {
               '<small>' + esc([b.category, b.note].filter(Boolean).join(' · ') || '—') + '</small></div>' +
             '<div class="end">' + ils(b.cost) + '</div></div>';
         }).join('') + '<div class="total-row"><span>סה״כ</span><b>' + ils(total) + '</b></div>'
-        : emptyBox('🧾', 'אין עדיין הוצאות באירוע')) +
+        : emptyBox('budget', 'אין עדיין הוצאות באירוע')) +
         '<div class="btnrow ev-acts">' +
           '<button class="btn sm" data-act="budget-new" data-event="' + id + '">' + icon('plus') + 'הוצאה</button>' +
           '<button class="btn ghost sm" data-act="event-edit" data-id="' + id + '">עריכת האירוע</button>' +
@@ -58,7 +58,7 @@ function formEvent(e) {
 
 function saveEvent(id) {
   var name = val('e-name');
-  if (!name) { toast(MSG_NEED_EVENT_NAME, null, 'bad'); return; }
+  if (!name) { toast(MSG_NEED_EVENT_NAME, null, 'warn'); return; }
   var row = { name: name, event_date: nullable(val('e-date')), note: nullable(val('e-note')) };
   if (id) return update('g_events', id, row);
   return insert('g_events', Object.assign(row, { sort: nextSort(state.events) })).then(function (e) {
@@ -87,7 +87,7 @@ function formBudget(b, evId) {
 // הוצאה חדשה שייכת תמיד לאירוע — נפתחת מתוך האירוע הפתוח.
 function saveBudget(id, evId) {
   var item = val('b-item');
-  if (!item) { toast(MSG_NEED_ITEM, null, 'bad'); return; }
+  if (!item) { toast(MSG_NEED_ITEM, null, 'warn'); return; }
   var row = { item: item, category: nullable(val('b-cat')), cost: readNum($('#b-cost'), 0), note: nullable(val('b-note')) };
   if (id) return update('g_budget_items', id, row);
   if (!evId) return;

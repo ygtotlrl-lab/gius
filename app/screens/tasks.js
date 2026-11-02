@@ -67,7 +67,7 @@ function tasksBodyHTML() {
   if (ui.stage || q) {
     var list = tasksOf(ui.who, ui.stage);
     h += '<section class="card"><h2>' + esc(ui.stage || 'חיפוש') + ' · ' + esc(ui.who) + '<span class="cnt">' + list.length + '</span></h2>';
-    h += list.length ? list.map(taskRowHTML).join('') : emptyBox('☑', q ? 'לא נמצאו משימות' : 'אין משימות בשלב הזה');
+    h += list.length ? list.map(taskRowHTML).join('') : emptyBox('tasks', q ? 'לא נמצאו משימות' : 'אין משימות בשלב הזה');
     h += '</section>';
   } else h += '<div class="hint stage-hint">בחרו שלב כדי לראות את המשימות.</div>';
   return h;
@@ -107,7 +107,7 @@ function formTask(t) {
 // משימה חדשה — בסוף הרשימה; הסדר הקיים נשמר כפי שהיה בגיליון.
 function saveTask(id) {
   var title = val('k-title');
-  if (!title) { toast(MSG_NEED_TITLE, null, 'bad'); return; }
+  if (!title) { toast(MSG_NEED_TITLE, null, 'warn'); return; }
   var row = { title: title, assignee: val('k-who'), stage: val('k-stage'), domain: nullable(val('k-domain')),
               due_date: nullable(val('k-due')), note: nullable(val('k-note')) };
   if (id) return update('g_tasks', id, row);

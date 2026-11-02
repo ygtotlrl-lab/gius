@@ -19,7 +19,7 @@ function lookupCardHTML(l) {
   var rows = lookupShown(l);
   var h = '<section class="card look-card"><h2>' + esc(l.title) + '<span class="cnt">' + rows.length + '</span>' +
     '<span class="sp"><button class="btn sm" data-act="look-add" data-k="' + esc(l.kind) + '">' + icon('plus') + esc(l.one) + '</button></span></h2>';
-  if (!rows.length) return h + emptyBox('📋', 'הרשימה ריקה') + '</section>';
+  if (!rows.length) return h + emptyBox('settings', 'הרשימה ריקה') + '</section>';
   return h + '<div class="look-list">' + rows.map(function (r) {
     return '<div class="list-item" data-act="look-edit" data-k="' + esc(l.kind) + '" data-drag="' + esc(l.kind) + '" data-id="' + esc(r.client_id) + '">' +
       '<span class="grip" data-grip aria-hidden="true">⣿</span>' +
@@ -77,12 +77,12 @@ function formTarget(month) {
     '<div class="hint">היעד הקבוע: ' + ils(targetDefault()) + '. יעד שנקבע כאן חל על החודש הזה בלבד.</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (own ? '<button class="btn danger" data-act="target-clear" data-id="' + esc(own.client_id) + '">חזרה ליעד הקבוע</button>' : '') +
-    '<button class="btn" data-act="target-save" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="target-save" data-ksave>שמירה</button>', icon('target'));
 }
 
 function saveTarget() {
   var m = val('tg-month');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'bad'); return; }
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) { toast(MSG_PICK_VALID_MONTH, null, 'warn'); return; }
   // המזהה הוא החודש — שני מכשירים שקובעים את אותו חודש מגיעים לאותה שורה.
   return upsertBy('g_targets', { client_id: m, target_month: m, amount: readNum($('#tg-amount'), 0), deleted: false, deleted_at: null });
 }
@@ -96,7 +96,7 @@ function formTargetDefault() {
 
 function saveTargetDefault() {
   var n = readNum($('#tgd-amount'), 0);
-  if (!(n > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'bad'); return; }
+  if (!(n > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   return upsertBy(KV_TABLE, { key: TARGET_DEFAULT_KEY, value: JSON.stringify(n) });
 }
 
