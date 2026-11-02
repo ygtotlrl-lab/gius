@@ -11,7 +11,7 @@ android {
         applicationId "com.gius.app"
         minSdk 21
         targetSdk 34
-        versionCode 28
+        versionCode 29
         versionName "19.0"
     }
 
@@ -25,4 +25,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+dependencies {
+    // מסך הפתיחה — אותו מסך בכל גרסאות האנדרואיד, והמעטפת מחזיקה אותו עד שהמסך הראשון צויר
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 }
