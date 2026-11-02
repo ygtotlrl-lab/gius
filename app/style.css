@@ -230,7 +230,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @keyframes pop{from{transform:scale(.97);opacity:0}}
 .sheet-hd{padding:var(--sp-6) var(--sp-6);border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:var(--z-1);border-radius:var(--r-6) var(--r-6) 0 0}
 .sheet-hd h3{font-size:var(--fs-4);flex:1}
-.sheet-hd .x{color:var(--text-3);padding:var(--sp-1) var(--sp-3);border-radius:var(--r-3)}
+.sheet-hd .x{color:var(--text-3);border-radius:var(--r-3)}
 .sheet-bd{padding:var(--sp-6) var(--sp-6)}
 /* הצבע ב-CSS — גוף ask הוא textContent, ועיצוב שנשען על p שנבנה בקוד שובר את הגוף המשותף. */
 #ask-body{color:var(--text-2)}
