@@ -141,6 +141,9 @@ var PL_CFG = {
   table:  function () { return KV_TABLE; },
 };
 
+// עמודות שירדו מהמסד — g_pledges.initiated עבר לתשלום (g_txns.not_initiated).
+var DROPPED_COLS = { g_pledges: ['initiated'] };
+
 var PUSH_CFG = {
   tables: PUSH_TABLES,
   chunk:  500,
@@ -148,7 +151,9 @@ var PUSH_CFG = {
   rows:   function (t) { return MIRROR[t] || []; },
   key:    function (t, row) { return rowPendingKey(t, row); },
   send:   function (t, rows) {
-    var m = tableMeta(t);
+    var m = tableMeta(t), drop = DROPPED_COLS[t];
+    // עמודה שירדה מהמסד עדיין יושבת ברשומות שבמראה המקומית — נשמטת כאן, אחרת הדחיפה כולה נכשלת על «עמודה לא קיימת».
+    if (drop) rows = rows.map(function (r) { var o = Object.assign({}, r); drop.forEach(function (c) { delete o[c]; }); return o; });
     return netTimeout(S.sb.from(t).upsert(rows, { onConflict: m.key }));
   },
   run:    function () { syncNow(); },
