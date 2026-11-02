@@ -264,7 +264,7 @@ create table if not exists public.g_pledges (
   ambassador text,
   amount numeric(14,2) not null default 0,
   note text,
-  initiated boolean,
+  initiated boolean,  -- לא בשימוש מאז «תשלום לא יזום» (g_txns.not_initiated); נשאר לתאימות עם מכשירים שטרם התעדכנו
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
@@ -329,6 +329,7 @@ create table if not exists public.g_txns (
   method text,
   installments integer,
   cleared boolean not null default false,
+  not_initiated boolean not null default false,
   note text,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,

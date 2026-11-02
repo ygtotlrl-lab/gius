@@ -21,7 +21,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, formDonor, initPick, initSwitchChange, payPledgePick, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
+import { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
          soToggle, viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
@@ -341,7 +341,6 @@ var DOM_ACTIONS = {
     return runSave(function () { return savePay(el.dataset.id, el.dataset.pledge); }, 'התשלום נשמר');
   },
   'pay-del': function (el) { return delAsk(MSG_DEL_PAY, 'g_txns', el.dataset.id); },
-  'init-pick': function (el) { return runSave(function () { return initPick(el.dataset.v); }, 'נשמר'); },
 
   // ── תכנית ──
   'plan-month': function (el) { state.planMonth = shiftMonth(state.planMonth, +el.dataset.d); render(); },
@@ -489,7 +488,6 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
-  if (el.dataset.chg === 'p-init') { initSwitchChange(el); return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
   if (el.dataset.chg === 'pay-method') { soToggle(el.value); return; }

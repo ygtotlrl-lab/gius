@@ -508,8 +508,8 @@ function donorLeft(id) { return sum(pledgesOfDonor(id), function (p) { return le
 // החודש של תשלום — שדה משלו ולא נגזר מהתאריך: תשלום בלי תאריך עדיין שייך לחודש שבו נרשם.
 function monthTxns(m) { return state.txns.filter(function (t) { return t.txn_month === m; }); }
 
-// «יזום» — התחייבות שבאה מהעבודה; הדשבורד והיעד סופרים רק את תשלומיה, והכרטיס מציג הכל.
-function isInitiated(t) { var p = pledgeById(t.pledge_client_id); return !!(p && p.initiated === true); }
+// כל תשלום נספר בדשבורד וביעד, מלבד מה שסומן «תשלום לא יזום» (`not_initiated`); הכרטיס מציג הכל.
+function isInitiated(t) { return !t.not_initiated; }
 
 function monthTxnsInit(m) { return monthTxns(m).filter(isInitiated); }
 
