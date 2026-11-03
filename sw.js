@@ -1,7 +1,7 @@
 // sw.js — service worker של האפליקציה
 importScripts('./app.config.js');
 // מכאן נגזרת גרסת האפליקציה שבבאנר.
-var CACHE_NAME = self.APP.id + '-v294';
+var CACHE_NAME = self.APP.id + '-v295';
 
 var CORE = [
   './',
@@ -35,8 +35,8 @@ var CORE = [
   './app/screens/tasks.js',
   './app/main.js',
   './manifest.json',
-  './icons/icon-192.e44ab5b9.png',
-  './icons/icon-512.0ed0bb3c.png',
+  './icons/icon-192.2a3f5354.png',
+  './icons/icon-512.2b0843b7.png',
 ];
 
 // גרסה נעוצה במדויק ולא major צף — שחרור של הספק שובר את האפליקציה בלי שינוי קוד.
