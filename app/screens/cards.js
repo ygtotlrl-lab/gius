@@ -229,7 +229,13 @@ function formPledge(p, donorId) {
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>הוספת תשלום מיידי</span></label>' +
     '<div id="p-now-box" hidden>' + whenHTML('p', null) +
-    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי') + '</label>' +
+    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי', 'p-method') + '</label>' +
+    // הו״ק — כמו בטופס התשלום: פעימות, והסכום לפעימה נגזר מסכום ההתחייבות; החודש סופר את הפעימה הראשונה בלבד.
+    '<div class="f2 hidden" id="p-so">' +
+      '<label class="fld"><span>פעימות *</span><input class="inp" id="p-so-n" inputmode="numeric" data-inp="p-so"></label>' +
+      '<label class="fld"><span>סכום לפעימה</span><input class="inp" id="p-so-amt" readonly tabindex="-1"></label>' +
+    '</div>' +
+    '<label class="fld chk"><input type="checkbox" id="p-cleared"><span>סליקה בפועל</span></label>' +
     noInitHTML('p', false) + '</div>';
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -247,12 +253,17 @@ function savePledge(id, donorId) {
   if (id) return update('g_pledges', id, row);
   var now = checked('p-now'), when = now ? readWhen('p') : null;
   if (now && !when) return;
-  var noInit = now && checked('p-noinit');
+  var noInit = now && checked('p-noinit'), method = now ? nullable(val('p-method')) : null, n = null;
+  if (method === METHOD_SO) {
+    n = readNum($('#p-so-n'), 0);
+    if (!(n >= 2 && n === Math.floor(n))) { toast(MSG_SO_COUNT, null, 'warn'); return; }
+  }
+  var cleared = now && checked('p-cleared');
   return insert('g_pledges', Object.assign({}, row, { donor_client_id: donorId })).then(function (p) {
     if (!now) return p;
     return insert('g_txns', { donor_client_id: donorId, pledge_client_id: p.client_id, amount: amount,
-                              txn_month: when.txn_month, txn_date: when.txn_date,
-                              method: nullable(val('p-method')), cleared: false, not_initiated: noInit });
+                              txn_month: when.txn_month, txn_date: when.txn_date, method: method, installments: n,
+                              cleared: cleared, not_initiated: noInit });
   });
 }
 
@@ -301,6 +312,17 @@ function soToggle(method) {
   if (box) box.classList.toggle('hidden', !on);
   if (a) a.readOnly = on;
   if (on) soSync();
+}
+
+// התשלום המיידי שבטופס ההתחייבות — הו״ק פותח את הפעימות, והסכום לפעימה = סכום ההתחייבות ÷ הפעימות.
+function pSoSync() {
+  var n = readNum($('#p-so-n'), 0), a = readNum($('#p-amount'), 0), o = $('#p-so-amt');
+  if (o) o.value = n > 0 && a > 0 ? String(Math.round(a / n * 100) / 100) : '';
+}
+function pSoToggle(method) {
+  var box = $('#p-so');
+  if (box) box.classList.toggle('hidden', method !== METHOD_SO);
+  pSoSync();
 }
 
 // תשלום חדש מהכרטיס — בוחרים על איזו התחייבות (ברירת המחדל — הראשונה שנותר בה), או פותחים התחייבות חדשה / תרומה חד-פעמית.
@@ -373,4 +395,4 @@ function savePay(id, pledgeId) {
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };
+export { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };

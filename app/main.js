@@ -21,7 +21,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, saveDonor, savePay, savePledge, soSync,
+import { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync,
          soToggle, viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
@@ -483,6 +483,7 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'loans-q') { state.loansQ = el.value; loansRefresh(); }
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
+  if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
 });
 
 document.addEventListener('note-close', function () { DOM_ACTIONS['note-close'](); });
@@ -496,6 +497,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
   if (el.dataset.chg === 'pay-method') { soToggle(el.value); return; }
+  if (el.dataset.chg === 'p-method') { pSoToggle(el.value); return; }
   if (el.dataset.chg === 'when-date') {
     var mInp = document.getElementById(el.dataset.m);
     if (mInp && el.value) mInp.value = monthKeyOf(el.value);
