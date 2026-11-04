@@ -522,6 +522,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .lm-add #lm-amt{flex:0 1 8rem;min-width:0}
 .lm-add #lm-note{flex:1;min-width:0}
 .lm-add .btn{flex:none}
+/* בטלפון — הסכום והכפתור בשורה, וההערה בשורה משלה לכל הרוחב */
+@media (max-width:639px){ .lm-add{flex-wrap:wrap} .lm-add #lm-amt{flex:1 1 0} .lm-add #lm-note{order:3;flex:1 1 100%} }
 /* ── תכנית ── */
 /* ── משימות ── */
 .stage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-bottom:var(--sp-6)}
