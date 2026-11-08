@@ -13,8 +13,8 @@ import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, don
          monthKeyOf, statusClass, txnSoLabel, txnWhen, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
-// אריחים — שלושה בשורה במסך רחב, אחד בטלפון. הכרטיס הפתוח נפרש לכל רוחב הרשת, בשורה שמתחת לאריח שלו
-// (grid-auto-flow: dense — האריחים שאחריו ממלאים את המקומות שנותרו בשורה); כרטיס אחד פתוח בכל פעם.
+// אריחים — שלושה בשורה במסך רחב, אחד בטלפון. הכרטיס הפתוח — בחלון משלו מעל הרשימה (cardWinHTML);
+// כרטיס אחד פתוח בכל פעם.
 // כרטיס כללי (`is_general`) — מגבית, פרויקט או «תורמים לא מזוהים» — תמיד בנפרד, בתחתית הרשימה.
 // במיון לפי שגריר — כותרת לכל שגריר.
 function cardRowsHTML() {
@@ -33,7 +33,16 @@ function cardRowsHTML() {
   return groups.map(function (g) {
     return (g.title ? '<div class="list-sub' + (g.cls || '') + '">' + esc(g.title) + '</div>' : '') +
       '<div class="ctiles">' + g.items.map(cardTileHTML).join('') + '</div>';
-  }).join('');
+  }).join('') + cardWinHTML();
+}
+
+// החלון של הכרטיס הפתוח — על כל המסך בטלפון, וחלון ממורכז במסך רחב; מעל הסרגל ומתחת לחלונות העריכה.
+// הרקע סוגר כ-✕, ו-Escape — כשאין חלון פתוח מעליו.
+function cardWinHTML() {
+  var d = state.cards.open && donorById(state.cards.open);
+  if (!d) return '';
+  return '<div class="card-win" role="dialog" aria-modal="true" aria-label="' + esc(d.name) + '">' +
+    '<div class="cw-bg" data-act="card-close"></div><div class="cw-in">' + cardOpenHTML(d) + '</div></div>';
 }
 
 // גוון הסמל לפי השגריר — אותו שגריר, אותו גוון, בכל הרשימה.
@@ -60,7 +69,7 @@ function cardTileHTML(d) {
       '<span class="ct-ft"><span>נגבה ' + ils(paid) + ' מתוך ' + ils(total) + '</span>' +
         '<span>' + pledgesOfDonor(d.client_id).length + ' התחייבויות</span></span>' : '') +
   '</button>';
-  return tile + (open ? '<div class="ctile-open">' + cardOpenHTML(d) + '</div>' : '');
+  return tile;
 }
 
 // סינון לפי ההתחייבויות — בורר אחד בשתי רמות: סעיף או סוג. ערך שכבר נרשם ואינו ברשימה נשאר.
@@ -396,3 +405,13 @@ function savePay(id, pledgeId) {
 }
 
 export { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };
+
+// Escape סוגר את החלון של הכרטיס — רק כשאין מעליו חלון עריכה או אישור.
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape' || !state.cards.open || !document.querySelector('.card-win')) return;
+  if (document.querySelector('.veil.open, #ask.open')) return;
+  e.preventDefault();
+  state.cards.open = null;
+  var w = document.querySelector('.card-win'); if (w) w.remove();
+  var t = document.querySelector('.ctile.open'); if (t) { t.classList.remove('open'); t.setAttribute('aria-expanded', 'false'); }
+});
