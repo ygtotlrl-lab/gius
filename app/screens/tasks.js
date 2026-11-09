@@ -4,6 +4,7 @@ import { esc, openModal, toast } from '../../core/ui.js';
 import { ASSIGNEES, LK_DOMAIN, MSG_NEED_TITLE, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
+import { snapShare } from '../snap.js';
 import { dmyDate, emptyBox, gSortTasks, insert, lookupLabels, nextSort, nullable, pendRowKey,
          selectHTML, update, val } from '../domain.js';
 
@@ -66,11 +67,23 @@ function tasksBodyHTML() {
 
   if (ui.stage || q) {
     var list = tasksOf(ui.who, ui.stage);
-    h += '<section class="card"><h2>' + esc(ui.stage || 'חיפוש') + ' · ' + esc(ui.who) + '<span class="cnt">' + list.length + '</span></h2>';
+    // «בהרצה» — ייצוא רשימת האחראי כתמונה, בכותרת.
+    var run = ui.stage === STAGES[0].id;
+    h += '<section class="card"><h2>' + esc(ui.stage || 'חיפוש') + ' · ' + esc(ui.who) + '<span class="cnt">' + list.length + '</span>' +
+      (run ? '<span class="sp"><button class="btn ghost xs ic" data-act="tasks-share" aria-label="ייצוא תמונה" title="ייצוא תמונה">' + icon('share') + '</button></span>' : '') + '</h2>';
     h += list.length ? list.map(taskRowHTML).join('') : emptyBox('tasks', q ? 'לא נמצאו משימות' : 'אין משימות בשלב הזה');
     h += '</section>';
   } else h += '<div class="hint stage-hint">בחרו שלב כדי לראות את המשימות.</div>';
   return h;
+}
+
+// ייצוא המשימות בהרצה של האחראי — כל המשימות שבשלב, בלי סינון החיפוש.
+function tasksShare() {
+  var who = state.tasks_ui.who, st = STAGES[0].id;
+  var list = gSortTasks(state.tasks.filter(function (t) { return t.assignee === who && t.stage === st; }));
+  if (!list.length) return;
+  snapShare('<div class="snap-hd"><small>משימות ' + esc(st) + ' · ' + list.length + '</small><h2>' + esc(who) + '</h2></div>' +
+    '<section class="card">' + list.map(taskRowHTML).join('') + '</section>', 'משימות ' + st + ' — ' + who);
 }
 
 function viewTasks() {
@@ -114,4 +127,4 @@ function saveTask(id) {
   return insert('g_tasks', Object.assign(row, { sort: nextSort(state.tasks), starred: false }));
 }
 
-export { formTask, saveTask, tasksBodyHTML, viewTasks };
+export { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks };

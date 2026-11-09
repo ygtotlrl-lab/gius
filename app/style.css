@@ -732,3 +732,4 @@ body:has(.card-win){overflow:hidden}
 .snap-hd h2{font-size:var(--fs-6);color:var(--brand-ink)}
 .snap-sub{padding:var(--sp-3) 0;border-bottom:1px solid var(--border)}
 .snap-card{margin:0;box-shadow:none}
+.snap .task-star:not(.on){display:none}

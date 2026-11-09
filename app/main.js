@@ -24,7 +24,7 @@ import { viewDash } from './screens/dash.js';
 import { cardRowsHTML, cardShare, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync,
          soToggle, soUneqToggle, viewCards } from './screens/cards.js';
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
-import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
+import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -351,6 +351,7 @@ var DOM_ACTIONS = {
 
   // ── תכנית ──
   'plan-share': function (el) { planShare(el.dataset.amb); },
+  'tasks-share': function () { tasksShare(); },
   'plan-grp': function (el) { var a = el.dataset.amb; state.planOpen[a] = !state.planOpen[a]; render(); },
   'plan-month': function (el) { state.planMonth = shiftMonth(state.planMonth, +el.dataset.d); render(); },
   'plan-new': function () { formPlan(null); },
