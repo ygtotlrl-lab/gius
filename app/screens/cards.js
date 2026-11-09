@@ -189,7 +189,8 @@ function timelineHTML(d) {
 function cardShare(id) {
   var d = donorById(id);
   if (!d) return;
-  var chips = [d.ambassador ? 'שגריר: ' + d.ambassador : '', d.role, d.phone].concat(d.affiliations || []).filter(Boolean);
+  // התמונה נשלחת לתורם — בלי השגריר ובלי השייכויות, שהם פנימיים.
+  var chips = [d.role, d.phone].filter(Boolean);
   var pl = gSortPledges(pledgesOfDonor(d.client_id));
   var h = '<div class="cp-band snap-band"><span class="cp-av">' + esc(initials(d.name)) + '</span>' +
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
