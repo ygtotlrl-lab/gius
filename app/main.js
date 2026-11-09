@@ -22,7 +22,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
 import { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync,
-         soToggle, viewCards } from './screens/cards.js';
+         soToggle, soUneqToggle, viewCards } from './screens/cards.js';
 import { formPlan, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
@@ -497,6 +497,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
   if (el.dataset.chg === 'pay-method') { soToggle(el.value); return; }
+  if (el.dataset.chg === 'so-uneq') { soUneqToggle(el.dataset.px); return; }
   if (el.dataset.chg === 'p-method') { pSoToggle(el.value); return; }
   if (el.dataset.chg === 'when-date') {
     var mInp = document.getElementById(el.dataset.m);

@@ -515,15 +515,18 @@ function isInitiated(t) { return !t.not_initiated; }
 function monthTxnsInit(m) { return monthTxns(m).filter(isInitiated); }
 
 // הו״ק — התשלום כולו נזקף להתחייבות, ולחודש שלו נזקפת הפעימה הראשונה בלבד: מה שנכנס בו בפועל.
+// פעימות שאינן שוות — הראשונה נשמרת (`first_installment`) וגוברת על החלוקה השווה.
 function monthAmount(t) {
   var n = +t.installments || 0;
+  if (n > 1 && +t.first_installment > 0) return num(t.first_installment);
   return n > 1 ? Math.round(num(t.amount) / n * 100) / 100 : num(t.amount);
 }
 
-// פירוט הו״ק לתצוגה — הפעימות והסכום לפעימה; ריק לתשלום רגיל.
+// פירוט הו״ק לתצוגה — הפעימות והסכום לפעימה; בפעימות שאינן שוות — הפעימות והראשונה; ריק לתשלום רגיל.
 function txnSoLabel(t) {
   var n = +t.installments || 0;
-  return n > 1 ? n + ' × ' + ils(monthAmount(t)) : '';
+  if (!(n > 1)) return '';
+  return +t.first_installment > 0 ? n + ' פעימות · ראשונה ' + ils(num(t.first_installment)) : n + ' × ' + ils(monthAmount(t));
 }
 
 // מתי — התאריך, ובלעדיו החודש; תשלום בלי חודש הוא מה שנגבה לפני המעבר לאפליקציה.

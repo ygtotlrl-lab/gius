@@ -3,7 +3,8 @@ import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
-         MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT } from '../constants.js';
+         MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
+         MSG_SO_FIRST_OVER } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
@@ -240,10 +241,11 @@ function formPledge(p, donorId) {
     '<div id="p-now-box" hidden>' + whenHTML('p', null) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי', 'p-method') + '</label>' +
     // הו״ק — כמו בטופס התשלום: פעימות, והסכום לפעימה נגזר מסכום ההתחייבות; החודש סופר את הפעימה הראשונה בלבד.
-    '<div class="f2 hidden" id="p-so">' +
+    '<div class="hidden" id="p-so"><div class="f2">' +
       '<label class="fld"><span>פעימות *</span><input class="inp" id="p-so-n" inputmode="numeric" data-inp="p-so"></label>' +
-      '<label class="fld"><span>סכום לפעימה</span><input class="inp" id="p-so-amt" readonly tabindex="-1"></label>' +
-    '</div>' +
+      '<label class="fld" id="p-so-per"><span>סכום לפעימה</span><input class="inp" id="p-so-amt" readonly tabindex="-1"></label>' +
+      '<label class="fld" id="p-so-first-box" hidden><span>הפעימה הראשונה *</span><input class="inp" id="p-so-first" inputmode="decimal"></label>' +
+    '</div>' + uneqHTML('p', false) + '</div>' +
     '<label class="fld chk"><input type="checkbox" id="p-cleared"><span>סליקה בפועל</span></label>' +
     noInitHTML('p', false) + '</div>';
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
@@ -262,17 +264,19 @@ function savePledge(id, donorId) {
   if (id) return update('g_pledges', id, row);
   var now = checked('p-now'), when = now ? readWhen('p') : null;
   if (now && !when) return;
-  var noInit = now && checked('p-noinit'), method = now ? nullable(val('p-method')) : null, n = null;
+  var noInit = now && checked('p-noinit'), method = now ? nullable(val('p-method')) : null, n = null, first = null;
   if (method === METHOD_SO) {
     n = readNum($('#p-so-n'), 0);
     if (!(n >= 2 && n === Math.floor(n))) { toast(MSG_SO_COUNT, null, 'warn'); return; }
+    first = readFirst('p', amount);
+    if (first === false) return;
   }
   var cleared = now && checked('p-cleared');
   return insert('g_pledges', Object.assign({}, row, { donor_client_id: donorId })).then(function (p) {
     if (!now) return p;
     return insert('g_txns', { donor_client_id: donorId, pledge_client_id: p.client_id, amount: amount,
                               txn_month: when.txn_month, txn_date: when.txn_date, method: method, installments: n,
-                              cleared: cleared, not_initiated: noInit });
+                              first_installment: first, cleared: cleared, not_initiated: noInit });
   });
 }
 
@@ -300,18 +304,36 @@ function readWhen(px) {
 
 // ── תשלום ──
 // הו״ק — פעימות וסכום לפעימה, והסכום הכולל נגזר מהם ונעול לעריכה ישירה.
+// «הפעימות אינן שוות» — הסכום הכולל נפתח להקלדה, ובמקום הסכום לפעימה — «הפעימה הראשונה», שהחודש סופר.
 function soHTML(t, open) {
-  var has = !!t && +t.installments > 1;
-  return '<div class="f2' + (open ? '' : ' hidden') + '" id="t-so">' +
+  var has = !!t && +t.installments > 1, uneq = has && +t.first_installment > 0;
+  return '<div class="' + (open ? '' : 'hidden') + '" id="t-so"><div class="f2">' +
     '<label class="fld"><span>פעימות *</span><input class="inp" id="t-so-n" inputmode="numeric" data-inp="pay-so" value="' +
       (has ? esc(t.installments) : '') + '"></label>' +
-    '<label class="fld"><span>סכום לפעימה *</span><input class="inp" id="t-so-amt" inputmode="decimal" data-inp="pay-so" value="' +
-      (has ? esc(monthAmount(t)) : '') + '"></label>' +
-  '</div>';
+    '<label class="fld" id="t-so-per"' + (uneq ? ' hidden' : '') + '><span>סכום לפעימה *</span><input class="inp" id="t-so-amt" inputmode="decimal" data-inp="pay-so" value="' +
+      (has && !uneq ? esc(monthAmount(t)) : '') + '"></label>' +
+    '<label class="fld" id="t-so-first-box"' + (uneq ? '' : ' hidden') + '><span>הפעימה הראשונה *</span><input class="inp" id="t-so-first" inputmode="decimal" value="' +
+      (uneq ? esc(t.first_installment) : '') + '"></label>' +
+  '</div>' + uneqHTML('t', uneq) + '</div>';
 }
 
-// הסכום הכולל בטופס — פעימות × סכום לפעימה, בכל הקלדה.
+function uneqHTML(px, on) {
+  return '<label class="fld chk"><input type="checkbox" id="' + px + '-so-uneq" data-chg="so-uneq" data-px="' + px + '"' + (on ? ' checked' : '') +
+    '><span>הפעימות אינן שוות</span></label>';
+}
+
+// הפעימה הראשונה — רק בפעימות שאינן שוות: חובה, חיובית ולא מעבר לסכום הכולל. null — פעימות שוות; false — שגיאה.
+function readFirst(px, amount) {
+  if (!checked(px + '-so-uneq')) return null;
+  var f = readNum($('#' + px + '-so-first'), 0);
+  if (!(f > 0)) { toast(MSG_SO_FIRST, null, 'warn'); return false; }
+  if (f > amount) { toast(MSG_SO_FIRST_OVER, null, 'warn'); return false; }
+  return f;
+}
+
+// הסכום הכולל בטופס — פעימות × סכום לפעימה, בכל הקלדה; בפעימות שאינן שוות — מוקלד ביד.
 function soSync() {
+  if (checked('t-so-uneq')) return;
   var n = readNum($('#t-so-n'), 0), per = readNum($('#t-so-amt'), 0), a = $('#t-amount');
   if (a && n > 0 && per > 0) a.value = String(Math.round(n * per * 100) / 100);
 }
@@ -319,8 +341,16 @@ function soSync() {
 function soToggle(method) {
   var on = method === METHOD_SO, box = $('#t-so'), a = $('#t-amount');
   if (box) box.classList.toggle('hidden', !on);
-  if (a) a.readOnly = on;
+  if (a) a.readOnly = on && !checked('t-so-uneq');
   if (on) soSync();
+}
+
+// מתג «הפעימות אינן שוות» — בשני הטפסים.
+function soUneqToggle(px) {
+  var on = checked(px + '-so-uneq'), per = $('#' + px + '-so-per'), fb = $('#' + px + '-so-first-box');
+  if (per) per.hidden = on;
+  if (fb) fb.hidden = !on;
+  if (px === 't') { var a = $('#t-amount'); if (a) a.readOnly = !on; if (!on) soSync(); }
 }
 
 // התשלום המיידי שבטופס ההתחייבות — הו״ק פותח את הפעימות, והסכום לפעימה = סכום ההתחייבות ÷ הפעימות.
@@ -352,11 +382,11 @@ function formPay(t, pledgeId, donorId) {
   if (!p) return;
   var d = donorById(p.donor_client_id);
   var amt = t ? t.amount : (leftForPledge(p) || '');
-  var so = !!t && t.method === METHOD_SO;
+  var so = !!t && t.method === METHOD_SO, uneq = so && +t.first_installment > 0;
   openModal((t ? 'עריכת תשלום — ' : 'תשלום — ') + (pick ? (d ? d.name : '') : (p.pledge_type || '')),
     (pick ? payPickHTML(pls, p.client_id) : '') +
     '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
-      (so ? ' readonly' : '') + '></label>' +
+      (so && !uneq ? ' readonly' : '') + '></label>' +
     whenHTML('t', t) +
     '<label class="fld"><span>אמצעי</span>' + selectHTML('t-method', lookupLabels(LK_METHOD), t ? t.method : '', 'אמצעי', 'pay-method') + '</label>' +
     soHTML(t, so) +
@@ -392,19 +422,24 @@ function savePay(id, pledgeId) {
     n = readNum($('#t-so-n'), 0);
     var per = readNum($('#t-so-amt'), 0);
     if (!(n >= 2 && n === Math.floor(n))) { toast(MSG_SO_COUNT, null, 'warn'); return; }
-    if (!(per > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
-    amount = Math.round(n * per * 100) / 100;
+    if (checked('t-so-uneq')) amount = readNum($('#t-amount'), 0);
+    else {
+      if (!(per > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+      amount = Math.round(n * per * 100) / 100;
+    }
   } else amount = readNum($('#t-amount'), 0);
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+  var first = method === METHOD_SO ? readFirst('t', amount) : null;
+  if (first === false) return;
   var when = readWhen('t');
   if (!when) return;
-  var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: method, installments: n,
+  var row = { txn_month: when.txn_month, txn_date: when.txn_date, amount: amount, method: method, installments: n, first_installment: first,
               cleared: checked('t-cleared'), note: nullable(val('t-note')), not_initiated: checked('t-noinit') };
   if (id) return update('g_txns', id, row);
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, viewCards };
+export { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, soUneqToggle, viewCards };
 
 // Escape סוגר את החלון של הכרטיס — רק כשאין מעליו חלון עריכה או אישור.
 document.addEventListener('keydown', function (e) {
