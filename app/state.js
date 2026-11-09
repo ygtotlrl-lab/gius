@@ -29,7 +29,7 @@ var state = {
   // תקציב אירוע — האירוע הפתוח; כל האירועים סגורים בכניסה.
   budgetOpen: null,
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
-  cards: { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null },
+  cards: { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false },
   // מיון ההלוואות — name · taken · end · status.
   loansSort: 'name', loansQ: '', loansStatus: '', loansOpen: null,
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.

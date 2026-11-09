@@ -21,9 +21,9 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync,
+import { cardRowsHTML, cardShare, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync,
          soToggle, soUneqToggle, viewCards } from './screens/cards.js';
-import { formPlan, savePlan, viewPlan } from './screens/plan.js';
+import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
@@ -233,7 +233,7 @@ function go(screen) {
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') { state.planMonth = m; state.planOpen = {}; }
-  if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null };
+  if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false };
   if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
@@ -315,7 +315,7 @@ var DOM_ACTIONS = {
   'cards-sort': function (el) { state.cards.sort = el.dataset.v; render(); },
   'card-toggle': function (el) {
     state.cards.open = state.cards.open === el.dataset.id ? null : el.dataset.id;
-    state.cards.plOpen = null;
+    state.cards.plOpen = null; state.cards.tlOpen = false;
     cardsRefresh();
   },
   'pledge-toggle': function (el) {
@@ -323,6 +323,8 @@ var DOM_ACTIONS = {
     cardsRefresh();
   },
   'card-close': function () { state.cards.open = null; cardsRefresh(); },
+  'card-share': function (el) { cardShare(el.dataset.id); },
+  'card-tl': function () { state.cards.tlOpen = !state.cards.tlOpen; cardsRefresh(); },
   'card-star': function (el) {
     var d = donorById(el.dataset.id);
     if (!d) return;
@@ -348,6 +350,7 @@ var DOM_ACTIONS = {
   'pay-del': function (el) { return delAsk(MSG_DEL_PAY, 'g_txns', el.dataset.id); },
 
   // ── תכנית ──
+  'plan-share': function (el) { planShare(el.dataset.amb); },
   'plan-grp': function (el) { var a = el.dataset.amb; state.planOpen[a] = !state.planOpen[a]; render(); },
   'plan-month': function (el) { state.planMonth = shiftMonth(state.planMonth, +el.dataset.d); render(); },
   'plan-new': function () { formPlan(null); },

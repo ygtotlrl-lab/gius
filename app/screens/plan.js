@@ -6,6 +6,7 @@ import { comboValue, esc, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
+import { snapShare } from '../snap.js';
 import { $, dmyDate, donorById, donorFieldHTML, donorName, emptyBox, gSortPlan, ils, insert,
          lookupLabels, monthLabel, nextSort, nullable, pendRowKey, planActual, planOfMonth,
          selectHTML, sum, update, val } from '../domain.js';
@@ -32,36 +33,61 @@ function viewPlan() {
   if (!list.length) h += emptyBox('plan', 'אין עדיין שורות בתכנית של החודש');
   else {
     // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה; כל הקבוצות סגורות בכניסה, ונפתחות ונסגרות בלחיצה על הכותרת.
+    // בקצה הכותרת — ייצוא הקבוצה כתמונה.
     var lastAmb = null;
     h += list.map(function (r) {
-      var a = planActual(r), id = esc(r.client_id), amb = r.ambassador || 'ללא שגריר', head = '';
+      var amb = r.ambassador || 'ללא שגריר', head = '';
       if (amb !== lastAmb) {
-        var grp = list.filter(function (x) { return (x.ambassador || 'ללא שגריר') === amb; });
-        var ge = 0, ga = 0;
-        grp.forEach(function (x) { if (!x.irrelevant) { ge += +x.expected || 0; ga += planActual(x); } });
         var on = !!state.planOpen[amb];
-        head = '<button class="list-sub plan-sub" data-act="plan-grp" data-amb="' + esc(amb) + '" aria-expanded="' + on + '">' +
-          '<span class="chev">' + icon('down') + '</span><span>' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span>' +
-          '<span class="sum">' + ils(ga) + ' / ' + ils(ge) + (ge > 0 ? ' · ' + Math.round(ga / ge * 100) + '%' : '') + '</span></button>';
+        head = '<div class="list-sub plan-sub">' +
+          '<button class="plan-tg" data-act="plan-grp" data-amb="' + esc(amb) + '" aria-expanded="' + on + '">' +
+            '<span class="chev">' + icon('down') + '</span>' + planHeadHTML(list, amb) + '</button>' +
+          '<button class="btn ghost xs ic" data-act="plan-share" data-amb="' + esc(amb) + '" aria-label="ייצוא תמונה" title="ייצוא תמונה">' + icon('share') + '</button>' +
+        '</div>';
         lastAmb = amb;
       }
       // שגריר סגור — הכותרת בלבד; השורות נפרשות בלחיצה עליה.
       if (!state.planOpen[amb]) return head;
-      var pct = r.expected > 0 ? Math.min(100, Math.round(a / r.expected * 100)) : (a > 0 ? 100 : 0);
-      return head + '<div class="pr' + (r.kind === 'התרמה' ? ' k-raise' : '') + (r.irrelevant ? ' irr' : '') + '">' +
-        '<div class="pr-main" data-act="plan-edit" data-id="' + id + '">' +
-          '<b>' + esc(donorName(r.donor_client_id)) + pendTag(pendRowKey('g_plan_items', r.client_id)) + '</b>' +
-          '<small>' + esc([r.kind || '', r.care_date ? 'טיפול ' + dmyDate(r.care_date) : '', r.note].filter(Boolean).join(' · ')) + '</small>' +
-        '</div>' +
-        '<span class="pr-fig"><b>' + ils(a) + '</b> / ' + ils(r.expected) + '</span>' +
-        '<div class="pr-bar"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct + '%"></i></div>' +
-        '<button class="pr-menu" data-act="plan-irr" data-id="' + id + '" aria-pressed="' + !!r.irrelevant + '" title="' +
-          (r.irrelevant ? 'סימון כרלוונטי' : 'סימון כלא רלוונטי') + '" aria-label="' + (r.irrelevant ? 'סימון כרלוונטי' : 'סימון כלא רלוונטי') + '">' + icon('dots') + '</button>' +
-      '</div>';
+      return head + planRowHTML(r, false);
     }).join('');
   }
   h += '</section>';
   return h;
+}
+
+// כותרת שגריר — שם · מונה · בפועל / צפי · אחוז; «לא רלוונטי» אינו נספר.
+function planHeadHTML(list, amb) {
+  var grp = list.filter(function (x) { return (x.ambassador || 'ללא שגריר') === amb; });
+  var ge = 0, ga = 0;
+  grp.forEach(function (x) { if (!x.irrelevant) { ge += +x.expected || 0; ga += planActual(x); } });
+  return '<span class="nm">' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span>' +
+    '<span class="sum">' + ils(ga) + ' / ' + ils(ge) + (ge > 0 ? ' · ' + Math.round(ga / ge * 100) + '%' : '') + '</span>';
+}
+
+// שורת תכנית — «צפי מול בפועל»; בתמונה (img) בלי פעולות.
+function planRowHTML(r, img) {
+  var a = planActual(r), id = esc(r.client_id);
+  var pct = r.expected > 0 ? Math.min(100, Math.round(a / r.expected * 100)) : (a > 0 ? 100 : 0);
+  return '<div class="pr' + (r.kind === 'התרמה' ? ' k-raise' : '') + (r.irrelevant ? ' irr' : '') + '">' +
+    '<div class="pr-main"' + (img ? '' : ' data-act="plan-edit" data-id="' + id + '"') + '>' +
+      '<b>' + esc(donorName(r.donor_client_id)) + (img ? '' : pendTag(pendRowKey('g_plan_items', r.client_id))) + '</b>' +
+      '<small>' + esc([r.kind || '', r.care_date ? 'טיפול ' + dmyDate(r.care_date) : '', r.note].filter(Boolean).join(' · ')) + '</small>' +
+    '</div>' +
+    '<span class="pr-fig"><b>' + ils(a) + '</b> / ' + ils(r.expected) + '</span>' +
+    '<div class="pr-bar"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct + '%"></i></div>' +
+    (img ? '' : '<button class="pr-menu" data-act="plan-irr" data-id="' + id + '" aria-pressed="' + !!r.irrelevant + '" title="' +
+      (r.irrelevant ? 'סימון כרלוונטי' : 'סימון כלא רלוונטי') + '" aria-label="' + (r.irrelevant ? 'סימון כרלוונטי' : 'סימון כלא רלוונטי') + '">' + icon('dots') + '</button>') +
+  '</div>';
+}
+
+// ייצוא תכנית של שגריר — הכותרת, הסיכום וכל השורות פרושות.
+function planShare(amb) {
+  var m = state.planMonth, list = gSortPlan(planOfMonth(m));
+  var rows = list.filter(function (x) { return (x.ambassador || 'ללא שגריר') === amb; });
+  if (!rows.length) return;
+  snapShare('<div class="snap-hd"><small>תכנית ' + esc(monthLabel(m)) + '</small><h2>' + esc(amb) + '</h2></div>' +
+    '<div class="list-sub plan-sub snap-sub">' + planHeadHTML(list, amb).replace(/^<span class="nm">.*?<\/span>/, '<span class="nm">שורות</span>') + '</div>' +
+    rows.map(function (r) { return planRowHTML(r, true); }).join(''), 'תכנית ' + monthLabel(m) + ' — ' + amb);
 }
 
 // השורה מקושרת לכרטיס; כרטיס שאינו קיים נוצר מהבורר. השגריר — מהכרטיס כברירה, וניתן לשינוי.
@@ -97,4 +123,4 @@ function savePlan(id) {
                                                      sort: nextSort(planOfMonth(state.planMonth)) }));
 }
 
-export { formPlan, savePlan, viewPlan };
+export { formPlan, planShare, savePlan, viewPlan };

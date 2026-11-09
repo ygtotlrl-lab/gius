@@ -8,10 +8,11 @@ import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MS
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
+import { snapShare } from '../snap.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
-         monthKeyOf, statusClass, txnSoLabel, txnWhen, txnsOfPledge, update, val } from '../domain.js';
+         monthKeyOf, monthLabel, statusClass, txnSoLabel, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
 // אריחים — שלושה בשורה במסך רחב, אחד בטלפון. הכרטיס הפתוח — בחלון משלו מעל הרשימה (cardWinHTML);
@@ -127,6 +128,7 @@ function cardOpenHTML(d) {
         '<span class="left"><small>נותר</small><b>' + ils(left) + '</b></span>' +
       '</div>' +
       '<div class="cp-acts">' +
+        '<button class="cp-btn" data-act="card-share" data-id="' + id + '" aria-label="ייצוא תמונה" title="ייצוא תמונה">' + icon('share') + '</button>' +
         '<button class="cp-btn" data-act="donor-edit" data-id="' + id + '" aria-label="עריכת פרטי הכרטיס" title="עריכת פרטי הכרטיס">' + icon('edit') + '</button>' +
         '<button class="cp-btn star' + (d.starred ? ' on' : '') + '" data-act="card-star" data-id="' + id + '" aria-pressed="' + !!d.starred + '" aria-label="כוכב">' + icon('star') + '</button>' +
         '<button class="cp-btn" data-act="card-close" aria-label="סגירה">' + icon('close') + '</button>' +
@@ -136,8 +138,71 @@ function cardOpenHTML(d) {
       '<button class="btn soft sm" data-act="pay-new" data-donor="' + id + '">' + icon('plus') + 'תשלום</button>' +
       '<button class="btn sm" data-act="pledge-new" data-donor="' + id + '">' + icon('plus') + 'התחייבות</button>' +
     '</div><div class="cp-body">' +
-    (pl.length ? pl.map(pledgeRowHTML).join('') : '<div class="hint">אין התחייבויות. תרומה ששולמה מיד — התחייבות חדשה עם «הוספת תשלום מיידי».</div>');
-  return h + '</div></div>';
+    (pl.length ? pl.map(function (p) { return pledgeRowHTML(p); }).join('') : '<div class="hint">אין התחייבויות. תרומה ששולמה מיד — התחייבות חדשה עם «הוספת תשלום מיידי».</div>') +
+    '</div>' + timelineHTML(d);
+  return h + '</div>';
+}
+
+// ── ציר התשלומים ──
+// כל תשלומי הכרטיס, מכל ההתחייבויות, לפי הזמן — החדש למעלה: כותרת לכל שנה ולכל חודש, וסכומם — מה שנספר בחודש
+// (`monthAmount`, בהו״ק — הפעימה הראשונה); בשורה — יום · התחייבות · אמצעי · הסכום שנרשם; «לפני המעבר» בסוף.
+// סגור בכל פתיחת כרטיס (`cards.tlOpen`).
+var HEB_MONTHS = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+function tlRowHTML(t) {
+  var p = pledgeById(t.pledge_client_id) || {}, d = t.txn_date;
+  var meth = [t.method, txnSoLabel(t)].filter(Boolean).join(' · ');
+  return '<div class="tl-row' + (t.cleared ? '' : ' uncleared') + '">' +
+    '<span class="tl-day">' + (d ? +d.slice(8) + '.' + +d.slice(5, 7) : '—') + '</span>' +
+    '<span class="tl-what"><b>' + esc([p.pledge_type || '—', p.detail].filter(Boolean).join(' · ')) + '</b>' +
+      (meth ? '<small>' + esc(meth) + '</small>' : '') + '</span>' +
+    '<span class="tl-amt">' + ils(t.amount) + '</span></div>';
+}
+function timelineBodyHTML(tx) {
+  var dated = tx.filter(function (t) { return t.txn_month; }), pre = tx.filter(function (t) { return !t.txn_month; });
+  var h = '', years = [];
+  dated.forEach(function (t) { var y = t.txn_month.slice(0, 4); if (years.indexOf(y) < 0) years.push(y); });
+  years.forEach(function (y) {
+    var ys = dated.filter(function (t) { return t.txn_month.slice(0, 4) === y; }), months = [];
+    ys.forEach(function (t) { if (months.indexOf(t.txn_month) < 0) months.push(t.txn_month); });
+    h += '<div class="tl-year"><span>' + y + '</span><span class="tl-sum">' + ils(ys.reduce(function (s, t) { return s + monthAmount(t); }, 0)) + '</span></div>';
+    months.forEach(function (m) {
+      var ms = ys.filter(function (t) { return t.txn_month === m; });
+      h += '<div class="tl-month"><div class="tl-mh"><span>' + HEB_MONTHS[+m.slice(5) - 1] + '</span><span class="tl-sum">' +
+        ils(ms.reduce(function (s, t) { return s + monthAmount(t); }, 0)) + '</span></div>' + ms.map(tlRowHTML).join('') + '</div>';
+    });
+  });
+  if (pre.length) h += '<div class="tl-year muted"><span>לפני המעבר לאפליקציה</span><span class="tl-sum">' +
+    ils(pre.reduce(function (s, t) { return s + (+t.amount || 0); }, 0)) + '</span></div><div class="tl-month">' + pre.map(tlRowHTML).join('') + '</div>';
+  return h;
+}
+function timelineHTML(d) {
+  var tx = gSortTxns(txnsOfDonor(d.client_id));
+  if (!tx.length) return '';
+  var on = !!state.cards.tlOpen;
+  return '<button class="tl-toggle" data-act="card-tl" aria-expanded="' + on + '">ציר תשלומים<span class="cnt">' + tx.length + '</span>' +
+    '<span class="chev">' + icon(on ? 'up' : 'down') + '</span></button>' +
+    (on ? '<div class="tl">' + timelineBodyHTML(tx) + '</div>' : '');
+}
+
+// ── ייצוא הכרטיס ──
+// הפרטים · הסיכום · כל ההתחייבויות, כל אחת עם תשלומיה — פרושות, בלי כפתורים.
+function cardShare(id) {
+  var d = donorById(id);
+  if (!d) return;
+  var chips = [d.ambassador ? 'שגריר: ' + d.ambassador : '', d.role, d.phone].concat(d.affiliations || []).filter(Boolean);
+  var pl = gSortPledges(pledgesOfDonor(d.client_id));
+  var h = '<div class="cp-band snap-band"><span class="cp-av">' + esc(initials(d.name)) + '</span>' +
+      '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
+        (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
+        (d.notes ? '<div class="cp-note">' + esc(d.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="cp-sum"><span><small>התחייב</small><b>' + ils(donorTotal(d.client_id)) + '</b></span>' +
+        '<span><small>נגבה</small><b>' + ils(donorPaid(d.client_id)) + '</b></span>' +
+        '<span class="left"><small>נותר</small><b>' + ils(donorLeft(d.client_id)) + '</b></span></div>' +
+    '</div>' +
+    '<div class="cp-bar"><h4>התחייבויות<span class="cnt">' + pl.length + '</span></h4></div>' +
+    '<div class="cp-body">' + pl.map(function (p) { return pledgeRowHTML(p, true); }).join('') + '</div>';
+  snapShare('<div class="copen snap-card">' + h + '</div>', 'כרטיס ' + d.name);
 }
 
 // תשלום — מוסלק מודגש, ושטרם נסלק חיוור; בלי מילה.
@@ -152,8 +217,8 @@ function payRowHTML(t) {
 }
 
 // התחייבות — שורה אחת: סעיף · סוג · פירוט, והנותר בולט; לחיצה פורשת את התשלומים.
-function pledgeRowHTML(p) {
-  var st = pledgeStatus(p), id = esc(p.client_id), open = state.cards.plOpen === p.client_id;
+function pledgeRowHTML(p, img) {
+  var st = pledgeStatus(p), id = esc(p.client_id), open = img || state.cards.plOpen === p.client_id;
   var tx = gSortTxns(txnsOfPledge(p.client_id));
   var r = '<div class="pl' + (open ? ' open' : '') + '">' +
     '<button class="pl-hd" data-act="pledge-toggle" data-id="' + id + '" aria-expanded="' + open + '">' +
@@ -164,15 +229,15 @@ function pledgeRowHTML(p) {
         pendTag(pendRowKey('g_pledges', p.client_id)) +
       '</span>' +
       '<span class="pl-end"><b title="נותר">' + ils(leftForPledge(p)) + '</b>' +
-        '<small>נגבה ' + ils(collectedForPledge(p.client_id)) + ' מתוך ' + ils(p.amount) +
+        '<small>נגבה ' + ils(collectedForPledge(p.client_id)) + (+p.amount ? ' מתוך ' + ils(p.amount) : ' · ללא סכום') +
         ' · <span class="badge ' + statusClass(st) + '">' + esc(st) + '</span></small></span>' +
-      '<span class="pl-chev" aria-hidden="true">' + icon(open ? 'up' : 'down') + '</span>' +
+      (img ? '' : '<span class="pl-chev" aria-hidden="true">' + icon(open ? 'up' : 'down') + '</span>') +
     '</button>';
   if (open) {
     r += '<div class="pl-body">' +
       (tx.length ? '<div class="pays">' + tx.map(payRowHTML).join('') + '</div>' : '<div class="hint">אין עדיין תשלומים להתחייבות.</div>') +
       (p.note ? '<div class="pl-note">' + esc(p.note) + '</div>' : '') +
-      '<div class="btnrow pl-acts"><button class="btn ghost xs" data-act="pledge-edit" data-id="' + id + '">עריכת ההתחייבות</button></div>' +
+      (img ? '' : '<div class="btnrow pl-acts"><button class="btn ghost xs" data-act="pledge-edit" data-id="' + id + '">עריכת ההתחייבות</button></div>') +
     '</div>';
   }
   return r + '</div>';
@@ -231,7 +296,7 @@ function formPledge(p, donorId) {
   var body = '<label class="fld"><span>סעיף</span>' + selectHTML('p-section', lookupLabels(LK_SECTION), p ? p.section : '', 'סעיף') + '</label>' +
     '<div class="f2">' +
       '<label class="fld"><span>סוג *</span>' + selectHTML('p-type', lookupLabels(LK_PTYPE), p ? p.pledge_type : '', 'סוג') + '</label>' +
-      '<label class="fld"><span>סכום *</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p ? p.amount : '') + '"></label>' +
+      '<label class="fld"><span>סכום</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
     '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
@@ -257,12 +322,15 @@ function formPledge(p, donorId) {
 function savePledge(id, donorId) {
   var type = val('p-type'), amount = readNum($('#p-amount'), 0);
   if (!type) { toast(MSG_PICK_TYPE, null, 'warn'); return; }
-  if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+  // הסכום רשות — יש מי שמתחייב בלי סכום; ריק נשמר 0. תשלום מיידי — רק עם סכום.
+  if (amount < 0) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   if (!val('p-amb')) { toast(MSG_PICK_AMB, null, 'warn'); return; }
   var row = { section: nullable(val('p-section')), pledge_type: type, detail: nullable(val('p-detail')),
               ambassador: nullable(val('p-amb')), amount: amount, note: nullable(val('p-note')) };
   if (id) return update('g_pledges', id, row);
-  var now = checked('p-now'), when = now ? readWhen('p') : null;
+  var now = checked('p-now');
+  if (now && !(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+  var when = now ? readWhen('p') : null;
   if (now && !when) return;
   var noInit = now && checked('p-noinit'), method = now ? nullable(val('p-method')) : null, n = null, first = null;
   if (method === METHOD_SO) {
@@ -439,7 +507,7 @@ function savePay(id, pledgeId) {
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { cardRowsHTML, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, soUneqToggle, viewCards };
+export { cardRowsHTML, cardShare, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, soUneqToggle, viewCards };
 
 // Escape סוגר את החלון של הכרטיס — רק כשאין מעליו חלון עריכה או אישור.
 document.addEventListener('keydown', function (e) {

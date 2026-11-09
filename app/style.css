@@ -359,10 +359,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .list-sub.general{margin-top:var(--sp-6)}
 .plan-sub{display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-5)}
 .plan-sub:first-of-type{margin-top:0}
-button.plan-sub{width:100%;border:0;background:none;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-3) 0}
-.plan-sub .chev{display:inline-flex;width:18px;height:18px;color:var(--text-3);transition:transform .15s}
-.plan-sub .chev svg{width:18px;height:18px}
-.plan-sub[aria-expanded="false"] .chev{transform:rotate(90deg)}
+.plan-tg{flex:1;min-width:0;display:flex;align-items:center;gap:var(--sp-4);border:0;background:none;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-3) 0}
+.plan-tg .chev{display:inline-flex;width:18px;height:18px;color:var(--text-3);transition:transform .15s}
+.plan-tg .chev svg{width:18px;height:18px}
+.plan-tg[aria-expanded="false"] .chev{transform:rotate(90deg)}
 .plan-sub .cnt{font-size:var(--fs-1);background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-4)}
 .tools-row{display:flex;flex-wrap:wrap;gap:var(--sp-4);align-items:center}
 .tools-row select{flex:1 1 9rem;min-width:0}
@@ -702,3 +702,33 @@ body:has(.card-win){overflow:hidden}
 .tk-chips .due.late{background:var(--bad-soft);color:var(--bad)}
 .tk-chips .due.soon{background:var(--gold-soft,var(--warn-soft));color:var(--gold)}
 .tk-meta{display:block;color:var(--text-3);font-size:var(--fs-1);margin-top:var(--sp-2)}
+
+/* ── ציר התשלומים בכרטיס ── */
+.tl-toggle{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:0;border-top:1px solid var(--border-2);background:none;font:inherit;color:var(--brand-ink);font-weight:800;font-size:var(--fs-3);padding:var(--sp-5) var(--sp-7);cursor:pointer;text-align:start}
+.tl-toggle .cnt{font-size:var(--fs-1);background:var(--brand-soft);border-radius:var(--r-6);padding:0 var(--sp-4)}
+.tl-toggle .chev{margin-inline-start:auto;display:inline-flex;width:20px;height:20px}
+.tl{padding:0 var(--sp-7) var(--sp-6)}
+.tl-year{display:flex;align-items:baseline;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-3);font-size:var(--fs-4);font-weight:800;border-bottom:2px solid var(--brand-soft);padding-bottom:var(--sp-2)}
+.tl-year:first-child{margin-top:var(--sp-3)}
+.tl-year.muted{color:var(--text-3);font-size:var(--fs-3)}
+.tl-sum{margin-inline-start:auto;font-variant-numeric:tabular-nums;color:var(--ok);font-weight:800}
+.tl-year.muted .tl-sum{color:var(--text-3)}
+.tl-month{position:relative;padding-inline-start:var(--sp-6);margin-bottom:var(--sp-4);border-inline-start:2px solid var(--border)}
+.tl-mh{display:flex;align-items:baseline;font-weight:700;color:var(--text-2);font-size:var(--fs-2);margin-bottom:var(--sp-2)}
+.tl-mh::before{content:"";position:absolute;inset-inline-start:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--brand-fill)}
+.tl-mh .tl-sum{font-size:var(--fs-2);color:var(--text-2)}
+.tl-row{display:grid;grid-template-columns:44px 1fr auto;gap:var(--sp-3);align-items:center;padding:var(--sp-3) 0;border-top:1px dashed var(--border-2)}
+.tl-day{color:var(--text-3);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+.tl-what{min-width:0}
+.tl-what b{display:block;font-size:var(--fs-2);font-weight:700}
+.tl-what small{display:block;color:var(--text-3);font-size:var(--fs-1)}
+.tl-amt{font-weight:800;font-variant-numeric:tabular-nums}
+.tl-row.uncleared{opacity:var(--op-5)}
+
+/* ── ייצוא תמונה — שורש הפלט מחוץ לתצוגה, ברוחב קבוע ── */
+.snap{position:fixed;top:0;left:-10000px;width:720px;padding:var(--sp-7);background:var(--bg);direction:rtl;color:var(--text)}
+.snap-hd{margin-bottom:var(--sp-5)}
+.snap-hd small{color:var(--text-3);font-size:var(--fs-2)}
+.snap-hd h2{font-size:var(--fs-6);color:var(--brand-ink)}
+.snap-sub{padding:var(--sp-3) 0;border-bottom:1px solid var(--border)}
+.snap-card{margin:0;box-shadow:none}
