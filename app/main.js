@@ -232,7 +232,7 @@ function go(screen) {
   state.screen = screen;
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
-  if (screen === 'plan') state.planMonth = m;
+  if (screen === 'plan') { state.planMonth = m; state.planOpen = {}; }
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null };
   if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
@@ -348,6 +348,7 @@ var DOM_ACTIONS = {
   'pay-del': function (el) { return delAsk(MSG_DEL_PAY, 'g_txns', el.dataset.id); },
 
   // ── תכנית ──
+  'plan-grp': function (el) { var a = el.dataset.amb; state.planOpen[a] = !state.planOpen[a]; render(); },
   'plan-month': function (el) { state.planMonth = shiftMonth(state.planMonth, +el.dataset.d); render(); },
   'plan-new': function () { formPlan(null); },
   'plan-edit': function (el) { var r = findIn(state.plan, el.dataset.id); if (r) formPlan(r); },

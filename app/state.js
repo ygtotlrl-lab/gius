@@ -23,6 +23,7 @@ var state = {
   // תשלומי החודש בלוח — שלושה אחרונים, או כולם אחרי «הצג את כל»; מתאפס בכל מעבר חודש.
   dashPayAll: false,
   planMonth: '',
+  planOpen: {},
   donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
   notes: [], loans: [], loanMoves: [], budget: [], events: [],
   // תקציב אירוע — האירוע הפתוח; כל האירועים סגורים בכניסה.

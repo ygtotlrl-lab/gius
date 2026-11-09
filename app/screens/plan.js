@@ -31,7 +31,7 @@ function viewPlan() {
     '<span class="sp"><button class="btn sm" data-act="plan-new">' + icon('plus') + 'שורה</button></span></h2>';
   if (!list.length) h += emptyBox('plan', 'אין עדיין שורות בתכנית של החודש');
   else {
-    // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה.
+    // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה; כל הקבוצות סגורות בכניסה, ונפתחות ונסגרות בלחיצה על הכותרת.
     var lastAmb = null;
     h += list.map(function (r) {
       var a = planActual(r), id = esc(r.client_id), amb = r.ambassador || 'ללא שגריר', head = '';
@@ -39,10 +39,14 @@ function viewPlan() {
         var grp = list.filter(function (x) { return (x.ambassador || 'ללא שגריר') === amb; });
         var ge = 0, ga = 0;
         grp.forEach(function (x) { if (!x.irrelevant) { ge += +x.expected || 0; ga += planActual(x); } });
-        head = '<div class="list-sub plan-sub"><span>' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span>' +
-          '<span class="sum">' + ils(ga) + ' / ' + ils(ge) + (ge > 0 ? ' · ' + Math.round(ga / ge * 100) + '%' : '') + '</span></div>';
+        var on = !!state.planOpen[amb];
+        head = '<button class="list-sub plan-sub" data-act="plan-grp" data-amb="' + esc(amb) + '" aria-expanded="' + on + '">' +
+          '<span class="chev">' + icon('down') + '</span><span>' + esc(amb) + '</span><span class="cnt">' + grp.length + '</span>' +
+          '<span class="sum">' + ils(ga) + ' / ' + ils(ge) + (ge > 0 ? ' · ' + Math.round(ga / ge * 100) + '%' : '') + '</span></button>';
         lastAmb = amb;
       }
+      // שגריר סגור — הכותרת בלבד; השורות נפרשות בלחיצה עליה.
+      if (!state.planOpen[amb]) return head;
       var pct = r.expected > 0 ? Math.min(100, Math.round(a / r.expected * 100)) : (a > 0 ? 100 : 0);
       return head + '<div class="pr' + (r.kind === 'התרמה' ? ' k-raise' : '') + (r.irrelevant ? ' irr' : '') + '">' +
         '<div class="pr-main" data-act="plan-edit" data-id="' + id + '">' +

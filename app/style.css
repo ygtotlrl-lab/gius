@@ -359,6 +359,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .list-sub.general{margin-top:var(--sp-6)}
 .plan-sub{display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-5)}
 .plan-sub:first-of-type{margin-top:0}
+button.plan-sub{width:100%;border:0;background:none;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-3) 0}
+.plan-sub .chev{display:inline-flex;width:18px;height:18px;color:var(--text-3);transition:transform .15s}
+.plan-sub .chev svg{width:18px;height:18px}
+.plan-sub[aria-expanded="false"] .chev{transform:rotate(90deg)}
 .plan-sub .cnt{font-size:var(--fs-1);background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-4)}
 .tools-row{display:flex;flex-wrap:wrap;gap:var(--sp-4);align-items:center}
 .tools-row select{flex:1 1 9rem;min-width:0}
