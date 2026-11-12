@@ -117,8 +117,9 @@ function flowHTML(m) {
   all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.loan, f.tgt); });
   max *= 1.12;
   var avg = all.length ? sum(all, function (f) { return f.inc; }) / all.length : 0;
-  var legend = '<div class="fl-legend"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות</span>' +
-    '<span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div>';
+  // שתי קבוצות — הצבעים והקווים; בטלפון כל קבוצה בשורה משלה
+  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות</span></div>' +
+    '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>';
   // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
   return '<section class="card"><h2>הכנסות מול הלוואות</h2>' + legend +
     '<div class="flow">' +

@@ -285,6 +285,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .g-list{margin:0;display:flex;flex-direction:column}
 .g-list > div{display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2)}
 .g-list > div:last-child{border-bottom:0}
+/* מתחת ל-900px — הרשימה בשתי עמודות, לרוחב המסך */
+@media (max-width:899px){
+  .g-list{display:grid;grid-template-columns:1fr 1fr;column-gap:var(--sp-5)}
+  .g-list > div:nth-last-child(-n+2){border-bottom:0}
+}
 /* אייקון בעיגול רך, והתווית הקטנה מעל הערך */
 .g-ic{flex:none;width:36px;height:36px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center}
 .g-ic .ico{width:18px;height:18px}
@@ -329,8 +334,9 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 .new-donor-title{font-size:var(--fs-3);font-weight:700;margin-bottom:var(--sp-4)}
 /* ── לוח הבקרה ── */
-.brk{display:grid;gap:var(--sp-4)}
-.brk-row{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;gap:var(--sp-4);align-items:center}
+.brk{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;gap:var(--sp-4)}
+/* עמודות משותפות לכל השורות — הפסים מתחילים ונגמרים באותו קו */
+.brk-row{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:center}
 .brk-lab,.brk-val{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
 .brk-lab{align-items:flex-start}
 .brk-val{align-items:flex-end}
@@ -747,7 +753,9 @@ body:has(.card-win){overflow:hidden}
 
 /* ── הכנסות מול הלוואות: רכיב החודש, ולצדו ההיסטוריה שנגללת בתוכה (בטלפון — זה מעל זה) ── */
 .fl-legend{display:flex;flex-wrap:wrap;gap:var(--sp-3);font-size:var(--fs-2);font-weight:600;color:var(--text-2);margin-bottom:var(--sp-5)}
-.fl-legend > span{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.fl-lg > span{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.fl-lg{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+@media (max-width:639px){.fl-lg{flex-basis:100%}}
 .fl-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .fl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
 .fl-legend i.inc{background:var(--brand-fill)} .fl-legend i.loan{background:var(--bad)}
