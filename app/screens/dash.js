@@ -3,7 +3,7 @@ import { esc } from '../../core/ui.js';
 import { stIcon } from '../../core/icons.js';
 import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
-import { ASSIGNEES, STAGES } from '../constants.js';
+import { APP_FIRST_MONTH, ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { dayToday } from '../../core/util.js';
@@ -83,12 +83,9 @@ function flowOf(m) {
            loan: sum(state.loans.filter(function (l) { return loanMonth(l) === m; }), function (l) { return l.amount; }),
            tgt: targetFor(m) };
 }
-// הטווח — מהחודש הראשון שיש בו תשלום או הלוואה ועד החודש של היום
+// הטווח — מהחודש הראשון של האפליקציה ועד החודש של היום
 function flowMonths() {
-  var now = dayToday().slice(0, 7), first = now, ok = /^\d{4}-\d{2}$/;
-  state.txns.forEach(function (t) { if (ok.test(t.txn_month || '') && t.txn_month < first) first = t.txn_month; });
-  state.loans.forEach(function (l) { var k = loanMonth(l); if (ok.test(k) && k < first) first = k; });
-  var out = [], k = first;
+  var now = dayToday().slice(0, 7), out = [], k = APP_FIRST_MONTH;
   while (k <= now && out.length < 240) { out.push(k); k = shiftMonth(k, 1); }
   return out;
 }
