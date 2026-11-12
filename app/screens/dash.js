@@ -36,6 +36,11 @@ function gaugeHTML(collected, pct) {
   '</div>';
 }
 
+// שורה ברשימה שליד המד — אייקון בעיגול, התווית מעל והערך מתחתיה.
+function gStat(ic, lab, val) {
+  return '<div><span class="g-ic">' + icon(ic) + '</span><span class="g-txt"><dt>' + esc(lab) + '</dt><dd>' + esc(val) + '</dd></span></div>';
+}
+
 // הסעיף והשגריר של תשלום — מההתחייבות שהוא נזקף אליה; התשלום עצמו אינו נושא אותם.
 function groupBy(list, pick, fallback) {
   var map = {}, order = [];
@@ -54,23 +59,24 @@ function breakdownHTML(rows, total) {
   if (!rows.length) return emptyBox('dash', 'אין תשלומים בחודש זה');
   return '<div class="brk">' + rows.map(function (r) {
     var share = total > 0 ? r.total / total * 100 : 0;
-    return '<div class="brk-row"><span class="brk-lab">' + esc(r.key) + '<small>' + r.count + ' תשלומים</small></span>' +
+    return '<div class="brk-row"><span class="brk-lab"><b>' + esc(r.key) + '</b><span class="brk-cnt">' + r.count + ' תשלומים</span></span>' +
       '<span class="brk-bar">' + bar(share.toFixed(1)) + '</span>' +
-      '<span class="brk-val">' + ils(r.total) + '<small>' + share.toFixed(0) + '%</small></span></div>';
+      '<span class="brk-val"><b>' + ils(r.total) + '</b><span class="brk-pct">' + share.toFixed(0) + '%</span></span></div>';
   }).join('') + '</div>';
 }
 
-// מצב המשימות לכל אחראי — הסה״כ, ובהרצה והושלם; מנותב למסך המשימות.
+// מצב המשימות לכל אחראי — שלושת השלבים ומספריהם, והמספר הבולט — בהרצה; מנותב למסך המשימות.
 function tasksHTML() {
   return '<div class="who-grid">' + ASSIGNEES.map(function (who) {
     var mine = state.tasks.filter(function (t) { return t.assignee === who; });
     var cnt = function (st) { return mine.filter(function (t) { return t.stage === st; }).length; };
     return '<button class="who-card" data-act="dash-who" data-who="' + esc(who) + '">' +
       '<span class="who-main"><b>' + esc(who) + '</b>' +
-        '<span class="who-stages">' + STAGES.slice(0, 2).map(function (s) {
+        '<span class="who-stages">' + STAGES.map(function (s) {
           return '<span class="pill ' + s.cls + '">' + esc(s.id) + ' · ' + cnt(s.id) + '</span>';
         }).join('') + '</span></span>' +
-      '<span class="who-total" aria-label="' + mine.length + ' משימות">' + mine.length + '</span></button>';
+      '<span class="who-total" aria-label="' + cnt(STAGES[0].id) + ' משימות ' + esc(STAGES[0].id) + '">' + cnt(STAGES[0].id) +
+        '<small>' + esc(STAGES[0].id) + '</small></span></button>';
   }).join('') + '</div>';
 }
 
@@ -116,10 +122,10 @@ function flowHTML(m) {
   // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
   return '<section class="card"><h2>הכנסות מול הלוואות</h2>' + legend +
     '<div class="flow">' +
-      '<div class="fl-month"><div class="fl-title">' + esc(monthLabel(m)) + '</div>' + flowColHTML(cur, max, true) +
-        '<dl class="fl-sum"><div><dt>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
-        '<div><dt>הלוואות</dt><dd>' + esc(ils(cur.loan)) + '</dd></div></dl></div>' +
-      '<div class="fl-hist"><div class="fl-title">לאורך הזמן</div><div class="fl-scroll" tabindex="0" aria-label="הכנסות והלוואות לפי חודש">' +
+      '<div class="fl-month"><div class="fl-title"><span>' + esc(monthLabel(m)) + '</span></div>' + flowColHTML(cur, max, true) +
+        '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
+        '<div><dt><i class="loan"></i>הלוואות</dt><dd>' + esc(ils(cur.loan)) + '</dd></div></dl></div>' +
+      '<div class="fl-hist"><div class="fl-title"><span>לאורך הזמן</span></div><div class="fl-scroll" tabindex="0" aria-label="הכנסות והלוואות לפי חודש">' +
         '<div class="fl-track">' + (avg > 0 ? '<i class="fl-avg" style="--v:' + hFr(avg, max) + '"></i>' : '') +
         all.slice().reverse().map(function (f) { return flowColHTML(f, max, false); }).join('') + '</div></div></div>' +
     '</div></section>';
@@ -135,16 +141,16 @@ function viewDash() {
 
   var h = '<section class="card">' +
     '<div class="monthnav">' +
-      '<button class="btn ghost sm ic" data-act="month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
+      '<button class="btn ghost sm ic" data-act="month" data-d="-1" aria-label="חודש קודם"' + (m <= APP_FIRST_MONTH ? ' disabled' : '') + '>' + icon('prev') + '</button>' +
       '<b>' + esc(monthLabel(m)) + '</b>' +
       '<button class="btn ghost sm ic" data-act="month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
     '</div>' +
     '<div class="gauge-row">' + gaugeHTML(collected, target > 0 ? pct : 0) +
       '<dl class="g-list">' +
-        '<div><dt>אחוזים</dt><dd>' + (target > 0 ? Math.round(pct) + '%' : '—') + '</dd></div>' +
-        '<div><dt>יעד</dt><dd>' + (target > 0 ? ils(target) : 'לא הוגדר') + '</dd></div>' +
-        '<div><dt>סכום שנותר</dt><dd>' + (target > 0 ? ils(remaining) : '—') + '</dd></div>' +
-        '<div><dt>מספר תשלומים</dt><dd>' + txns.length + '</dd></div>' +
+        gStat('dash', 'אחוזים', target > 0 ? Math.round(pct) + '%' : '—') +
+        gStat('target', 'יעד', target > 0 ? ils(target) : 'לא הוגדר') +
+        gStat('wait', 'סכום שנותר', target > 0 ? ils(remaining) : '—') +
+        gStat('cash', 'מספר תשלומים', String(txns.length)) +
       '</dl>' +
     '</div>' +
     '<div class="momentum">' + momentumMsg(target > 0 ? pct : 0) + '</div>' +

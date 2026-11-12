@@ -283,12 +283,15 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .gauge-val.st-mid{color:var(--brand-ink)}
 .gauge-val.st-done{color:var(--ok)}
 .g-list{margin:0;display:flex;flex-direction:column}
-.g-list > div{display:flex;justify-content:space-between;align-items:baseline;gap:var(--sp-5);
-  padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2)}
+.g-list > div{display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2)}
 .g-list > div:last-child{border-bottom:0}
-.g-list dt,.g-list dd{margin:0;font-size:var(--fs-4)}
-.g-list dt{color:var(--text-2)}
-.g-list dd{font-weight:700;font-variant-numeric:tabular-nums}
+/* אייקון בעיגול רך, והתווית הקטנה מעל הערך */
+.g-ic{flex:none;width:36px;height:36px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center}
+.g-ic .ico{width:18px;height:18px}
+.g-txt{display:flex;flex-direction:column;min-width:0}
+.g-list dt,.g-list dd{margin:0}
+.g-list dt{font-size:var(--fs-2);font-weight:600;color:var(--text-3)}
+.g-list dd{font-size:var(--fs-5);font-weight:800;color:var(--text);letter-spacing:var(--ls-n1);font-variant-numeric:tabular-nums}
 .hero-stats{flex:1;width:100%;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
 .stat{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--radius-sm);padding:var(--sp-4) var(--sp-5)}
 .stat span{display:block;font-size:var(--fs-2);color:var(--text-3);font-weight:600;margin-bottom:var(--sp-1)}
@@ -328,16 +331,24 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* ── לוח הבקרה ── */
 .brk{display:grid;gap:var(--sp-4)}
 .brk-row{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;gap:var(--sp-4);align-items:center}
-.brk-lab{font-size:var(--fs-3);font-weight:650;min-width:0}
-.brk-lab small,.brk-val small{display:block;font-size:var(--fs-1);color:var(--text-3);font-weight:500}
-.brk-val{text-align:end;font-size:var(--fs-3);font-variant-numeric:tabular-nums}
+.brk-lab,.brk-val{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
+.brk-lab{align-items:flex-start}
+.brk-val{align-items:flex-end}
+.brk-lab b{font-size:var(--fs-4);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.brk-val b{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* מספר התשלומים והחלק באחוזים — תגיות קטנות, כמו בשלבי המשימות */
+.brk-cnt,.brk-pct{font-size:var(--fs-1);font-weight:700;border-radius:var(--r-6);padding:1px var(--sp-3);font-variant-numeric:tabular-nums}
+.brk-cnt{background:var(--card-2);color:var(--text-3);border:1px solid var(--border-2)}
+.brk-pct{background:var(--brand-soft);color:var(--brand-ink)}
+.brk-bar .btrack{height:10px}
 .who-grid{display:grid;gap:var(--sp-4)}
 /* השם והשלבים מימין; הסה״כ משמאל, ממורכז לגובה הכרטיס. */
 .who-card{display:flex;align-items:center;gap:var(--sp-5);text-align:start;cursor:pointer;
   background:var(--card-2);border:1px solid var(--border);border-radius:var(--r-5);padding:var(--sp-5)}
 .who-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-4)}
 .who-card b{font-size:var(--fs-4)}
-.who-total{flex:none;font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);color:var(--brand-ink);font-variant-numeric:tabular-nums}
+.who-total{flex:none;display:flex;flex-direction:column;align-items:center;font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);color:var(--warn);font-variant-numeric:tabular-nums}
+.who-total small{font-size:var(--fs-1);font-weight:700;color:var(--text-3);margin-top:var(--sp-2)}
 .who-stages{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
 .pill{font-size:var(--fs-2);font-weight:700;border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .pill.run{background:var(--warn-soft);color:var(--warn)}
@@ -735,7 +746,8 @@ body:has(.card-win){overflow:hidden}
 .snap .task-star:not(.on){display:none}
 
 /* ── הכנסות מול הלוואות: רכיב החודש, ולצדו ההיסטוריה שנגללת בתוכה (בטלפון — זה מעל זה) ── */
-.fl-legend{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-6);font-size:var(--fs-2);color:var(--text-2);margin-bottom:var(--sp-5)}
+.fl-legend{display:flex;flex-wrap:wrap;gap:var(--sp-3);font-size:var(--fs-2);font-weight:600;color:var(--text-2);margin-bottom:var(--sp-5)}
+.fl-legend > span{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .fl-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .fl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
 .fl-legend i.inc{background:var(--brand-fill)} .fl-legend i.loan{background:var(--bad)}
@@ -744,7 +756,8 @@ body:has(.card-win){overflow:hidden}
 .flow{display:grid;gap:var(--sp-6)}
 @media (min-width:900px){.flow{grid-template-columns:minmax(0,1fr) minmax(0,3fr)}}
 .fl-month,.fl-hist{background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-5);min-width:0}
-.fl-title{font-size:var(--fs-2);font-weight:700;color:var(--text-2);margin-bottom:var(--sp-4)}
+.fl-title{margin-bottom:var(--sp-4)}
+.fl-title span{display:inline-block;font-size:var(--fs-2);font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .fl-col{--plot:180px;display:flex;flex-direction:column;align-items:stretch;flex:none}
 .fl-plot{position:relative;height:var(--plot);display:flex;align-items:flex-end;justify-content:center;gap:3px;border-bottom:1px solid var(--border);padding-inline:var(--sp-2)}
 .fl-bar{position:relative;width:14px;height:calc(var(--v) * 100%);border-radius:4px 4px 0 0}
@@ -758,7 +771,10 @@ body:has(.card-win){overflow:hidden}
 .fl-month .fl-bar b{font-size:var(--fs-1)}
 .fl-sum{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin:var(--sp-5) 0 0}
 .fl-sum div{display:flex;flex-direction:column;align-items:center}
-.fl-sum dt{font-size:var(--fs-1);color:var(--text-3)} .fl-sum dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums}
+.fl-sum dt{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);font-weight:600;color:var(--text-3)}
+.fl-sum dt i{width:10px;height:10px;border-radius:3px}
+.fl-sum dt i.inc{background:var(--brand-fill)} .fl-sum dt i.loan{background:var(--bad)}
+.fl-sum dd{margin:0;font-size:var(--fs-5);font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
 .fl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:var(--sp-5)}
 .fl-track{position:relative;display:flex;width:max-content;min-width:100%}
 .fl-track .fl-col{min-width:52px}

@@ -14,7 +14,7 @@ import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, 
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
          MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
          MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
-         TABS } from './constants.js';
+         TABS, APP_FIRST_MONTH } from './constants.js';
 import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, pendRowKey, pledgeById, rowPendingKey,
@@ -306,7 +306,8 @@ var DOM_ACTIONS = {
   'ask-no': function () { closeAsk(false); },
 
   // ── לוח הבקרה ──
-  'month': function (el) { state.month = shiftMonth(state.month, +el.dataset.d); state.dashPayAll = false; render(); },
+  // הדשבורד מתחיל בחודש הראשון של האפליקציה — אין חודש לפניו.
+  'month': function (el) { var k = shiftMonth(state.month, +el.dataset.d); if (k < APP_FIRST_MONTH) return; state.month = k; state.dashPayAll = false; render(); },
   'dash-pay-all': function () { state.dashPayAll = !state.dashPayAll; render(); },
   'dash-who': function (el) { go('tasks'); state.tasks_ui.who = el.dataset.who; render(); },
   'card-go': function (el) { go('cards'); state.cards.open = el.dataset.id; render(); },
