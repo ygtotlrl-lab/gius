@@ -733,3 +733,33 @@ body:has(.card-win){overflow:hidden}
 .snap-sub{padding:var(--sp-3) 0;border-bottom:1px solid var(--border)}
 .snap-card{margin:0;box-shadow:none}
 .snap .task-star:not(.on){display:none}
+
+/* ── הכנסות מול הלוואות: רכיב החודש, ולצדו ההיסטוריה שנגללת בתוכה (בטלפון — זה מעל זה) ── */
+.fl-legend{display:flex;flex-wrap:wrap;gap:var(--sp-2) var(--sp-6);font-size:var(--fs-2);color:var(--text-2);margin-bottom:var(--sp-5)}
+.fl-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.fl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
+.fl-legend i.inc{background:var(--brand-fill)} .fl-legend i.loan{background:var(--bad)}
+.fl-legend i.tgt{height:0;width:20px;border-top:2px dashed var(--text-2);border-radius:0}
+.fl-legend i.avg{height:0;width:20px;border-top:2px dotted var(--brand-ink);border-radius:0}
+.flow{display:grid;gap:var(--sp-6)}
+@media (min-width:900px){.flow{grid-template-columns:minmax(0,1fr) minmax(0,3fr)}}
+.fl-month,.fl-hist{background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-5);min-width:0}
+.fl-title{font-size:var(--fs-2);font-weight:700;color:var(--text-2);margin-bottom:var(--sp-4)}
+.fl-col{--plot:180px;display:flex;flex-direction:column;align-items:stretch;flex:none}
+.fl-plot{position:relative;height:var(--plot);display:flex;align-items:flex-end;justify-content:center;gap:3px;border-bottom:1px solid var(--border);padding-inline:var(--sp-2)}
+.fl-bar{position:relative;width:14px;height:calc(var(--v) * 100%);border-radius:4px 4px 0 0}
+.fl-bar.inc{background:var(--brand-fill)} .fl-bar.loan{background:var(--bad)}
+.fl-bar b{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding-bottom:2px;z-index:2;text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2),0 0 2px var(--card-2);font-size:10px;font-weight:700;color:var(--text-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.fl-tgt{position:absolute;inset-inline:0;bottom:calc(var(--v) * 100%);border-top:2px dashed var(--text-2);pointer-events:none}
+.fl-lab{height:22px;line-height:22px;text-align:center;font-size:var(--fs-1);color:var(--text-3);white-space:nowrap}
+.fl-month .fl-col{--plot:200px}
+.fl-month .fl-plot{gap:var(--sp-4)}
+.fl-month .fl-bar{width:44px}
+.fl-month .fl-bar b{font-size:var(--fs-1)}
+.fl-sum{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin:var(--sp-5) 0 0}
+.fl-sum div{display:flex;flex-direction:column;align-items:center}
+.fl-sum dt{font-size:var(--fs-1);color:var(--text-3)} .fl-sum dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums}
+.fl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:var(--sp-5)}
+.fl-track{position:relative;display:flex;width:max-content;min-width:100%}
+.fl-track .fl-col{min-width:52px}
+.fl-avg{position:absolute;inset-inline:0;bottom:calc(22px + var(--v) * 180px);border-top:2px dotted var(--brand-ink);pointer-events:none;z-index:1}

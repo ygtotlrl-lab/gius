@@ -6,8 +6,9 @@ import { pendTag } from '../../core/sync.js';
 import { ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthLabel, monthTxnsInit,
-         pendRowKey, pledgeById, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
+import { dayToday } from '../../core/util.js';
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthKeyOf, monthLabel, monthTxnsInit,
+         pendRowKey, pledgeById, shiftMonth, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
 function momentumMsg(pct) {
@@ -73,6 +74,60 @@ function tasksHTML() {
   }).join('') + '</div>';
 }
 
+// ── הכנסות מול הלוואות ──
+// הכנסה — מה שנספר בחודש (monthAmount של התשלומים היזומים); הלוואה — לפי חודש הלקיחה.
+var MONTH_SHORT = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
+function loanMonth(l) { return l.taken_date ? monthKeyOf(l.taken_date) : (l.taken_month || ''); }
+function flowOf(m) {
+  return { m: m, inc: sum(monthTxnsInit(m), monthAmount),
+           loan: sum(state.loans.filter(function (l) { return loanMonth(l) === m; }), function (l) { return l.amount; }),
+           tgt: targetFor(m) };
+}
+// הטווח — מהחודש הראשון שיש בו תשלום או הלוואה ועד החודש של היום
+function flowMonths() {
+  var now = dayToday().slice(0, 7), first = now, ok = /^\d{4}-\d{2}$/;
+  state.txns.forEach(function (t) { if (ok.test(t.txn_month || '') && t.txn_month < first) first = t.txn_month; });
+  state.loans.forEach(function (l) { var k = loanMonth(l); if (ok.test(k) && k < first) first = k; });
+  var out = [], k = first;
+  while (k <= now && out.length < 240) { out.push(k); k = shiftMonth(k, 1); }
+  return out;
+}
+function kShort(v) { return v >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
+function hFr(v, max) { return Math.round(Math.min(1, (v || 0) / max) * 1000) / 1000; }
+function flowColHTML(f, max, big) {
+  var p = f.m.split('-');
+  var b = function (v, cls, lbl) {
+    return '<span class="fl-bar ' + cls + '" style="--v:' + hFr(v, max) + '" title="' + lbl + ' ' + esc(ils(v)) + '">' +
+      (v > 0 ? '<b>' + esc(big ? ils(v) : kShort(v)) + '</b>' : '') + '</span>';
+  };
+  return '<div class="fl-col">' +
+    '<div class="fl-plot">' +
+      (f.tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(f.tgt, max) + '"></i>' : '') +
+      b(f.inc, 'inc', 'הכנסות') + b(f.loan, 'loan', 'הלוואות') +
+    '</div>' +
+    (big ? '' : '<span class="fl-lab">' + esc(MONTH_SHORT[+p[1] - 1] + ' ' + p[0].slice(2)) + '</span>') +
+  '</div>';
+}
+function flowHTML(m) {
+  var months = flowMonths(), all = months.map(flowOf), cur = flowOf(m);
+  var max = 1;
+  all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.loan, f.tgt); });
+  max *= 1.12;
+  var avg = all.length ? sum(all, function (f) { return f.inc; }) / all.length : 0;
+  var legend = '<div class="fl-legend"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות</span>' +
+    '<span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div>';
+  // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
+  return '<section class="card"><h2>הכנסות מול הלוואות</h2>' + legend +
+    '<div class="flow">' +
+      '<div class="fl-month"><div class="fl-title">' + esc(monthLabel(m)) + '</div>' + flowColHTML(cur, max, true) +
+        '<dl class="fl-sum"><div><dt>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
+        '<div><dt>הלוואות</dt><dd>' + esc(ils(cur.loan)) + '</dd></div></dl></div>' +
+      '<div class="fl-hist"><div class="fl-title">לאורך הזמן</div><div class="fl-scroll" tabindex="0" aria-label="הכנסות והלוואות לפי חודש">' +
+        '<div class="fl-track">' + (avg > 0 ? '<i class="fl-avg" style="--v:' + hFr(avg, max) + '"></i>' : '') +
+        all.slice().reverse().map(function (f) { return flowColHTML(f, max, false); }).join('') + '</div></div></div>' +
+    '</div></section>';
+}
+
 function viewDash() {
   var m = state.month;
   var txns = monthTxnsInit(m);
@@ -97,6 +152,8 @@ function viewDash() {
     '</div>' +
     '<div class="momentum">' + momentumMsg(target > 0 ? pct : 0) + '</div>' +
   '</section>';
+
+  h += flowHTML(m);
 
   h += '<div class="grid2">' +
     '<section class="card"><h2>פילוח סעיפים</h2>' +

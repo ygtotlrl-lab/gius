@@ -2,7 +2,7 @@
 import { readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME } from '../constants.js';
+import { LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME, MSG_NEED_TAKEN } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, dmyDate, emptyBox, gSortLoanMoves, gSortLoans, ils, insert, nextSort, nullable, pendRowKey, selectHTML, sum, update, val } from '../domain.js';
@@ -120,7 +120,7 @@ function formLoan(l) {
       '<label class="fld"><span>מלווה *</span><input class="inp" id="o-lender" value="' + esc(l ? l.lender : '') + '"></label>' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="o-amount" inputmode="decimal" value="' + esc(l ? l.amount : '') + '"></label>' +
     '</div>' +
-    whenFieldsHTML('o-taken', 'תאריך לקיחה', l, 'taken') +
+    whenFieldsHTML('o-taken', 'תאריך לקיחה *', l, 'taken') +
     whenFieldsHTML('o-check', 'תאריך סיום (צ׳ק אחרון)', l, 'last_check') +
     '<label class="fld"><span>תנאי החזר</span><input class="inp" id="o-terms" value="' + esc(l ? l.repay_terms || '' : '') + '"></label>' +
     '<label class="fld"><span>סטטוס</span><select class="inp" id="o-status"><option value="">— ללא —</option>' + LOAN_STATUSES.map(function (s) {
@@ -137,6 +137,8 @@ function saveLoan(id) {
   if (!lender) { toast(MSG_NEED_NAME, null, 'warn'); return; }
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   var td = nullable(val('o-taken')), cd = nullable(val('o-check'));
+  // בלי חודש לקיחה ההלוואה אינה נכנסת לגרף ההכנסות מול ההלוואות — ולכן חובה, תאריך מלא או חודש
+  if (!td && !nullable(val('o-taken-m'))) { toast(MSG_NEED_TAKEN, null, 'warn'); return; }
   var row = { lender: lender, amount: amount,
               taken_date: td, taken_month: td ? null : nullable(val('o-taken-m')),
               last_check_date: cd, last_check_month: cd ? null : nullable(val('o-check-m')),
