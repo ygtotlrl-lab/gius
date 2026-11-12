@@ -3,7 +3,7 @@
 import { readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { comboValue, esc, openModal, toast } from '../../core/ui.js';
-import { LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS } from '../constants.js';
+import { APP_FIRST_MONTH, LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { snapShare } from '../snap.js';
@@ -17,7 +17,7 @@ function viewPlan() {
   var exp = sum(live, function (r) { return r.expected; }), act = sum(live, planActual);
   var h = '<section class="card">' +
     '<div class="monthnav">' +
-      '<button class="btn ghost sm ic" data-act="plan-month" data-d="-1" aria-label="חודש קודם">' + icon('prev') + '</button>' +
+      '<button class="btn ghost sm ic" data-act="plan-month" data-d="-1" aria-label="חודש קודם"' + (m <= APP_FIRST_MONTH ? ' disabled' : '') + '>' + icon('prev') + '</button>' +
       '<b>' + esc(monthLabel(m)) + '</b>' +
       '<button class="btn ghost sm ic" data-act="plan-month" data-d="1" aria-label="חודש הבא">' + icon('next') + '</button>' +
     '</div>' +

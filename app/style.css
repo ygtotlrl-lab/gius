@@ -775,7 +775,8 @@ body:has(.card-win){overflow:hidden}
 .fl-sum dt i{width:10px;height:10px;border-radius:3px}
 .fl-sum dt i.inc{background:var(--brand-fill)} .fl-sum dt i.loan{background:var(--bad)}
 .fl-sum dd{margin:0;font-size:var(--fs-5);font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
-.fl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:var(--sp-5)}
+.fl-scroll{container-type:inline-size;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:var(--sp-5)}
 .fl-track{position:relative;display:flex;width:max-content;min-width:100%}
-.fl-track .fl-col{min-width:52px}
+/* שנים עשר חודשים ברוחב הנראה; מעבר להם — גלילה שמאלה */
+.fl-track .fl-col{flex:0 0 calc(100cqi / 12);min-width:52px}
 .fl-avg{position:absolute;inset-inline:0;bottom:calc(22px + var(--v) * 180px);border-top:2px dotted var(--brand-ink);pointer-events:none;z-index:1}

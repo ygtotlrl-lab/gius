@@ -354,7 +354,8 @@ var DOM_ACTIONS = {
   'plan-share': function (el) { planShare(el.dataset.amb); },
   'tasks-share': function () { tasksShare(); },
   'plan-grp': function (el) { var a = el.dataset.amb; state.planOpen[a] = !state.planOpen[a]; render(); },
-  'plan-month': function (el) { state.planMonth = shiftMonth(state.planMonth, +el.dataset.d); render(); },
+  // גם התכנית אינה חוזרת לפני החודש הראשון של האפליקציה.
+  'plan-month': function (el) { var k = shiftMonth(state.planMonth, +el.dataset.d); if (k < APP_FIRST_MONTH) return; state.planMonth = k; render(); },
   'plan-new': function () { formPlan(null); },
   'plan-edit': function (el) { var r = findIn(state.plan, el.dataset.id); if (r) formPlan(r); },
   'plan-save': saver(savePlan, 'נשמר'),
