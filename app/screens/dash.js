@@ -102,9 +102,9 @@ function flowColHTML(f, max, big) {
   var b = function (v, h, cls, lbl) {
     return '<span class="fl-bar ' + cls + '" style="--v:' + h + '" title="' + lbl + ' ' + esc(ils(v)) + '"></span>';
   };
-  // התוויות — מעל העמודה הגבוהה, ממורכזות לזוג ובצבע העמודה; של הגבוהה קרובה אליה, ושל השנייה מעליה
+  // התוויות — מעל העמודה הגבוהה, ממורכזות לזוג ובצבע העמודה; הסכום הגבוה למעלה והנמוך מתחתיו
   var lb = function (v, cls) { return v > 0 ? '<b class="' + cls + '">' + esc(big ? ils(v) : kShort(v)) + '</b>' : ''; };
-  var lbls = hi >= hl ? lb(f.inc, 'inc') + lb(f.loan, 'loan') : lb(f.loan, 'loan') + lb(f.inc, 'inc');
+  var lbls = hi >= hl ? lb(f.loan, 'loan') + lb(f.inc, 'inc') : lb(f.inc, 'inc') + lb(f.loan, 'loan');
   return '<div class="fl-col">' +
     '<div class="fl-plot">' +
       (f.tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(f.tgt, max) + '"></i>' : '') +
