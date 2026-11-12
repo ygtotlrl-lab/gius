@@ -98,9 +98,12 @@ function gSortNames(list) {
 }
 
 // תשלומים — החדש ראשון.
+// תשלומים — החודש והתאריך מהחדש; בתוך יום — זמן הרישום, האחרון למעלה (`created_at`), ובשוויון (רישום בבת אחת) — שם הכרטיס א״ב.
 function gSortTxns(list) {
   return list.slice().sort(function (a, b) {
-    return sortCompare(b.txn_month || '', a.txn_month || '') || sortCompare(b.txn_date || '', a.txn_date || '');
+    return sortCompare(b.txn_month || '', a.txn_month || '') || sortCompare(b.txn_date || '', a.txn_date || '') ||
+           sortCompare(String(b.created_at || ''), String(a.created_at || '')) ||
+           sortCompare(donorName(a.donor_client_id), donorName(b.donor_client_id));
   });
 }
 
