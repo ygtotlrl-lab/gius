@@ -23,6 +23,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
+import android.print.ShellPdfWriter;
+import android.view.ViewGroup;
+import android.webkit.WebViewClient;
 
 // tools/java/MainActivity.java.in — זהות המעטפת: הערכים שנבדלים בין האפליקציות, מהתצורה
 public class MainActivity extends ShellActivity {
@@ -84,6 +90,7 @@ public class MainActivity extends ShellActivity {
                         }
                     }
                 });
+            installPrint();
         }
         // הממשק הישן אינו מחובר כאן — עוד לא נטען דף, וחיבור בלי תנאי הוא בדיוק מה שיש למנוע; הוא מחובר בניווט, כשהמקור ידוע.
     }
@@ -188,7 +195,7 @@ public class MainActivity extends ShellActivity {
                 send.setClipData(clip);
                 send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 try {
-                    startActivity(Intent.createChooser(send, "undefined"));
+                    startActivity(Intent.createChooser(send, "שיתוף הקובץ"));
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, "שגיאה בשיתוף", Toast.LENGTH_SHORT).show();
                 }
@@ -214,7 +221,7 @@ public class MainActivity extends ShellActivity {
                 send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
                 // createChooser בלי FLAG_ACTIVITY_NEW_TASK — המשתמש בוחר יעד בכל פעם, והחזרה מביאה אותו למעטפת.
-                Intent toStart = Intent.createChooser(send, "undefined");
+                Intent toStart = Intent.createChooser(send, "שיתוף הקובץ");
                 try {
                     startActivity(toStart);
                 } catch (Exception e) {
@@ -224,6 +231,129 @@ public class MainActivity extends ShellActivity {
         });
     }
 
+    // ── גשר ההדפסה ──
+    // מסמך מגיע כדף HTML שלם (גופנים ותמונות מוטמעים בו), נטען ב-WebView נסתר ומודפס לקובץ PDF — טקסט וקטורי, בלי חלון הדפסה; ומשם לשיתוף.
+    // ה-WebView הנסתר מוחזק בשדה עד סוף הכתיבה — בלי הפניה הוא נאסף באמצע.
+    private WebView printView;
+
+    private void installPrint() {
+        WebViewCompat.addWebMessageListener(
+            webView, "AndroidPrintBridge", ALLOWED_ORIGINS,
+            new WebViewCompat.WebMessageListener() {
+                @Override
+                public void onPostMessage(@NonNull WebView view, @NonNull WebMessageCompat message,
+                                          @NonNull Uri sourceOrigin, boolean isMainFrame,
+                                          @NonNull JavaScriptReplyProxy replyProxy) {
+                    if (!isMainFrame || !APP_ORIGIN.equals(String.valueOf(sourceOrigin))) return;
+                    try {
+                        JSONObject o = new JSONObject(String.valueOf(message.getData()));
+                        printHtml(o.optString("html"), o.optString("name"));
+                    } catch (Exception e) {
+                        toastUi("שגיאה בהכנת המסמך");
+                    }
+                }
+            });
+    }
+
+    // המסמך נכתב תוך PRINT_MAX_MS, או שנפתח חלון ההדפסה של המערכת — לעולם לא «כלום».
+    private static final long PRINT_MAX_MS = 15000;
+
+    private void printHtml(final String html, final String name) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (printView != null) { toastUi("מסמך קודם עדיין בהכנה"); return; }
+                final WebView pv = new WebView(MainActivity.this);
+                printView = pv;
+                pv.getSettings().setJavaScriptEnabled(false);
+                // מחובר לחלון, שקוף ובגודל המסך — WebView שאינו מחובר אינו מתחייב לפריסה, והכתיבה עלולה לא להסתיים.
+                pv.setAlpha(0f);
+                ((ViewGroup) getWindow().getDecorView()).addView(pv,
+                    new ViewGroup.LayoutParams(Math.max(1, webView.getWidth()), Math.max(1, webView.getHeight())));
+                pv.setWebViewClient(new WebViewClient() {
+                    private boolean started = false;
+                    @Override
+                    public void onPageFinished(WebView v, String url) {
+                        if (started) return;
+                        started = true;
+                        // הגופנים המוטמעים מתפענחים אחרי סוף הטעינה — השהיה קצרה לפני ההדפסה.
+                        v.postDelayed(new Runnable() {
+                            @Override public void run() { writePdf(pv, name); }
+                        }, 500);
+                    }
+                });
+                pv.loadDataWithBaseURL(APP_ORIGIN + "/", html, "text/html", "utf-8", null);
+            }
+        });
+    }
+
+    private void printDone(WebView pv) {
+        try { ((ViewGroup) getWindow().getDecorView()).removeView(pv); } catch (Exception e) { /* כבר הוסר */ }
+        if (printView == pv) printView = null;
+    }
+
+    private void writePdf(final WebView pv, final String name) {
+        String base = name == null ? "" : name.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", " ").trim();
+        if (base.toLowerCase().endsWith(".pdf")) base = base.substring(0, base.length() - 4).trim();
+        if (base.length() > 120) base = base.substring(0, 120).trim();
+        if (base.isEmpty()) base = "g_" + System.currentTimeMillis();
+        final String title = base;
+        final PrintAttributes attrs = new PrintAttributes.Builder()
+            .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+            .setResolution(new PrintAttributes.Resolution("pdf", "pdf", 600, 600))
+            .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+            .build();
+        // הכרעה אחת בלבד — הכתיבה, הכשל או שעון העצר, הראשון שמגיע.
+        final boolean[] settled = { false };
+        final Runnable fallback = new Runnable() {
+            @Override public void run() {
+                if (settled[0]) return;
+                settled[0] = true;
+                toastUi("הכתיבה הישירה לא הצליחה — נפתח חלון ההדפסה");
+                printDialog(pv, title, attrs);
+            }
+        };
+        pv.postDelayed(fallback, PRINT_MAX_MS);
+        try {
+            File sub = new File(new File(getCacheDir(), "shared"), String.valueOf(System.currentTimeMillis()));
+            sub.mkdirs();
+            final File f = new File(sub, title + ".pdf");
+            ShellPdfWriter.write(pv.createPrintDocumentAdapter(title), attrs, f,
+                new Runnable() {
+                    @Override public void run() {
+                        runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                if (settled[0]) return;
+                                settled[0] = true;
+                                printDone(pv);
+                                shareSaved(f, "application/pdf");
+                            }
+                        });
+                    }
+                },
+                new Runnable() {
+                    @Override public void run() { runOnUiThread(fallback); }
+                });
+        } catch (Throwable e) {
+            runOnUiThread(fallback);
+        }
+    }
+
+    // נפילה-חזרה: חלון ההדפסה של המערכת, ובו «שמירה כ-PDF».
+    private void printDialog(final WebView pv, final String title, final PrintAttributes attrs) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    PrintManager pm = (PrintManager) getSystemService(PRINT_SERVICE);
+                    pm.print(title, pv.createPrintDocumentAdapter(title), attrs);
+                } catch (Throwable e) {
+                    toastUi("שגיאה בהכנת המסמך: " + e.getClass().getSimpleName());
+                }
+                printDone(pv);
+            }
+        });
+    }
 
     // מתודות JavascriptInterface רצות ב-binder thread פרטי — לכן ה-URL החי נקרא ב-UI thread לפני כל פעולה: זה המנעול השני.
     private class ShareBridge {
@@ -233,6 +363,16 @@ public class MainActivity extends ShellActivity {
                 @Override public void run() {
                     if (!isAppOrigin(webView.getUrl())) return;
                     MainActivity.this.shareFile(base64Data, mimeType, "");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void printHtml(final String html, final String name) {
+            runOnUiThread(new Runnable() {
+                @Override public void run() {
+                    if (!isAppOrigin(webView.getUrl())) return;
+                    MainActivity.this.printHtml(html, name);
                 }
             });
         }
