@@ -98,15 +98,18 @@ function flowMonths() {
 function kShort(v) { return v >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
 function hFr(v, max) { return Math.round(Math.min(1, (v || 0) / max) * 1000) / 1000; }
 function flowColHTML(f, max, big) {
-  var p = f.m.split('-');
-  var b = function (v, cls, lbl) {
-    return '<span class="fl-bar ' + cls + '" style="--v:' + hFr(v, max) + '" title="' + lbl + ' ' + esc(ils(v)) + '">' +
-      (v > 0 ? '<b>' + esc(big ? ils(v) : kShort(v)) + '</b>' : '') + '</span>';
+  var p = f.m.split('-'), hi = hFr(f.inc, max), hl = hFr(f.loan, max);
+  var b = function (v, h, cls, lbl) {
+    return '<span class="fl-bar ' + cls + '" style="--v:' + h + '" title="' + lbl + ' ' + esc(ils(v)) + '"></span>';
   };
+  // התוויות — מעל העמודה הגבוהה, ממורכזות לזוג ובצבע העמודה; של הגבוהה קרובה אליה, ושל השנייה מעליה
+  var lb = function (v, cls) { return v > 0 ? '<b class="' + cls + '">' + esc(big ? ils(v) : kShort(v)) + '</b>' : ''; };
+  var lbls = hi >= hl ? lb(f.inc, 'inc') + lb(f.loan, 'loan') : lb(f.loan, 'loan') + lb(f.inc, 'inc');
   return '<div class="fl-col">' +
     '<div class="fl-plot">' +
       (f.tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(f.tgt, max) + '"></i>' : '') +
-      b(f.inc, 'inc', 'הכנסות') + b(f.loan, 'loan', 'הלוואות') +
+      b(f.inc, hi, 'inc', 'הכנסות') + b(f.loan, hl, 'loan', 'הלוואות') +
+      (lbls ? '<span class="fl-vals" style="--v:' + Math.max(hi, hl) + '">' + lbls + '</span>' : '') +
     '</div>' +
     (big ? '' : '<span class="fl-lab">' + esc(MONTH_SHORT[+p[1] - 1] + ' ' + p[0].slice(2)) + '</span>') +
   '</div>';
