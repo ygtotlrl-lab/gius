@@ -8,7 +8,7 @@ import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
-import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboPick,
+import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboMore, comboPick,
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, openModal, shellBare, swApply,
          swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
@@ -475,6 +475,7 @@ var DOM_ACTIONS = {
   'reload':            function () { location.reload(); },
   'combo-pick':        function (el) { return comboPick(el); },
   'combo-make':        function (el) { return comboMake(el); },
+  'combo-more':        function (el) { return comboMore(el); },
   'donor-new-cancel':  function (el) { donorNewCancel(el.dataset.id); },
   'donor-new-save':    function (el) { return donorNewSave(el.dataset.id); },
 };
