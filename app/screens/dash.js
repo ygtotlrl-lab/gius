@@ -1,5 +1,5 @@
 // app/screens/dash.js — לוח הבקרה: קריאה בלבד, והכל נגזר מהתשלומים
-import { esc } from '../../core/ui.js';
+import { esc, methodIcon } from '../../core/ui.js';
 import { stIcon } from '../../core/icons.js';
 import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
@@ -7,7 +7,7 @@ import { APP_FIRST_MONTH, ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { dayToday } from '../../core/util.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, methodIcon, monthAmount, monthKeyOf, monthLabel, monthTxnsInit,
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthKeyOf, monthLabel, monthTxnsInit,
          pendRowKey, pledgeById, shiftMonth, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.

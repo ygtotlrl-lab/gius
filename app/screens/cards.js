@@ -1,7 +1,7 @@
 // app/screens/cards.js — כרטיסים ותשלומים: הרשימה, הכרטיס הפתוח, ההתחייבויות והתשלומים
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { esc, openModal, toast } from '../../core/ui.js';
+import { esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
          MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
          MSG_SO_FIRST_OVER } from '../constants.js';
@@ -11,7 +11,7 @@ import { bar } from '../../core/chart.js';
 import { snapShare } from '../snap.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
-         lookupLabels, methodIcon, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
+         lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
          monthKeyOf, monthLabel, statusClass, txnSoLabel, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
@@ -308,7 +308,7 @@ function formPledge(p, donorId) {
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>הוספת תשלום מיידי</span></label>' +
     '<div id="p-now-box" class="p-now-box" hidden><div class="f2 f2-tight">' + whenHTML('p', null) + '</div>' +
-    methodPickHTML('p', '', 'p-method') +
+    methodPickHTML('p', '') +
     // הו״ק — כמו בטופס התשלום: פעימות, והסכום לפעימה נגזר מסכום ההתחייבות; החודש סופר את הפעימה הראשונה בלבד.
     '<div class="hidden" id="p-so"><div class="f2 f2-tight">' +
       '<label class="fld"><span>פעימות *</span><input class="inp" id="p-so-n" inputmode="numeric" data-inp="p-so"></label>' +
@@ -357,31 +357,18 @@ function noInitHTML(px, on) {
   return '<label class="fld chk"><input type="checkbox" id="' + px + '-noinit"' + (on ? ' checked' : '') + '><span>תשלום לא יזום — לא להציג בדשבורד</span></label>';
 }
 
-// אמצעי התשלום — רשת כפתורים: עיגול ובו אייקון האמצעי והשם מתחתיו (כמו בשכר לימוד); לחיצה על הנבחר מבטלת.
-// הערך בשדה הנסתר <px>-method — הקוראים נשארים val(); ערך שנרשם ואינו ברשימה נשאר בבורר.
-function methodPickHTML(px, cur, chg) {
-  var ml = lookupLabels(LK_METHOD).slice(), v = cur || '';
-  if (v && ml.indexOf(v) < 0) ml.push(v);
+// אמצעי התשלום — הרשת של הליבה (methodGridHTML); הערך בשדה הנסתר <px>-method, והקוראים נשארים val().
+function methodPickHTML(px, cur) {
   return '<div class="fld"><span id="' + px + '-method-lbl">אמצעי</span>' +
-    '<input type="hidden" id="' + px + '-method" value="' + esc(v) + '">' +
-    '<div class="mpick" role="radiogroup" aria-labelledby="' + px + '-method-lbl">' +
-    ml.map(function (l) {
-      var on = l === v;
-      return '<button type="button" class="mp' + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + on + '" data-act="method-pick" data-px="' + px +
-        '" data-chg="' + chg + '" data-val="' + esc(l) + '"><span class="mp-ic">' + icon(methodIcon(l)) + '</span><span>' + esc(l) + '</span></button>';
-    }).join('') + '</div></div>';
+    '<input type="hidden" id="' + px + '-method" value="' + esc(cur || '') + '">' +
+    methodGridHTML({ target: px + '-method', list: lookupLabels(LK_METHOD), cur: cur, label: 'אמצעי',
+      ico: function (l) { return icon(methodIcon(l)); } }) + '</div>';
 }
-// בחירה — מעדכנת את השדה הנסתר ואת הסימון, ומפעילה את מה שתלוי באמצעי (הו״ק פותח פעימות).
+// בחירה — בליבה; ומה שתלוי באמצעי כאן: הו״ק פותח פעימות.
 function methodPick(el) {
-  var px = el.getAttribute('data-px'), h = $('#' + px + '-method'), v = el.getAttribute('data-val');
+  var h = coreMethodPick(el);
   if (!h) return;
-  h.value = h.value === v ? '' : v;
-  var box = el.parentElement;
-  box.querySelectorAll('.mp').forEach(function (b) {
-    var on = b.getAttribute('data-val') === h.value;
-    b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on));
-  });
-  if (el.getAttribute('data-chg') === 'pay-method') soToggle(h.value);
+  if (h.id === 't-method') soToggle(h.value);
   else pSoToggle(h.value);
 }
 
@@ -492,7 +479,7 @@ function formPay(t, pledgeId, donorId) {
     '</div>' +
     // חודש · תאריך בשורה, בחצאים; אמצעי — רשת העיגולים; שתי תיבות הסימון בשורה אחת.
     '<div class="f2 f2-tight">' + whenHTML('t', t) + '</div>' +
-    methodPickHTML('t', t ? t.method : '', 'pay-method') +
+    methodPickHTML('t', t ? t.method : '') +
     soHTML(t, so) +
     '<label class="fld"><span>הערות</span><input class="inp" id="t-note" value="' + esc(t && t.note ? t.note : '') + '"></label>' +
     '<div class="chk-row"><label class="fld chk"><input type="checkbox" id="t-cleared"' + (t && t.cleared ? ' checked' : '') + '><span>סליקה בפועל</span></label>' +
