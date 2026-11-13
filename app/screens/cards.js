@@ -294,15 +294,15 @@ function saveDonor(id) {
 function formPledge(p, donorId) {
   var d = donorById(p ? p.donor_client_id : donorId);
   if (!d) return;
-  // הטופס צפוף: סעיף · סוג · שגריר בשורה אחת, סכום ופירוט בשורה, הערות לכל הרוחב.
+  // הטופס צפוף: סעיף · סוג · שגריר בשורה אחת, פירוט (רוב השורה) וסכום צר בשורה, הערות לכל הרוחב.
   var body = '<div class="f3">' +
       '<label class="fld"><span>סעיף</span>' + selectHTML('p-section', lookupLabels(LK_SECTION), p ? p.section : '', 'סעיף') + '</label>' +
       '<label class="fld"><span>סוג *</span>' + selectHTML('p-type', lookupLabels(LK_PTYPE), p ? p.pledge_type : '', 'סוג') + '</label>' +
       '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
     '</div>' +
-    '<div class="f2 f2-tight">' +
-      '<label class="fld"><span>סכום</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
+    '<div class="f2-main">' +
       '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
+      '<label class="fld"><span>סכום</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>';
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
@@ -483,13 +483,15 @@ function formPay(t, pledgeId, donorId) {
   var amt = t ? t.amount : (leftForPledge(p) || '');
   var so = !!t && t.method === METHOD_SO, uneq = so && +t.first_installment > 0;
   openModal((t ? 'עריכת תשלום — ' : 'תשלום — ') + (pick ? (d ? d.name : '') : (p.pledge_type || '')),
-    (pick ? payPickHTML(pls, p.client_id) : '') +
-    // סכום · חודש · תאריך בשורה אחת; אמצעי — רשת העיגולים; שתי תיבות הסימון בשורה אחת.
-    '<div class="f3 f3-when">' +
+    // ההתחייבות — רוב השורה, והסכום צר בצד שמאל; בלי בורר — ההתחייבות לקריאה בלבד, באותו מקום.
+    '<div class="f2-main">' + (pick ? payPickHTML(pls, p.client_id) :
+      '<label class="fld"><span>התחייבות</span><input class="inp" readonly tabindex="-1" value="' +
+        esc([p.pledge_type, p.section, p.detail].filter(Boolean).join(' · ')) + '"></label>') +
       '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
         (so && !uneq ? ' readonly' : '') + '></label>' +
-      whenHTML('t', t) +
     '</div>' +
+    // חודש · תאריך בשורה, בחצאים; אמצעי — רשת העיגולים; שתי תיבות הסימון בשורה אחת.
+    '<div class="f2 f2-tight">' + whenHTML('t', t) + '</div>' +
     methodPickHTML('t', t ? t.method : '', 'pay-method') +
     soHTML(t, so) +
     '<label class="fld"><span>הערות</span><input class="inp" id="t-note" value="' + esc(t && t.note ? t.note : '') + '"></label>' +
