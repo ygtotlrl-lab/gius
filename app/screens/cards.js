@@ -1,7 +1,7 @@
 // app/screens/cards.js — כרטיסים ותשלומים: הרשימה, הכרטיס הפתוח, ההתחייבויות והתשלומים
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
+import { cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
          MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
          MSG_SO_FIRST_OVER } from '../constants.js';
@@ -35,16 +35,13 @@ function cardRowsHTML() {
   return groups.map(function (g) {
     return (g.title ? '<div class="list-sub' + (g.cls || '') + '">' + esc(g.title) + '</div>' : '') +
       '<div class="ctiles">' + g.items.map(cardTileHTML).join('') + '</div>';
-  }).join('') + cardWinHTML();
+  }).join('') + cardWin();
 }
 
-// החלון של הכרטיס הפתוח — על כל המסך בטלפון, וחלון ממורכז במסך רחב; מעל הסרגל ומתחת לחלונות העריכה.
-// הרקע סוגר כ-✕, ו-Escape — כשאין חלון פתוח מעליו.
-function cardWinHTML() {
+// החלון של הכרטיס הפתוח — רכיב הליבה (cardWinHTML): הרקע, ✕ ו-Escape סוגרים ב-card-close.
+function cardWin() {
   var d = state.cards.open && donorById(state.cards.open);
-  if (!d) return '';
-  return '<div class="card-win" role="dialog" aria-modal="true" aria-label="' + esc(d.name) + '">' +
-    '<div class="cw-bg" data-act="card-close"></div><div class="cw-in">' + cardOpenHTML(d) + '</div></div>';
+  return d ? cardWinHTML({ label: d.name, close: 'card-close', body: cardOpenHTML(d) }) : '';
 }
 
 // גוון הסמל לפי השגריר — אותו שגריר, אותו גוון, בכל הרשימה.
@@ -532,12 +529,3 @@ function savePay(id, pledgeId) {
 
 export { cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
 
-// Escape סוגר את החלון של הכרטיס — רק כשאין מעליו חלון עריכה או אישור.
-document.addEventListener('keydown', function (e) {
-  if (e.key !== 'Escape' || !state.cards.open || !document.querySelector('.card-win')) return;
-  if (document.querySelector('.veil.open, #ask.open')) return;
-  e.preventDefault();
-  state.cards.open = null;
-  var w = document.querySelector('.card-win'); if (w) w.remove();
-  var t = document.querySelector('.ctile.open'); if (t) { t.classList.remove('open'); t.setAttribute('aria-expanded', 'false'); }
-});
