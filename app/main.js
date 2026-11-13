@@ -21,8 +21,8 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
          shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
-import { cardRowsHTML, cardShare, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync,
-         soToggle, soUneqToggle, viewCards } from './screens/cards.js';
+import { cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync,
+         soUneqToggle, viewCards } from './screens/cards.js';
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
@@ -344,6 +344,7 @@ var DOM_ACTIONS = {
   },
   'pledge-del': function (el) { return delAsk(MSG_DEL_PLEDGE, 'g_pledges', el.dataset.id); },
   'pay-new': function (el) { formPay(null, el.dataset.pledge, el.dataset.donor); },
+  'method-pick': function (el) { methodPick(el); },
   'pay-edit': function (el) { var t = findIn(state.txns, el.dataset.id); if (t) formPay(t); },
   'pay-save': function (el) {
     return runSave(function () { return savePay(el.dataset.id, el.dataset.pledge); }, 'התשלום נשמר');
@@ -503,9 +504,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
-  if (el.dataset.chg === 'pay-method') { soToggle(el.value); return; }
   if (el.dataset.chg === 'so-uneq') { soUneqToggle(el.dataset.px); return; }
-  if (el.dataset.chg === 'p-method') { pSoToggle(el.value); return; }
   if (el.dataset.chg === 'when-date') {
     var mInp = document.getElementById(el.dataset.m);
     if (mInp && el.value) mInp.value = monthKeyOf(el.value);

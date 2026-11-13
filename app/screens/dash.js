@@ -7,7 +7,7 @@ import { APP_FIRST_MONTH, ASSIGNEES, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { dayToday } from '../../core/util.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthKeyOf, monthLabel, monthTxnsInit,
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, methodIcon, monthAmount, monthKeyOf, monthLabel, monthTxnsInit,
          pendRowKey, pledgeById, shiftMonth, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
@@ -196,18 +196,6 @@ function viewDash() {
     (state.dashPayAll ? 'הצג פחות' + icon('up') : 'הצג את כל ' + list.length + ' התשלומים' + icon('down')) + '</button>';
   h += '</section>';
   return h;
-}
-
-// אייקון לאמצעי התשלום — לפי מילה בשם, כי הרשימה נערכת בהגדרות.
-function methodIcon(m) {
-  m = String(m || '');
-  if (/אשראי/.test(m)) return 'credit';
-  if (/העברה|בנק/.test(m)) return 'bank';
-  if (/מזומן/.test(m)) return 'cash';
-  if (/צ׳ק|צ'ק|צק/.test(m)) return 'cheque';
-  if (/ביט|פייבוקס/.test(m)) return 'phone';
-  if (/הו״ק|הו"ק|קבע/.test(m)) return 'repeat';
-  return 'cards';
 }
 
 export { viewDash };

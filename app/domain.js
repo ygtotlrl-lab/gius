@@ -590,6 +590,18 @@ function datalistHTML(id, options) {
   return h + '</datalist>';
 }
 
+// אייקון לאמצעי התשלום — לפי מילה בשם, כי הרשימה נערכת בהגדרות.
+function methodIcon(m) {
+  m = String(m || '');
+  if (/אשראי/.test(m)) return 'credit';
+  if (/העברה|בנק/.test(m)) return 'bank';
+  if (/מזומן/.test(m)) return 'cash';
+  if (/צ׳ק|צ'ק|צק/.test(m)) return 'cheque';
+  if (/ביט|פייבוקס/.test(m)) return 'phone';
+  if (/הו״ק|הו"ק|קבע/.test(m)) return 'repeat';
+  return 'cards';
+}
+
 function val(id) { var el = $('#' + id); return el ? String(el.value).trim() : ''; }
 
 function checked(id) { var el = $('#' + id); return !!(el && el.checked); }
@@ -686,7 +698,7 @@ export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDa
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
          gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,
-         lookupPut, lookupRows, mirrorHasData, monthAmount, monthKeyOf, monthLabel, monthTxns, monthTxnsInit, nextSort, nullable,
+         lookupPut, lookupRows, methodIcon, mirrorHasData, monthAmount, monthKeyOf, monthLabel, monthTxns, monthTxnsInit, nextSort, nullable,
          num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
          rowPendingKey, selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow,
          tableMeta, TARGET_DEFAULT_KEY, txnSoLabel, txnWhen, targetDefault, targetFor, targetOwn, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };

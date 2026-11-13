@@ -11,7 +11,7 @@ import { bar } from '../../core/chart.js';
 import { snapShare } from '../snap.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
-         lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
+         lookupLabels, methodIcon, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
          monthKeyOf, monthLabel, statusClass, txnSoLabel, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
@@ -294,26 +294,29 @@ function saveDonor(id) {
 function formPledge(p, donorId) {
   var d = donorById(p ? p.donor_client_id : donorId);
   if (!d) return;
-  var body = '<label class="fld"><span>סעיף</span>' + selectHTML('p-section', lookupLabels(LK_SECTION), p ? p.section : '', 'סעיף') + '</label>' +
-    '<div class="f2">' +
+  // הטופס צפוף: סעיף · סוג · שגריר בשורה אחת, סכום ופירוט בשורה, הערות לכל הרוחב.
+  var body = '<div class="f3">' +
+      '<label class="fld"><span>סעיף</span>' + selectHTML('p-section', lookupLabels(LK_SECTION), p ? p.section : '', 'סעיף') + '</label>' +
       '<label class="fld"><span>סוג *</span>' + selectHTML('p-type', lookupLabels(LK_PTYPE), p ? p.pledge_type : '', 'סוג') + '</label>' +
-      '<label class="fld"><span>סכום</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
+      '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
     '</div>' +
-    '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
-    '<label class="fld"><span>שגריר *</span>' + selectHTML('p-amb', lookupLabels(LK_AMBASSADOR), p ? p.ambassador : (d.ambassador || ''), 'שגריר') + '</label>' +
+    '<div class="f2 f2-tight">' +
+      '<label class="fld"><span>סכום</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
+      '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
+    '</div>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>';
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>הוספת תשלום מיידי</span></label>' +
-    '<div id="p-now-box" hidden>' + whenHTML('p', null) +
-    '<label class="fld"><span>אמצעי</span>' + selectHTML('p-method', lookupLabels(LK_METHOD), '', 'אמצעי', 'p-method') + '</label>' +
+    '<div id="p-now-box" hidden><div class="f2 f2-tight">' + whenHTML('p', null) + '</div>' +
+    methodPickHTML('p', '', 'p-method') +
     // הו״ק — כמו בטופס התשלום: פעימות, והסכום לפעימה נגזר מסכום ההתחייבות; החודש סופר את הפעימה הראשונה בלבד.
-    '<div class="hidden" id="p-so"><div class="f2">' +
+    '<div class="hidden" id="p-so"><div class="f2 f2-tight">' +
       '<label class="fld"><span>פעימות *</span><input class="inp" id="p-so-n" inputmode="numeric" data-inp="p-so"></label>' +
       '<label class="fld" id="p-so-per"><span>סכום לפעימה</span><input class="inp" id="p-so-amt" readonly tabindex="-1"></label>' +
       '<label class="fld" id="p-so-first-box" hidden><span>הפעימה הראשונה *</span><input class="inp" id="p-so-first" inputmode="decimal"></label>' +
     '</div>' + uneqHTML('p', false) + '</div>' +
-    '<label class="fld chk"><input type="checkbox" id="p-cleared"><span>סליקה בפועל</span></label>' +
-    noInitHTML('p', false) + '</div>';
+    '<div class="chk-row"><label class="fld chk"><input type="checkbox" id="p-cleared"><span>סליקה בפועל</span></label>' +
+    noInitHTML('p', false) + '</div></div>';
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="pledge-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
@@ -354,14 +357,41 @@ function noInitHTML(px, on) {
   return '<label class="fld chk"><input type="checkbox" id="' + px + '-noinit"' + (on ? ' checked' : '') + '><span>תשלום לא יזום — לא להציג בדשבורד</span></label>';
 }
 
+// אמצעי התשלום — רשת כפתורים: עיגול ובו אייקון האמצעי והשם מתחתיו (כמו בשכר לימוד); לחיצה על הנבחר מבטלת.
+// הערך בשדה הנסתר <px>-method — הקוראים נשארים val(); ערך שנרשם ואינו ברשימה נשאר בבורר.
+function methodPickHTML(px, cur, chg) {
+  var ml = lookupLabels(LK_METHOD).slice(), v = cur || '';
+  if (v && ml.indexOf(v) < 0) ml.push(v);
+  return '<div class="fld"><span id="' + px + '-method-lbl">אמצעי</span>' +
+    '<input type="hidden" id="' + px + '-method" value="' + esc(v) + '">' +
+    '<div class="mpick" role="radiogroup" aria-labelledby="' + px + '-method-lbl">' +
+    ml.map(function (l) {
+      var on = l === v;
+      return '<button type="button" class="mp' + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + on + '" data-act="method-pick" data-px="' + px +
+        '" data-chg="' + chg + '" data-val="' + esc(l) + '"><span class="mp-ic">' + icon(methodIcon(l)) + '</span><span>' + esc(l) + '</span></button>';
+    }).join('') + '</div></div>';
+}
+// בחירה — מעדכנת את השדה הנסתר ואת הסימון, ומפעילה את מה שתלוי באמצעי (הו״ק פותח פעימות).
+function methodPick(el) {
+  var px = el.getAttribute('data-px'), h = $('#' + px + '-method'), v = el.getAttribute('data-val');
+  if (!h) return;
+  h.value = h.value === v ? '' : v;
+  var box = el.parentElement;
+  box.querySelectorAll('.mp').forEach(function (b) {
+    var on = b.getAttribute('data-val') === h.value;
+    b.classList.toggle('is-on', on); b.setAttribute('aria-checked', String(on));
+  });
+  if (el.getAttribute('data-chg') === 'pay-method') soToggle(h.value);
+  else pSoToggle(h.value);
+}
+
 // ── חודש ותאריך ──
 // החודש חובה ובברירת המחדל החודש הנוכחי; התאריך רשות, וכשממולא — החודש עובר אחריו.
 function whenHTML(px, t) {
   var m = t ? (t.txn_month || '') : monthKeyOf(dayToday());
-  return '<div class="f2">' +
-    '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="' + px + '-month" value="' + esc(m) + '"></label>' +
-    '<label class="fld"><span>תאריך</span><input class="inp" type="date" id="' + px + '-date" data-chg="when-date" data-m="' + px + '-month" value="' + esc(t && t.txn_date ? t.txn_date : '') + '"></label>' +
-  '</div>';
+  // שני השדות בלבד — הקורא עוטף אותם בשורה (בתשלום — עם הסכום).
+  return '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="' + px + '-month" value="' + esc(m) + '"></label>' +
+    '<label class="fld"><span>תאריך</span><input class="inp" type="date" id="' + px + '-date" data-chg="when-date" data-m="' + px + '-month" value="' + esc(t && t.txn_date ? t.txn_date : '') + '"></label>';
 }
 
 // פיירפוקס נופל לטקסט ב-type=month — החודש נבדק כאן ולא נסמך על הדפדפן.
@@ -376,7 +406,7 @@ function readWhen(px) {
 // «הפעימות אינן שוות» — הסכום הכולל נפתח להקלדה, ובמקום הסכום לפעימה — «הפעימה הראשונה», שהחודש סופר.
 function soHTML(t, open) {
   var has = !!t && +t.installments > 1, uneq = has && +t.first_installment > 0;
-  return '<div class="' + (open ? '' : 'hidden') + '" id="t-so"><div class="f2">' +
+  return '<div class="' + (open ? '' : 'hidden') + '" id="t-so"><div class="f2 f2-tight">' +
     '<label class="fld"><span>פעימות *</span><input class="inp" id="t-so-n" inputmode="numeric" data-inp="pay-so" value="' +
       (has ? esc(t.installments) : '') + '"></label>' +
     '<label class="fld" id="t-so-per"' + (uneq ? ' hidden' : '') + '><span>סכום לפעימה *</span><input class="inp" id="t-so-amt" inputmode="decimal" data-inp="pay-so" value="' +
@@ -454,14 +484,17 @@ function formPay(t, pledgeId, donorId) {
   var so = !!t && t.method === METHOD_SO, uneq = so && +t.first_installment > 0;
   openModal((t ? 'עריכת תשלום — ' : 'תשלום — ') + (pick ? (d ? d.name : '') : (p.pledge_type || '')),
     (pick ? payPickHTML(pls, p.client_id) : '') +
-    '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
-      (so && !uneq ? ' readonly' : '') + '></label>' +
-    whenHTML('t', t) +
-    '<label class="fld"><span>אמצעי</span>' + selectHTML('t-method', lookupLabels(LK_METHOD), t ? t.method : '', 'אמצעי', 'pay-method') + '</label>' +
+    // סכום · חודש · תאריך בשורה אחת; אמצעי — רשת העיגולים; שתי תיבות הסימון בשורה אחת.
+    '<div class="f3 f3-when">' +
+      '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
+        (so && !uneq ? ' readonly' : '') + '></label>' +
+      whenHTML('t', t) +
+    '</div>' +
+    methodPickHTML('t', t ? t.method : '', 'pay-method') +
     soHTML(t, so) +
     '<label class="fld"><span>הערות</span><input class="inp" id="t-note" value="' + esc(t && t.note ? t.note : '') + '"></label>' +
-    '<label class="fld chk"><input type="checkbox" id="t-cleared"' + (t && t.cleared ? ' checked' : '') + '><span>סליקה בפועל</span></label>' +
-    noInitHTML('t', !!(t && t.not_initiated)),
+    '<div class="chk-row"><label class="fld chk"><input type="checkbox" id="t-cleared"' + (t && t.cleared ? ' checked' : '') + '><span>סליקה בפועל</span></label>' +
+    noInitHTML('t', !!(t && t.not_initiated)) + '</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t ? '<button class="btn danger" data-act="pay-del" data-id="' + esc(t.client_id) + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="pay-save" data-id="' + esc(t ? t.client_id : '') + '" data-pledge="' + esc(p.client_id) + '" data-ksave>שמירה</button>');
@@ -508,7 +541,7 @@ function savePay(id, pledgeId) {
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { cardRowsHTML, cardShare, formDonor, payPledgePick, formPay, formPledge, pSoSync, pSoToggle, saveDonor, savePay, savePledge, soSync, soToggle, soUneqToggle, viewCards };
+export { cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
 
 // Escape סוגר את החלון של הכרטיס — רק כשאין מעליו חלון עריכה או אישור.
 document.addEventListener('keydown', function (e) {
