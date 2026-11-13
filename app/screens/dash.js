@@ -1,5 +1,5 @@
 // app/screens/dash.js — לוח הבקרה: קריאה בלבד, והכל נגזר מהתשלומים
-import { esc, methodIcon } from '../../core/ui.js';
+import { esc, methodIcon, receiptHTML } from '../../core/ui.js';
 import { stIcon } from '../../core/icons.js';
 import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
@@ -191,18 +191,14 @@ function viewDash() {
   h += '<section class="card"><h2>תשלומי החודש<span class="cnt">' + list.length + '</span></h2>';
   if (!list.length) h += emptyBox('cash', 'אין תשלומים בחודש זה');
   else {
-    // קבוצה לכל יום — התאריך של התשלום, ובלעדיו החודש.
-    var lastDay = null;
-    h += shown.map(function (t) {
-      var p = pledgeById(t.pledge_client_id), nm = donorName(t.donor_client_id), day = txnWhen(t), head = '';
-      if (day !== lastDay) { head = '<div class="rc-day">' + esc(day) + '</div>'; lastDay = day; }
-      return head + '<div class="rc' + (t.cleared ? '' : ' uncleared') + '" data-act="card-go" data-id="' + esc(t.donor_client_id) + '"' +
-          (t.cleared ? '' : ' title="טרם נסלק"') + '>' +
-        '<span class="rc-amt">' + ils(monthAmount(t)) + '</span>' +
-        '<div class="rc-who"><b>' + esc(nm) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
-          '<small>' + esc((p && (p.pledge_type || p.section)) || '—') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') + '</small></div>' +
-        '<span class="rc-end" title="' + esc(t.method || '') + '">' + icon(methodIcon(t.method)) + '<span>' + esc(t.method || '') + '</span></span></div>';
-    }).join('');
+    // «קבלה» — רכיב הליבה: קבוצה לכל יום (התאריך של התשלום, ובלעדיו החודש); מה שטרם נסלק — מקווקו והסכום אפור.
+    h += receiptHTML(shown.map(function (t) {
+      var p = pledgeById(t.pledge_client_id);
+      return { day: txnWhen(t), amt: ils(monthAmount(t)), method: t.method || '', ico: icon(methodIcon(t.method)),
+        who: '<b>' + esc(donorName(t.donor_client_id)) + pendTag(pendRowKey('g_txns', t.client_id)) + '</b>' +
+          '<small>' + esc((p && (p.pledge_type || p.section)) || '—') + (txnSoLabel(t) ? ' · ' + esc(txnSoLabel(t)) : '') + '</small>',
+        dashed: !t.cleared, muted: !t.cleared, title: t.cleared ? '' : 'טרם נסלק', act: 'card-go', id: t.donor_client_id };
+    }));
   }
   if (list.length > 3) h += '<button class="btn ghost pay-more" data-act="dash-pay-all" aria-expanded="' + (state.dashPayAll ? 'true' : 'false') + '">' +
     (state.dashPayAll ? 'הצג פחות' + icon('up') : 'הצג את כל ' + list.length + ' התשלומים' + icon('down')) + '</button>';

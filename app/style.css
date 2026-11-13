@@ -674,18 +674,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .p-now-box:not([hidden]){display:contents}
 
 /* ── תשלומי החודש — «קבלה»: הסכום בראש השורה, בירוק; קבוצה לכל יום; אמצעי התשלום באייקון. ── */
-.rc-day{font-size:var(--fs-1);font-weight:800;color:var(--text-3);letter-spacing:.02em;padding:var(--sp-4) var(--sp-2) var(--sp-2);
-  border-bottom:1px solid var(--border-2)}
-.rc{display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-4) var(--sp-3);border-bottom:1px solid var(--border-2);cursor:pointer}
-.rc:last-child{border-bottom:0}
-.rc-amt{flex:none;min-width:5.5em;font-size:var(--fs-5);font-weight:850;color:var(--ok);font-variant-numeric:tabular-nums}
-.rc-who{flex:1;min-width:0}
-.rc-who b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rc-who small{display:block;color:var(--text-3);font-size:var(--fs-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rc-end{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;color:var(--text-3);font-size:var(--fs-1)}
-.rc-end .ico{width:18px;height:18px;color:var(--brand-ink)}
-.rc.uncleared{border:1.5px dashed var(--border);border-radius:var(--r-4);margin:var(--sp-2) 0}
-.rc.uncleared .rc-amt{color:var(--text-3)}
 
 /* ── התכנית — «צפי מול בפועל»: פס התקדמות לכל שורה, הסוג בפס צבע בקצה, וסיכום לכל שגריר. ── */
 .plan-sub .sum{margin-inline-start:auto;font-size:var(--fs-1);color:var(--text-3);font-variant-numeric:tabular-nums}
