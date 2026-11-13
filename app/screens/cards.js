@@ -307,7 +307,7 @@ function formPledge(p, donorId) {
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>';
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
   if (!p) body += '<label class="fld chk"><input type="checkbox" id="p-now" data-chg="p-now"><span>הוספת תשלום מיידי</span></label>' +
-    '<div id="p-now-box" hidden><div class="f2 f2-tight">' + whenHTML('p', null) + '</div>' +
+    '<div id="p-now-box" class="p-now-box" hidden><div class="f2 f2-tight">' + whenHTML('p', null) + '</div>' +
     methodPickHTML('p', '', 'p-method') +
     // הו״ק — כמו בטופס התשלום: פעימות, והסכום לפעימה נגזר מסכום ההתחייבות; החודש סופר את הפעימה הראשונה בלבד.
     '<div class="hidden" id="p-so"><div class="f2 f2-tight">' +

@@ -76,8 +76,8 @@ function loansBodyHTML() {
         }).join('') : emptyBox('loans', 'אין עדיין תנועות בהלוואה')) +
         '<div class="total-row"><span>יתרה</span><b>' + ils(bal) + '</b></div>' +
         '<div class="lm-add" data-ks>' +
-          '<input class="inp" id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
-          '<input class="inp" id="lm-note" placeholder="הערה" aria-label="הערה לתנועה">' +
+          '<input class="inp lm-amt" id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
+          '<input class="inp lm-note" id="lm-note" placeholder="הערה" aria-label="הערה לתנועה">' +
           '<button class="btn sm" data-act="loan-move-add" data-id="' + id + '" data-ksave>' + icon('plus') + 'תנועה</button>' +
         '</div>' +
         '<div class="btnrow ev-acts"><button class="btn ghost sm" data-act="loan-edit" data-id="' + id + '">עריכת ההלוואה</button></div>' +
