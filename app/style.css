@@ -356,18 +356,14 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 .new-donor-title{font-size:var(--fs-3);font-weight:700;margin-bottom:var(--sp-4)}
 /* ── לוח הבקרה ── */
-.brk{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;gap:var(--sp-4)}
-/* עמודות משותפות לכל השורות — הפסים מתחילים ונגמרים באותו קו */
+.brk{display:grid;grid-template-columns:fit-content(46%) minmax(56px,1fr) auto auto;column-gap:var(--sp-4);row-gap:var(--sp-5)}
 .brk-row{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:center}
-.brk-lab,.brk-val{display:flex;flex-direction:column;gap:var(--sp-2);min-width:0}
-.brk-lab{align-items:flex-start}
-.brk-val{align-items:flex-end}
-.brk-lab b{font-size:var(--fs-4);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.brk-val b{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);font-variant-numeric:tabular-nums;white-space:nowrap}
-/* מספר התשלומים והחלק באחוזים — תגיות קטנות, כמו בשלבי המשימות */
-.brk-cnt,.brk-pct{font-size:var(--fs-1);font-weight:700;border-radius:var(--r-6);padding:1px var(--sp-3);font-variant-numeric:tabular-nums}
-.brk-cnt{background:var(--card-2);color:var(--text-3);border:1px solid var(--border-2)}
-.brk-pct{background:var(--brand-soft);color:var(--brand-ink)}
+.brk-lab{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.brk-lab b{font-size:var(--fs-3);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.brk-ic{width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;flex:none}
+.brk-ic svg{width:15px;height:15px;display:block}
+.brk-val{font-size:var(--fs-3);font-weight:800;color:var(--brand-ink);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:end}
+.brk-pct{font-size:var(--fs-1);font-weight:700;border-radius:var(--r-6);padding:1px var(--sp-3);font-variant-numeric:tabular-nums;background:var(--brand-soft);color:var(--brand-ink);justify-self:start;min-width:36px;text-align:center}
 .brk-bar .btrack{height:10px}
 .who-grid{display:grid;gap:var(--sp-4)}
 /* השם והשלבים מימין; הסה״כ משמאל, ממורכז לגובה הכרטיס. */

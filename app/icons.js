@@ -42,6 +42,13 @@ var PATHS = {
   repeat:   '<path d="M17 4l3 3-3 3"/><path d="M20 7H9a5 5 0 0 0-5 5"/><path d="M7 20l-3-3 3-3"/><path d="M4 17h11a5 5 0 0 0 5-5"/>',
   check:    '<path d="M5.5 12.5l4.2 4.2L18.5 8"/>',
   dots:     '<circle cx="12" cy="5.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="18.5" r="1.3"/>',
+  coins:    '<ellipse cx="9" cy="7" rx="5" ry="2.5"/><path d="M4 7v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V7"/><path d="M10 15.4c.9 1.2 2.9 2.1 5 2.1 2.8 0 5-1.1 5-2.5v-4c0-1.4-2.2-2.5-5-2.5"/><path d="M20 15v4c0 1.4-2.2 2.5-5 2.5s-5-1.1-5-2.5v-4"/>',
+  building: '<path d="M4 21V8l8-5 8 5v13"/><path d="M2.5 21h19"/><path d="M9.5 21v-5h5v5"/><path d="M8 11h.01M12 11h.01M16 11h.01"/>',
+  heart:    '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+  megaphone:'<path d="M3.5 10v4a1 1 0 0 0 1 1H7l9 4.5V4.5L7 9H4.5a1 1 0 0 0-1 1z"/><path d="M7 15l1.4 5h2.4L9.6 15.6"/><path d="M19 9.5a3.5 3.5 0 0 1 0 5"/>',
+  chair:    '<path d="M7 3.5h10v8H7z"/><path d="M5.5 11.5h13v3h-13z"/><path d="M7 14.5V21M17 14.5V21"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  tag:      '<path d="M3.5 12.6V4.5a1 1 0 0 1 1-1h8.1l8 8a1.4 1.4 0 0 1 0 2l-7.1 7.1a1.4 1.4 0 0 1-2 0z"/><circle cx="8" cy="8" r="1.4"/>',
   settings: '<path d="M4 6h8.5M16.5 6H20M4 12h2.5M10.5 12H20M4 18h6.5M14.5 18H20"/><circle cx="14.5" cy="6" r="2"/><circle cx="8.5" cy="12" r="2"/><circle cx="12.5" cy="18" r="2"/>'
 };
 

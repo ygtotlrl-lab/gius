@@ -55,13 +55,25 @@ function groupBy(list, pick, fallback) {
 
 function pledgeField(t, f) { var p = pledgeById(t.pledge_client_id); return p ? p[f] : ''; }
 
-function breakdownHTML(rows, total) {
+// אייקון לסעיף — לפי מילה בשם, כמו אמצעי התשלום; סעיף שאינו מוכר — תגית.
+var SECTION_ICONS = [[/מגבי/, 'megaphone'], [/גבי/, 'coins'], [/פרויקט/, 'building'], [/תרומ/, 'heart'],
+  [/ריהוט|כלים/, 'chair'], [/פרנס|תאריכ|שיעור/, 'calendar'], [/הוראו?ת קבע|הו״ק/, 'repeat']];
+function sectionIcon(name) {
+  for (var i = 0; i < SECTION_ICONS.length; i++) if (SECTION_ICONS[i][0].test(name || '')) return SECTION_ICONS[i][1];
+  return 'tag';
+}
+
+// שורה רזה אחת: (אייקון) שם · פס · אחוז · סכום — עמודות משותפות, והפסים מתחילים ונגמרים באותו קו.
+function breakdownHTML(rows, total, withIcon) {
   if (!rows.length) return emptyBox('dash', 'אין תשלומים בחודש זה');
   return '<div class="brk">' + rows.map(function (r) {
     var share = total > 0 ? r.total / total * 100 : 0;
-    return '<div class="brk-row"><span class="brk-lab"><b>' + esc(r.key) + '</b><span class="brk-cnt">' + r.count + ' תשלומים</span></span>' +
+    return '<div class="brk-row"><span class="brk-lab">' +
+      (withIcon ? '<span class="brk-ic">' + icon(sectionIcon(r.key)) + '</span>' : '') +
+      '<b>' + esc(r.key) + '</b></span>' +
       '<span class="brk-bar">' + bar(share.toFixed(1)) + '</span>' +
-      '<span class="brk-val"><b>' + ils(r.total) + '</b><span class="brk-pct">' + share.toFixed(0) + '%</span></span></div>';
+      '<span class="brk-pct">' + share.toFixed(0) + '%</span>' +
+      '<b class="brk-val">' + ils(r.total) + '</b></div>';
   }).join('') + '</div>';
 }
 
@@ -164,7 +176,7 @@ function viewDash() {
 
   h += '<div class="grid2">' +
     '<section class="card"><h2>פילוח סעיפים</h2>' +
-      breakdownHTML(groupBy(txns, function (t) { return pledgeField(t, 'section'); }, 'ללא סעיף'), collected) +
+      breakdownHTML(groupBy(txns, function (t) { return pledgeField(t, 'section'); }, 'ללא סעיף'), collected, true) +
     '</section>' +
     '<section class="card"><h2>פילוח שגרירים</h2>' +
       breakdownHTML(groupBy(txns, function (t) { return pledgeField(t, 'ambassador'); }, 'ללא שגריר'), collected) +
