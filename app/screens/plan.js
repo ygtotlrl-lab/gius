@@ -108,7 +108,7 @@ function formPlan(r) {
     '<label class="fld"><span>הערות</span><input class="inp" id="pl-note" value="' + esc(r ? r.note || '' : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (r ? '<button class="btn danger" data-act="plan-del" data-id="' + esc(r.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="plan-save" data-id="' + esc(r ? r.client_id : '') + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="plan-save" data-id="' + esc(r ? r.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 function savePlan(id) {

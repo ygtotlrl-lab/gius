@@ -635,7 +635,7 @@ function donorNewOpen(q, root) {
         '<label class="fld"><span>שם</span><input class="inp" data-new-donor-name value="' + esc(q) + '"></label>' +
         '<label class="fld"><span>טלפון</span><input class="inp" data-new-donor-phone inputmode="tel"></label>' +
       '</div>' +
-      '<div class="btnrow"><button type="button" class="btn sm" data-act="donor-new-save" data-id="' + esc(root.id) + '" data-ksave>שמירה ובחירה</button>' +
+      '<div class="btnrow"><button type="button" class="btn sm" data-act="donor-new-save" data-id="' + esc(root.id) + '" data-ksave>' + icon('plus') + 'הוספה</button>' +
       '<button type="button" class="btn ghost sm" data-act="donor-new-cancel" data-id="' + esc(root.id) + '" data-kesc>ביטול</button></div>' +
     '</div>';
   $('[data-new-donor-name]', box).focus();

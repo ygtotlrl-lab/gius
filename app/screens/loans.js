@@ -78,7 +78,7 @@ function loansBodyHTML() {
         '<div class="lm-add" data-ks>' +
           '<input class="inp lm-amt" id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
           '<input class="inp lm-note" id="lm-note" placeholder="הערה" aria-label="הערה לתנועה">' +
-          '<button class="btn sm" data-act="loan-move-add" data-id="' + id + '" data-ksave>' + icon('plus') + 'תנועה</button>' +
+          '<button class="btn sm" data-act="loan-move-add" data-id="' + id + '" data-ksave>' + icon('plus') + 'הוספה</button>' +
         '</div>' +
         '<div class="btnrow ev-acts"><button class="btn ghost sm" data-act="loan-edit" data-id="' + id + '">עריכת ההלוואה</button></div>' +
       '</div>';
@@ -98,7 +98,7 @@ function formLoanMove(m) {
     '</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn danger" data-act="loan-move-del" data-id="' + esc(m.client_id) + '">מחיקה</button>' +
-    '<button class="btn" data-act="loan-move-save" data-id="' + esc(m.client_id) + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="loan-move-save" data-id="' + esc(m.client_id) + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 function saveLoanMove(id) {
@@ -129,7 +129,7 @@ function formLoan(l) {
     '<label class="fld"><span>הערה</span><input class="inp" id="o-note" value="' + esc(l ? l.note || '' : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (l ? '<button class="btn danger" data-act="loan-del" data-id="' + esc(l.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="loan-save" data-id="' + esc(l ? l.client_id : '') + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="loan-save" data-id="' + esc(l ? l.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 function saveLoan(id) {

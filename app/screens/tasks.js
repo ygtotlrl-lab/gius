@@ -114,7 +114,7 @@ function formTask(t) {
     '<label class="fld"><span>הערות</span><textarea class="inp" id="k-note">' + esc(t ? t.note || '' : '') + '</textarea></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t ? '<button class="btn danger" data-act="task-del" data-id="' + esc(t.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="task-save" data-id="' + esc(t ? t.client_id : '') + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="task-save" data-id="' + esc(t ? t.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 // משימה חדשה — בסוף הרשימה; הסדר הקיים נשמר כפי שהיה בגיליון.

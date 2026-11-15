@@ -269,7 +269,7 @@ function formDonor(d) {
     '<label class="fld chk"><input type="checkbox" id="d-general"' + (d && d.is_general ? ' checked' : '') + '><span>כרטיס כללי — מגבית, פרויקט וכדומה; מוצג בנפרד בתחתית הרשימה</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (d ? '<button class="btn danger" data-act="donor-del" data-id="' + esc(d.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="donor-save" data-id="' + esc(d ? d.client_id : '') + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="donor-save" data-id="' + esc(d ? d.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
   var n = $('#d-name'); if (n && !d) n.focus();
 }
 
@@ -317,7 +317,7 @@ function formPledge(p, donorId) {
   openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="pledge-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="pledge-save" data-id="' + esc(p ? p.client_id : '') + '" data-donor="' + esc(d.client_id) + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="pledge-save" data-id="' + esc(p ? p.client_id : '') + '" data-donor="' + esc(d.client_id) + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 function savePledge(id, donorId) {
@@ -483,7 +483,7 @@ function formPay(t, pledgeId, donorId) {
     noInitHTML('t', !!(t && t.not_initiated)) + '</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t ? '<button class="btn danger" data-act="pay-del" data-id="' + esc(t.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="pay-save" data-id="' + esc(t ? t.client_id : '') + '" data-pledge="' + esc(p.client_id) + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="pay-save" data-id="' + esc(t ? t.client_id : '') + '" data-pledge="' + esc(p.client_id) + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 // בורר ההתחייבות — התחייבות חדשה או תרומה חד-פעמית עוברות לטופס ההתחייבות; התחייבות קיימת — הסכום לנותר בה.

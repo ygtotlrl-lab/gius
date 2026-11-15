@@ -52,7 +52,7 @@ function formEvent(e) {
     '<label class="fld"><span>הערה</span><input class="inp" id="e-note" value="' + esc(e ? e.note || '' : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (e ? '<button class="btn danger" data-act="event-del" data-id="' + esc(e.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="event-save" data-id="' + esc(e ? e.client_id : '') + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="event-save" data-id="' + esc(e ? e.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
   var n = $('#e-name'); if (n && !e) n.focus();
 }
 
@@ -81,7 +81,7 @@ function formBudget(b, evId) {
     '<label class="fld"><span>הערה</span><input class="inp" id="b-note" value="' + esc(b ? b.note || '' : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (b ? '<button class="btn danger" data-act="budget-del" data-id="' + esc(b.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="budget-save" data-id="' + esc(b ? b.client_id : '') + '" data-event="' + esc(ev || '') + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="budget-save" data-id="' + esc(b ? b.client_id : '') + '" data-event="' + esc(ev || '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 // הוצאה חדשה שייכת תמיד לאירוע — נפתחת מתוך האירוע הפתוח.

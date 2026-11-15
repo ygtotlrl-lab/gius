@@ -63,7 +63,7 @@ function lookupForm(kind, r) {
     '<input class="inp" id="l-label" autocomplete="off" value="' + esc(r ? r.label : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (r ? '<button class="btn danger" data-act="look-del" data-id="' + esc(r.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="look-save" data-id="' + esc(r ? r.client_id : '') + '" data-k="' + esc(kind) + '" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="look-save" data-id="' + esc(r ? r.client_id : '') + '" data-k="' + esc(kind) + '" data-ksave>' + icon('save') + 'שמירה</button>');
   var inp = $('#l-label'); if (inp) inp.focus();
 }
 
@@ -77,7 +77,7 @@ function formTarget(month) {
     '<div class="hint">היעד הקבוע: ' + ils(targetDefault()) + '. יעד שנקבע כאן חל על החודש הזה בלבד.</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (own ? '<button class="btn danger" data-act="target-clear" data-id="' + esc(own.client_id) + '">חזרה ליעד הקבוע</button>' : '') +
-    '<button class="btn" data-act="target-save" data-ksave>שמירה</button>', icon('target'));
+    '<button class="btn" data-act="target-save" data-ksave>' + icon('save') + 'שמירה</button>', icon('target'));
 }
 
 function saveTarget() {
@@ -91,7 +91,7 @@ function formTargetDefault() {
   openModal('יעד חודשי קבוע',
     '<label class="fld"><span>סכום *</span><input class="inp" id="tgd-amount" inputmode="decimal" value="' + (targetDefault() || '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    '<button class="btn" data-act="target-default-save" data-ksave>שמירה</button>');
+    '<button class="btn" data-act="target-default-save" data-ksave>' + icon('save') + 'שמירה</button>');
 }
 
 function saveTargetDefault() {
