@@ -9,8 +9,8 @@ import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboMore, comboPick,
-         dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, openModal, shellBare, swApply,
-         swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
+         dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, modalDismiss, openModal, shellBare,
+         swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
          MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
          MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
@@ -301,7 +301,7 @@ var DOM_ACTIONS = {
         '<span class="ic">' + icon(t.ic) + '</span><span>' + esc(t.label) + '</span></button>';
     }).join('') + '</div>', '');
   },
-  'modal-close': function () { closeModal(); },
+  'modal-close': function () { modalDismiss(); },
   'ask-yes': function () { closeAsk(true); },
   'ask-no': function () { closeAsk(false); },
 
