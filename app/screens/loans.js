@@ -68,7 +68,7 @@ function loansBodyHTML() {
         '<span class="ev-chev" aria-hidden="true">' + icon(open ? 'up' : 'down') + '</span>' +
       '</button>';
     if (open) {
-      r += '<div class="ev-body">' +
+      r += '<div class="ev-body" data-ks-area>' +
         (moves.length ? moves.map(function (m) {
           return '<div class="row" data-act="loan-move-edit" data-id="' + esc(m.client_id) + '">' +
             '<div class="main"><b>' + ils(m.amount) + pendTag(pendRowKey('g_loan_moves', m.client_id)) + '</b>' +
