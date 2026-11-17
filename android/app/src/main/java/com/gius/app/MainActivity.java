@@ -40,7 +40,7 @@ public class MainActivity extends ShellActivity {
     protected String offlineLine() { return "גיוס לא הצליח להתחבר."; }
 
     @Override
-    protected String accentColor() { return "#2b4f8a"; }
+    protected String accentColor() { return "#1c7278"; }
 
     // המקור היחיד שרשאי להגיע לגשר השיתוף — גשר על דף שנטען מרחוק נגיש לכל מי שמגיש את הדף.
     // נאכף פעמיים: רשימת ההיתר של הפלטפורמה ובדיקת המקור בתוך הגשר.

@@ -6,9 +6,9 @@ self.APP = Object.freeze({
   shortName: 'גיוס',
   description: 'ניהול כרטיסים, התחייבויות, תשלומים, תכנית ומשימות גיוס כספים.',
   prefix: 'g_',
-  colors: { theme: '#2b4f8a', background: '#f3f5f9' },
+  colors: { theme: '#1c7278', background: '#f1f6f6' },
   // דף האופליין של ה-service worker — הכהה לפי אסימוני הערכה הכהה של האפליקציה
-  offline: { light: { bg: '#f3f5f9', ink: '#1e2633' }, dark: { bg: '#12171f', ink: '#e8edf5' }, mark: '📴' },
+  offline: { light: { bg: '#f1f6f6', ink: '#1e2633' }, dark: { bg: '#111a1a', ink: '#e8edf5' }, mark: '📴' },
   // מפתח anon ציבורי ולא מפתח שירות — ההרשאות נאכפות במסד.
   supabase: {
     url: 'https://zrftjkghhjhqzopvdzou.supabase.co',
@@ -21,11 +21,11 @@ self.APP = Object.freeze({
     // משפט שלם ולא שם בלבד — הפועל מתאים למין השם
     offlineLine: 'גיוס לא הצליח להתחבר.',
     // צבע כפתור הניסיון החוזר בדף האופליין של המעטפת
-    accent: '#2b4f8a',
+    accent: '#1c7278',
     // לעולם אינו יורד — בלי קידום המכשיר המותקן אינו מקבל את ה-APK החדש.
-    versionCode: 36,
+    versionCode: 37,
     versionName: '20.0',
-    launcherBg: { kind: 'solid', color: '#FFFFFF' },
+    launcherBg: { kind: 'gradient', angle: 315, start: '#1C7278', end: '#104650' },
     // אפליקציות אחרות שקישור intent: רשאי לפתוח — שם ⟵ חבילה; ריק — המעטפת אינה פותחת אף אחת
     launch: {},
     // כפתור «יציאה» שהמעטפת קולטת וסוגרת בו את האפליקציה
