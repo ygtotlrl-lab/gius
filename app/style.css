@@ -855,3 +855,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 }
 /* בתמונה — ראשי התיבות במרכז העיגול: html2canvas מציב טקסט ברשת נמוך מהאמצע, ולכן שורה בגובה העיגול. */
 .snap .cp-av{display:block;box-sizing:border-box;line-height:48px;padding-bottom:8px;text-align:center}
+/* חלון הכרטיס — הגלילה בתוך הכרטיס עצמו ולא של כל החלון: הכרטיס בגובה המסך לכל היותר, הפס שבראשו נשאר במקומו, והתוכן נגלל מתחתיו. */
+.card-win{overflow:hidden}
+.cw-in > .copen{max-height:calc(100dvh - 2 * var(--sp-6) - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain}
+.cw-in > .copen > .cp-band{position:sticky;top:0;z-index:var(--z-1)}

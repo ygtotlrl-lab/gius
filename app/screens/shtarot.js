@@ -312,7 +312,7 @@ function shtOpen(id, keepNav) {
     s.open = id; s.call = null;
     lockBeat();
     var win = $('#sht-win');
-    if (win) { win.innerHTML = shtWinHTML(); var cw = $('.card-win', win); if (cw) cw.scrollTop = 0; }
+    if (win) { win.innerHTML = shtWinHTML(); var cw = $('.copen', win); if (cw) cw.scrollTop = 0; }
     return true;
   });
 }
