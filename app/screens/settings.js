@@ -1,10 +1,10 @@
 // app/screens/settings.js — ההגדרות: שש הרשימות והיעד החודשי
 import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../../core/ui.js';
 import { readNum } from '../../core/util.js';
-import { KV_TABLE, LISTS, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
+import { KV_TABLE, LISTS, LK_AMBASSADOR, MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, SHT_PAGE_URL, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
-import { $, TARGET_DEFAULT_KEY, emptyBox, ils, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
+import { $, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
          targetDefault, targetOwn, upsertBy, val } from '../domain.js';
 
 // ── הרשימות ──
@@ -23,8 +23,38 @@ function lookupCardHTML(l) {
   return h + '<div class="look-list">' + rows.map(function (r) {
     return '<div class="list-item" data-act="look-edit" data-k="' + esc(l.kind) + '" data-drag="' + esc(l.kind) + '" data-id="' + esc(r.client_id) + '">' +
       '<span class="grip" data-grip aria-hidden="true">⣿</span>' +
-      '<span class="list-val">' + esc(r.label) + '</span></div>';
+      '<span class="list-val">' + esc(r.label) + '</span>' +
+      (l.kind === LK_AMBASSADOR ? '<button class="look-link" data-act="sht-link" data-id="' + esc(r.client_id) + '" aria-label="העתקת קישור אישי לשטרות" title="העתקת קישור אישי לשטרות">' +
+        icon('link') + '<span>העתקת קישור</span></button>' : '') + '</div>';
   }).join('') + '</div></section>';
+}
+
+// ── הקישור האישי לשטרות ──
+// לכל שגריר קישור אחד, והקוד שבו הוא הכניסה לדף השגרירים (הריפו dapim) — השער בודק אותו מול g_shtar_links.
+// הלחיצה הראשונה יוצרת את הקישור; הקוד אחרי # — אינו נשלח לשרת האתר ואינו נרשם ביומניו.
+function linkCode() {
+  var abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789', buf = new Uint8Array(24), out = '';
+  crypto.getRandomValues(buf);
+  for (var i = 0; i < buf.length; i++) out += abc.charAt(buf[i] % abc.length);
+  return out;
+}
+function copyText(txt) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(txt);
+  return new Promise(function (ok, fail) {
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var done = false; try { done = document.execCommand('copy'); } catch (e) { }
+    ta.remove();
+    if (done) ok(); else fail(new Error('copy'));
+  });
+}
+function shtLinkCopy(ambId) {
+  var cur = null;
+  state.shtarLinks.forEach(function (x) { if (x.ambassador_client_id === ambId) cur = x; });
+  var p = cur ? Promise.resolve(cur) : insert('g_shtar_links', { ambassador_client_id: ambId, code: linkCode() });
+  return p.then(function (l) { return copyText(SHT_PAGE_URL + '#' + l.code); })
+    .then(function () { toast(MSG_SHT_LINK_COPIED, null, 'good'); }, function () { toast(MSG_SHT_LINK_FAIL, null, 'warn'); });
 }
 
 LISTS.forEach(function (l) {
@@ -100,4 +130,4 @@ function saveTargetDefault() {
   return upsertBy(KV_TABLE, { key: TARGET_DEFAULT_KEY, value: JSON.stringify(n) });
 }
 
-export { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault, viewSettings };
+export { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault, viewSettings };

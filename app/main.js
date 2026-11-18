@@ -30,7 +30,7 @@ import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveL
 import { formShtar, personById, saveShtar, shtClose, shtField, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatus, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
-import { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
+import { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
          viewSettings } from './screens/settings.js';
 
 // ── החיווט ──
@@ -448,6 +448,9 @@ var DOM_ACTIONS = {
   'sht-edit': function (el) { var p = personById(el.dataset.id); if (p) formShtar(p); },
   'sht-save': saver(saveShtar, 'נשמר'),
   'sht-del': function (el) { return delAsk(MSG_DEL_SHT, 'g_shtar_people', el.dataset.id, function () { shtClose(); }); },
+
+  // בהגדרות, ליד כל שגריר — הקישור האישי שלו לדף השטרות.
+  'sht-link': function (el) { return shtLinkCopy(el.dataset.id); },
 
   // ── הגדרות: הרשימות ──
   // הזריעה קודמת לכל עריכה — רשימה שמוצגת מנקודת הפתיחה אינה נושאת שורות, ופריט אחד שנוסף היה מוחק את השאר.
