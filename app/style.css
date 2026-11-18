@@ -791,9 +791,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sht-k b{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);font-variant-numeric:tabular-nums;color:var(--brand-ink)}
 .sht-k.ok b{color:var(--ok)}
 @media (min-width:640px){.sht-dash{grid-template-columns:repeat(4,minmax(0,1fr))}}
-/* שורת הסינון — שבע אפשרויות, נשברת לשורות בטלפון. */
-.sht-seg{display:flex;flex-wrap:wrap;width:100%}
-.sht-seg button{flex:1 1 auto;white-space:nowrap}
+/* שורת הסינון — שבע אפשרויות ברוחב אחד: הבחירה אינה משנה את גודל הכפתור; שתיים בשורה בטלפון, ארבע מ-640px, ושורה אחת במסך רחב. */
+.sht-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+.sht-seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:var(--sp-2);font-size:var(--fs-2)}
+@media (min-width:640px){.sht-seg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1100px){.sht-seg{grid-template-columns:repeat(7,minmax(0,1fr))}}
 .sht-row{cursor:pointer}
 .sht-row .av .ico{width:18px;height:18px}
 .sht-row .main small{unicode-bidi:isolate}
@@ -827,9 +829,14 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .look-link{flex:none;display:inline-flex;align-items:center;gap:var(--sp-2);font:inherit;font-size:var(--fs-2);font-weight:650;cursor:pointer;
   color:var(--brand-ink);background:var(--brand-soft);border:0;border-radius:var(--r-6);padding:var(--sp-2) var(--sp-4)}
 .look-link .ico{width:15px;height:15px}
-/* תרומות לאישור — מתחת ללוח השטרות; הסכום בולט, ו«אישור» מוריד את השורה. */
-.sht-give .row{cursor:pointer}
-.sht-give-amt{font-weight:800;font-size:var(--fs-4);color:var(--ok)}
+/* ממתינים לטיפול — רכיב אחד מתחת ללוח, חלק לכל תוצאה, ושורות «קבלה»; הרכיב עטוף, ולכן המרווח שמתחתיו כאן. */
+main #sht-give > .card{margin-bottom:var(--sp-6)}
+.sht-give .list-sub{display:flex;align-items:center;gap:var(--sp-3)}
+.sht-give .list-sub .cnt{font-weight:700;background:var(--border-2);color:var(--text-3);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.sht-give .rc .btn{flex:none}
+.sht-noamt .rc-amt,.sht-noamt .rc-end{display:none}
+.sht-h[data-act]{cursor:pointer}
+.sht-hint{margin-inline-start:auto;font-weight:500;color:var(--text-3);font-size:var(--fs-2)}
 .sht-o.gold.on{background:var(--gold);border-color:var(--gold);color:#fff}
 /* בכרטיס — ההתחייבויות שהסתיימו, תחת כותרת משלהן. */
 .pl-sub{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-weight:800;color:var(--text-3);padding:var(--sp-5) var(--sp-2) var(--sp-3)}

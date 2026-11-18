@@ -12,7 +12,7 @@ import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, 
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, modalDismiss, openModal, shellBare,
          swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
-         MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_SHT, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
+         MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_SHT, MSG_DEL_SHT_CALL, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
          MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
          TABS, APP_FIRST_MONTH, SHT_PAGE } from './constants.js';
 import { S, shell, state } from './state.js';
@@ -27,7 +27,7 @@ import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
-import { formShtar, personById, saveShtar, shtCallSave, shtClose, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
+import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
 import { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
@@ -360,7 +360,7 @@ var DOM_ACTIONS = {
   },
   'pledge-del': function (el) { return delAsk(MSG_DEL_PLEDGE, 'g_pledges', el.dataset.id); },
   'pay-new': function (el) { formPay(null, el.dataset.pledge, el.dataset.donor); },
-  'method-pick': function (el) { if (el.dataset.target === 'sht-method') return shtMethodPick(el); methodPick(el); },
+  'method-pick': function (el) { if (/^(sht|sc)-/.test(el.dataset.target)) return shtMethodPick(el); methodPick(el); },
   'pay-edit': function (el) { var t = findIn(state.txns, el.dataset.id); if (t) formPay(t); },
   'pay-save': function (el) {
     return runSave(function () { return savePay(el.dataset.id, el.dataset.pledge); }, 'התשלום נשמר');
@@ -444,6 +444,11 @@ var DOM_ACTIONS = {
   'sht-close': function () { shtClose(); render(); },
   'sht-st': function (el) { shtStatusPick(el); },
   'sht-call-save': function () { return runSave(shtCallSave, 'השיחה נשמרה'); },
+  'sht-call-edit': function (el) { var c = callById(el.dataset.id); if (c) formCall(c); },
+  'sht-call-update': saver(saveCall, 'השיחה נשמרה'),
+  'sht-call-del': function (el) {
+    return delAsk(MSG_DEL_SHT_CALL, 'g_shtar_calls', el.dataset.id, function () { if (state.sht.call === el.dataset.id) state.sht.call = null; });
+  },
   'sht-handled': function (el) { return shtHandled(el.dataset.id); },
   'sht-new': function () { formShtar(null); },
   'sht-edit': function (el) { var p = personById(el.dataset.id); if (p) formShtar(p); },
@@ -535,6 +540,7 @@ document.addEventListener('change', function (e) {
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
+  if (el.dataset.chg === 'sc-status') { callStatusPick(el.value); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
