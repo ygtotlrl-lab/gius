@@ -27,8 +27,8 @@ import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
-import { formShtar, personById, saveShtar, shtClose, shtField, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
-         shtStatus, shtStep, viewShtarot } from './screens/shtarot.js';
+import { formShtar, personById, saveShtar, shtCallSave, shtClose, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
+         shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
 import { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
          viewSettings } from './screens/settings.js';
@@ -442,7 +442,8 @@ var DOM_ACTIONS = {
   'sht-open': function (el) { return shtOpen(el.dataset.id); },
   'sht-step': function (el) { return shtStep(+el.dataset.d); },
   'sht-close': function () { shtClose(); render(); },
-  'sht-st': function (el) { return shtStatus(el.dataset.v); },
+  'sht-st': function (el) { shtStatusPick(el); },
+  'sht-call-save': function () { return runSave(shtCallSave, 'השיחה נשמרה'); },
   'sht-handled': function (el) { return shtHandled(el.dataset.id); },
   'sht-new': function () { formShtar(null); },
   'sht-edit': function (el) { var p = personById(el.dataset.id); if (p) formShtar(p); },
@@ -534,7 +535,6 @@ document.addEventListener('change', function (e) {
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
-  if (el.dataset.chg === 'sht-fld') { shtField(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }

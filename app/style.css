@@ -837,3 +837,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* בכרטיס — ההתחייבויות שהסתיימו, תחת כותרת משלהן. */
 .pl-sub{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-weight:800;color:var(--text-3);padding:var(--sp-5) var(--sp-2) var(--sp-3)}
 .pl-sub .cnt{font-weight:700;background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.sht-save{margin:0 0 var(--sp-6)}
+.sht-save .btn{flex:1;justify-content:center}
+.sht-card [hidden]{display:none}

@@ -3,7 +3,7 @@ import { getDeviceId, readNum } from '../../core/util.js';
 import { errToast, idEq, newClientId, pendTag } from '../../core/sync.js';
 import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML, methodIcon,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
-import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME,
+import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK,
          MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS } from '../constants.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
@@ -144,20 +144,25 @@ function stBadge(st) {
   return '<span class="badge ' + d.cls + '">' + esc(st.last.status === 'int' && st.last.handled ? 'פרטים נשלחו' : d.l + (isGive(st.last) && st.last.handled ? ' · אושר' : '')) + '</span>';
 }
 
-// ── תרומות לאישור ──
-// כל «תרם» ו«התחייב» ממתין כאן, מתחת ללוח, עד שמאשרים שהתרומה נעשתה בוודאות — ואז יורד; החדש למעלה.
-function shtGiveHTML() {
-  var list = state.shtarCalls.filter(function (c) { return isGive(c) && !c.handled && personById(c.person_client_id); })
+// ── ממתינים לטיפול ──
+// מתחת ללוח, שני רכיבים באותה צורה: «תרומות לאישור» — כל «תרם» ו«התחייב», עד שמאשרים שהתרומה נעשתה בוודאות;
+// ו«פרטים לשליחה» — כל «מעוניין», עד «טופל». הכפתור מוריד את השורה (handled); החדש למעלה, ורכיב ריק אינו מוצג.
+function waitListHTML(title, btn, pick, amount) {
+  var list = state.shtarCalls.filter(function (c) { return pick(c) && !c.handled && personById(c.person_client_id); })
     .sort(function (a, b) { return Date.parse(b.call_at) - Date.parse(a.call_at); });
   if (!list.length) return '';
-  return '<section class="card sht-give"><h2>תרומות לאישור<span class="cnt">' + list.length + '</span></h2>' + list.map(function (c) {
+  return '<section class="card sht-give"><h2>' + title + '<span class="cnt">' + list.length + '</span></h2>' + list.map(function (c) {
     var p = personById(c.person_client_id), name = personName(p), d = SHT_STATUS[c.status];
     return '<div class="row" data-act="sht-open" data-id="' + esc(p.client_id) + '">' +
       '<div class="main"><b>' + esc(name || MSG_SHT_NO_NAME) + ' <span class="badge ' + d.cls + '">' + esc(d.l) + '</span>' + pendTag(pendRowKey('g_shtar_calls', c.client_id)) + '</b>' +
-        '<small>' + esc([whenShow(Date.parse(c.call_at)), c.ambassador, c.method].filter(Boolean).join(' · ')) + '</small></div>' +
-      '<div class="end sht-give-amt">' + (c.amount != null ? ils(c.amount) : '—') + '</div>' +
-      '<button class="btn sm" data-act="sht-handled" data-id="' + esc(c.client_id) + '">' + icon('check') + 'אישור</button></div>';
+        '<small>' + esc([whenShow(Date.parse(c.call_at)), c.ambassador, c.method, c.note].filter(Boolean).join(' · ')) + '</small></div>' +
+      (amount ? '<div class="end sht-give-amt">' + (c.amount != null ? ils(c.amount) : '—') + '</div>' : '') +
+      '<button class="btn sm" data-act="sht-handled" data-id="' + esc(c.client_id) + '">' + icon('check') + btn + '</button></div>';
   }).join('') + '</section>';
+}
+function shtGiveHTML() {
+  return waitListHTML('תרומות לאישור', 'אישור', isGive, true) +
+    waitListHTML('פרטים לשליחה', 'טופל', function (c) { return c.status === 'int'; }, false);
 }
 
 function shtListHTML() {
@@ -189,12 +194,12 @@ function localInput(iso) {
 
 function stBtn(k, cur) {
   return '<button type="button" class="sht-o ' + (SHT_STATUS[k].cls || '') + (cur === k ? ' on' : '') + '" aria-pressed="' + (cur === k) +
-    '" data-act="sht-st" data-v="' + k + '">' + esc(SHT_STATUS[k].l) + '</button>';
+    '" data-act="sht-st" data-v="' + k + '" data-give="' + (SHT_GIVE.indexOf(k) >= 0 ? 1 : 0) + '">' + esc(SHT_STATUS[k].l) + '</button>';
 }
 
 function shtCardHTML(p) {
   var s = state.sht, id = esc(p.client_id), name = personName(p), cs = callsOf(p.client_id);
-  var cur = s.call ? callById(s.call) : null, st = cur ? cur.status : '', last = cs[cs.length - 1];
+  var cur = s.call ? callById(s.call) : null, st = cur ? cur.status : '', give = !!cur && isGive(cur);
   var i = s.nav.indexOf(p.client_id);
   var facts = [['תרומות קודמות', p.past], ['שם במאגר', p.db_name], ['קבוצות וואטסאפ', p.wa_groups], ['מופיע במאגרים', p.sources],
                ['ניסה לתרום', p.tried], ['הערה', p.note]].filter(function (f) { return f[1]; });
@@ -210,24 +215,23 @@ function shtCardHTML(p) {
         '<button class="cp-btn" data-act="sht-edit" data-id="' + id + '" aria-label="עריכת הפרטים" title="עריכת הפרטים">' + icon('edit') + '</button>' +
         '<button class="cp-btn" data-act="sht-close" aria-label="סגירה">' + icon('close') + '</button>' +
       '</div>' +
-    '</div><div class="cp-body">';
+    '</div><div class="cp-body" data-ks-area>';
   if (facts.length) h += '<dl class="sht-facts">' + facts.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>';
-  if (last && last.status === 'int' && !last.handled)
-    h += '<div class="sht-wait"><span>ממתין לשליחת פרטים</span><button class="btn sm" data-act="sht-handled" data-id="' + esc(last.client_id) + '">' + icon('check') + 'טופל</button></div>';
   h += '<div class="fld"><span>שגריר מטלפן *</span>' +
       comboHTML('sht-amb', { id: 'sht-amb', label: 'שגריר מטלפן', placeholder: 'הקלדה לסינון…',
                              picked: s.amb ? { value: s.amb, label: s.amb } : null }) + '</div>' +
+    // הטופס — נשמר בכפתור; יציאה בלי שמירה שואלת (data-ks). השגריר מחוץ לו — הוא נשאר בין איש לאיש ואינו «שינוי».
+    '<div data-ks><input type="hidden" id="sht-status" value="' + esc(st) + '">' +
     '<div class="fld"><span>לא נוצר קשר</span><div class="sht-os">' + stBtn('na', st) + stBtn('wrong', st) + '</div></div>' +
-    '<div class="fld"><span>תוצאת השיחה</span><div class="sht-os">' + ['yes', 'pl', 'int', 'cb', 'no', 'rmv'].map(function (k) { return stBtn(k, st); }).join('') + '</div></div>';
-  if (cur && isGive(cur)) {
-    h += '<label class="fld"><span>סכום</span><input class="inp" id="sht-amt" data-chg="sht-fld" inputmode="decimal" value="' + esc(cur.amount == null ? '' : cur.amount) + '"></label>' +
-      '<div class="fld"><span>אמצעי</span><input type="hidden" id="sht-method" value="' + esc(cur.method || '') + '">' +
-      methodGridHTML({ target: 'sht-method', list: lookupLabels(LK_METHOD), cur: cur.method || '', label: 'אמצעי',
-                       ico: function (l) { return icon(methodIcon(l)); } }) + '</div>';
-  }
-  if (st === 'cb')
-    h += '<label class="fld"><span>מתי לחזור</span><input class="inp" type="datetime-local" id="sht-when" data-chg="sht-fld" value="' + esc(localInput(cur.callback_at)) + '"></label>';
-  h += '<label class="fld"><span>סיכום השיחה</span><textarea class="inp" id="sht-note" data-chg="sht-fld" rows="3" placeholder="מה נאמר, מה הוסכם…">' + esc(cur ? cur.note || '' : '') + '</textarea></label>';
+    '<div class="fld"><span>תוצאת השיחה</span><div class="sht-os">' + ['yes', 'pl', 'int', 'cb', 'no', 'rmv'].map(function (k) { return stBtn(k, st); }).join('') + '</div></div>' +
+    '<div id="sht-give-box"' + (give ? '' : ' hidden') + '>' +
+      '<label class="fld"><span>סכום</span><input class="inp" id="sht-amt" inputmode="decimal" value="' + esc(cur && cur.amount != null ? cur.amount : '') + '"></label>' +
+      '<div class="fld"><span>אמצעי</span><input type="hidden" id="sht-method" value="' + esc(cur ? cur.method || '' : '') + '">' +
+      methodGridHTML({ target: 'sht-method', list: lookupLabels(LK_METHOD), cur: cur ? cur.method || '' : '', label: 'אמצעי',
+                       ico: function (l) { return icon(methodIcon(l)); } }) + '</div></div>' +
+    '<label class="fld" id="sht-when-box"' + (st === 'cb' ? '' : ' hidden') + '><span>מתי לחזור</span><input class="inp" type="datetime-local" id="sht-when" value="' + esc(cur ? localInput(cur.callback_at) : '') + '"></label>' +
+    '<label class="fld"><span>סיכום השיחה</span><textarea class="inp" id="sht-note" rows="3" placeholder="מה נאמר, מה הוסכם…">' + esc(cur ? cur.note || '' : '') + '</textarea></label>' +
+    '<div class="btnrow sht-save"><button class="btn" data-act="sht-call-save" data-ksave>' + icon('save') + (cur ? 'עדכון השיחה' : 'שמירת השיחה') + '</button></div></div>';
   if (hist.length) {
     h += '<div class="sec-t">שיחות קודמות<span class="cnt">' + hist.length + '</span></div><div class="sht-hist">' + hist.map(function (c) {
       var d = SHT_STATUS[c.status] || { l: c.status, cls: '' };
@@ -239,8 +243,8 @@ function shtCardHTML(p) {
     }).join('') + '</div>';
   }
   h += '<div class="sht-nav">' +
-      '<button class="btn ghost" data-act="sht-step" data-d="-1"' + (i > 0 ? '' : ' disabled') + '>' + icon('prev') + 'הקודם</button>' +
-      '<button class="btn" data-act="sht-step" data-d="1"' + (i >= 0 && i < s.nav.length - 1 ? '' : ' disabled') + '>הבא' + icon('next') + '</button>' +
+      '<button class="btn ghost" data-act="sht-step" data-d="-1" data-ks-leave' + (i > 0 ? '' : ' disabled') + '>' + icon('prev') + 'הקודם</button>' +
+      '<button class="btn" data-act="sht-step" data-d="1" data-ks-leave' + (i >= 0 && i < s.nav.length - 1 ? '' : ' disabled') + '>הבא' + icon('next') + '</button>' +
     '</div></div></div>';
   return h;
 }
@@ -336,41 +340,38 @@ function shtClose() {
 }
 
 // ── השיחה ──
-// השורה נכתבת כשנבחרת תוצאה; מכאן כל שדה נשמר בשינוי, ותוצאה אחרת באותה פתיחה מתקנת את אותה שיחה.
-function callFields(st) {
-  var amt = $('#sht-amt'), when = val('sht-when');
-  var give = SHT_GIVE.indexOf(st) >= 0;
-  return { amount: give && amt && amt.value.trim() !== '' ? readNum(amt, 0) : null,
-           method: give ? nullable(val('sht-method')) : null,
-           callback_at: st === 'cb' && when ? new Date(when).toISOString() : null,
-           note: nullable(val('sht-note')) };
+// הטופס נשמר בכפתור: התוצאה נבחרת, הפרטים מתמלאים, ו«שמירת השיחה» כותבת שורה; יציאה בלי שמירה שואלת.
+// אחרי השמירה הטופס נשאר טעון בשיחה שנשמרה — תיקון באותה פתיחה מעדכן אותה ואינו יוצר שיחה נוספת.
+function shtStatusPick(el) {
+  var h = $('#sht-status');
+  if (!h) return;
+  h.value = h.value === el.dataset.v ? '' : el.dataset.v;
+  document.querySelectorAll('.sht-o[data-act="sht-st"]').forEach(function (b) {
+    var on = b.dataset.v === h.value;
+    b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+  });
+  var gb = $('#sht-give-box'), wb = $('#sht-when-box');
+  if (gb) gb.hidden = SHT_GIVE.indexOf(h.value) < 0;
+  if (wb) wb.hidden = h.value !== 'cb';
 }
 
-function shtStatus(st) {
-  var s = state.sht, p = s.open && personById(s.open);
-  if (!p || !SHT_STATUS[st]) return;
+function shtCallSave() {
+  var s = state.sht, p = s.open && personById(s.open), st = val('sht-status');
+  if (!p) return;
   var amb = comboValue('sht-amb');
   if (!amb) { toast(MSG_SHT_AMB, null, 'warn'); var q = $('#sht-amb [data-combo-q]'); if (q) q.focus(); return; }
-  var row = Object.assign(callFields(st), { status: st, ambassador: amb });
+  if (!SHT_STATUS[st]) { toast(MSG_SHT_PICK, null, 'warn'); return; }
+  var give = SHT_GIVE.indexOf(st) >= 0, amt = $('#sht-amt'), when = val('sht-when');
+  var amount = give && amt && amt.value.trim() !== '' ? readNum(amt, 0) : null;
+  if (amount != null && !(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+  var row = { status: st, ambassador: amb, amount: amount, method: give ? nullable(val('sht-method')) : null,
+              callback_at: st === 'cb' && when ? new Date(when).toISOString() : null, note: nullable(val('sht-note')) };
   var w = s.call ? update('g_shtar_calls', s.call, row)
                  : insert('g_shtar_calls', Object.assign(row, { person_client_id: p.client_id, call_at: nowISO(), handled: false }));
-  return w.then(function (c) { s.call = c.client_id; shtRefresh(); }).catch(errToast);
+  return w.then(function (c) { s.call = c.client_id; return c; });
 }
 
-function shtField() {
-  var s = state.sht, cur = s.call && callById(s.call);
-  if (!cur) return;
-  var f = callFields(cur.status);
-  if (f.amount != null && !(f.amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
-  return update('g_shtar_calls', cur.client_id, f).then(function () {
-    var dash = $('#sht-dash'), list = $('#sht-list'), give = $('#sht-give');
-    if (dash) dash.innerHTML = shtDashHTML();
-    if (list) list.innerHTML = shtListHTML();
-    if (give) give.innerHTML = shtGiveHTML();
-  }).catch(errToast);
-}
-
-function shtMethodPick(el) { coreMethodPick(el); return shtField(); }
+function shtMethodPick(el) { coreMethodPick(el); }
 
 function shtHandled(id) {
   return update('g_shtar_calls', id, { handled: true }).then(function () { shtRefresh(); }).catch(errToast);
@@ -427,5 +428,5 @@ function saveShtar(id) {
     .then(function (yes) { return yes ? go() : undefined; });
 }
 
-export { formShtar, personById, saveShtar, shtClose, shtField, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
-         shtStatus, shtStep, viewShtarot };
+export { formShtar, personById, saveShtar, shtCallSave, shtClose, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
+         shtStatusPick, shtStep, viewShtarot };
