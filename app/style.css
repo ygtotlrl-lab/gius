@@ -791,11 +791,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sht-k b{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);font-variant-numeric:tabular-nums;color:var(--brand-ink)}
 .sht-k.ok b{color:var(--ok)}
 @media (min-width:640px){.sht-dash{grid-template-columns:repeat(4,minmax(0,1fr))}}
-/* שורת הסינון — שבע אפשרויות ברוחב אחד: הבחירה אינה משנה את גודל הכפתור; שתיים בשורה בטלפון, ארבע מ-640px, ושורה אחת במסך רחב. */
+/* שורת הסינון — כפתור לכל אפשרות, כולם ברוחב אחד: הבחירה אינה משנה את גודל הכפתור; שניים בשורה בטלפון, וחמישה מ-640px. */
 .sht-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
-.sht-seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:var(--sp-2);font-size:var(--fs-2)}
-@media (min-width:640px){.sht-seg{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media (min-width:1100px){.sht-seg{grid-template-columns:repeat(7,minmax(0,1fr))}}
+.sht-seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:var(--sp-2)}
+@media (min-width:640px){.sht-seg{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .sht-row{cursor:pointer}
 .sht-row .av .ico{width:18px;height:18px}
 .sht-row .main small{unicode-bidi:isolate}
@@ -835,8 +834,6 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .sht-give .list-sub .cnt{font-weight:700;background:var(--border-2);color:var(--text-3);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .sht-give .rc .btn{flex:none}
 .sht-noamt .rc-amt,.sht-noamt .rc-end{display:none}
-.sht-h[data-act]{cursor:pointer}
-.sht-hint{margin-inline-start:auto;font-weight:500;color:var(--text-3);font-size:var(--fs-2)}
 .sht-o.gold.on{background:var(--gold);border-color:var(--gold);color:#fff}
 /* בכרטיס — ההתחייבויות שהסתיימו, תחת כותרת משלהן. */
 .pl-sub{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-weight:800;color:var(--text-3);padding:var(--sp-5) var(--sp-2) var(--sp-3)}
@@ -844,3 +841,17 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .sht-save{margin:0 0 var(--sp-6)}
 .sht-save .btn{flex:1;justify-content:center}
 .sht-card [hidden]{display:none}
+/* שיחה קודמת — אייקון העריכה בקצה השורה. */
+.sht-h{position:relative;padding-inline-end:calc(36px + var(--sp-6))}
+.sht-h-edit{position:absolute;top:var(--sp-3);inset-inline-end:var(--sp-3)}
+.sht-h-edit .ico{width:17px;height:17px}
+/* כרטיס האיש — מספר הטלפון מתחת לאייקונים של החיוג וההודעה. */
+.sht-side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-3);flex:none}
+.sht-phone{font-size:var(--fs-2);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.16);border-radius:var(--r-7);padding:var(--sp-1) var(--sp-5)}
+@media (max-width:639px){
+  .sht-side{position:absolute;top:var(--sp-5);inset-inline-end:var(--sp-5)}
+  .sht-side .cp-acts{position:static}
+  .sht-card .cp-who h3{padding-inline-end:164px;min-height:64px}
+}
+/* בתמונה — ראשי התיבות במרכז העיגול: html2canvas מציב טקסט ברשת נמוך מהאמצע, ולכן שורה בגובה העיגול. */
+.snap .cp-av{display:block;box-sizing:border-box;line-height:48px;padding-bottom:8px;text-align:center}

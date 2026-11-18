@@ -62,7 +62,7 @@ var SHT_STATUS = {
   wrong: { l: 'מספר שגוי', cls: '', fin: true },
   yes:   { l: 'תרם', cls: 'ok', fin: true },
   pl:    { l: 'התחייב', cls: 'gold', fin: true },
-  int:   { l: 'מעוניין — לשלוח פרטים', cls: 'brand', fin: true },
+  int:   { l: 'ממתין לפרטים', cls: 'brand', fin: true },
   cb:    { l: 'לחזור אליו', cls: 'warn' },
   no:    { l: 'לא מעוניין', cls: '', fin: true },
   rmv:   { l: 'להסיר מהרשימה', cls: 'bad', fin: true }

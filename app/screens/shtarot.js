@@ -65,17 +65,17 @@ function pState(p) {
   return { k: 'done', rank: 9, at: Date.parse(last.call_at), last: last };
 }
 
-var FILTERS = {
-  queue: function (s) { return s.k !== 'done'; },
-  cb:    function (s) { return s.k === 'cb'; },
-  'new': function (s) { return s.k === 'new'; },
-  na:    function (s) { return s.k === 'na'; },
-  done:  function (s) { return s.k === 'done'; },
-  int:   function (s) { return s.k === 'done' && s.last.status === 'int' && !s.last.handled; },
-  rmv:   function (s) { return s.k === 'done' && s.last.status === 'rmv'; }
-};
+// הסינון — «כל התור», «טרם התקשרו», וכפתור לכל תוצאה, בשמה ובסדרה כמו בתפריט התוצאות שבשיחה: מי שזו תוצאת השיחה האחרונה שלו.
+var FILTERS = { queue: function (s) { return s.k !== 'done'; }, 'new': function (s) { return s.k === 'new'; } };
+var FILTER_LIST = [['queue', 'כל התור'], ['new', 'טרם התקשרו']];
+Object.keys(SHT_STATUS).forEach(function (k) {
+  FILTERS[k] = function (s) { return !!s.last && s.last.status === k; };
+  FILTER_LIST.push([k, SHT_STATUS[k].l]);
+});
+
 // הכותרת של הרשימה — שם הסינון, ובתוצאה — שמה כמו בכפתור שבשיחה.
-var FILTER_TITLE = { queue: 'התור', 'new': 'טרם התקשרו', done: 'סיימו', na: SHT_STATUS.na.l, cb: SHT_STATUS.cb.l, int: SHT_STATUS.int.l, rmv: SHT_STATUS.rmv.l };
+var FILTER_TITLE = { queue: 'התור' };
+FILTER_LIST.forEach(function (o) { if (!FILTER_TITLE[o[0]]) FILTER_TITLE[o[0]] = o[1]; });
 
 function shtMatches() {
   var s = state.sht, q = String(s.q || '').trim().toLowerCase(), qd = digits(q), f = FILTERS[s.f] || FILTERS.queue;
@@ -116,7 +116,7 @@ function viewShtarot() {
       '<label class="search-box"><input aria-label="חיפוש לפי שם או טלפון" class="inp search" id="sht-q" data-inp="sht-q" placeholder="חיפוש לפי שם או טלפון" value="' + esc(s.q) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
       '<div class="seg sht-seg" role="group" aria-label="סינון">' +
-      [['queue', 'כל התור'], ['new', 'טרם התקשרו'], ['na', SHT_STATUS.na.l], ['cb', SHT_STATUS.cb.l], ['int', SHT_STATUS.int.l], ['rmv', SHT_STATUS.rmv.l], ['done', 'סיימו']].map(function (o) {
+      FILTER_LIST.map(function (o) {
         return '<button class="' + (s.f === o[0] ? 'on' : '') + '" data-act="sht-filter" data-v="' + o[0] + '">' + o[1] + '</button>';
       }).join('') + '</div></section>' +
     '<section class="card" id="sht-list">' + shtListHTML() + '</section>' +
@@ -204,13 +204,13 @@ function shtCardHTML(p) {
     '<div class="cp-band">' +
       '<span class="cp-av">' + (name ? esc(initials(name)) : icon('call')) + '</span>' +
       '<div class="cp-who"><h3>' + esc(name || MSG_SHT_NO_NAME) + '</h3>' +
-        '<div class="cp-chips"><span dir="ltr">' + esc(phoneShow(p.phone)) + '</span>' + (p.donor_client_id ? '<span>כרטיס בגיוס</span>' : '') + '</div></div>' +
-      '<div class="cp-acts">' +
+        (p.donor_client_id ? '<div class="cp-chips"><span>כרטיס בגיוס</span></div>' : '') + '</div>' +
+      '<div class="sht-side"><div class="cp-acts">' +
         '<a class="cp-btn" href="tel:' + esc(p.phone) + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</a>' +
         '<a class="cp-btn" href="' + esc(waLink(p.phone)) + '" target="_blank" rel="noopener noreferrer" aria-label="וואטסאפ" title="וואטסאפ">' + icon('chat') + '</a>' +
         '<button class="cp-btn" data-act="sht-edit" data-id="' + id + '" aria-label="עריכת הפרטים" title="עריכת הפרטים">' + icon('edit') + '</button>' +
         '<button class="cp-btn" data-act="sht-close" aria-label="סגירה">' + icon('close') + '</button>' +
-      '</div>' +
+      '</div><span class="sht-phone" dir="ltr">' + esc(phoneShow(p.phone)) + '</span></div>' +
     '</div><div class="cp-body" data-ks-area>';
   if (facts.length) h += '<dl class="sht-facts">' + facts.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('') + '</dl>';
   h += '<div class="fld"><span>שגריר מטלפן *</span>' +
@@ -229,9 +229,9 @@ function shtCardHTML(p) {
     '<label class="fld"><span>סיכום השיחה</span><textarea class="inp" id="sht-note" rows="3" placeholder="מה נאמר, מה הוסכם…">' + esc(cur ? cur.note || '' : '') + '</textarea></label>' +
     '<div class="btnrow sht-save"><button class="btn" data-act="sht-call-save" data-ksave>' + icon('save') + (cur ? 'עדכון השיחה' : 'שמירת השיחה') + '</button></div></div>';
   if (hist.length) {
-    h += '<div class="sec-t">שיחות קודמות<span class="cnt">' + hist.length + '</span><small class="sht-hint">לחיצה על שיחה — עריכה ומחיקה</small></div><div class="sht-hist">' + hist.map(function (c) {
+    h += '<div class="sec-t">שיחות קודמות<span class="cnt">' + hist.length + '</span></div><div class="sht-hist">' + hist.map(function (c) {
       var d = SHT_STATUS[c.status] || { l: c.status, cls: '' };
-      return '<div class="sht-h" data-act="sht-call-edit" data-id="' + esc(c.client_id) + '" data-ks-leave><div><span class="badge ' + d.cls + '">' + esc(d.l) + '</span> <small>' + esc(whenShow(Date.parse(c.call_at))) + ' · ' + esc(c.ambassador) + '</small>' +
+      return '<div class="sht-h"><button class="icon-btn sht-h-edit" data-act="sht-call-edit" data-id="' + esc(c.client_id) + '" data-ks-leave aria-label="עריכת השיחה" title="עריכת השיחה">' + icon('edit') + '</button><div><span class="badge ' + d.cls + '">' + esc(d.l) + '</span> <small>' + esc(whenShow(Date.parse(c.call_at))) + ' · ' + esc(c.ambassador) + '</small>' +
         pendTag(pendRowKey('g_shtar_calls', c.client_id)) + '</div>' +
         ((c.amount != null || c.method) ? '<div><b>' + (c.amount != null ? ils(c.amount) : '') + '</b> ' + esc(c.method || '') + '</div>' : '') +
         (c.status === 'cb' && c.callback_at ? '<div><small>לחזור ב-' + esc(whenShow(Date.parse(c.callback_at))) + '</small></div>' : '') +
