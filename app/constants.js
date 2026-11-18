@@ -54,6 +54,23 @@ var PLAN_KINDS = ['גבייה', 'התרמה'];
 // בסדר הטיפול — מה שמחכה לפעולה ראשון, ומה שנמסר בסוף; זה גם סדר המיון לפי סטטוס.
 var LOAN_STATUSES = ['להגשה', 'לטיפול', 'בהתראה', 'נמסר'];
 
+// ── השטרות ──
+// תוצאת השיחה: fin — האיש יצא מהתור; בלי fin — «לא ענה» חוזר לתור אחרי SHT_RETRY_MS, ו«לחזור אליו» במועד שנקבע.
+var SHT_STATUS = {
+  na:    { l: 'לא ענה', cls: '' },
+  wrong: { l: 'מספר שגוי', cls: '', fin: true },
+  yes:   { l: 'תרם / התחייב', cls: 'ok', fin: true },
+  int:   { l: 'מעוניין — לשלוח פרטים', cls: 'brand', fin: true },
+  cb:    { l: 'לחזור אליו', cls: 'warn' },
+  no:    { l: 'לא מעוניין', cls: '', fin: true },
+  rmv:   { l: 'להסיר מהרשימה', cls: 'bad', fin: true }
+};
+var SHT_RETRY_MS = 2 * 60 * 60 * 1000;
+// נעילה בלי סימן חיים — משתחררת מעצמה; סימן החיים כל דקה.
+var SHT_LOCK_MS = 15 * 60 * 1000;
+var SHT_BEAT_MS = 60 * 1000;
+var SHT_PAGE = 60;
+
 // ── הרשומות — צבעי הרקע ──
 var NOTE_COLORS = ['sand', 'terra', 'sage', 'sky', 'rose', 'plum'];
 
@@ -67,8 +84,9 @@ var TABS = [
 ];
 
 var MORE = [
-  { id: 'notes', ic: 'notes', label: 'רשומות' },
   { id: 'loans', ic: 'loans', label: 'הלוואות' },
+  { id: 'shtarot', ic: 'shtarot', label: 'שטרות' },
+  { id: 'notes', ic: 'notes', label: 'רשומות' },
   { id: 'budget', ic: 'budget', label: 'תקציב אירוע' },
   { id: 'settings', ic: 'settings', label: 'הגדרות' }
 ];
@@ -116,15 +134,23 @@ var MSG_DEL_BUDGET = 'למחוק את ההוצאה?';
 var MSG_DEL_EVENT = 'למחוק את האירוע וכל ההוצאות שבו?';
 var MSG_NEED_EVENT_NAME = 'נא למלא את שם האירוע';
 var MSG_DEL_LOOKUP = 'להסיר את הערך מהרשימה? רשומות שכבר משתמשות בו יישארו כמות שהן.';
+var MSG_DEL_SHT = 'למחוק את האיש מרשימת השטרות? השיחות שלו יימחקו איתו.';
+var MSG_SHT_LOCKED = 'האיש בשימוש אצל טלפן אחר';
+var MSG_SHT_AMB = 'נא לבחור את השגריר המטלפן';
+var MSG_SHT_PHONE = 'נא למלא טלפון';
+var MSG_SHT_DUP = 'כבר ברשימה: ';
+var MSG_SHT_NO_NAME = 'שם לא ידוע';
 var MSG_MONTH_GOAL = 'יעד חודשי';
 
 // ── עמידות אחסון מקומי ──
 var KV_TABLE = 'g_settings';
 
 // ── PUSH_CFG ──
-// הסדר שומר על המפתח הזר — כרטיסים לפני התחייבויות ושורות תכנית, התחייבויות לפני תשלומים, והלוואות לפני תנועותיהן.
+// הסדר שומר על המפתח הזר — כרטיסים לפני התחייבויות ושורות תכנית, התחייבויות לפני תשלומים, והלוואות לפני תנועותיהן;
+// אנשי השטרות אחרי הכרטיסים ולפני שיחותיהם, והקישורים האישיים אחרי הרשימות.
 var PUSH_TABLES = ['g_donors', 'g_pledges', 'g_txns', 'g_plan_items', 'g_tasks', 'g_targets',
-                   'g_notes', 'g_loans', 'g_loan_moves', 'g_events', 'g_budget_items', KV_TABLE, 'g_lookups'];
+                   'g_notes', 'g_loans', 'g_loan_moves', 'g_events', 'g_budget_items',
+                   'g_shtar_people', 'g_shtar_calls', KV_TABLE, 'g_lookups', 'g_shtar_links'];
 
 // strip — עמודות שאינן נשמרות במראה; אין היום עמודה כזו, והמנגנון נשאר דרוך לסוד עתידי.
 // אין כאן סדר תצוגה — המיון של כל רשומה בפונקציה אחת בתחום.
@@ -140,14 +166,18 @@ var TABLES = [
   { t: 'g_loan_moves',   key: 'client_id', soft: true },
   { t: 'g_events',       key: 'client_id', soft: true },
   { t: 'g_budget_items', key: 'client_id', soft: true },
+  { t: 'g_shtar_people', key: 'client_id', soft: true },
+  { t: 'g_shtar_calls',  key: 'client_id', soft: true },
   { t: KV_TABLE,         key: 'key',       soft: false },
-  { t: 'g_lookups',      key: 'client_id', soft: true }
+  { t: 'g_lookups',      key: 'client_id', soft: true },
+  { t: 'g_shtar_links',  key: 'client_id', soft: true }
 ];
 
 var EPS = 0.005;
 
 export { ASSIGNEES, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LK_AFFIL, LK_AMBASSADOR,
-         LK_DOMAIN, LK_METHOD, LK_PTYPE, LK_SECTION, LOAN_STATUSES, MORE,
+         LK_DOMAIN, LK_METHOD, LK_PTYPE, LK_SECTION, LOAN_STATUSES, MORE, MSG_DEL_SHT, MSG_SHT_AMB, MSG_SHT_DUP,
+         MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PHONE, SHT_BEAT_MS, SHT_LOCK_MS, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS,
          METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_SO_COUNT, MSG_SO_FIRST, MSG_SO_FIRST_OVER, MSG_IMG_PREP, MSG_IMG_OFFLINE, MSG_IMG_FAIL, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_EVENT, MSG_NEED_EVENT_NAME, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_NEED_MOVE_AMOUNT,
          MSG_DEL_LOOKUP, MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT,
          MSG_DEL_TASK, MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_MONTH_GOAL, MSG_NEED_DATE,

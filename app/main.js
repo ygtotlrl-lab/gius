@@ -12,9 +12,9 @@ import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, 
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, modalDismiss, openModal, shellBare,
          swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
-         MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
+         MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_SHT, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
          MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
-         TABS, APP_FIRST_MONTH } from './constants.js';
+         TABS, APP_FIRST_MONTH, SHT_PAGE } from './constants.js';
 import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, pendRowKey, pledgeById, rowPendingKey,
@@ -27,6 +27,8 @@ import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
+import { formShtar, personById, saveShtar, shtClose, shtField, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
+         shtStatus, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
 import { formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
          viewSettings } from './screens/settings.js';
@@ -106,8 +108,11 @@ var BK_CFG = {
       { name: 'g_loan_moves',   order: 'client_id', ts: 'updated_at' },
       { name: 'g_events',       order: 'client_id', ts: 'updated_at' },
       { name: 'g_budget_items', order: 'client_id', ts: 'updated_at' },
+      { name: 'g_shtar_people', order: 'client_id', ts: 'updated_at' },
+      { name: 'g_shtar_calls',  order: 'client_id', ts: 'updated_at' },
       { name: KV_TABLE,         order: 'key',       ts: 'updated_at' },
-      { name: 'g_lookups',      order: 'client_id', ts: 'updated_at' }
+      { name: 'g_lookups',      order: 'client_id', ts: 'updated_at' },
+      { name: 'g_shtar_links',  order: 'client_id', ts: 'updated_at' }
     ];
   }
 };
@@ -178,10 +183,10 @@ var VIEW_LOADING = '<div class="view-loading" role="status" aria-label="טוען
 
 // הכפתור הצף — הוספה במסך שיש בו מה להוסיף; בלוח הבקרה ובהגדרות אין.
 var FAB_ACT = { cards: 'donor-new', plan: 'plan-new', tasks: 'task-new', notes: 'note-new',
-                loans: 'loan-new', budget: 'event-new' };
+                loans: 'loan-new', budget: 'event-new', shtarot: 'sht-new' };
 
 var VIEWS = { dash: viewDash, cards: viewCards, plan: viewPlan, tasks: viewTasks, notes: viewNotes,
-              loans: viewLoans, budget: viewBudget, settings: viewSettings };
+              loans: viewLoans, budget: viewBudget, shtarot: viewShtarot, settings: viewSettings };
 
 function tabOf(id) {
   var all = TABS.concat(MORE);
@@ -222,6 +227,8 @@ function renderShell() {
 
 function render() {
   renderShell();
+  // שטרות — מסך שכבר מצויר מתעדכן בחלקיו: הרשימה ארוכה, והכרטיס הפתוח נושא שדות ומקום גלילה.
+  if (state.screen === 'shtarot' && S.lastViewKey === 'shtarot' && shtRefresh()) return;
   $('#view').innerHTML = (VIEWS[state.screen] || viewDash)();
   // קופצים לראש רק במעבר מסך — render נקראת גם מהבדיקה המחזורית, וגלילה ללא תנאי הייתה מקפיצה את המסך באמצע עבודה.
   if (state.screen !== S.lastViewKey) { window.scrollTo(0, 0); S.lastViewKey = state.screen; }
@@ -229,6 +236,8 @@ function render() {
 
 // כניסה למסך — לוח הבקרה והתכנית בחודש של היום; הכרטיסים בלי סינון, לפי א״ב ובלי כרטיס פתוח.
 function go(screen) {
+  // איש שנשאר פתוח בשטרות — הנעילה שלו משתחררת ביציאה מהמסך.
+  if (state.sht.open) shtClose();
   state.screen = screen;
   var m = monthKeyOf(dayToday());
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
@@ -236,6 +245,7 @@ function go(screen) {
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false };
   if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
+  if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.lim = 0; state.sht.nav = []; }
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
   closeModal();
   render();
@@ -250,6 +260,12 @@ function tasksRefresh() {
 function loansRefresh() {
   var box = $('#loans-list');
   if (box) box.innerHTML = loansBodyHTML(); else render();
+}
+
+// בשטרות הרשימה ארוכה והכרטיס נושא שדות — הציור החלקי שומר על החיפוש, על הגלילה ועל מה שהוקלד.
+function shtListRefresh() {
+  var box = $('#sht-list');
+  if (box) box.innerHTML = shtListHTML(); else render();
 }
 
 function cardsRefresh() {
@@ -344,7 +360,7 @@ var DOM_ACTIONS = {
   },
   'pledge-del': function (el) { return delAsk(MSG_DEL_PLEDGE, 'g_pledges', el.dataset.id); },
   'pay-new': function (el) { formPay(null, el.dataset.pledge, el.dataset.donor); },
-  'method-pick': function (el) { methodPick(el); },
+  'method-pick': function (el) { if (el.dataset.target === 'sht-method') return shtMethodPick(el); methodPick(el); },
   'pay-edit': function (el) { var t = findIn(state.txns, el.dataset.id); if (t) formPay(t); },
   'pay-save': function (el) {
     return runSave(function () { return savePay(el.dataset.id, el.dataset.pledge); }, 'התשלום נשמר');
@@ -420,6 +436,19 @@ var DOM_ACTIONS = {
   'budget-save': function (el) { return runSave(function () { return saveBudget(el.dataset.id, el.dataset.event); }, 'נשמר'); },
   'budget-del': function (el) { return delAsk(MSG_DEL_BUDGET, 'g_budget_items', el.dataset.id); },
 
+  // ── שטרות ──
+  'sht-filter': function (el) { state.sht.f = el.dataset.v; state.sht.lim = 0; render(); },
+  'sht-more': function () { state.sht.lim = (state.sht.lim || SHT_PAGE) + SHT_PAGE * 4; shtListRefresh(); },
+  'sht-open': function (el) { return shtOpen(el.dataset.id); },
+  'sht-step': function (el) { return shtStep(+el.dataset.d); },
+  'sht-close': function () { shtClose(); render(); },
+  'sht-st': function (el) { return shtStatus(el.dataset.v); },
+  'sht-handled': function (el) { return shtHandled(el.dataset.id); },
+  'sht-new': function () { formShtar(null); },
+  'sht-edit': function (el) { var p = personById(el.dataset.id); if (p) formShtar(p); },
+  'sht-save': saver(saveShtar, 'נשמר'),
+  'sht-del': function (el) { return delAsk(MSG_DEL_SHT, 'g_shtar_people', el.dataset.id, function () { shtClose(); }); },
+
   // ── הגדרות: הרשימות ──
   // הזריעה קודמת לכל עריכה — רשימה שמוצגת מנקודת הפתיחה אינה נושאת שורות, ופריט אחד שנוסף היה מוחק את השאר.
   'look-add': function (el) {
@@ -491,6 +520,7 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'cards-q') { state.cards.q = el.value; cardsRefresh(); }
   if (el.dataset.inp === 'loans-q') { state.loansQ = el.value; loansRefresh(); }
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
+  if (el.dataset.inp === 'sht-q') { state.sht.q = el.value; state.sht.lim = 0; shtListRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
   if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
 });
@@ -501,6 +531,7 @@ document.addEventListener('change', function (e) {
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
+  if (el.dataset.chg === 'sht-fld') { shtField(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }

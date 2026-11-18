@@ -252,6 +252,9 @@ function applyMirrorToState() {
   state.loanMoves = liveRows('g_loan_moves');
   state.events  = liveRows('g_events');
   state.budget  = liveRows('g_budget_items');
+  state.shtarPeople = liveRows('g_shtar_people');
+  state.shtarCalls  = liveRows('g_shtar_calls');
+  state.shtarLinks  = liveRows('g_shtar_links');
 }
 
 // ── כתיבה מקומית ──
@@ -308,7 +311,8 @@ var PC_CHILDREN = {
              { t: 'g_plan_items', fk: 'donor_client_id' }],
   g_pledges: [{ t: 'g_txns', fk: 'pledge_client_id' }],
   g_events: [{ t: 'g_budget_items', fk: 'event_client_id' }],
-  g_loans: [{ t: 'g_loan_moves', fk: 'loan_client_id' }]
+  g_loans: [{ t: 'g_loan_moves', fk: 'loan_client_id' }],
+  g_shtar_people: [{ t: 'g_shtar_calls', fk: 'person_client_id' }]
 };
 
 // הכתיבה לבנים עוברת ב-upsertLocal ולא ב-update — update חותם Date.now() ומבטל את ירושת החותמת.
@@ -685,9 +689,9 @@ function donorMatches(q, aff, mode, pf) {
 
 export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
-         donorTotal, emptyBox, gSortBudget, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
+         donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
          gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,
          lookupPut, lookupRows, mirrorHasData, monthAmount, monthKeyOf, monthLabel, monthTxns, monthTxnsInit, nextSort, nullable,
-         num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
+         nowISO, num, ok, pendRowKey, planActual, planOfMonth, pledgeById, pledgeStatus, pledgesOfDonor,
          rowPendingKey, selectHTML, shiftMonth, softDelete, statusClass, stripRows, sum, syncNow,
          tableMeta, TARGET_DEFAULT_KEY, txnSoLabel, txnWhen, targetDefault, targetFor, targetOwn, txnsOfDonor, txnsOfPledge, uniqSorted, update, upsertBy, val, viewBare };

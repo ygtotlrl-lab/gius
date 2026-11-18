@@ -105,6 +105,9 @@ AS $function$
     'ANCHOR:g_budget_items', 'DIFF:g_budget_items',
     'ANCHOR:g_loan_moves', 'DIFF:g_loan_moves',
     'ANCHOR:g_events', 'DIFF:g_events',
+    'ANCHOR:g_shtar_people', 'DIFF:g_shtar_people',
+    'ANCHOR:g_shtar_calls', 'DIFF:g_shtar_calls',
+    'ANCHOR:g_shtar_links', 'DIFF:g_shtar_links',
     'ANCHOR:k_settings', 'DIFF:k_settings',
     'ANCHOR:k_pledges', 'DIFF:k_pledges',
     'ANCHOR:k_standing_orders', 'DIFF:k_standing_orders',
@@ -454,6 +457,83 @@ create table if not exists public.g_loan_moves (
 );
 create index if not exists g_loan_moves_loan_idx ON public.g_loan_moves USING btree (loan_client_id);
 
+-- שטרות — מועמדים להתרמה בטלפון. איש השטרות: טלפון ושם, או כרטיס בגיוס שהשם נשאב ממנו; מצבו ומספר הניסיונות נגזרים מהשיחות ואינם נשמרים.
+create table if not exists public.g_shtar_people (
+  client_id text not null,
+  donor_client_id text,
+  name text,
+  phone text not null,
+  db_name text,
+  wa_groups text,
+  sources text,
+  tried text,
+  past text,
+  note text,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_shtar_people_pkey PRIMARY KEY (client_id),
+  constraint g_shtar_people_donor_fk FOREIGN KEY (donor_client_id) REFERENCES public.g_donors(client_id) ON DELETE RESTRICT
+);
+create index if not exists g_shtar_people_phone_idx ON public.g_shtar_people USING btree (phone);
+
+-- שיחה — שורה לכל שיחה; התוצאה, השגריר המטלפן, סכום ואופן כשתרם, ומועד כשצריך לחזור.
+create table if not exists public.g_shtar_calls (
+  client_id text not null,
+  person_client_id text not null,
+  call_at timestamp with time zone not null,
+  ambassador text not null,
+  status text not null,
+  amount numeric(14,2),
+  method text,
+  callback_at timestamp with time zone,
+  note text,
+  handled boolean not null default false,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_shtar_calls_pkey PRIMARY KEY (client_id),
+  constraint g_shtar_calls_person_fk FOREIGN KEY (person_client_id) REFERENCES public.g_shtar_people(client_id) ON DELETE RESTRICT,
+  constraint g_shtar_calls_status_check CHECK (status in ('na', 'wrong', 'yes', 'int', 'cb', 'no', 'rmv'))
+);
+create index if not exists g_shtar_calls_person_idx ON public.g_shtar_calls USING btree (person_client_id);
+
+-- נעילה — איש שפתוח במכשיר; updated_at הוא סימן החיים האחרון, ו-device ריק הוא נעילה ששוחררה. אינה במראה.
+create table if not exists public.g_shtar_locks (
+  client_id text not null,
+  person_client_id text not null,
+  device text,
+  ambassador text,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_shtar_locks_pkey PRIMARY KEY (client_id),
+  constraint g_shtar_locks_person_key UNIQUE (person_client_id),
+  constraint g_shtar_locks_person_fk FOREIGN KEY (person_client_id) REFERENCES public.g_shtar_people(client_id) ON DELETE RESTRICT
+);
+
+-- קישור אישי לשגריר — הקוד שבקישור של דף השגרירים; השער בודק אותו.
+create table if not exists public.g_shtar_links (
+  client_id text not null,
+  ambassador_client_id text not null,
+  code text not null,
+  deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  created_at timestamp with time zone not null default now(),
+  updated_at bigint not null,
+  deleted_by text,
+  constraint g_shtar_links_pkey PRIMARY KEY (client_id),
+  constraint g_shtar_links_ambassador_key UNIQUE (ambassador_client_id),
+  constraint g_shtar_links_code_key UNIQUE (code),
+  constraint g_shtar_links_ambassador_fk FOREIGN KEY (ambassador_client_id) REFERENCES public.g_lookups(client_id) ON DELETE RESTRICT
+);
+
 create index if not exists g_donors_live_idx ON public.g_donors USING btree (deleted, name);
 create index if not exists g_lookups_kind_idx ON public.g_lookups USING btree (kind, sort);
 create index if not exists g_pledges_donor_full_idx ON public.g_pledges USING btree (donor_client_id);
@@ -505,6 +585,18 @@ grant all on table public.g_budget_items to service_role;
 revoke all on table public.g_loan_moves from anon, authenticated;
 grant select, insert, update on table public.g_loan_moves to anon, authenticated;
 grant all on table public.g_loan_moves to service_role;
+revoke all on table public.g_shtar_people from anon, authenticated;
+grant select, insert, update on table public.g_shtar_people to anon, authenticated;
+grant all on table public.g_shtar_people to service_role;
+revoke all on table public.g_shtar_calls from anon, authenticated;
+grant select, insert, update on table public.g_shtar_calls to anon, authenticated;
+grant all on table public.g_shtar_calls to service_role;
+revoke all on table public.g_shtar_locks from anon, authenticated;
+grant select, insert, update on table public.g_shtar_locks to anon, authenticated;
+grant all on table public.g_shtar_locks to service_role;
+revoke all on table public.g_shtar_links from anon, authenticated;
+grant select, insert, update on table public.g_shtar_links to anon, authenticated;
+grant all on table public.g_shtar_links to service_role;
 
 alter table public.g_donors enable row level security;
 drop policy if exists g_donors_all on public.g_donors;
@@ -545,3 +637,15 @@ create policy g_budget_items_all on public.g_budget_items as permissive for all 
 alter table public.g_loan_moves enable row level security;
 drop policy if exists g_loan_moves_all on public.g_loan_moves;
 create policy g_loan_moves_all on public.g_loan_moves as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_shtar_people enable row level security;
+drop policy if exists g_shtar_people_all on public.g_shtar_people;
+create policy g_shtar_people_all on public.g_shtar_people as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_shtar_calls enable row level security;
+drop policy if exists g_shtar_calls_all on public.g_shtar_calls;
+create policy g_shtar_calls_all on public.g_shtar_calls as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_shtar_locks enable row level security;
+drop policy if exists g_shtar_locks_all on public.g_shtar_locks;
+create policy g_shtar_locks_all on public.g_shtar_locks as permissive for all to anon, authenticated using (true) with check (true);
+alter table public.g_shtar_links enable row level security;
+drop policy if exists g_shtar_links_all on public.g_shtar_links;
+create policy g_shtar_links_all on public.g_shtar_links as permissive for all to anon, authenticated using (true) with check (true);

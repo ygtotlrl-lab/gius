@@ -26,6 +26,10 @@ var state = {
   planOpen: {},
   donors: [], pledges: [], txns: [], plan: [], tasks: [], targets: [],
   notes: [], loans: [], loanMoves: [], budget: [], events: [],
+  shtarPeople: [], shtarCalls: [], shtarLinks: [],
+  // שטרות — החיפוש, הסינון, האיש הפתוח, השיחה שנרשמה בפתיחה הזו, סדר «הקודם/הבא» ומספר השורות המוצגות;
+  // amb — השגריר המטלפן, נשאר בין איש לאיש.
+  sht: { q: '', f: 'queue', open: null, call: null, nav: [], lim: 0, amb: '' },
   // תקציב אירוע — האירוע הפתוח; כל האירועים סגורים בכניסה.
   budgetOpen: null,
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.

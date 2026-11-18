@@ -782,3 +782,47 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 /* שנים עשר חודשים ברוחב הנראה; מעבר להם — גלילה שמאלה */
 .fl-track .fl-col{flex:0 0 calc(100cqi / 12);min-width:52px}
 .fl-avg{position:absolute;inset-inline:0;bottom:calc(22px + var(--v) * 180px);border-top:2px dotted var(--brand-ink);pointer-events:none;z-index:1}
+
+/* ── שטרות ── */
+/* הלוח הקטן — שש קוביות, כל אחת גם סינון; שלוש בשורה בטלפון ושש במסך רחב. */
+.sht-dash{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4);margin:0 0 var(--sp-5)}
+.sht-k{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-1);min-width:0;font:inherit;color:inherit;text-align:start;cursor:pointer;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
+.sht-k span{font-size:var(--fs-2);color:var(--text-3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sht-k b{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);font-variant-numeric:tabular-nums;color:var(--brand-ink)}
+.sht-k small{font-size:var(--fs-2);color:var(--ok);font-weight:700;font-variant-numeric:tabular-nums}
+.sht-k.warn b{color:var(--warn)}
+.sht-k.bad b{color:var(--bad)}
+.sht-k.on{border-color:var(--brand-fill);box-shadow:0 0 0 1px var(--brand-fill);background:var(--brand-soft)}
+@media (min-width:900px){.sht-dash{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.sht-seg{display:flex;width:100%;overflow-x:auto}
+.sht-seg button{flex:1;white-space:nowrap}
+.sht-row{cursor:pointer}
+.sht-row .av .ico{width:18px;height:18px}
+.sht-row .main small{unicode-bidi:isolate}
+.sht-row .main b.unk{color:var(--text-3);font-weight:600}
+.sht-row.later{opacity:var(--op-5)}
+.sht-more{justify-content:center;margin-top:var(--sp-5)}
+/* כרטיס האיש — בחלון הכרטיס של גיוס: הפס בצבע הזהות, ומתחתיו העובדות, השיחה וההיסטוריה. */
+.sht-card a.cp-btn{text-decoration:none}
+.sht-card .cp-av .ico{width:24px;height:24px}
+.sht-facts{display:grid;gap:var(--sp-3);margin:0 0 var(--sp-6);background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-5);padding:var(--sp-5)}
+.sht-facts div{display:grid;grid-template-columns:8.5rem minmax(0,1fr);gap:var(--sp-4);font-size:var(--fs-3)}
+.sht-facts dt{color:var(--text-3);font-weight:600}
+.sht-facts dd{margin:0;overflow-wrap:anywhere}
+.sht-wait{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);background:var(--warn-soft);color:var(--warn);font-weight:700;
+  border-radius:var(--r-5);padding:var(--sp-4) var(--sp-5);margin-bottom:var(--sp-6)}
+.sht-os{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+.sht-o{font:inherit;font-size:var(--fs-3);font-weight:650;cursor:pointer;color:var(--text-2);background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
+.sht-o.on{background:var(--brand-fill);border-color:var(--brand-fill);color:var(--on-brand)}
+.sht-o.ok.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.sht-o.warn.on{background:var(--warn);border-color:var(--warn);color:#fff}
+.sht-o.bad.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.sht-card textarea.inp{resize:vertical;min-height:84px;font:inherit}
+.sht-hist{display:grid;gap:var(--sp-3);margin-bottom:var(--sp-6)}
+.sht-h{border:1px solid var(--border-2);border-radius:var(--r-5);padding:var(--sp-4) var(--sp-5);font-size:var(--fs-3);display:grid;gap:var(--sp-2)}
+.sht-h small{color:var(--text-3);font-size:var(--fs-2)}
+.sht-hn{color:var(--text-2);overflow-wrap:anywhere;white-space:pre-wrap}
+.sht-nav{display:flex;gap:var(--sp-4);border-top:1px solid var(--border);padding-top:var(--sp-5)}
+.sht-nav .btn{flex:1;justify-content:center}
