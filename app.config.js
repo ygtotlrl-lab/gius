@@ -23,9 +23,9 @@ self.APP = Object.freeze({
     // צבע כפתור הניסיון החוזר בדף האופליין של המעטפת
     accent: '#1c7278',
     // לעולם אינו יורד — בלי קידום המכשיר המותקן אינו מקבל את ה-APK החדש.
-    versionCode: 37,
+    versionCode: 38,
     versionName: '20.0',
-    launcherBg: { kind: 'gradient', angle: 315, start: '#1C7278', end: '#104650' },
+    launcherBg: { kind: 'solid', color: '#1E8188' },
     // אפליקציות אחרות שקישור intent: רשאי לפתוח — שם ⟵ חבילה; ריק — המעטפת אינה פותחת אף אחת
     launch: {},
     // כפתור «יציאה» שהמעטפת קולטת וסוגרת בו את האפליקציה
