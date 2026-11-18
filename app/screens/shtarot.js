@@ -4,7 +4,7 @@ import { errToast, idEq, newClientId, pendTag } from '../../core/sync.js';
 import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML, methodIcon,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME,
-         MSG_SHT_PHONE, SHT_BEAT_MS, SHT_LOCK_MS, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS } from '../constants.js';
+         MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS } from '../constants.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
@@ -46,6 +46,7 @@ function callById(id) {
   for (var i = 0; i < state.shtarCalls.length; i++) if (idEq(state.shtarCalls[i].client_id, id)) return state.shtarCalls[i];
   return null;
 }
+function isGive(c) { return SHT_GIVE.indexOf(c.status) >= 0; }
 function isToday(iso) { return new Date(iso).toDateString() === new Date().toDateString(); }
 
 // מצב האיש — נגזר מהשיחה האחרונה ואינו נשמר. rank — הסדר בתור:
@@ -73,10 +74,10 @@ var FILTERS = {
   int:   function (s) { return s.k === 'done' && s.last.status === 'int' && !s.last.handled; },
   rmv:   function (s) { return s.k === 'done' && s.last.status === 'rmv'; },
   today: function (s, p) { return callsOf(p.client_id).some(function (c) { return isToday(c.call_at); }); },
-  gave:  function (s, p) { return callsOf(p.client_id).some(function (c) { return c.status === 'yes' && isToday(c.call_at); }); }
+  gave:  function (s, p) { return callsOf(p.client_id).some(function (c) { return isGive(c) && isToday(c.call_at); }); }
 };
 var FILTER_TITLE = { queue: 'התור', cb: 'לחזור', 'new': 'טרם התקשרו', na: 'לא ענו', done: 'סיימו',
-                     int: 'לשלוח פרטים', rmv: 'להסיר מהרשימה', today: 'שיחות היום', gave: 'תרמו היום' };
+                     int: 'לשלוח פרטים', rmv: 'להסיר מהרשימה', today: 'שיחות היום', gave: 'תרומות היום' };
 
 function shtMatches() {
   var s = state.sht, q = String(s.q || '').trim().toLowerCase(), qd = digits(q), f = FILTERS[s.f] || FILTERS.queue;
@@ -105,9 +106,9 @@ function shtDashHTML() {
     ['queue', 'cb', 'int', 'rmv'].forEach(function (k) { if (FILTERS[k](st, p)) n[k]++; });
   });
   var today = state.shtarCalls.filter(function (c) { return isToday(c.call_at); });
-  var gave = today.filter(function (c) { return c.status === 'yes'; });
+  var gave = today.filter(isGive);
   var tiles = [['queue', 'בתור', n.queue], ['cb', 'לחזור', n.cb], ['today', 'שיחות היום', today.length],
-               ['gave', 'תרמו היום', gave.length, ils(sum(gave, function (c) { return c.amount; }))],
+               ['gave', 'תרומות היום', gave.length, ils(sum(gave, function (c) { return c.amount; }))],
                ['int', 'לשלוח פרטים', n.int], ['rmv', 'להסיר', n.rmv]];
   return tiles.map(function (t) {
     return '<button class="sht-k' + (state.sht.f === t[0] ? ' on' : '') + (t[0] === 'rmv' && t[2] ? ' bad' : '') + (t[0] === 'int' && t[2] ? ' warn' : '') +
@@ -118,6 +119,7 @@ function shtDashHTML() {
 function viewShtarot() {
   var s = state.sht;
   return '<section class="sht-dash" id="sht-dash">' + shtDashHTML() + '</section>' +
+    '<div id="sht-give">' + shtGiveHTML() + '</div>' +
     '<section class="card list-tools">' +
       '<label class="search-box"><input aria-label="חיפוש לפי שם או טלפון" class="inp search" id="sht-q" data-inp="sht-q" placeholder="חיפוש לפי שם או טלפון" value="' + esc(s.q) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
@@ -139,7 +141,23 @@ function stBadge(st) {
   if (st.k === 'cb') return '<span class="badge warn">' + (st.at ? 'לחזור ' + esc(whenShow(st.at)) : 'לחזור') + '</span>';
   if (st.k === 'na') return '<span class="badge">' + (st.rank === 3 ? 'לא ענה · שוב ב-' + esc(whenShow(st.at).slice(6)) : 'לא ענה') + '</span>';
   var d = SHT_STATUS[st.last.status] || { l: st.last.status, cls: '' };
-  return '<span class="badge ' + d.cls + '">' + esc(st.last.status === 'int' && st.last.handled ? 'פרטים נשלחו' : d.l) + '</span>';
+  return '<span class="badge ' + d.cls + '">' + esc(st.last.status === 'int' && st.last.handled ? 'פרטים נשלחו' : d.l + (isGive(st.last) && st.last.handled ? ' · אושר' : '')) + '</span>';
+}
+
+// ── תרומות לאישור ──
+// כל «תרם» ו«התחייב» ממתין כאן, מתחת ללוח, עד שמאשרים שהתרומה נעשתה בוודאות — ואז יורד; החדש למעלה.
+function shtGiveHTML() {
+  var list = state.shtarCalls.filter(function (c) { return isGive(c) && !c.handled && personById(c.person_client_id); })
+    .sort(function (a, b) { return Date.parse(b.call_at) - Date.parse(a.call_at); });
+  if (!list.length) return '';
+  return '<section class="card sht-give"><h2>תרומות לאישור<span class="cnt">' + list.length + '</span></h2>' + list.map(function (c) {
+    var p = personById(c.person_client_id), name = personName(p), d = SHT_STATUS[c.status];
+    return '<div class="row" data-act="sht-open" data-id="' + esc(p.client_id) + '">' +
+      '<div class="main"><b>' + esc(name || MSG_SHT_NO_NAME) + ' <span class="badge ' + d.cls + '">' + esc(d.l) + '</span>' + pendTag(pendRowKey('g_shtar_calls', c.client_id)) + '</b>' +
+        '<small>' + esc([whenShow(Date.parse(c.call_at)), c.ambassador, c.method].filter(Boolean).join(' · ')) + '</small></div>' +
+      '<div class="end sht-give-amt">' + (c.amount != null ? ils(c.amount) : '—') + '</div>' +
+      '<button class="btn sm" data-act="sht-handled" data-id="' + esc(c.client_id) + '">' + icon('check') + 'אישור</button></div>';
+  }).join('') + '</section>';
 }
 
 function shtListHTML() {
@@ -200,8 +218,8 @@ function shtCardHTML(p) {
       comboHTML('sht-amb', { id: 'sht-amb', label: 'שגריר מטלפן', placeholder: 'הקלדה לסינון…',
                              picked: s.amb ? { value: s.amb, label: s.amb } : null }) + '</div>' +
     '<div class="fld"><span>לא נוצר קשר</span><div class="sht-os">' + stBtn('na', st) + stBtn('wrong', st) + '</div></div>' +
-    '<div class="fld"><span>תוצאת השיחה</span><div class="sht-os">' + ['yes', 'int', 'cb', 'no', 'rmv'].map(function (k) { return stBtn(k, st); }).join('') + '</div></div>';
-  if (st === 'yes') {
+    '<div class="fld"><span>תוצאת השיחה</span><div class="sht-os">' + ['yes', 'pl', 'int', 'cb', 'no', 'rmv'].map(function (k) { return stBtn(k, st); }).join('') + '</div></div>';
+  if (cur && isGive(cur)) {
     h += '<label class="fld"><span>סכום</span><input class="inp" id="sht-amt" data-chg="sht-fld" inputmode="decimal" value="' + esc(cur.amount == null ? '' : cur.amount) + '"></label>' +
       '<div class="fld"><span>אמצעי</span><input type="hidden" id="sht-method" value="' + esc(cur.method || '') + '">' +
       methodGridHTML({ target: 'sht-method', list: lookupLabels(LK_METHOD), cur: cur.method || '', label: 'אמצעי',
@@ -239,6 +257,8 @@ function shtRefresh() {
   if (!dash || !list || !win) return false;
   dash.innerHTML = shtDashHTML();
   list.innerHTML = shtListHTML();
+  var give = $('#sht-give');
+  if (give) give.innerHTML = shtGiveHTML();
   document.querySelectorAll('.sht-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === state.sht.f); });
   var qi = $('#sht-q');
   if (qi && qi.value !== state.sht.q && document.activeElement !== qi) qi.value = state.sht.q;
@@ -319,8 +339,9 @@ function shtClose() {
 // השורה נכתבת כשנבחרת תוצאה; מכאן כל שדה נשמר בשינוי, ותוצאה אחרת באותה פתיחה מתקנת את אותה שיחה.
 function callFields(st) {
   var amt = $('#sht-amt'), when = val('sht-when');
-  return { amount: st === 'yes' && amt && amt.value.trim() !== '' ? readNum(amt, 0) : null,
-           method: st === 'yes' ? nullable(val('sht-method')) : null,
+  var give = SHT_GIVE.indexOf(st) >= 0;
+  return { amount: give && amt && amt.value.trim() !== '' ? readNum(amt, 0) : null,
+           method: give ? nullable(val('sht-method')) : null,
            callback_at: st === 'cb' && when ? new Date(when).toISOString() : null,
            note: nullable(val('sht-note')) };
 }
@@ -342,9 +363,10 @@ function shtField() {
   var f = callFields(cur.status);
   if (f.amount != null && !(f.amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   return update('g_shtar_calls', cur.client_id, f).then(function () {
-    var dash = $('#sht-dash'), list = $('#sht-list');
+    var dash = $('#sht-dash'), list = $('#sht-list'), give = $('#sht-give');
     if (dash) dash.innerHTML = shtDashHTML();
     if (list) list.innerHTML = shtListHTML();
+    if (give) give.innerHTML = shtGiveHTML();
   }).catch(errToast);
 }
 

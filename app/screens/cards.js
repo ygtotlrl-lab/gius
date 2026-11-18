@@ -135,7 +135,7 @@ function cardOpenHTML(d) {
       '<button class="btn soft sm" data-act="pay-new" data-donor="' + id + '">' + icon('plus') + 'תשלום</button>' +
       '<button class="btn sm" data-act="pledge-new" data-donor="' + id + '">' + icon('plus') + 'התחייבות</button>' +
     '</div><div class="cp-body">' +
-    (pl.length ? pl.map(function (p) { return pledgeRowHTML(p); }).join('') : '<div class="hint">אין התחייבויות. תרומה ששולמה מיד — התחייבות חדשה עם «הוספת תשלום מיידי».</div>') +
+    (pl.length ? pledgeGroupsHTML(pl) : '<div class="hint">אין התחייבויות. תרומה ששולמה מיד — התחייבות חדשה עם «הוספת תשלום מיידי».</div>') +
     '</div>' + timelineHTML(d);
   return h + '</div>';
 }
@@ -199,8 +199,16 @@ function cardShare(id) {
         '<span class="left"><small>נותר</small><b>' + ils(donorLeft(d.client_id)) + '</b></span></div>' +
     '</div>' +
     '<div class="cp-bar"><h4>התחייבויות<span class="cnt">' + pl.length + '</span></h4></div>' +
-    '<div class="cp-body">' + pl.map(function (p) { return pledgeRowHTML(p, true); }).join('') + '</div>';
+    '<div class="cp-body">' + pledgeGroupsHTML(pl, true) + '</div>';
   snapShare('<div class="copen snap-card">' + h + '</div>', 'כרטיס ' + d.name);
+}
+
+// ההתחייבויות בשני חלקים — הפתוחות למעלה, ומתחת לכותרת «הסתיימו» אלה שנגבו במלואן («בוצע»); כך גם בתמונה.
+function pledgeGroupsHTML(pl, img) {
+  var open = pl.filter(function (p) { return pledgeStatus(p) !== 'בוצע'; }), done = pl.filter(function (p) { return pledgeStatus(p) === 'בוצע'; });
+  var rows = function (list) { return list.map(function (p) { return pledgeRowHTML(p, img); }).join(''); };
+  return (open.length ? rows(open) : (done.length ? '<div class="hint">אין התחייבויות פתוחות.</div>' : '')) +
+    (done.length ? '<div class="pl-sub">הסתיימו<span class="cnt">' + done.length + '</span></div>' + rows(done) : '');
 }
 
 // תשלום — מוסלק מודגש, ושטרם נסלק חיוור; בלי מילה.

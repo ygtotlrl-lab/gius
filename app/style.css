@@ -830,3 +830,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .look-link{flex:none;display:inline-flex;align-items:center;gap:var(--sp-2);font:inherit;font-size:var(--fs-2);font-weight:650;cursor:pointer;
   color:var(--brand-ink);background:var(--brand-soft);border:0;border-radius:var(--r-6);padding:var(--sp-2) var(--sp-4)}
 .look-link .ico{width:15px;height:15px}
+/* תרומות לאישור — מתחת ללוח השטרות; הסכום בולט, ו«אישור» מוריד את השורה. */
+.sht-give .row{cursor:pointer}
+.sht-give-amt{font-weight:800;font-size:var(--fs-4);color:var(--ok)}
+.sht-o.gold.on{background:var(--gold);border-color:var(--gold);color:#fff}
+/* בכרטיס — ההתחייבויות שהסתיימו, תחת כותרת משלהן. */
+.pl-sub{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-weight:800;color:var(--text-3);padding:var(--sp-5) var(--sp-2) var(--sp-3)}
+.pl-sub .cnt{font-weight:700;background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}

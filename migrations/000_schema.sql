@@ -498,7 +498,7 @@ create table if not exists public.g_shtar_calls (
   deleted_by text,
   constraint g_shtar_calls_pkey PRIMARY KEY (client_id),
   constraint g_shtar_calls_person_fk FOREIGN KEY (person_client_id) REFERENCES public.g_shtar_people(client_id) ON DELETE RESTRICT,
-  constraint g_shtar_calls_status_check CHECK (status in ('na', 'wrong', 'yes', 'int', 'cb', 'no', 'rmv'))
+  constraint g_shtar_calls_status_check CHECK (status in ('na', 'wrong', 'yes', 'pl', 'int', 'cb', 'no', 'rmv'))
 );
 create index if not exists g_shtar_calls_person_idx ON public.g_shtar_calls USING btree (person_client_id);
 

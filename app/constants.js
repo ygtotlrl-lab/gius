@@ -55,16 +55,19 @@ var PLAN_KINDS = ['גבייה', 'התרמה'];
 var LOAN_STATUSES = ['להגשה', 'לטיפול', 'בהתראה', 'נמסר'];
 
 // ── השטרות ──
+// «תרם» ו«התחייב» — שתי תוצאות נפרדות, ושתיהן נושאות סכום ואמצעי (SHT_GIVE) וממתינות לאישור שהתרומה נעשתה.
 // תוצאת השיחה: fin — האיש יצא מהתור; בלי fin — «לא ענה» חוזר לתור אחרי SHT_RETRY_MS, ו«לחזור אליו» במועד שנקבע.
 var SHT_STATUS = {
   na:    { l: 'לא ענה', cls: '' },
   wrong: { l: 'מספר שגוי', cls: '', fin: true },
-  yes:   { l: 'תרם / התחייב', cls: 'ok', fin: true },
+  yes:   { l: 'תרם', cls: 'ok', fin: true },
+  pl:    { l: 'התחייב', cls: 'gold', fin: true },
   int:   { l: 'מעוניין — לשלוח פרטים', cls: 'brand', fin: true },
   cb:    { l: 'לחזור אליו', cls: 'warn' },
   no:    { l: 'לא מעוניין', cls: '', fin: true },
   rmv:   { l: 'להסיר מהרשימה', cls: 'bad', fin: true }
 };
+var SHT_GIVE = ['yes', 'pl'];
 var SHT_RETRY_MS = 2 * 60 * 60 * 1000;
 // נעילה בלי סימן חיים — משתחררת מעצמה; סימן החיים כל דקה.
 var SHT_LOCK_MS = 15 * 60 * 1000;
@@ -181,7 +184,7 @@ var EPS = 0.005;
 
 export { ASSIGNEES, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LK_AFFIL, LK_AMBASSADOR,
          LK_DOMAIN, LK_METHOD, LK_PTYPE, LK_SECTION, LOAN_STATUSES, MORE, MSG_DEL_SHT, MSG_SHT_AMB, MSG_SHT_DUP,
-         MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PHONE, SHT_BEAT_MS, SHT_LOCK_MS, SHT_PAGE, SHT_PAGE_URL, SHT_RETRY_MS, SHT_STATUS,
+         MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_PAGE, SHT_PAGE_URL, SHT_RETRY_MS, SHT_STATUS,
          METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_SO_COUNT, MSG_SO_FIRST, MSG_SO_FIRST_OVER, MSG_IMG_PREP, MSG_IMG_OFFLINE, MSG_IMG_FAIL, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_EVENT, MSG_NEED_EVENT_NAME, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_NEED_MOVE_AMOUNT,
          MSG_DEL_LOOKUP, MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT,
          MSG_DEL_TASK, MSG_DONOR_CREATED, MSG_MAYBE_STALE, MSG_MONTH_GOAL, MSG_NEED_DATE,
