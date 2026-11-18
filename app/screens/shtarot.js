@@ -72,12 +72,10 @@ var FILTERS = {
   na:    function (s) { return s.k === 'na'; },
   done:  function (s) { return s.k === 'done'; },
   int:   function (s) { return s.k === 'done' && s.last.status === 'int' && !s.last.handled; },
-  rmv:   function (s) { return s.k === 'done' && s.last.status === 'rmv'; },
-  today: function (s, p) { return callsOf(p.client_id).some(function (c) { return isToday(c.call_at); }); },
-  gave:  function (s, p) { return callsOf(p.client_id).some(function (c) { return isGive(c) && isToday(c.call_at); }); }
+  rmv:   function (s) { return s.k === 'done' && s.last.status === 'rmv'; }
 };
 var FILTER_TITLE = { queue: 'התור', cb: 'לחזור', 'new': 'טרם התקשרו', na: 'לא ענו', done: 'סיימו',
-                     int: 'לשלוח פרטים', rmv: 'להסיר מהרשימה', today: 'שיחות היום', gave: 'תרומות היום' };
+                     int: 'לשלוח פרטים', rmv: 'להסיר מהרשימה' };
 
 function shtMatches() {
   var s = state.sht, q = String(s.q || '').trim().toLowerCase(), qd = digits(q), f = FILTERS[s.f] || FILTERS.queue;
@@ -99,20 +97,14 @@ function shtMatches() {
 }
 
 // ── המסך ──
+// הלוח — נתונים בלבד, לא סינון: כמה בתור, וכמה שיחות ותרומות היו היום. מה שממתין לפעולה — בשורת הסינון וברכיבים שמתחת ללוח.
 function shtDashHTML() {
-  var n = { queue: 0, cb: 0, int: 0, rmv: 0 };
-  state.shtarPeople.forEach(function (p) {
-    var st = pState(p);
-    ['queue', 'cb', 'int', 'rmv'].forEach(function (k) { if (FILTERS[k](st, p)) n[k]++; });
-  });
+  var queue = 0;
+  state.shtarPeople.forEach(function (p) { if (pState(p).k !== 'done') queue++; });
   var today = state.shtarCalls.filter(function (c) { return isToday(c.call_at); });
   var gave = today.filter(isGive);
-  var tiles = [['queue', 'בתור', n.queue], ['cb', 'לחזור', n.cb], ['today', 'שיחות היום', today.length],
-               ['gave', 'תרומות היום', gave.length, ils(sum(gave, function (c) { return c.amount; }))],
-               ['int', 'לשלוח פרטים', n.int], ['rmv', 'להסיר', n.rmv]];
-  return tiles.map(function (t) {
-    return '<button class="sht-k' + (state.sht.f === t[0] ? ' on' : '') + (t[0] === 'rmv' && t[2] ? ' bad' : '') + (t[0] === 'int' && t[2] ? ' warn' : '') +
-      '" data-act="sht-filter" data-v="' + t[0] + '"><span>' + t[1] + '</span><b>' + t[2] + '</b>' + (t[3] ? '<small>' + t[3] + '</small>' : '') + '</button>';
+  return [['בתור', queue], ['שיחות היום', today.length], ['תרומות היום', gave.length], ['סכום היום', ils(sum(gave, function (c) { return c.amount; })), 'ok']].map(function (t) {
+    return '<div class="sht-k' + (t[2] ? ' ' + t[2] : '') + '"><span>' + t[0] + '</span><b>' + t[1] + '</b></div>';
   }).join('');
 }
 
@@ -124,7 +116,7 @@ function viewShtarot() {
       '<label class="search-box"><input aria-label="חיפוש לפי שם או טלפון" class="inp search" id="sht-q" data-inp="sht-q" placeholder="חיפוש לפי שם או טלפון" value="' + esc(s.q) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
       '<div class="seg sht-seg" role="group" aria-label="סינון">' +
-      [['queue', 'כל התור'], ['cb', 'לחזור'], ['new', 'טרם התקשרו'], ['na', 'לא ענו'], ['done', 'סיימו']].map(function (o) {
+      [['queue', 'כל התור'], ['cb', 'לחזור'], ['new', 'טרם התקשרו'], ['na', 'לא ענו'], ['int', 'לשלוח פרטים'], ['rmv', 'להסיר'], ['done', 'סיימו']].map(function (o) {
         return '<button class="' + (s.f === o[0] ? 'on' : '') + '" data-act="sht-filter" data-v="' + o[0] + '">' + o[1] + '</button>';
       }).join('') + '</div></section>' +
     '<section class="card" id="sht-list">' + shtListHTML() + '</section>' +

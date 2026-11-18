@@ -784,19 +784,16 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fl-avg{position:absolute;inset-inline:0;bottom:calc(22px + var(--v) * 180px);border-top:2px dotted var(--brand-ink);pointer-events:none;z-index:1}
 
 /* ── שטרות ── */
-/* הלוח הקטן — שש קוביות, כל אחת גם סינון; שלוש בשורה בטלפון ושש במסך רחב. */
-.sht-dash{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-4);margin:0 0 var(--sp-5)}
-.sht-k{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-1);min-width:0;font:inherit;color:inherit;text-align:start;cursor:pointer;
-  background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
-.sht-k span{font-size:var(--fs-2);color:var(--text-3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* הלוח הקטן — ארבע קוביות של נתונים בלבד: שתיים בשורה בטלפון וארבע במסך רחב; המספרים בצבע הזהות, והסכום בירוק. */
+.sht-dash{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-4);margin:0 0 var(--sp-5)}
+.sht-k{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
+.sht-k span{font-size:var(--fs-2);color:var(--text-3);font-weight:600}
 .sht-k b{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);font-variant-numeric:tabular-nums;color:var(--brand-ink)}
-.sht-k small{font-size:var(--fs-2);color:var(--ok);font-weight:700;font-variant-numeric:tabular-nums}
-.sht-k.warn b{color:var(--warn)}
-.sht-k.bad b{color:var(--bad)}
-.sht-k.on{border-color:var(--brand-fill);box-shadow:0 0 0 1px var(--brand-fill);background:var(--brand-soft)}
-@media (min-width:900px){.sht-dash{grid-template-columns:repeat(6,minmax(0,1fr))}}
-.sht-seg{display:flex;width:100%;overflow-x:auto}
-.sht-seg button{flex:1;white-space:nowrap}
+.sht-k.ok b{color:var(--ok)}
+@media (min-width:640px){.sht-dash{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* שורת הסינון — שבע אפשרויות, נשברת לשורות בטלפון. */
+.sht-seg{display:flex;flex-wrap:wrap;width:100%}
+.sht-seg button{flex:1 1 auto;white-space:nowrap}
 .sht-row{cursor:pointer}
 .sht-row .av .ico{width:18px;height:18px}
 .sht-row .main small{unicode-bidi:isolate}
