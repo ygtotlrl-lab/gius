@@ -851,7 +851,8 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 @media (max-width:639px){
   .sht-side{position:absolute;top:var(--sp-5);inset-inline-end:var(--sp-5)}
   .sht-side .cp-acts{position:static}
-  .sht-card .cp-who h3{padding-inline-end:164px;min-height:64px}
+  .sht-card .cp-who{min-height:64px}
+  .sht-card .cp-who h3{padding-inline-end:164px}
 }
 /* בתמונה — ראשי התיבות במרכז העיגול: html2canvas מציב טקסט ברשת נמוך מהאמצע, ולכן שורה בגובה העיגול. */
 .snap .cp-av{display:block;box-sizing:border-box;line-height:48px;padding-bottom:8px;text-align:center}
