@@ -792,9 +792,11 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sht-k.ok b{color:var(--ok)}
 @media (min-width:640px){.sht-dash{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* שורת הסינון — כפתור לכל אפשרות, כולם ברוחב אחד: הבחירה אינה משנה את גודל הכפתור; שניים בשורה בטלפון, וחמישה מ-640px. */
-.sht-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+.sht-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex:2 1 16rem;min-width:0}
+.sht-tools select{flex:1 1 9rem}
 .sht-seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:var(--sp-2)}
-@media (min-width:640px){.sht-seg{grid-template-columns:repeat(5,minmax(0,1fr))}}
+/* «לפי תוצאה» — כשנבחרה תוצאה, הבורר מסומן כמו כפתור פעיל. */
+.sht-tools select.on{border-color:var(--brand-fill);background:var(--brand-soft);color:var(--brand-ink);font-weight:700}
 .sht-row{cursor:pointer}
 .sht-row .av .ico{width:18px;height:18px}
 .sht-row .main small{unicode-bidi:isolate}

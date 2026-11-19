@@ -108,6 +108,16 @@ function shtDashHTML() {
   }).join('');
 }
 
+// «לפי תוצאה» — בורר אחד לשמונה התוצאות, בסדר התפריט שבשיחה, וליד כל אחת — כמה שזו תוצאת השיחה האחרונה שלהם.
+function shtResHTML() {
+  var n = {}, f = state.sht.f;
+  state.shtarPeople.forEach(function (p) { var st = pState(p); if (st.last) n[st.last.status] = (n[st.last.status] || 0) + 1; });
+  return '<select class="inp' + (SHT_STATUS[f] ? ' on' : '') + '" id="sht-res" aria-label="סינון לפי תוצאה" data-chg="sht-res">' +
+    '<option value="">לפי תוצאה</option>' + FILTER_LIST.slice(2).map(function (o) {
+      return '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + esc(o[1]) + ' · ' + (n[o[0]] || 0) + '</option>';
+    }).join('') + '</select>';
+}
+
 function viewShtarot() {
   var s = state.sht;
   return '<section class="sht-dash" id="sht-dash">' + shtDashHTML() + '</section>' +
@@ -115,10 +125,10 @@ function viewShtarot() {
     '<section class="card list-tools">' +
       '<label class="search-box"><input aria-label="חיפוש לפי שם או טלפון" class="inp search" id="sht-q" data-inp="sht-q" placeholder="חיפוש לפי שם או טלפון" value="' + esc(s.q) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
-      '<div class="seg sht-seg" role="group" aria-label="סינון">' +
-      FILTER_LIST.map(function (o) {
+      '<div class="tools-row sht-tools"><div class="seg sht-seg" role="group" aria-label="סינון">' +
+      FILTER_LIST.slice(0, 2).map(function (o) {
         return '<button class="' + (s.f === o[0] ? 'on' : '') + '" data-act="sht-filter" data-v="' + o[0] + '">' + o[1] + '</button>';
-      }).join('') + '</div></section>' +
+      }).join('') + '</div>' + shtResHTML() + '</div></section>' +
     '<section class="card" id="sht-list">' + shtListHTML() + '</section>' +
     '<div id="sht-win">' + shtWinHTML() + '</div>';
 }
@@ -260,6 +270,8 @@ function shtRefresh() {
   var give = $('#sht-give');
   if (give) give.innerHTML = shtGiveHTML();
   document.querySelectorAll('.sht-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === state.sht.f); });
+  var res = $('#sht-res');
+  if (res && document.activeElement !== res) res.outerHTML = shtResHTML();
   var qi = $('#sht-q');
   if (qi && qi.value !== state.sht.q && document.activeElement !== qi) qi.value = state.sht.q;
   var inn = $('.cw-in', win), p = state.sht.open && personById(state.sht.open);

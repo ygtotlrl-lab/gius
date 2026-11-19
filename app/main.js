@@ -541,6 +541,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
   if (el.dataset.chg === 'sc-status') { callStatusPick(el.value); return; }
+  if (el.dataset.chg === 'sht-res') { state.sht.f = el.value || 'queue'; state.sht.lim = 0; render(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
