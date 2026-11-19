@@ -112,8 +112,8 @@ function cardOpenHTML(d) {
   var pl = gSortPledges(pledgesOfDonor(d.client_id));
   var total = donorTotal(d.client_id), paid = donorPaid(d.client_id), left = donorLeft(d.client_id);
   var chips = [d.ambassador ? 'שגריר: ' + d.ambassador : '', d.role, d.phone].concat(d.affiliations || []).filter(Boolean);
-  var h = '<div class="copen">' +
-    '<div class="cp-band">' +
+  var h = '<div class="copen cw-card">' +
+    '<div class="cp-band cw-band">' +
       '<span class="cp-av">' + esc(initials(d.name)) + '</span>' +
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
         (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +

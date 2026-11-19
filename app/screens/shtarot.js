@@ -231,8 +231,8 @@ function shtCardHTML(p) {
   var facts = [['תרומות קודמות', p.past], ['שם במאגר', p.db_name], ['קבוצות וואטסאפ', p.wa_groups], ['מופיע במאגרים', p.sources],
                ['ניסה לתרום', p.tried], ['הערה', p.note]].filter(function (f) { return f[1]; });
   var hist = cs.filter(function (c) { return !cur || c.client_id !== cur.client_id; }).reverse();
-  var h = '<div class="copen sht-card">' +
-    '<div class="cp-band">' +
+  var h = '<div class="copen sht-card cw-card">' +
+    '<div class="cp-band cw-band">' +
       '<span class="cp-av">' + (name ? esc(initials(name)) : icon('call')) + '</span>' +
       '<div class="cp-who"><h3>' + esc(name || MSG_SHT_NO_NAME) + '</h3>' +
         (p.donor_client_id ? '<div class="cp-chips"><span>כרטיס בגיוס</span></div>' : '') + '</div>' +
