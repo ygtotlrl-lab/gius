@@ -68,8 +68,13 @@ function pState(p) {
 // הסינון — «כל התור», «טרם התקשרו», וכפתור לכל תוצאה, בשמה ובסדרה כמו בתפריט התוצאות שבשיחה: מי שזו תוצאת השיחה האחרונה שלו.
 var FILTERS = { queue: function (s) { return s.k !== 'done'; }, 'new': function (s) { return s.k === 'new'; } };
 var FILTER_LIST = [['queue', 'כל התור'], ['new', 'טרם התקשרו']];
+// «נסלק» — מעל «תרם»: מי ששיחת ה«תרם» האחרונה שלו סומנה שנסלקה; ו«תרם» — מי שטרם נסלק.
 Object.keys(SHT_STATUS).forEach(function (k) {
-  FILTERS[k] = function (s) { return !!s.last && s.last.status === k; };
+  if (k === 'yes') {
+    FILTERS.cleared = function (s) { return !!s.last && s.last.status === 'yes' && !!s.last.handled; };
+    FILTER_LIST.push(['cleared', 'נסלק']);
+    FILTERS.yes = function (s) { return !!s.last && s.last.status === 'yes' && !s.last.handled; };
+  } else FILTERS[k] = function (s) { return !!s.last && s.last.status === k; };
   FILTER_LIST.push([k, SHT_STATUS[k].l]);
 });
 
@@ -125,8 +130,11 @@ function shtDashHTML() {
 // «לפי תוצאה» — בורר אחד לשמונה התוצאות, בסדר התפריט שבשיחה, וליד כל אחת — כמה שזו תוצאת השיחה האחרונה שלהם.
 function shtResHTML() {
   var n = {}, f = state.sht.f;
-  state.shtarPeople.forEach(function (p) { var st = pState(p); if (st.last) n[st.last.status] = (n[st.last.status] || 0) + 1; });
-  return '<select class="inp' + (SHT_STATUS[f] ? ' on' : '') + '" id="sht-res" aria-label="סינון לפי תוצאה" data-chg="sht-res">' +
+  state.shtarPeople.forEach(function (p) {
+    var st = pState(p);
+    FILTER_LIST.slice(2).forEach(function (o) { if (FILTERS[o[0]](st)) n[o[0]] = (n[o[0]] || 0) + 1; });
+  });
+  return '<select class="inp' + (FILTER_LIST.slice(2).some(function (o) { return o[0] === f; }) ? ' on' : '') + '" id="sht-res" aria-label="סינון לפי תוצאה" data-chg="sht-res">' +
     '<option value="">לפי תוצאה</option>' + FILTER_LIST.slice(2).map(function (o) {
       return '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + esc(o[1]) + ' · ' + (n[o[0]] || 0) + '</option>';
     }).join('') + '</select>';
@@ -157,7 +165,7 @@ function stBadge(st) {
   if (st.k === 'cb') return '<span class="badge warn">' + (st.at ? 'לחזור ' + esc(whenShow(st.at)) : 'לחזור') + '</span>';
   if (st.k === 'na') return '<span class="badge">' + (st.rank === 3 ? 'לא ענה · שוב ב-' + esc(whenShow(st.at).slice(6)) : 'לא ענה') + '</span>';
   var d = SHT_STATUS[st.last.status] || { l: st.last.status, cls: '' };
-  return '<span class="badge ' + d.cls + '">' + esc(st.last.status === 'int' && st.last.handled ? 'פרטים נשלחו' : d.l + (isGive(st.last) && st.last.handled ? ' · אושר' : '')) + '</span>';
+  return '<span class="badge ' + d.cls + '">' + esc(st.last.status === 'int' && st.last.handled ? 'פרטים נשלחו' : st.last.status === 'yes' && st.last.handled ? 'נסלק' : d.l + (isGive(st.last) && st.last.handled ? ' · אושר' : '')) + '</span>';
 }
 
 // ── ממתינים לטיפול ──
@@ -438,6 +446,10 @@ function nextOf(c) { for (var i = 0; i < SHT_NEXT.length; i++) if (SHT_NEXT[i][0
 function formNext(c) {
   var nx = nextOf(c), p = personById(c.person_client_id);
   if (!nx || !p) return;
+  // «נסלק» — שאלה אחת, והסימון «טופל» על שיחת ה«תרם»; בלי שיחה חדשה.
+  if (!nx[2].length) return ask('נסלק', 'לסמן שהתרומה של ' + (personName(p) || MSG_SHT_NO_NAME) + (c.amount != null ? ' (' + ils(c.amount) + ')' : '') + ' נסלקה?', 'נסלק')
+    .then(function (yes) { if (yes) return update('g_shtar_calls', c.client_id, { handled: true }).then(function () { toast('סומן שנסלק', null, 'good'); shtRefresh(); }); })
+    .catch(errToast);
   var to = nx[2], one = to.length === 1;
   openModal((personName(p) || MSG_SHT_NO_NAME) + ' · ' + nx[1],
     '<div class="fld"><span>' + 'המצב הבא' + '</span><input type="hidden" id="sn-to" value="' + (one ? to[0] : '') + '">' +
