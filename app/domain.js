@@ -107,13 +107,10 @@ function gSortTxns(list) {
   });
 }
 
-// התחייבויות — בסדר הרישום.
-// התחייבויות בכרטיס — לפי הנותר לגבות, מהגבוה; בשוויון — בסדר הרישום.
+// התחייבויות בכרטיס — לפי התאריך (`created_at`), מהחדש; בשוויון — הסכום, מהגבוה.
 function gSortPledges(list) {
-  var left = {};
-  var lf = function (p) { return left[p.client_id] != null ? left[p.client_id] : (left[p.client_id] = leftForPledge(p)); };
   return list.slice().sort(function (a, b) {
-    return (lf(b) - lf(a)) || sortCompare(String(a.created_at || ''), String(b.created_at || ''));
+    return sortCompare(String(b.created_at || ''), String(a.created_at || '')) || ((+b.amount || 0) - (+a.amount || 0));
   });
 }
 
