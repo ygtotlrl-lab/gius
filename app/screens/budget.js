@@ -2,7 +2,7 @@
 import { readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { MSG_NEED_EVENT_NAME, MSG_NEED_ITEM } from '../constants.js';
+import { MSG_NEED_EVENT_NAME, MSG_NEED_ITEM, TTL_EVENT_EDIT, TTL_EVENT_NEW, TTL_EXP_EDIT, TTL_EXP_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, dmyDate, emptyBox, gSortBudget, gSortEvents, ils, insert, nextSort, nullable, pendRowKey, sum, uniqSorted,
@@ -46,7 +46,7 @@ function viewBudget() {
 }
 
 function formEvent(e) {
-  openModal(e ? 'עריכת אירוע' : 'אירוע חדש',
+  openModal(e ? TTL_EVENT_EDIT : TTL_EVENT_NEW,
     '<label class="fld"><span>שם האירוע *</span><input class="inp" id="e-name" value="' + esc(e ? e.name : '') + '"></label>' +
     '<label class="fld"><span>תאריך</span><input class="inp" type="date" id="e-date" value="' + esc(e && e.event_date ? e.event_date : '') + '"></label>' +
     '<label class="fld"><span>הערה</span><input class="inp" id="e-note" value="' + esc(e ? e.note || '' : '') + '"></label>',
@@ -71,7 +71,7 @@ function saveEvent(id) {
 function formBudget(b, evId) {
   var cats = uniqSorted(state.budget.map(function (x) { return x.category; }));
   var ev = b ? b.event_client_id : evId;
-  openModal(b ? 'עריכת הוצאה' : 'הוצאה חדשה',
+  openModal(b ? TTL_EXP_EDIT : TTL_EXP_NEW,
     '<label class="fld"><span>פריט *</span><input class="inp" id="b-item" value="' + esc(b ? b.item : '') + '"></label>' +
     '<div class="f2">' +
       '<label class="fld"><span>קטגוריה</span><input class="inp" id="b-cat" list="b-cats" value="' + esc(b ? b.category || '' : '') + '"></label>' +

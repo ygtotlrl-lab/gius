@@ -14,7 +14,7 @@ import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, 
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
          MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_SHT, MSG_DEL_SHT_CALL, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
          MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
-         TABS, APP_FIRST_MONTH, SHT_PAGE } from './constants.js';
+         TABS, APP_FIRST_MONTH, SHT_PAGE, MSG_CALL_SAVED, MSG_DELETED, MSG_GOAL_DEFAULT_SAVED, MSG_GOAL_RESET, MSG_GOAL_SAVED, MSG_REMOVED, MSG_SAVED, MSG_SHT_MOVED, MSG_TASK_SAVED, TTL_MORE } from './constants.js';
 import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, pendRowKey, pledgeById, rowPendingKey,
@@ -296,9 +296,9 @@ function findIn(list, id) {
 
 // מחיקה רכה אחרי אישור — ומחיקת אב מפילה איתה את הבנים (PC_CHILDREN).
 function delAsk(msg, table, id, done) {
-  return ask(MSG_DELETE_ACT, msg + MSG_DEL_SOFT, MSG_DELETE_ACT).then(function (yes) {
+  return ask(MSG_DELETE_ACT, msg + MSG_DEL_SOFT, MSG_DELETE_ACT, null, null, true).then(function (yes) {
     if (!yes) return;
-    return softDelete(table, id).then(function () { if (done) done(); return afterSave('נמחק'); }).catch(errToast);
+    return softDelete(table, id).then(function () { if (done) done(); return afterSave(MSG_DELETED); }).catch(errToast);
   });
 }
 
@@ -312,7 +312,7 @@ var DOM_ACTIONS = {
   'pend-alert-ok':       function () { pendAlertDismiss(); },
   'tab': function (el) { go(el.dataset.tab); },
   'more': function () {
-    openModal('עוד', '<div class="more-tiles">' + MORE.map(function (t) {
+    openModal(TTL_MORE, '<div class="more-tiles">' + MORE.map(function (t) {
       return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
         '<span class="ic">' + icon(t.ic) + '</span><span>' + esc(t.label) + '</span></button>';
     }).join('') + '</div>', '');
@@ -349,7 +349,7 @@ var DOM_ACTIONS = {
   },
   'donor-new': function () { formDonor(null); },
   'donor-edit': function (el) { formDonor(donorById(el.dataset.id)); },
-  'donor-save': saver(saveDonor, 'נשמר'),
+  'donor-save': saver(saveDonor, MSG_SAVED),
   'donor-del': function (el) {
     return delAsk(MSG_DEL_DONOR, 'g_donors', el.dataset.id, function () { state.cards.open = null; });
   },
@@ -375,7 +375,7 @@ var DOM_ACTIONS = {
   'plan-month': function (el) { var k = shiftMonth(state.planMonth, +el.dataset.d); if (k < APP_FIRST_MONTH) return; state.planMonth = k; render(); },
   'plan-new': function () { formPlan(null); },
   'plan-edit': function (el) { var r = findIn(state.plan, el.dataset.id); if (r) formPlan(r); },
-  'plan-save': saver(savePlan, 'נשמר'),
+  'plan-save': saver(savePlan, MSG_SAVED),
   'plan-del': function (el) { return delAsk(MSG_DEL_PLAN, 'g_plan_items', el.dataset.id); },
   // ידני בלבד — השורה יורדת לתחתית ואינה נספרת בצפי ובבפועל.
   'plan-irr': function (el) {
@@ -404,36 +404,36 @@ var DOM_ACTIONS = {
     if (!t) return;
     return update('g_tasks', t.client_id, { starred: !t.starred }).then(function () { render(); }).catch(errToast);
   },
-  'task-save': saver(saveTask, 'המשימה נשמרה'),
+  'task-save': saver(saveTask, MSG_TASK_SAVED),
   'task-del': function (el) { return delAsk(MSG_DEL_TASK, 'g_tasks', el.dataset.id); },
 
   // ── רשומות · הלוואות · תקציב ──
   'note-new': function () { formNote(null); },
   'note-edit': function (el) { var n = findIn(state.notes, el.dataset.id); if (n) formNote(n); },
-  'note-close': function () { return runSave(function () { return closeNoteFull(true); }, 'נשמר'); },
+  'note-close': function () { return runSave(function () { return closeNoteFull(true); }, MSG_SAVED); },
   'note-del': function (el) { return delAsk(MSG_DEL_NOTE, 'g_notes', el.dataset.id, function () { closeNoteFull(false); }); },
   'loan-new': function () { formLoan(null); },
   'loans-sort': function (el) { state.loansSort = el.dataset.v; render(); },
   'loan-edit': function (el) { var l = findIn(state.loans, el.dataset.id); if (l) formLoan(l); },
-  'loan-save': saver(saveLoan, 'נשמר'),
+  'loan-save': saver(saveLoan, MSG_SAVED),
   'loan-del': function (el) {
     return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id, function () { if (state.loansOpen === el.dataset.id) state.loansOpen = null; });
   },
   'loan-toggle': function (el) { state.loansOpen = state.loansOpen === el.dataset.id ? null : el.dataset.id; render(); },
-  'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, 'נשמר'); },
+  'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, MSG_SAVED); },
   'loan-move-edit': function (el) { var m = findIn(state.loanMoves, el.dataset.id); if (m) formLoanMove(m); },
-  'loan-move-save': saver(saveLoanMove, 'נשמר'),
+  'loan-move-save': saver(saveLoanMove, MSG_SAVED),
   'loan-move-del': function (el) { return delAsk(MSG_DEL_LOAN_MOVE, 'g_loan_moves', el.dataset.id); },
   'event-new': function () { formEvent(null); },
   'event-edit': function (el) { var e = findIn(state.events, el.dataset.id); if (e) formEvent(e); },
-  'event-save': saver(saveEvent, 'נשמר'),
+  'event-save': saver(saveEvent, MSG_SAVED),
   'event-del': function (el) {
     return delAsk(MSG_DEL_EVENT, 'g_events', el.dataset.id, function () { if (state.budgetOpen === el.dataset.id) state.budgetOpen = null; });
   },
   'event-toggle': function (el) { state.budgetOpen = state.budgetOpen === el.dataset.id ? null : el.dataset.id; render(); },
   'budget-new': function (el) { formBudget(null, el.dataset.event); },
   'budget-edit': function (el) { var b = findIn(state.budget, el.dataset.id); if (b) formBudget(b); },
-  'budget-save': function (el) { return runSave(function () { return saveBudget(el.dataset.id, el.dataset.event); }, 'נשמר'); },
+  'budget-save': function (el) { return runSave(function () { return saveBudget(el.dataset.id, el.dataset.event); }, MSG_SAVED); },
   'budget-del': function (el) { return delAsk(MSG_DEL_BUDGET, 'g_budget_items', el.dataset.id); },
 
   // ── שטרות ──
@@ -443,18 +443,18 @@ var DOM_ACTIONS = {
   'sht-step': function (el) { return shtStep(+el.dataset.d); },
   'sht-close': function () { shtClose(); render(); },
   'sht-st': function (el) { shtStatusPick(el); },
-  'sht-call-save': function () { return runSave(shtCallSave, 'השיחה נשמרה'); },
+  'sht-call-save': function () { return runSave(shtCallSave, MSG_CALL_SAVED); },
   'sht-call-edit': function (el) { var c = callById(el.dataset.id); if (c) formCall(c); },
-  'sht-call-update': saver(saveCall, 'השיחה נשמרה'),
+  'sht-call-update': saver(saveCall, MSG_CALL_SAVED),
   'sht-call-del': function (el) {
     return delAsk(MSG_DEL_SHT_CALL, 'g_shtar_calls', el.dataset.id, function () { if (state.sht.call === el.dataset.id) state.sht.call = null; });
   },
   'sht-next': function (el) { var c = callById(el.dataset.id); if (c) formNext(c); },
   'sht-next-to': function (el) { shtNextTo(el); },
-  'sht-next-save': saver(saveNext, 'הועבר'),
+  'sht-next-save': saver(saveNext, MSG_SHT_MOVED),
   'sht-new': function () { formShtar(null); },
   'sht-edit': function (el) { var p = personById(el.dataset.id); if (p) formShtar(p); },
-  'sht-save': saver(saveShtar, 'נשמר'),
+  'sht-save': saver(saveShtar, MSG_SAVED),
   'sht-del': function (el) { return delAsk(MSG_DEL_SHT, 'g_shtar_people', el.dataset.id, function () { shtClose(); }); },
 
   // בהגדרות, ליד כל שגריר — הקישור האישי שלו לדף השטרות.
@@ -491,27 +491,27 @@ var DOM_ACTIONS = {
                       sort: lookupRows(kind).length + 1, deleted: false, deleted_at: null };
       lookupPut(row);
       return row;
-    }, 'נשמר');
+    }, MSG_SAVED);
   },
   'look-del': function (el) {
     var r = lookupById(el.dataset.id);
     if (!r) { uiNoDialog('look-del', el.dataset.id); return; }
-    return ask(MSG_DELETE_ACT, MSG_DEL_LOOKUP, MSG_DELETE_ACT).then(function (yes) {
+    return ask(MSG_DELETE_ACT, MSG_DEL_LOOKUP, MSG_DELETE_ACT, null, null, true).then(function (yes) {
       if (!yes) return;
       // המחיקה סימון וחותמת על אותה שורה — tombKill חותם את deleted_at ברגע ה-updated_at שלה.
       lookupPut(tombKill(Object.assign({}, r)));
-      return afterSave('הוסר');
+      return afterSave(MSG_REMOVED);
     });
   },
 
   // ── הגדרות: יעד ──
   'target-set': function (el) { formTarget(el.dataset.month || state.month); },
-  'target-save': function () { return runSave(saveTarget, 'היעד נשמר'); },
+  'target-save': function () { return runSave(saveTarget, MSG_GOAL_SAVED); },
   'target-clear': function (el) {
-    return softDelete('g_targets', el.dataset.id).then(function () { return afterSave('החודש חזר ליעד הקבוע'); }).catch(errToast);
+    return softDelete('g_targets', el.dataset.id).then(function () { return afterSave(MSG_GOAL_RESET); }).catch(errToast);
   },
   'target-default': function () { formTargetDefault(); },
-  'target-default-save': function () { return runSave(saveTargetDefault, 'היעד הקבוע נשמר'); },
+  'target-default-save': function () { return runSave(saveTargetDefault, MSG_GOAL_DEFAULT_SAVED); },
   'reload':            function () { location.reload(); },
   'combo-pick':        function (el) { return comboPick(el); },
   'combo-make':        function (el) { return comboMake(el); },

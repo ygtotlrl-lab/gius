@@ -1,7 +1,7 @@
 // app/screens/settings.js — ההגדרות: שש הרשימות והיעד החודשי
 import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../../core/ui.js';
 import { readNum } from '../../core/util.js';
-import { KV_TABLE, LISTS, LK_AMBASSADOR, MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, SHT_PAGE_URL, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH } from '../constants.js';
+import { KV_TABLE, LISTS, LK_AMBASSADOR, MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, SHT_PAGE_URL, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH, TTL_ADD_PRE, TTL_EDIT_PRE, TTL_GOAL_DEFAULT } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
@@ -88,7 +88,7 @@ function viewSettings() {
 // כפתור אחד לשני המסלולים, ומחיקה רק בעריכה.
 function lookupForm(kind, r) {
   var l = listDef(kind);
-  openModal((r ? 'עריכת ' : 'הוספת ') + (l ? l.one : ''),
+  openModal((r ? TTL_EDIT_PRE : TTL_ADD_PRE) + (l ? l.one : ''),
     '<label class="fld"><span>' + esc(l ? l.one : 'ערך') + '</span>' +
     '<input class="inp" id="l-label" autocomplete="off" value="' + esc(r ? r.label : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -118,7 +118,7 @@ function saveTarget() {
 }
 
 function formTargetDefault() {
-  openModal('יעד חודשי קבוע',
+  openModal(TTL_GOAL_DEFAULT,
     '<label class="fld"><span>סכום *</span><input class="inp" id="tgd-amount" inputmode="decimal" value="' + (targetDefault() || '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="target-default-save" data-ksave>' + icon('save') + 'שמירה</button>');

@@ -1,7 +1,7 @@
 // app/screens/tasks.js — המשימות: אחראי ⟵ שלושה שלבים ⟵ הרשימה
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { ASSIGNEES, LK_DOMAIN, MSG_NEED_TITLE, STAGES } from '../constants.js';
+import { ASSIGNEES, LK_DOMAIN, MSG_NEED_TITLE, STAGES, TTL_TASK_EDIT, TTL_TASK_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { snapShare } from '../snap.js';
@@ -97,7 +97,7 @@ function viewTasks() {
 function formTask(t) {
   var ui = state.tasks_ui;
   var who = t ? t.assignee : ui.who, stage = t ? t.stage : (ui.stage || STAGES[0].id);
-  openModal(t ? 'עריכת משימה' : 'משימה חדשה',
+  openModal(t ? TTL_TASK_EDIT : TTL_TASK_NEW,
     '<label class="fld"><span>משימה *</span><input class="inp" id="k-title" value="' + esc(t ? t.title : '') + '"></label>' +
     '<div class="f2">' +
       '<label class="fld"><span>אחראי</span><select class="inp" id="k-who">' + ASSIGNEES.map(function (w) {

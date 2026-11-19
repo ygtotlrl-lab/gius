@@ -3,7 +3,7 @@
 import { readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { comboValue, esc, openModal, toast } from '../../core/ui.js';
-import { APP_FIRST_MONTH, LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS } from '../constants.js';
+import { APP_FIRST_MONTH, LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS, TTL_PLAN_EDIT, TTL_PLAN_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { snapShare } from '../snap.js';
@@ -93,7 +93,7 @@ function planShare(amb) {
 // השורה מקושרת לכרטיס; כרטיס שאינו קיים נוצר מהבורר. השגריר — מהכרטיס כברירה, וניתן לשינוי.
 function formPlan(r) {
   var d = r ? donorById(r.donor_client_id) : null;
-  openModal(r ? 'עריכת שורה' : 'שורה חדשה — ' + monthLabel(state.planMonth),
+  openModal(r ? TTL_PLAN_EDIT : TTL_PLAN_NEW + monthLabel(state.planMonth),
     '<div class="fld"><span>כרטיס *</span>' + donorFieldHTML('pl-donor', 'donor-plan', r ? r.donor_client_id : null) + '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>סוג</span><select class="inp" id="pl-kind">' + PLAN_KINDS.map(function (k) {

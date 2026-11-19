@@ -4,7 +4,7 @@ import { errToast, idEq, newClientId, pendTag } from '../../core/sync.js';
 import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML, methodIcon, receiptHTML,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK,
-         MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS } from '../constants.js';
+         MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS, MSG_SAVE_ACT, MSG_SHT_CLEARED, MSG_SHT_CLEARED_OK, MSG_SHT_CLEARED_PRE, MSG_SHT_CLEARED_Q, MSG_SHT_DUP_Q, MSG_SHT_DUP_TITLE, TTL_CALL_EDIT, TTL_SHT_EDIT, TTL_SHT_NEW } from '../constants.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
@@ -407,7 +407,7 @@ function shtMethodPick(el) { coreMethodPick(el); }
 function formCall(c) {
   var give = isGive(c), ambs = lookupLabels(LK_AMBASSADOR).slice();
   if (ambs.indexOf(c.ambassador) < 0) ambs.push(c.ambassador);
-  openModal('עריכת שיחה',
+  openModal(TTL_CALL_EDIT,
     '<div class="f2">' +
       '<label class="fld"><span>תוצאה *</span><select class="inp" id="sc-status" data-chg="sc-status">' + Object.keys(SHT_STATUS).map(function (k) {
         return '<option value="' + k + '"' + (c.status === k ? ' selected' : '') + '>' + esc(SHT_STATUS[k].l) + '</option>'; }).join('') + '</select></label>' +
@@ -447,8 +447,8 @@ function formNext(c) {
   var nx = nextOf(c), p = personById(c.person_client_id);
   if (!nx || !p) return;
   // «נסלק» — שאלה אחת, והסימון «טופל» על שיחת ה«תרם»; בלי שיחה חדשה.
-  if (!nx[2].length) return ask('נסלק', 'לסמן שהתרומה של ' + (personName(p) || MSG_SHT_NO_NAME) + (c.amount != null ? ' (' + ils(c.amount) + ')' : '') + ' נסלקה?', 'נסלק')
-    .then(function (yes) { if (yes) return update('g_shtar_calls', c.client_id, { handled: true }).then(function () { toast('סומן שנסלק', null, 'good'); shtRefresh(); }); })
+  if (!nx[2].length) return ask(MSG_SHT_CLEARED, MSG_SHT_CLEARED_PRE + (personName(p) || MSG_SHT_NO_NAME) + (c.amount != null ? ' (' + ils(c.amount) + ')' : '') + MSG_SHT_CLEARED_Q, MSG_SHT_CLEARED)
+    .then(function (yes) { if (yes) return update('g_shtar_calls', c.client_id, { handled: true }).then(function () { toast(MSG_SHT_CLEARED_OK, null, 'good'); shtRefresh(); }); })
     .catch(errToast);
   var to = nx[2], one = to.length === 1;
   openModal((personName(p) || MSG_SHT_NO_NAME) + ' · ' + nx[1],
@@ -495,7 +495,7 @@ comboDef('sht-donor', { val: true, max: 30,
 
 function formShtar(p) {
   var d = p && p.donor_client_id ? donorById(p.donor_client_id) : null;
-  openModal(p ? 'עריכת הפרטים' : 'הוספה לרשימה',
+  openModal(p ? TTL_SHT_EDIT : TTL_SHT_NEW,
     '<div class="fld"><span>כרטיס בגיוס</span>' +
       comboHTML('sht-donor', { id: 'sp-donor', label: 'חיפוש כרטיס לפי שם או טלפון', placeholder: 'חיפוש כרטיס — או שם וטלפון למטה',
                                picked: d ? { value: d.client_id, label: d.name } : null }) + '</div>' +
@@ -527,7 +527,7 @@ function saveShtar(id) {
   var dup = shtDup(id, donor ? donorById(donor).name : name, phone);
   var go = function () { return id ? update('g_shtar_people', id, row) : insert('g_shtar_people', row); };
   if (!dup) return go();
-  return ask('כפילות', MSG_SHT_DUP + (personName(dup) || MSG_SHT_NO_NAME) + ' · ' + phoneShow(dup.phone) + '. לשמור בכל זאת?', 'שמירה')
+  return ask(MSG_SHT_DUP_TITLE, MSG_SHT_DUP + (personName(dup) || MSG_SHT_NO_NAME) + ' · ' + phoneShow(dup.phone) + MSG_SHT_DUP_Q, MSG_SAVE_ACT)
     .then(function (yes) { return yes ? go() : undefined; });
 }
 

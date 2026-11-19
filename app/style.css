@@ -145,9 +145,6 @@ tbody tr.click{cursor:pointer}
 @media (hover:hover){
   .btn.ghost:hover{background:var(--card-2)}
 }
-@media (hover:hover){
-  .veil-ask .sheet-ft button:hover{box-shadow:var(--shadow-lg)}
-}
 
 .row{
   display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-5) var(--sp-2);
@@ -251,12 +248,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .sheet-hd .x{color:var(--text-3);border-radius:var(--r-3)}
 .sheet-bd{padding:var(--sp-6) var(--sp-6)}
 /* הצבע ב-CSS — גוף ask הוא textContent, ועיצוב שנשען על p שנבנה בקוד שובר את הגוף המשותף. */
-.ask-body{color:var(--text-2)}
 .sheet-ft{padding:var(--sp-5) var(--sp-6) var(--sp-6);gap:var(--sp-4)}
 .sheet-ft .btn{flex:1}
-.veil-ask .sheet-ft button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-4);background:var(--brand-fill);color:var(--on-brand);border:1px solid transparent;border-radius:var(--r-4);padding:var(--sp-5) var(--sp-6);font-family:inherit;font-size:var(--fs-3);font-weight:700;cursor:pointer;box-shadow:var(--shadow)}
-.veil-ask .sheet-ft button:active{transform:translateY(1px)}
-.veil-ask .sheet-ft button.danger{background:var(--bad-soft);color:var(--bad);box-shadow:none}
  /* שוליים שליליים ולא איפוס בזמן ריצה — איפוס מחייב את openModal להחזירו, וחלון דו-שיח שנפתח מהבורר נשאר בלי ריפוד. */
 
 /* פריטי grid מקבלים min-width:auto, ושדה תאריך רחב מהתא — בלי זה שורת המסננים גולשת. */

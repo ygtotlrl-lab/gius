@@ -4,7 +4,7 @@ import { pendTag } from '../../core/sync.js';
 import { cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
          MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
-         MSG_SO_FIRST_OVER } from '../constants.js';
+         MSG_SO_FIRST_OVER, TTL_DONOR_EDIT, TTL_DONOR_NEW, TTL_PAY_EDIT, TTL_PAY_NEW, TTL_PLEDGE_EDIT, TTL_PLEDGE_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
@@ -264,7 +264,7 @@ function affRead() {
 }
 function formDonor(d) {
   var amb = lookupLabels(LK_AMBASSADOR);
-  openModal(d ? 'עריכת כרטיס' : 'כרטיס חדש',
+  openModal(d ? TTL_DONOR_EDIT : TTL_DONOR_NEW,
     '<label class="fld"><span>שם *</span><input class="inp" id="d-name" value="' + esc(d ? d.name : '') + '"></label>' +
     '<label class="fld"><span>שגריר</span>' + selectHTML('d-amb', amb, d ? d.ambassador : '', '— ללא —') + '</label>' +
     '<div class="f2">' +
@@ -322,7 +322,7 @@ function formPledge(p, donorId) {
     '</div>' + uneqHTML('p', false) + '</div>' +
     '<div class="chk-row"><label class="fld chk"><input type="checkbox" id="p-cleared"><span>סליקה בפועל</span></label>' +
     noInitHTML('p', false) + '</div></div>';
-  openModal((p ? 'עריכת התחייבות — ' : 'התחייבות — ') + d.name, body,
+  openModal((p ? TTL_PLEDGE_EDIT : TTL_PLEDGE_NEW) + d.name, body,
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="pledge-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="pledge-save" data-id="' + esc(p ? p.client_id : '') + '" data-donor="' + esc(d.client_id) + '" data-ksave>' + icon('save') + 'שמירה</button>');
@@ -474,7 +474,7 @@ function formPay(t, pledgeId, donorId) {
   var d = donorById(p.donor_client_id);
   var amt = t ? t.amount : (leftForPledge(p) || '');
   var so = !!t && t.method === METHOD_SO, uneq = so && +t.first_installment > 0;
-  openModal((t ? 'עריכת תשלום — ' : 'תשלום — ') + (pick ? (d ? d.name : '') : (p.pledge_type || '')),
+  openModal((t ? TTL_PAY_EDIT : TTL_PAY_NEW) + (pick ? (d ? d.name : '') : (p.pledge_type || '')),
     // ההתחייבות — רוב השורה, והסכום צר בצד שמאל; בלי בורר — ההתחייבות לקריאה בלבד, באותו מקום.
     '<div class="f2-main">' + (pick ? payPickHTML(pls, p.client_id) :
       '<label class="fld"><span>התחייבות</span><input class="inp" readonly tabindex="-1" value="' +

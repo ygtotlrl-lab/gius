@@ -2,7 +2,7 @@
 import { readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { esc, openModal, toast } from '../../core/ui.js';
-import { LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME, MSG_NEED_TAKEN } from '../constants.js';
+import { LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME, MSG_NEED_TAKEN, TTL_LOAN_EDIT, TTL_LOAN_NEW, TTL_MOVE_EDIT } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, dmyDate, emptyBox, gSortLoanMoves, gSortLoans, ils, insert, nextSort, nullable, pendRowKey, selectHTML, sum, update, val } from '../domain.js';
@@ -91,7 +91,7 @@ function loansBodyHTML() {
 
 // עריכת תנועה — סכום והערה, ומחיקה.
 function formLoanMove(m) {
-  openModal('עריכת תנועה',
+  openModal(TTL_MOVE_EDIT,
     '<div class="f2">' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="lm-e-amt" inputmode="decimal" value="' + esc(m.amount) + '"></label>' +
       '<label class="fld"><span>הערה</span><input class="inp" id="lm-e-note" value="' + esc(m.note || '') + '"></label>' +
@@ -115,7 +115,7 @@ function addLoanMove(id) {
 }
 
 function formLoan(l) {
-  openModal(l ? 'עריכת הלוואה' : 'הלוואה חדשה',
+  openModal(l ? TTL_LOAN_EDIT : TTL_LOAN_NEW,
     '<div class="f2">' +
       '<label class="fld"><span>מלווה *</span><input class="inp" id="o-lender" value="' + esc(l ? l.lender : '') + '"></label>' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="o-amount" inputmode="decimal" value="' + esc(l ? l.amount : '') + '"></label>' +
