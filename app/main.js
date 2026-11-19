@@ -27,7 +27,7 @@ import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
-import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
+import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
 import { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
@@ -449,7 +449,9 @@ var DOM_ACTIONS = {
   'sht-call-del': function (el) {
     return delAsk(MSG_DEL_SHT_CALL, 'g_shtar_calls', el.dataset.id, function () { if (state.sht.call === el.dataset.id) state.sht.call = null; });
   },
-  'sht-handled': function (el) { return shtHandled(el.dataset.id); },
+  'sht-next': function (el) { var c = callById(el.dataset.id); if (c) formNext(c); },
+  'sht-next-to': function (el) { shtNextTo(el); },
+  'sht-next-save': saver(saveNext, 'הועבר'),
   'sht-new': function () { formShtar(null); },
   'sht-edit': function (el) { var p = personById(el.dataset.id); if (p) formShtar(p); },
   'sht-save': saver(saveShtar, 'נשמר'),

@@ -4,11 +4,11 @@ import { errToast, idEq, newClientId, pendTag } from '../../core/sync.js';
 import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML, methodIcon, receiptHTML,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK,
-         MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS } from '../constants.js';
+         MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS } from '../constants.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
-         sum, update, val } from '../domain.js';
+         update, val } from '../domain.js';
 
 // ── האיש ──
 // השם — מהכרטיס בגיוס כשהאיש מקושר אליו, ואחרת מה שנרשם; בלי שם — «שם לא ידוע».
@@ -96,14 +96,28 @@ function shtMatches() {
   });
 }
 
+// תרומות היום — השינוי בין תחילת היום לעכשיו, לכל איש שהייתה לו שיחה היום: נכנס לתרומה (התחייב · תרם · נסלק) — נספר, יצא ממנה — יורד;
+// והסכום — ההפרש בין הסכום שבשיחה האחרונה לזה שבשיחה שלפני היום. כך מעבר בין השלבים אינו נספר שוב, ושינוי סכום נספר בהפרש בלבד.
+function giveToday() {
+  var t0 = new Date(); t0.setHours(0, 0, 0, 0); t0 = +t0;
+  var n = 0, s = 0, g = function (c) { return !!c && isGive(c); }, a = function (c) { return g(c) ? num(c.amount) : 0; };
+  state.shtarPeople.forEach(function (p) {
+    var cs = callsOf(p.client_id), last = cs[cs.length - 1], before = null;
+    if (!last || Date.parse(last.call_at) < t0) return;
+    for (var i = cs.length - 1; i >= 0; i--) if (Date.parse(cs[i].call_at) < t0) { before = cs[i]; break; }
+    n += (g(last) ? 1 : 0) - (g(before) ? 1 : 0);
+    s += a(last) - a(before);
+  });
+  return { n: n, sum: s };
+}
+
 // ── המסך ──
 // הלוח — נתונים בלבד, לא סינון: כמה בתור, וכמה שיחות ותרומות היו היום. מה שממתין לפעולה — בשורת הסינון וברכיבים שמתחת ללוח.
 function shtDashHTML() {
   var queue = 0;
   state.shtarPeople.forEach(function (p) { if (pState(p).k !== 'done') queue++; });
-  var today = state.shtarCalls.filter(function (c) { return isToday(c.call_at); });
-  var gave = today.filter(isGive);
-  return [['בתור', queue], ['שיחות היום', today.length], ['תרומות היום', gave.length], ['סכום היום', ils(sum(gave, function (c) { return c.amount; })), 'ok']].map(function (t) {
+  var today = state.shtarCalls.filter(function (c) { return isToday(c.call_at); }), g = giveToday();
+  return [['בתור', queue], ['שיחות היום', today.length], ['תרומות היום', g.n], ['סכום היום', ils(g.sum), 'ok']].map(function (t) {
     return '<div class="sht-k' + (t[2] ? ' ' + t[2] : '') + '"><span>' + t[0] + '</span><b>' + t[1] + '</b></div>';
   }).join('');
 }
@@ -148,12 +162,11 @@ function stBadge(st) {
 
 // ── ממתינים לטיפול ──
 // רכיב אחד מתחת ללוח, ובו חלק לכל תוצאה שממתינה לפעולה — והכותרת של כל חלק היא שם התוצאה כמו בכפתור שבשיחה:
-// «תרם» ו«התחייב» — עד «אישור» שהתרומה נעשתה בוודאות, ו«מעוניין — לשלוח פרטים» — עד «טופל» (handled).
+// ממתין לפרטים — «טופל» · התחייב — «תרם» · תרם — «נסלק»: הכפתור מעביר למצב הבא (SHT_NEXT), והשיחה יוצאת מהרכיב (handled).
 // השורות — «קבלה» של הליבה, כמו תשלומי החודש בדשבורד: קבוצה לכל יום, הסכום בראש ובירוק, השם ומתחתיו השגריר והסיכום, ובקצה האמצעי.
-var WAIT_PARTS = [['yes', 'אישור'], ['pl', 'אישור'], ['int', 'טופל']];
 function shtGiveHTML() {
   var h = '', total = 0;
-  WAIT_PARTS.forEach(function (part) {
+  SHT_NEXT.forEach(function (part) {
     var list = state.shtarCalls.filter(function (c) { return c.status === part[0] && !c.handled && personById(c.person_client_id); })
       .sort(function (a, b) { return Date.parse(b.call_at) - Date.parse(a.call_at); });
     if (!list.length) return;
@@ -165,7 +178,7 @@ function shtGiveHTML() {
         who: '<b>' + esc(personName(p) || MSG_SHT_NO_NAME) + pendTag(pendRowKey('g_shtar_calls', c.client_id)) + '</b>' +
           '<small>' + esc([c.ambassador, c.note].filter(Boolean).join(' · ')) + '</small>',
         method: give ? c.method || '' : '', ico: give && c.method ? icon(methodIcon(c.method)) : '', act: 'sht-open', id: p.client_id,
-        tail: '<button class="btn sm" data-act="sht-handled" data-id="' + esc(c.client_id) + '">' + icon('check') + part[1] + '</button>' };
+        tail: '<button class="btn sm" data-act="sht-next" data-id="' + esc(c.client_id) + '">' + icon('check') + part[1] + '</button>' };
     }));
   });
   return h ? '<section class="card sht-give"><h2>ממתינים לטיפול<span class="cnt">' + total + '</span></h2>' + h + '</section>' : '';
@@ -418,8 +431,41 @@ function saveCall(id) {
     callback_at: st === 'cb' && when ? new Date(when).toISOString() : null, note: nullable(val('sc-note')) });
 }
 
-function shtHandled(id) {
-  return update('g_shtar_calls', id, { handled: true }).then(function () { shtRefresh(); }).catch(errToast);
+// ── המעבר לשלב הבא ──
+// הכפתור שב«ממתינים לטיפול» שואל אם להעביר את האיש למצב הבא (ממתין לפרטים — התחייב או תרם), עם סכום ואמצעי — רשות,
+// ובמעבר מהתחייב או מתרם — מהשיחה הקודמת. האישור — שיחה חדשה ביום הלחיצה, בשגריר של השיחה הקודמת, והקודמת מסומנת «טופל».
+function nextOf(c) { for (var i = 0; i < SHT_NEXT.length; i++) if (SHT_NEXT[i][0] === c.status) return SHT_NEXT[i]; return null; }
+function formNext(c) {
+  var nx = nextOf(c), p = personById(c.person_client_id);
+  if (!nx || !p) return;
+  var to = nx[2], one = to.length === 1;
+  openModal((personName(p) || MSG_SHT_NO_NAME) + ' · ' + nx[1],
+    '<div class="fld"><span>' + 'המצב הבא' + '</span><input type="hidden" id="sn-to" value="' + (one ? to[0] : '') + '">' +
+      '<div class="sht-os">' + to.map(function (k) {
+        return '<button type="button" class="sht-o ' + SHT_STATUS[k].cls + (one ? ' on' : '') + '" data-act="sht-next-to" data-v="' + k + '" aria-pressed="' + one + '">' + esc(SHT_STATUS[k].l) + '</button>';
+      }).join('') + '</div></div>' +
+    '<label class="fld"><span>סכום</span><input class="inp" id="sn-amt" inputmode="decimal" value="' + esc(c.amount == null ? '' : c.amount) + '"></label>' +
+    '<div class="fld"><span>אמצעי</span><input type="hidden" id="sn-method" value="' + esc(c.method || '') + '">' +
+      methodGridHTML({ target: 'sn-method', list: lookupLabels(LK_METHOD), cur: c.method || '', label: 'אמצעי',
+                       ico: function (l) { return icon(methodIcon(l)); } }) + '</div>',
+    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
+    '<button class="btn" data-act="sht-next-save" data-id="' + esc(c.client_id) + '" data-ksave>' + icon('check') + 'העברה</button>');
+}
+function shtNextTo(el) {
+  $('#sn-to').value = el.dataset.v;
+  document.querySelectorAll('[data-act="sht-next-to"]').forEach(function (b) {
+    var on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
+  });
+}
+function saveNext(id) {
+  var c = callById(id), to = val('sn-to'), amt = $('#sn-amt');
+  if (!c || !nextOf(c)) return;
+  if (!SHT_STATUS[to]) { toast(MSG_SHT_PICK, null, 'warn'); return; }
+  var amount = amt && amt.value.trim() !== '' ? readNum(amt, 0) : null;
+  if (amount != null && !(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
+  return insert('g_shtar_calls', { person_client_id: c.person_client_id, status: to, ambassador: c.ambassador, amount: amount,
+      method: nullable(val('sn-method')), callback_at: null, note: null, call_at: nowISO(), handled: false })
+    .then(function () { return update('g_shtar_calls', id, { handled: true }); });
 }
 
 // ── הוספה ועריכה ──
@@ -473,5 +519,5 @@ function saveShtar(id) {
     .then(function (yes) { return yes ? go() : undefined; });
 }
 
-export { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, shtHandled, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
+export { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot };
