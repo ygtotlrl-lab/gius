@@ -573,6 +573,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ln-now::before{content:"";position:absolute;inset-inline-start:0;top:0;height:var(--plot);border-inline-start:2px dashed var(--border-2)}
 .ln-now .fl-lab{font-weight:800;color:var(--brand-ink)}
 .fl-bar.debt{background:var(--text-2)}
+.fl-bar.inst{background:var(--gold)} .fl-vals b.inst{color:var(--gold)} .ln-future .fl-bar.inst{border-color:var(--gold)}
+.fl-legend i.ln-k.ibar{background:var(--gold)}
 .fl-legend i.ln-k.dbar{background:var(--text-2)} .fl-legend i.ln-k.plan{background:none;border:2px dashed var(--text-3)}
 .ln-stat.ok-small small{color:var(--ok)} .ln-stat.bad-small small{color:var(--bad)}
 .ln-lead{margin:calc(-1 * var(--sp-3)) 0 var(--sp-4);font-size:var(--fs-2);color:var(--text-3)}
@@ -917,3 +919,11 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ix-line polyline{fill:none;stroke:var(--text);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
 .ix-dot{position:absolute;left:50%;bottom:calc(var(--v) * 100%);width:9px;height:9px;border-radius:50%;background:var(--text);border:2px solid var(--card-2);transform:translate(-50%,50%);z-index:3}
 .ix-dot b{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;white-space:nowrap;color:var(--text);text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2)}
+.ix-head small.ix-sub{display:block;margin-top:var(--sp-1);font-weight:700}
+.ix-sub .up{color:var(--bad)} .ix-sub .down{color:var(--ok)}
+.ix-pair{display:grid;gap:var(--sp-6)}
+@media (min-width:900px){.ix-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.ix-pair > .card{margin:0}
+.ix-small .ix-head b{font-size:var(--fs-4)}
+.ix-small .fl-track .fl-col{flex-basis:calc(100cqi / 6)}
+.ix-small .ix-line{width:calc(var(--n) * max(52px, 100cqi / 6))}

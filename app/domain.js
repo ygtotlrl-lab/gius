@@ -179,22 +179,24 @@ function loanPaidBy(l, mk) {
   return moves;
 }
 function loanBalance(l, mk) { return Math.max(0, (+l.amount || 0) - loanPaidBy(l, mk || loanCurMonth())); }
-// חודש אחד, לטווח ארוך בלבד: חדשות (לפי חודש הלקיחה) · החזרים (לפי תאריך התנועה) · נטו = חדשות פחות החזרים;
-// הלוואה בהחזר בתשלומים אינה כאן — ההחזר שלה הוא הוצאה של התקציב.
+// חודש אחד, לכל סוג — `long` (לטווח ארוך) · `inst` (בתשלומים): חדשות (לפי חודש הלקיחה) ·
+// החזרים (לטווח ארוך — לפי תאריך התנועה; בתשלומים — לפי התשלומים שהוגדרו) · ונטו = כל החדשות פחות כל ההחזרים.
 function loanFlow(mk) {
-  var f = { m: mk, long: 0, repaid: 0 };
+  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0 };
   state.loans.forEach(function (l) {
-    if (loanIsChecks(l)) return;
-    if (loanTakenMonth(l) === mk) f.long += +l.amount || 0;
-    f.repaid += loanPaidBy(l, mk) - loanPaidBy(l, shiftMonth(mk, -1));
+    var k = loanIsChecks(l) ? 'inst' : 'long', r = loanPaidBy(l, mk) - loanPaidBy(l, shiftMonth(mk, -1));
+    if (loanTakenMonth(l) === mk) f[k] += +l.amount || 0;
+    f[k === 'inst' ? 'repInst' : 'repLong'] += r;
   });
-  f.net = f.long - f.repaid;
+  f.added = f.long + f.inst; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
   return f;
 }
-// החוב לטווח ארוך בסוף חודש — המדד: יתרת ההלוואות לטווח ארוך שנלקחו עד אז (ובלי תאריך לקיחה — תמיד).
-function loanLongDebt(mk) {
-  return sum(state.loans.filter(function (l) { var t = loanTakenMonth(l); return !loanIsChecks(l) && (!t || t <= mk); }),
-             function (l) { return loanBalance(l, mk); });
+// החוב בסוף חודש — המדד: יתרת ההלוואות שנלקחו עד אז (ובלי תאריך לקיחה — תמיד); kind — `long` · `inst`, ובלעדיו — הכל.
+function loanDebt(mk, kind) {
+  return sum(state.loans.filter(function (l) {
+    var t = loanTakenMonth(l), k = loanIsChecks(l) ? 'inst' : 'long';
+    return (!kind || kind === k) && (!t || t <= mk);
+  }), function (l) { return loanBalance(l, mk); });
 }
 
 // הלוואות — לפי שם המלווה.
@@ -731,7 +733,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { loanBalance, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanLongDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { loanBalance, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
