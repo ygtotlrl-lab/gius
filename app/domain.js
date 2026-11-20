@@ -167,36 +167,54 @@ function loanCheckList(l) {
                                          a: per ? +per[i] || 0 : +l.check_amount || 0 });
   return out;
 }
-// נפרע עד סוף חודש mk: התנועות שנרשמו עד אז (ותנועה בלי תאריך — תמיד);
-// בצ׳קים — הגבוה מבין זה לבין הצ׳קים שחודשם הגיע, כך שצ׳ק שנרשם גם כתנועה אינו נספר פעמיים;
-// ובטווח ארוך, בחודש עתידי — כל הסכום במועד ההחזר (צפי), ושמועדה עבר — באיחור, ואינה נפרעת בצפי.
-function loanPaidBy(l, mk) {
+// הסכום להחזר — הקרן ועוד היתר העסקה: בתשלומים — סך התשלומים, ולטווח ארוך — `repay_total`; ולא פחות מהקרן.
+function loanTotal(l) {
+  var a = +l.amount || 0;
+  return Math.max(a, loanIsChecks(l) ? sum(loanCheckList(l), function (c) { return c.a; }) : +l.repay_total || 0);
+}
+function loanInterest(l) { return loanTotal(l) - (+l.amount || 0); }
+// שולם עד סוף חודש mk — כל מה שהוחזר, קרן והיתר עסקה: התנועות שנרשמו עד אז (ותנועה בלי תאריך — תמיד);
+// בתשלומים — הגבוה מבין זה לבין התשלומים שחודשם הגיע, כך שתשלום שנרשם גם כתנועה אינו נספר פעמיים;
+// ולטווח ארוך, בחודש עתידי — כל הסכום להחזר במועד ההחזר (תכנון), ושמועדה עבר — באיחור, ואינה מוחזרת בתכנון.
+function loanPaidGross(l, mk) {
   var cur = loanCurMonth();
   var moves = sum(loanMovesOf(l.client_id).filter(function (mv) { var m = loanMoveMonth(mv); return !m || m <= mk; }), function (mv) { return mv.amount; });
   if (loanIsChecks(l)) return Math.max(moves, sum(loanCheckList(l).filter(function (c) { return c.m && c.m <= mk; }), function (c) { return c.a; }));
   var due = loanDueMonth(l);
-  if (mk > cur && due && due >= cur && due <= mk) return Math.max(moves, +l.amount || 0);
+  if (mk > cur && due && due >= cur && due <= mk) return Math.max(moves, loanTotal(l));
   return moves;
 }
+// כל תשלום מתחלק ביחס שבין הקרן לסכום להחזר: החלק של הקרן מקטין את החוב, והשאר — היתר עסקה.
+function loanPaidBy(l, mk) {
+  var t = loanTotal(l), a = +l.amount || 0, g = loanPaidGross(l, mk);
+  return t > 0 ? Math.min(a, g * a / t) : g;
+}
+function loanInterestBy(l, mk) { return Math.max(0, loanPaidGross(l, mk) - loanPaidBy(l, mk)); }
+// יתרת הקרן — החוב; ו«נותר להחזיר» — מה שהמלווה עוד מצפה לקבל, כולל היתר העסקה.
 function loanBalance(l, mk) { return Math.max(0, (+l.amount || 0) - loanPaidBy(l, mk || loanCurMonth())); }
-// חודש אחד, לכל סוג — `long` (לטווח ארוך) · `inst` (בתשלומים): חדשות (לפי חודש הלקיחה) ·
-// החזרים (לטווח ארוך — לפי תאריך התנועה; בתשלומים — לפי התשלומים שהוגדרו) · ונטו = כל החדשות פחות כל ההחזרים.
+function loanLeft(l, mk) { return Math.max(0, loanTotal(l) - loanPaidGross(l, mk || loanCurMonth())); }
+// חודש אחד, לכל סוג — `long` (לטווח ארוך) · `inst` (בתשלומים): חדשות (הקרן, לפי חודש הלקיחה) ·
+// החזרים (חלק הקרן — לטווח ארוך לפי תאריך התנועה, ובתשלומים לפי התשלומים) · היתר עסקה (חלקו בתשלומי החודש — כאילו נלקחה עוד הלוואה) ·
+// ונטו = חדשות ועוד היתר העסקה, פחות ההחזרים.
 function loanFlow(mk) {
-  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0 };
+  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0, intLong: 0, intInst: 0 }, prev = shiftMonth(mk, -1);
   state.loans.forEach(function (l) {
-    var k = loanIsChecks(l) ? 'inst' : 'long', r = loanPaidBy(l, mk) - loanPaidBy(l, shiftMonth(mk, -1));
-    if (loanTakenMonth(l) === mk) f[k] += +l.amount || 0;
-    f[k === 'inst' ? 'repInst' : 'repLong'] += r;
+    var k = loanIsChecks(l) ? 'Inst' : 'Long';
+    if (loanTakenMonth(l) === mk) f[k.toLowerCase()] += +l.amount || 0;
+    f['rep' + k] += loanPaidBy(l, mk) - loanPaidBy(l, prev);
+    f['int' + k] += loanInterestBy(l, mk) - loanInterestBy(l, prev);
   });
-  f.added = f.long + f.inst; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
+  f.interest = f.intLong + f.intInst;
+  f.added = f.long + f.inst + f.interest; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
   return f;
 }
-// החוב בסוף חודש — המדד: יתרת ההלוואות שנלקחו עד אז (ובלי תאריך לקיחה — תמיד); kind — `long` · `inst`, ובלעדיו — הכל.
+// החוב בסוף חודש — המדד: יתרת הקרן של ההלוואות שנלקחו עד אז (ובלי תאריך לקיחה — תמיד), ועוד היתר העסקה ששולם עד אז —
+// כאילו נלקחה עליו הלוואה; kind — `long` · `inst`, ובלעדיו — הכל.
 function loanDebt(mk, kind) {
   return sum(state.loans.filter(function (l) {
     var t = loanTakenMonth(l), k = loanIsChecks(l) ? 'inst' : 'long';
     return (!kind || kind === k) && (!t || t <= mk);
-  }), function (l) { return loanBalance(l, mk); });
+  }), function (l) { return loanBalance(l, mk) + loanInterestBy(l, mk); });
 }
 
 // הלוואות — לפי שם המלווה.
@@ -733,7 +751,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { loanBalance, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { loanBalance, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

@@ -26,7 +26,7 @@ import { cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay,
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { addLoanMove, ckSync, formLoan, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
+import { addLoanMove, ckSync, formLoan, intSync, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -540,7 +540,9 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
   if (el.dataset.inp === 'sht-q') { state.sht.q = el.value; state.sht.lim = 0; shtListRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
-  if (el.dataset.inp === 'ck-sync') ckSync();
+  if (el.dataset.inp === 'ck-sync') { ckSync(); intSync('p'); }
+  if (el.dataset.inp === 'int-p') intSync('p');
+  if (el.dataset.inp === 'int-t') intSync('t');
   if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
 });
 

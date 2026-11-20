@@ -793,7 +793,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fl-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .fl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
 .fl-legend i.inc{background:var(--brand-fill)} .fl-legend i.loan{background:var(--bad)}
-.fl-legend i.rep{background:var(--ok)}
+.fl-legend i.rep{background:var(--ok)} .fl-legend i.int{background:var(--warn)}
+.fl-bar.int{background:var(--warn)} .fl-vals b.int{color:var(--warn)} .ln-future .fl-bar.int{border-color:var(--warn)}
 .fl-legend i.debt{height:0;width:20px;border-top:2px solid var(--text);border-radius:0}
 .fl-legend i.tgt{height:0;width:20px;border-top:2px dashed var(--text-2);border-radius:0}
 .fl-legend i.avg{height:0;width:20px;border-top:2px dotted var(--brand-ink);border-radius:0}
@@ -920,7 +921,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ix-dot{position:absolute;left:50%;bottom:calc(var(--v) * 100%);width:9px;height:9px;border-radius:50%;background:var(--text);border:2px solid var(--card-2);transform:translate(-50%,50%);z-index:3}
 .ix-dot b{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;white-space:nowrap;color:var(--text);text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2)}
 .ix-head small.ix-sub{display:block;margin-top:var(--sp-1);font-weight:700}
-.ix-sub .up{color:var(--bad)} .ix-sub .down{color:var(--ok)}
+.ix-sub .up{color:var(--bad)} .ix-sub .down{color:var(--ok)} .ix-sub .int{color:var(--warn)}
 .ix-pair{display:grid;gap:var(--sp-6)}
 @media (min-width:900px){.ix-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .ix-pair > .card{margin:0}

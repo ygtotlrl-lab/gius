@@ -162,18 +162,20 @@ function lg(items) {
 // שלושה מדדים: הכללי — הכנסות · הלוואות חדשות · החזרים, וקו החוב כולו; ומתחתיו, זה לצד זה, לטווח ארוך ובתשלומים.
 function indicesHTML(all) {
   var sub = '<span class="' + (chgTxt(all, 'debtLong', 'long').indexOf('עלה') === 0 ? 'up' : 'down') + '">לטווח ארוך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
-    '<span class="' + (chgTxt(all, 'debtInst', 'inst').indexOf('עלה') === 0 ? 'up' : 'down') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>';
+    '<span class="' + (chgTxt(all, 'debtInst', 'inst').indexOf('עלה') === 0 ? 'up' : 'down') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
+    ' · <span class="int">היתר עסקה ' + esc(kShort(sum(all, function (f) { return f.interest; }))) + '</span>';
   var debtLine = ['debt', 'החוב בסוף החודש'];
   return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub,
-      bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.added, cls: 'loan', lbl: 'הלוואות חדשות' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
-      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות חדשות'], ['rep', 'החזרים'], debtLine]) }) +
+      bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות חדשות' },
+                                   { v: f.interest, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
+      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) +
     '<div class="ix-pair">' +
       indexHTML(all, { key: 'debtLong', kind: 'long', title: 'הלוואות לטווח ארוך', name: 'החוב', cls: 'ix-small',
-        bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'חדשות' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; },
-        legend: lg([['loan', 'חדשות'], ['rep', 'החזרים'], debtLine]) }) +
+        bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'חדשות' }, { v: f.intLong, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; },
+        legend: lg([['loan', 'חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) +
       indexHTML(all, { key: 'debtInst', kind: 'inst', title: 'הלוואות בתשלומים', name: 'החוב', cls: 'ix-small',
-        bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'חדשות' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; },
-        legend: lg([['loan', 'חדשות'], ['rep', 'החזרים'], debtLine]) }) +
+        bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'חדשות' }, { v: f.intInst, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; },
+        legend: lg([['loan', 'חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) +
     '</div>';
 }
 
