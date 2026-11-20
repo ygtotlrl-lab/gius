@@ -49,7 +49,11 @@ function loanStat(lab, valHTML, small, cls) {
     (small ? '<small>' + small + '</small>' : '') + '</div>';
 }
 function startMonth() { return shiftMonth(APP_FIRST_MONTH, -1); }
-function chg(kind) { var c = loanDebt(curMonth(), kind) - loanDebt(startMonth(), kind); return (c > 0 ? '↑ ' : c < 0 ? '↓ ' : '') + kShort(Math.abs(c)); }
+// השינוי מתחילת התקופה, כל חלק בצבעו: עלה — אדום, ירד — ירוק
+function chg(lab, kind) {
+  var c = loanDebt(curMonth(), kind) - loanDebt(startMonth(), kind);
+  return '<span class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '">' + esc(lab + ' ' + (c > 0 ? '↑ ' : c < 0 ? '↓ ' : '') + kShort(Math.abs(c))) + '</span>';
+}
 function loanDashHTML() {
   var cur = curMonth(), f = loanFlow(cur), debt = loanDebt(cur), ch = debt - loanDebt(startMonth());
   return '<section class="card ln-dash"><h2>מצב ההלוואות<span class="sp ln-dash-m">' + esc(monthLabel(cur)) + '</span></h2>' +
@@ -57,8 +61,7 @@ function loanDashHTML() {
       loanStat('הלוואות חדשות החודש', esc(ils(f.added)), esc('לטווח ארוך ' + kShort(f.long) + ' · בתשלומים ' + kShort(f.inst) + (f.interest > 0 ? ' · היתר עסקה ' + kShort(f.interest) : '')), f.added > 0 ? 'bad' : '') +
       loanStat('החזרים החודש', esc(ils(f.repaid)), esc('לטווח ארוך ' + kShort(f.repLong) + ' · בתשלומים ' + kShort(f.repInst)), f.repaid > 0 ? 'ok' : '') +
       loanStat('נטו החודש', esc(signed(f.net)), esc(f.net > 0 ? 'החוב גדל' : f.net < 0 ? 'החוב קטן' : 'ללא שינוי'), f.net > 0 ? 'bad' : f.net < 0 ? 'ok' : '') +
-      loanStat('החוב הכללי', esc(ils(debt)), esc('מתחילת התקופה ' + (ch > 0 ? 'עלה ' : ch < 0 ? 'ירד ' : 'ללא שינוי ') + (ch ? kShort(Math.abs(ch)) : '') +
-        ' · לטווח ארוך ' + chg('long') + ' · בתשלומים ' + chg('inst')), ch > 0 ? 'bad-small' : ch < 0 ? 'ok-small' : '') +
+      loanStat('החוב הכללי', esc(ils(debt)), chg('מתחילת התקופה', null) + ' · ' + chg('לטווח ארוך', 'long') + ' · ' + chg('בתשלומים', 'inst'), 'ln-chg') +
     '</div></section>';
 }
 

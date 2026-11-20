@@ -576,7 +576,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fl-bar.inst{background:var(--gold)} .fl-vals b.inst{color:var(--gold)} .ln-future .fl-bar.inst{border-color:var(--gold)}
 .fl-legend i.ln-k.ibar{background:var(--gold)}
 .fl-legend i.ln-k.dbar{background:var(--text-2)} .fl-legend i.ln-k.plan{background:none;border:2px dashed var(--text-3)}
-.ln-stat.ok-small small{color:var(--ok)} .ln-stat.bad-small small{color:var(--bad)}
+.ln-stat.ln-chg small{font-weight:700} .ln-stat .up{color:var(--bad)} .ln-stat .down{color:var(--ok)}
 .ln-lead{margin:calc(-1 * var(--sp-3)) 0 var(--sp-4);font-size:var(--fs-2);color:var(--text-3)}
 .ln-fc .rc-amt{font-variant-numeric:tabular-nums}
 .ln-fc .rc.ln-late .rc-amt{color:var(--bad)}
