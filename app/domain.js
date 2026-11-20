@@ -179,17 +179,22 @@ function loanPaidBy(l, mk) {
   return moves;
 }
 function loanBalance(l, mk) { return Math.max(0, (+l.amount || 0) - loanPaidBy(l, mk || loanCurMonth())); }
-// חודש אחד: ברוטו (בצ׳קים · לטווח ארוך) לפי חודש הלקיחה · החזרי הטווח הארוך · נטו = ברוטו − החזרי הטווח הארוך.
-// החזרי הצ׳קים אינם כאן — הם הוצאה של התקציב.
+// חודש אחד, לטווח ארוך בלבד: חדשות (לפי חודש הלקיחה) · החזרים (לפי תאריך התנועה) · נטו = חדשות פחות החזרים;
+// הלוואה בהחזר בתשלומים אינה כאן — ההחזר שלה הוא הוצאה של התקציב.
 function loanFlow(mk) {
-  var f = { m: mk, checks: 0, long: 0, repaid: 0 };
+  var f = { m: mk, long: 0, repaid: 0 };
   state.loans.forEach(function (l) {
-    if (loanTakenMonth(l) === mk) f[loanIsChecks(l) ? 'checks' : 'long'] += +l.amount || 0;
-    if (!loanIsChecks(l)) f.repaid += loanPaidBy(l, mk) - loanPaidBy(l, shiftMonth(mk, -1));
+    if (loanIsChecks(l)) return;
+    if (loanTakenMonth(l) === mk) f.long += +l.amount || 0;
+    f.repaid += loanPaidBy(l, mk) - loanPaidBy(l, shiftMonth(mk, -1));
   });
-  f.gross = f.checks + f.long;
-  f.net = f.gross - f.repaid;
+  f.net = f.long - f.repaid;
   return f;
+}
+// החוב לטווח ארוך בסוף חודש — המדד: יתרת ההלוואות לטווח ארוך שנלקחו עד אז (ובלי תאריך לקיחה — תמיד).
+function loanLongDebt(mk) {
+  return sum(state.loans.filter(function (l) { var t = loanTakenMonth(l); return !loanIsChecks(l) && (!t || t <= mk); }),
+             function (l) { return loanBalance(l, mk); });
 }
 
 // הלוואות — לפי שם המלווה.
@@ -726,7 +731,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { loanBalance, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { loanBalance, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanLongDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
