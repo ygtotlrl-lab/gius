@@ -277,11 +277,15 @@ function formLoan(l) {
       '<div class="ln-ck-sum" id="o-ck-sum"></div>' +
     '</div>' +
     '<div class="ln-box" id="o-lg"' + (kind === 'long' ? '' : ' hidden') + '>' + whenFieldsHTML('o-check', 'מועד ההחזר', l, 'last_check') +
-      // היתר עסקה — אחוז או סכום להחזר, וכל אחד ממלא את השני; ריק — בלי היתר עסקה
-      '<div class="f2"><label class="fld"><span>היתר עסקה (%)</span><input class="inp" id="o-int-p" inputmode="decimal" data-inp="int-p" value="' +
+      // היתר עסקה — אחוז או סכום להחזר: ממלאים אחד, והשני מתמלא לבד; ריק — בלי היתר עסקה
+      '<div class="ln-int"><div class="ln-int-h">היתר עסקה</div>' +
+      '<p class="ln-int-lead">ממלאים <b>אחד</b> מהשניים — אחוז או סכום, והשני מתמלא לבד. בלי היתר עסקה — משאירים ריק.</p>' +
+      '<div class="ln-int-row"><label class="fld"><span>אחוז</span><input class="inp" id="o-int-p" inputmode="decimal" data-inp="int-p" placeholder="למשל 5" value="' +
         esc(l && +l.repay_total > +l.amount ? Math.round((l.repay_total / l.amount - 1) * 10000) / 100 : '') + '"></label>' +
-      '<label class="fld"><span>סכום להחזר, כולל היתר עסקה</span><input class="inp" id="o-total" inputmode="decimal" data-inp="int-t" value="' +
-        esc(l && +l.repay_total > +l.amount ? l.repay_total : '') + '"></label></div></div>' +
+      '<span class="ln-int-or">או</span>' +
+      '<label class="fld"><span>סכום להחזר, כולל היתר העסקה</span><input class="inp" id="o-total" inputmode="decimal" data-inp="int-t" value="' +
+        esc(l && +l.repay_total > +l.amount ? l.repay_total : '') + '"></label></div>' +
+      '<div class="ln-int-sum" id="o-int-sum"></div></div></div>' +
     whenFieldsHTML('o-taken', 'תאריך לקיחה', l, 'taken') +
     '<label class="fld"><span>תנאי החזר</span><input class="inp" id="o-terms" value="' + esc(l ? l.repay_terms || '' : '') + '"></label>' +
     '<label class="fld"><span>סטטוס</span><select class="inp" id="o-status"><option value="">— ללא —</option>' + LOAN_STATUSES.map(function (s) {
@@ -291,7 +295,7 @@ function formLoan(l) {
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (l ? '<button class="btn danger" data-act="loan-del" data-id="' + esc(l.client_id) + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="loan-save" data-id="' + esc(l ? l.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
-  ckSync();
+  ckSync(); intSum();
 }
 
 // סכום לכל תשלום — שורה לכל תשלום, ובה החודש שלו כשיש חודש ראשון.
@@ -336,7 +340,14 @@ function intSync(from) {
   var amt = readNum($('#o-amount'), 0), p = $('#o-int-p'), t = $('#o-total');
   if (!p || !t || !(amt > 0)) return;
   if (from === 'p') { var pv = readNum(p, 0); t.value = pv > 0 ? Math.round(amt * (1 + pv / 100) * 100) / 100 : ''; }
-  else { var tv = readNum(t, 0); p.value = tv > amt ? Math.round((tv / amt - 1) * 10000) / 100 : ''; }
+  else if (from === 't') { var tv = readNum(t, 0); p.value = tv > amt ? Math.round((tv / amt - 1) * 10000) / 100 : ''; }
+  intSum();
+}
+// מתחת לשדות — במילים: הקרן, היתר העסקה וכמה מחזירים
+function intSum() {
+  var out = $('#o-int-sum'), amt = readNum($('#o-amount'), 0), tt = readNum($('#o-total'), 0);
+  if (!out) return;
+  out.textContent = amt > 0 && tt > amt ? 'קרן ' + ils(amt) + ' + היתר עסקה ' + ils(tt - amt) + ' = מחזירים ' + ils(tt) : '';
 }
 function saveLoan(id) {
   var lender = val('o-lender'), amount = readNum($('#o-amount'), 0), kind = val('o-kind') || null;

@@ -593,6 +593,13 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ln-kind button svg{width:18px;height:18px}
 .ln-box{background:var(--card-2);border-radius:var(--radius-sm);padding:var(--sp-5);margin-bottom:var(--sp-5)}
 .ln-ck-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0 var(--sp-4)}
+.ln-int{border-top:1px solid var(--border);margin-top:var(--sp-4);padding-top:var(--sp-5)}
+.ln-int-h{font-weight:800;color:var(--text)}
+.ln-int-lead{margin:var(--sp-1) 0 var(--sp-4);font-size:var(--fs-2);color:var(--text-3)}
+.ln-int-lead b{color:var(--text)}
+.ln-int-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,2fr);gap:var(--sp-4);align-items:end}
+.ln-int-or{align-self:center;padding-top:var(--sp-6);font-weight:800;color:var(--text-3)}
+.ln-int-sum{font-size:var(--fs-2);font-weight:700;color:var(--warn)}
 .ln-ck-sum{font-size:var(--fs-2);font-weight:700;color:var(--text-3)}
 .ln-ck-sum.warn{color:var(--warn)}
 /* ── תכנית ── */
