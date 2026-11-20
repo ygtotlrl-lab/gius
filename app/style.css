@@ -85,7 +85,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
   display:flex;align-items:center;gap:var(--sp-5);
 }
 .brand{display:flex;align-items:center;gap:var(--sp-4);font-weight:800;font-size:var(--fs-4);letter-spacing:var(--ls-n1)}
-.brand svg{width:26px;height:26px;flex:none}
+.brand .brand-mark{width:26px;height:26px;flex:none}
 .brand-t{display:flex;flex-direction:column;line-height:var(--lh-2)}
 .brand-t small{font-weight:600;color:var(--text-3);font-size:var(--fs-1)}
 /* רוחב קבוע לשם המסך — שם ארוך או קצר אינו מזיז את סרגל הניווט שלצדו. */
