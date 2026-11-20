@@ -935,3 +935,12 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ix-small .ix-head b{font-size:var(--fs-4)}
 .ix-small .fl-track .fl-col{flex-basis:calc(100cqi / 6)}
 .ix-small .ix-line{width:calc(var(--n) * max(52px, 100cqi / 6))}
+
+/* הלוואות נטו — העמודה כולה חיוורת בגובה הסכום המלא, והחלק המודגש בתחתיתה */
+.fl-bar.ghost.loan{background:var(--bad-soft)} .fl-bar.ghost.rep{background:var(--ok-soft)}
+.fl-solid{position:absolute;inset-inline:0;bottom:0;height:calc(var(--s) * 100%);border-radius:inherit}
+.fl-bar.loan .fl-solid{background:var(--bad)} .fl-bar.rep .fl-solid{background:var(--ok)}
+.fl-vals b small{display:block;font-size:9px;font-weight:700;color:var(--text-3);text-align:center}
+.fl-legend i.ghost{background:var(--bad-soft);border:1px solid var(--bad)}
+.fl-sum dd small{display:block;font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
+.fl-note{margin:calc(-1 * var(--sp-3)) 0 var(--sp-5);font-size:var(--fs-1);color:var(--text-3)}

@@ -116,13 +116,17 @@ function signed(v) { return (v < 0 ? '−' : '') + ils(Math.abs(v)); }
 // הגבוה למעלה ובצבע העמודה — וכך גם בחודש המוצג (big: הסכום המלא, בלי תווית חודש); extra — נקודת המדד.
 function colHTML(m, bars, max, tgt, big, extra) {
   var p = m.split('-');
-  var hs = bars.map(function (x) { return hFr(x.v, max); }), top = Math.max.apply(null, hs.concat([0]));
+  // full — העמודה כולה בגובה הסכום המלא וחיוורת, והחלק המודגש בתחתיתה — v (נטו)
+  var hs = bars.map(function (x) { return hFr(x.full > x.v ? x.full : x.v, max); }), top = Math.max.apply(null, hs.concat([0]));
+  var fmt = function (v) { return esc(big ? ils(v) : kShort(v)); };
   var plot = bars.map(function (x, i) {
+    if (x.full > x.v) return '<span class="fl-bar ghost ' + x.cls + '" style="--v:' + hs[i] + '" title="' + esc(x.lbl + ' ' + ils(x.v) + ' מתוך ' + ils(x.full)) + '">' +
+      '<span class="fl-solid" style="--s:' + hFr(x.v, x.full) + '"></span></span>';
     return '<span class="fl-bar ' + x.cls + '" style="--v:' + hs[i] + '" title="' + esc(x.lbl + ' ' + ils(x.v)) + '"></span>';
   }).join('');
-  var lbls = bars.map(function (x, i) { return { v: x.v, h: hs[i], cls: x.cls }; }).filter(function (x) { return x.v > 0; })
+  var lbls = bars.map(function (x, i) { return { v: x.v, full: x.full, h: hs[i], cls: x.cls }; }).filter(function (x) { return x.v > 0 || x.full > 0; })
     .sort(function (a, b) { return a.h - b.h; })
-    .map(function (x) { return '<b class="' + x.cls + '">' + esc(big ? ils(x.v) : kShort(x.v)) + '</b>'; }).join('');
+    .map(function (x) { return '<b class="' + x.cls + '">' + fmt(x.v) + (x.full > x.v ? '<small>מתוך ' + fmt(x.full) + '</small>' : '') + '</b>'; }).join('');
   return '<div class="fl-col">' +
     '<div class="fl-plot">' + (tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(tgt, max) + '"></i>' : '') + plot +
       (lbls ? '<span class="fl-vals" style="--v:' + top + '">' + lbls + '</span>' : '') + (extra || '') + '</div>' +
@@ -180,22 +184,26 @@ function indicesHTML(all) {
 }
 
 // הלוואות נטו — אדומה כשהחוב גדל, וירוקה («החזר נטו») כשהוחזר יותר משנלקח.
+// הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש (כולל היתר עסקה) וחיוורת, והחלק המודגש — מה שנשאר אחרי ההחזרים;
+// ובחודש שהוחזר בו יותר משנלקח — עמודה ירוקה בגובה ההחזרים, והמודגש — «החזר נטו».
 function netBars(f) {
   return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' },
-          f.netBack > 0 ? { v: f.netBack, cls: 'rep', lbl: 'החזר נטו' } : { v: f.netUp, cls: 'loan', lbl: 'הלוואות נטו' }];
+          f.netBack > 0 ? { v: f.netBack, full: f.repaid, cls: 'rep', lbl: 'החזר נטו' } : { v: f.netUp, full: f.added, cls: 'loan', lbl: 'הלוואות נטו' }];
 }
 function flowHTML(m) {
   var all = flowMonths().map(flowOf), cur = flowOf(m);
   var avg = all.length ? sum(all, function (f) { return f.inc; }) / all.length : 0;
   var tot = { inc: sum(all, function (f) { return f.inc; }), net: sum(all, function (f) { return f.net; }) };
   var max = 1;
-  all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.netUp, f.netBack, f.tgt); });
-  max *= 1.12;
-  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span></div>' +
+  all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.added, f.repaid, f.tgt); });
+  max *= 1.35; // מקום לשלוש שורות תווית מעל העמודה הגבוהה
+  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span><span><i class="ghost"></i>חיוור — מה שכוסה בהחזרים</span></div>' +
     '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>' +
-    '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>';
+    '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>' +
+    '<p class="fl-note">עמודת ההלוואות בגובה כל ההלוואות החדשות של החודש, כולל היתר עסקה; החלק המודגש — מה שנשאר אחרי ההחזרים, והחיוור — מה שכוסה בהם.</p>';
   var sumHTML = '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
-    '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) + '</dd></div></dl>';
+    '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) +
+      '<small>' + esc('חדשות ' + kShort(cur.added) + ' − החזרים ' + kShort(cur.repaid)) + '</small></dd></div></dl>';
   // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
   return indicesHTML(all) +
     '<section class="card"><h2>הכנסות מול הלוואות נטו</h2>' + legend +
