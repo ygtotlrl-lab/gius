@@ -816,7 +816,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .fl-sum dt i{width:10px;height:10px;border-radius:3px}
 .fl-sum dt i.inc{background:var(--brand-fill)} .fl-sum dt i.loan{background:var(--bad)} .fl-sum dt i.rep{background:var(--ok)}
 .fl-sum-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.fl-sum-3 dd{font-size:var(--fs-4);white-space:nowrap}
+.fl-sum.fl-sum-3 dd{font-size:var(--fs-4);white-space:nowrap}
 .fl-sum dd small{display:block;font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
 .fl-total{font-size:var(--fs-2);font-weight:600;color:var(--text-2);margin:calc(-1 * var(--sp-3)) 0 var(--sp-5)}
 .fl-total b{color:var(--brand-ink);font-variant-numeric:tabular-nums} .fl-total b.loan{color:var(--bad)} .fl-total b.rep{color:var(--ok)}
