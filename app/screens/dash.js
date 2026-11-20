@@ -150,13 +150,13 @@ function indexHTML(all, o) {
     '</b><small>' + esc('מתחילת התקופה · היום ' + ils(now)) + '</small>' + (o.sub ? '<small class="ix-sub">' + o.sub + '</small>' : '') + '</div></div>';
   // מדד בתוך מדד (o.nested) — בלי כרטיס ובלי כותרת: הכפתור שפתח אותו הוא הכותרת; o.after — תוכן בסוף הרכיב
   var tag = o.nested ? 'div' : 'section';
-  return '<' + tag + ' class="' + (o.nested ? 'ix ix-nested' : 'card ix') + '">' + (o.nested ? '' : '<h2>' + esc(o.title) + '</h2>') + head + o.legend +
+  return '<' + tag + ' class="' + (o.nested ? 'ix ix-nested' : 'card ix') + '">' + (o.nested ? '' : '<h2>' + esc(o.title) + '</h2>') + head +
     '<div class="fl-hist"><div class="fl-scroll" tabindex="0" aria-label="' + esc(o.title) + ' לפי חודש"><div class="fl-track">' +
       (n ? '<svg class="ix-line" style="--n:' + n + '" viewBox="0 0 ' + n + ' 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg>' : '') +
       all.slice().reverse().map(function (f) {
         var dot = '<span class="ix-dot" style="--v:' + dv(f[o.key]) + '" title="' + esc('החוב ' + ils(f[o.key])) + '"><b>' + esc(kShort(f[o.key])) + '</b></span>';
         return colHTML(f.m, o.bars(f), maxB, 0, false, dot);
-      }).join('') + '</div></div></div>' + (o.after || '') + '</' + tag + '>';
+      }).join('') + '</div></div></div>' + o.legend.replace('class="fl-legend"', 'class="fl-legend fl-legend-below"') + (o.after || '') + '</' + tag + '>';
 }
 function chgTxt(all, key, kind) {
   var c = (all.length ? all[all.length - 1][key] : 0) - loanDebt(shiftMonth(APP_FIRST_MONTH, -1), kind);
@@ -208,23 +208,24 @@ function flowHTML(m) {
   var max = 1;
   all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.added, f.repaid, f.tgt); });
   max *= 1.35; // מקום לשלוש שורות תווית מעל העמודה הגבוהה
-  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span><span><i class="ghost"></i>חיוור אדום — מה שכוסה בהחזרים</span><span><i class="ghost-rep"></i>חיוור ירוק — מה שכוסה בהלוואות חדשות</span></div>' +
+  // מעל הגרף — הסיכום מתחילת התקופה; מתחתיו — המקרא ומשפט הסבר קצר
+  var total = '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>';
+  var legend = '<div class="fl-legend fl-legend-below"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span>' +
+      '<span><i class="ghost"></i><i class="ghost-rep"></i>חיוור — התקזז</span></div>' +
     '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>' +
-    '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>' +
-    '<p class="fl-note">עמודה אדומה — כשלקחנו יותר משהחזרנו: בגובה כל ההלוואות החדשות של החודש, כולל היתר עסקה; המודגש — מה שנשאר אחרי ההחזרים, והחיוור — מה שכוסה בהם. ' +
-      'עמודה ירוקה — כשהחזרנו יותר משלקחנו: בגובה כל ההחזרים; המודגש — מה שבאמת הוריד את החוב, והחיוור — מה שכוסה בהלוואות חדשות.</p>';
+    '<p class="fl-note">החלק המודגש — כמה החוב גדל (אדום) או קטן (ירוק). החלק החיוור — הלוואות והחזרים שקיזזו זה את זה.</p>';
   var sumHTML = '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
     '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) +
       '<small>' + esc('חדשות ' + kShort(cur.added) + ' − החזרים ' + kShort(cur.repaid)) + '</small></dd></div></dl>';
   // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
   return indicesHTML(all) +
-    '<section class="card"><h2>הכנסות מול הלוואות נטו</h2>' + legend +
+    '<section class="card"><h2>הכנסות מול הלוואות נטו</h2>' + total +
     '<div class="flow">' +
       '<div class="fl-month"><div class="fl-title"><span>' + esc(monthLabel(m)) + '</span></div>' + colHTML(m, netBars(cur), max, cur.tgt, true) + sumHTML + '</div>' +
       '<div class="fl-hist"><div class="fl-title"><span>לאורך הזמן</span></div><div class="fl-scroll" tabindex="0" aria-label="הכנסות והלוואות נטו לפי חודש">' +
         '<div class="fl-track">' + (avg > 0 ? '<i class="fl-avg" style="--v:' + hFr(avg, max) + '"></i>' : '') +
         all.slice().reverse().map(function (f) { return colHTML(f.m, netBars(f), max, f.tgt, false); }).join('') + '</div></div></div>' +
-    '</div></section>';
+    '</div>' + legend + '</section>';
 }
 
 function viewDash() {
