@@ -1,5 +1,5 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
-import { DAY_MONTHS, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, sortCompare } from '../core/util.js';
+import { DAY_MONTHS, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, dayToday, sortCompare } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
          pushDirty, schedulePush, tombInherit, tombKill } from '../core/sync.js';
@@ -149,6 +149,48 @@ function gSortEvents(list) { return list.slice().sort(bySort); }
 
 // תנועות בהלוואה — בסדר ההוספה.
 function gSortLoanMoves(list) { return list.slice().sort(bySort); }
+
+// ── הלוואות — החישוב (המסך והדשבורד); אף סכום אינו נשמר ──
+function loanCurMonth() { return dayToday().slice(0, 7); }
+function loanMovesOf(id) { return gSortLoanMoves(state.loanMoves.filter(function (m) { return m.loan_client_id === id; })); }
+function loanMoveMonth(mv) { return mv.move_date ? monthKeyOf(mv.move_date) : ''; }
+function loanTakenMonth(l) { return l.taken_date ? monthKeyOf(l.taken_date) : (l.taken_month || ''); }
+// מועד ההחזר של הלוואה לטווח ארוך — תאריך מלא או חודש; בלעדיו אינה בצפי.
+function loanDueMonth(l) { return l.last_check_date ? monthKeyOf(l.last_check_date) : (l.last_check_month || ''); }
+// בצ׳קים — כל השאר (לטווח ארוך ולא מסווג) נספר כטווח ארוך.
+function loanIsChecks(l) { return l.kind === 'checks'; }
+// הצ׳קים — חודש לכל צ׳ק ברצף מהראשון (בלי חודש ראשון — בלי חודשים), וסכום: שווה, או לכל צ׳ק.
+function loanCheckList(l) {
+  var n = +l.check_count || 0, out = [];
+  var per = Array.isArray(l.check_amounts) && l.check_amounts.length === n ? l.check_amounts : null;
+  for (var i = 0; i < n; i++) out.push({ i: i + 1, n: n, m: l.first_check_month ? shiftMonth(l.first_check_month, i) : '',
+                                         a: per ? +per[i] || 0 : +l.check_amount || 0 });
+  return out;
+}
+// נפרע עד סוף חודש mk: התנועות שנרשמו עד אז (ותנועה בלי תאריך — תמיד);
+// בצ׳קים — הגבוה מבין זה לבין הצ׳קים שחודשם הגיע, כך שצ׳ק שנרשם גם כתנועה אינו נספר פעמיים;
+// ובטווח ארוך, בחודש עתידי — כל הסכום במועד ההחזר (צפי), ושמועדה עבר — באיחור, ואינה נפרעת בצפי.
+function loanPaidBy(l, mk) {
+  var cur = loanCurMonth();
+  var moves = sum(loanMovesOf(l.client_id).filter(function (mv) { var m = loanMoveMonth(mv); return !m || m <= mk; }), function (mv) { return mv.amount; });
+  if (loanIsChecks(l)) return Math.max(moves, sum(loanCheckList(l).filter(function (c) { return c.m && c.m <= mk; }), function (c) { return c.a; }));
+  var due = loanDueMonth(l);
+  if (mk > cur && due && due >= cur && due <= mk) return Math.max(moves, +l.amount || 0);
+  return moves;
+}
+function loanBalance(l, mk) { return Math.max(0, (+l.amount || 0) - loanPaidBy(l, mk || loanCurMonth())); }
+// חודש אחד: ברוטו (בצ׳קים · לטווח ארוך) לפי חודש הלקיחה · החזרי הטווח הארוך · נטו = ברוטו − החזרי הטווח הארוך.
+// החזרי הצ׳קים אינם כאן — הם הוצאה של התקציב.
+function loanFlow(mk) {
+  var f = { m: mk, checks: 0, long: 0, repaid: 0 };
+  state.loans.forEach(function (l) {
+    if (loanTakenMonth(l) === mk) f[loanIsChecks(l) ? 'checks' : 'long'] += +l.amount || 0;
+    if (!loanIsChecks(l)) f.repaid += loanPaidBy(l, mk) - loanPaidBy(l, shiftMonth(mk, -1));
+  });
+  f.gross = f.checks + f.long;
+  f.net = f.gross - f.repaid;
+  return f;
+}
 
 // הלוואות — לפי שם המלווה.
 // הלוואות — לפי שם (א״ב) · תאריך לקיחה (החדש ראשון) · תאריך סיום (הקרוב ראשון) · סטטוס (בסדר הרשימה);
@@ -684,7 +726,8 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
+export { loanBalance, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanMovesOf, loanPaidBy, loanTakenMonth,
+         $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
          gSortTasks, gSortTxns, ils, initials, insert, leftForPledge, listDef, lookupById, lookupLabels,

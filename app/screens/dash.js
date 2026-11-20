@@ -7,7 +7,7 @@ import { APP_FIRST_MONTH, ASSIGNEES, MONTH_SHORT, STAGES } from '../constants.js
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { dayToday } from '../../core/util.js';
-import { donorName, emptyBox, gSortGroups, gSortTxns, ils, monthAmount, monthKeyOf, monthLabel, monthTxnsInit,
+import { donorName, emptyBox, gSortGroups, gSortTxns, ils, loanFlow, monthAmount, monthLabel, monthTxnsInit,
          pendRowKey, pledgeById, shiftMonth, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
@@ -93,12 +93,14 @@ function tasksHTML() {
 }
 
 // ── הכנסות מול הלוואות ──
-// הכנסה — מה שנספר בחודש (monthAmount של התשלומים היזומים); הלוואה — לפי חודש הלקיחה.
-function loanMonth(l) { return l.taken_date ? monthKeyOf(l.taken_date) : (l.taken_month || ''); }
+// הכנסה — מה שנספר בחודש (monthAmount של התשלומים היזומים); הלוואות — לפי חודש הלקיחה (loanFlow):
+// ברוטו (בצ׳קים · לטווח ארוך), החזרי הטווח הארוך, ונטו = ברוטו פחות ההחזרים; החזרי הצ׳קים — הוצאה של התקציב, ואינם כאן.
 function flowOf(m) {
-  return { m: m, inc: sum(monthTxnsInit(m), monthAmount),
-           loan: sum(state.loans.filter(function (l) { return loanMonth(l) === m; }), function (l) { return l.amount; }),
-           tgt: targetFor(m) };
+  var f = loanFlow(m);
+  f.inc = sum(monthTxnsInit(m), monthAmount);
+  f.tgt = targetFor(m);
+  f.netUp = Math.max(0, f.net); f.netBack = Math.max(0, -f.net);
+  return f;
 }
 // הטווח — מהחודש הראשון של האפליקציה ועד החודש של היום
 function flowMonths() {
@@ -106,44 +108,71 @@ function flowMonths() {
   while (k <= now && out.length < 240) { out.push(k); k = shiftMonth(k, 1); }
   return out;
 }
-function kShort(v) { return v >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
+function kShort(v) { return v >= 1e6 ? (Math.round(v / 1e5) / 10) + 'M' : v >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
 function hFr(v, max) { return Math.round(Math.min(1, (v || 0) / max) * 1000) / 1000; }
-function flowColHTML(f, max, big) {
-  var p = f.m.split('-'), hi = hFr(f.inc, max), hl = hFr(f.loan, max);
-  var b = function (v, h, cls, lbl) {
-    return '<span class="fl-bar ' + cls + '" style="--v:' + h + '" title="' + lbl + ' ' + esc(ils(v)) + '"></span>';
-  };
-  // התוויות — מעל העמודה הגבוהה, ממורכזות לזוג ובצבע העמודה; הסכום הגבוה למעלה והנמוך מתחתיו
-  var lb = function (v, cls) { return v > 0 ? '<b class="' + cls + '">' + esc(big ? ils(v) : kShort(v)) + '</b>' : ''; };
-  var lbls = hi >= hl ? lb(f.loan, 'loan') + lb(f.inc, 'inc') : lb(f.inc, 'inc') + lb(f.loan, 'loan');
+// עמודה לכל חודש: bars — [{v, cls, lbl, segs: [{v, cls}]}]; התוויות מעל העמודה הגבוהה, ממורכזות לקבוצה,
+// הגבוה למעלה ובצבע העמודה — וכך גם בחודש המוצג (big: הסכום המלא, בלי תווית חודש).
+function colHTML(m, bars, max, tgt, big) {
+  var p = m.split('-');
+  var hs = bars.map(function (x) { return hFr(x.v, max); }), top = Math.max.apply(null, hs.concat([0]));
+  var plot = bars.map(function (x, i) {
+    var t = ' title="' + esc(x.lbl + ' ' + ils(x.v)) + '"';
+    if (!x.segs) return '<span class="fl-bar ' + x.cls + '" style="--v:' + hs[i] + '"' + t + '></span>';
+    return '<span class="fl-stack" style="--v:' + hs[i] + '"' + t + '>' + x.segs.map(function (s) {
+      return s.v > 0 ? '<span class="fl-seg ' + s.cls + '" style="--v:' + hFr(s.v, x.v || 1) + '"></span>' : '';
+    }).join('') + '</span>';
+  }).join('');
+  var lbls = bars.map(function (x, i) { return { v: x.v, h: hs[i], cls: x.cls }; }).filter(function (x) { return x.v > 0; })
+    .sort(function (a, b) { return a.h - b.h; })
+    .map(function (x) { return '<b class="' + x.cls + '">' + esc(big ? ils(x.v) : kShort(x.v)) + '</b>'; }).join('');
   return '<div class="fl-col">' +
-    '<div class="fl-plot">' +
-      (f.tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(f.tgt, max) + '"></i>' : '') +
-      b(f.inc, hi, 'inc', 'הכנסות') + b(f.loan, hl, 'loan', 'הלוואות') +
-      (lbls ? '<span class="fl-vals" style="--v:' + Math.max(hi, hl) + '">' + lbls + '</span>' : '') +
-    '</div>' +
+    '<div class="fl-plot">' + (tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(tgt, max) + '"></i>' : '') + plot +
+      (lbls ? '<span class="fl-vals" style="--v:' + top + '">' + lbls + '</span>' : '') + '</div>' +
     (big ? '' : '<span class="fl-lab">' + esc(MONTH_SHORT[+p[1] - 1] + ' ' + p[0].slice(2)) + '</span>') +
   '</div>';
 }
-function flowHTML(m) {
-  var months = flowMonths(), all = months.map(flowOf), cur = flowOf(m);
-  var max = 1;
-  all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.loan, f.tgt); });
-  max *= 1.12;
-  var avg = all.length ? sum(all, function (f) { return f.inc; }) / all.length : 0;
-  // שתי קבוצות — הצבעים והקווים; בטלפון כל קבוצה בשורה משלה
-  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות</span></div>' +
-    '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>';
-  // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
-  return '<section class="card"><h2>הכנסות מול הלוואות</h2>' + legend +
+// הלוואות נטו — אדומה כשהחוב גדל, וירוקה («החזר נטו») כשהוחזר יותר משנלקח.
+function netBars(f) {
+  return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' },
+          f.netBack > 0 ? { v: f.netBack, cls: 'rep', lbl: 'החזר נטו' } : { v: f.netUp, cls: 'loan', lbl: 'הלוואות נטו' }];
+}
+function detailBars(f) {
+  return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' },
+          { v: f.gross, cls: 'loan', lbl: 'הלוואות ברוטו', segs: [{ v: f.checks, cls: 'checks' }, { v: f.long, cls: 'loan' }] },
+          { v: f.repaid, cls: 'rep', lbl: 'החזרי טווח ארוך' }];
+}
+function signed(v) { return (v < 0 ? '−' : '') + ils(Math.abs(v)); }
+// רכיב: החודש המוצג ברבע, וההיסטוריה בשאר — נגללת, והחדש בימין (תחילת השורה ב-RTL).
+function flowBlock(title, legend, cur, all, bars, max, sumHTML, avg, withTgt) {
+  return '<section class="card"><h2>' + esc(title) + '</h2>' + legend +
     '<div class="flow">' +
-      '<div class="fl-month"><div class="fl-title"><span>' + esc(monthLabel(m)) + '</span></div>' + flowColHTML(cur, max, true) +
-        '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
-        '<div><dt><i class="loan"></i>הלוואות</dt><dd>' + esc(ils(cur.loan)) + '</dd></div></dl></div>' +
-      '<div class="fl-hist"><div class="fl-title"><span>לאורך הזמן</span></div><div class="fl-scroll" tabindex="0" aria-label="הכנסות והלוואות לפי חודש">' +
+      '<div class="fl-month"><div class="fl-title"><span>' + esc(monthLabel(cur.m)) + '</span></div>' +
+        colHTML(cur.m, bars(cur), max, withTgt ? cur.tgt : 0, true) + sumHTML + '</div>' +
+      '<div class="fl-hist"><div class="fl-title"><span>לאורך הזמן</span></div><div class="fl-scroll" tabindex="0" aria-label="' + esc(title) + ' לפי חודש">' +
         '<div class="fl-track">' + (avg > 0 ? '<i class="fl-avg" style="--v:' + hFr(avg, max) + '"></i>' : '') +
-        all.slice().reverse().map(function (f) { return flowColHTML(f, max, false); }).join('') + '</div></div></div>' +
+        all.slice().reverse().map(function (f) { return colHTML(f.m, bars(f), max, withTgt ? f.tgt : 0, false); }).join('') + '</div></div></div>' +
     '</div></section>';
+}
+function flowHTML(m) {
+  var all = flowMonths().map(flowOf), cur = flowOf(m);
+  var avg = all.length ? sum(all, function (f) { return f.inc; }) / all.length : 0;
+  var tot = { inc: sum(all, function (f) { return f.inc; }), net: sum(all, function (f) { return f.net; }) };
+  // נטו — שתי עמודות והיעד
+  var maxN = 1, maxD = 1;
+  all.concat([cur]).forEach(function (f) { maxN = Math.max(maxN, f.inc, f.netUp, f.netBack, f.tgt); maxD = Math.max(maxD, f.inc, f.gross, f.repaid); });
+  maxN *= 1.12; maxD *= 1.12;
+  var legN = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span></div>' +
+    '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>' +
+    '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>';
+  var sumN = '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
+    '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) + '</dd></div></dl>';
+  var legD = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="checks"></i>הלוואות בצ׳קים</span>' +
+    '<span><i class="loan"></i>הלוואות לטווח ארוך</span><span><i class="rep"></i>החזרי טווח ארוך</span></div></div>';
+  var sumD = '<dl class="fl-sum fl-sum-3"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
+    '<div><dt><i class="loan"></i>ברוטו</dt><dd>' + esc(ils(cur.gross)) + '<small>צ׳קים ' + esc(kShort(cur.checks)) + ' · ארוך ' + esc(kShort(cur.long)) + '</small></dd></div>' +
+    '<div><dt><i class="rep"></i>הוחזר</dt><dd>' + esc(ils(cur.repaid)) + '</dd></div></dl>';
+  return flowBlock('הכנסות מול הלוואות נטו', legN, cur, all, netBars, maxN, sumN, avg, true) +
+    flowBlock('הכנסות והלוואות — פירוט', legD, cur, all, detailBars, maxD, sumD, 0, false);
 }
 
 function viewDash() {
