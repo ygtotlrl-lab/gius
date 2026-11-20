@@ -20,6 +20,8 @@
   --warn:#8a5a0b; --warn-soft:#fbf0da;
   --bad:#b3361e; --bad-soft:#f8e1da;
   --gold:#a8760a; --gold-soft:#f7ecc9;
+  /* גרפי מסך ההלוואות — גוונים ניטרליים שאינם בדשבורד: לטווח ארוך · בתשלומים · כל ההחזרים */
+  --ln-a:#4f6d9a; --ln-a-soft:#dbe3ef; --ln-b:#8b6a9e;
   /* צהוב־חרדל לשלב 25–50% במד — צהוב בהיר אינו נקרא על לבן. */
   --stage-low:#b58a00;
   --radius:22px; --radius-sm:var(--r-4);
@@ -43,6 +45,7 @@
       --warn:#e8b25c; --warn-soft:#352a17;
       --bad:#f08a72; --bad-soft:#3a1f19;
       --gold:#e6c35c; --gold-soft:#352d15;
+      --ln-a:#8fa9d1; --ln-a-soft:#26303f; --ln-b:#b99ccb;
       --stage-low:#e8c547;
       --nc-sand:#3a3024; --nc-terra:#43281f; --nc-sage:#2c3324; --nc-sky:#243139; --nc-rose:#3d262a; --nc-plum:#342b39;
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
@@ -561,8 +564,6 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ln-k{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
 .ln-k.fut{background:var(--text-3);opacity:.35}
 .fl-legend i.ln-k{width:12px;height:12px}
-.ln-charts{display:grid;gap:var(--sp-6)}
-@media (min-width:900px){.ln-charts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .ln-charts .fl-scroll{padding-top:calc(2 * var(--sp-7))}
 .ln-charts .fl-track .fl-col{flex:0 0 calc(100cqi / 7);min-width:52px}
 .fl-vals b.ln-tot{color:var(--text)}
@@ -572,18 +573,18 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ln-now{position:relative}
 .ln-now::before{content:"";position:absolute;inset-inline-start:0;top:0;height:var(--plot);border-inline-start:2px dashed var(--border-2)}
 .ln-now .fl-lab{font-weight:800;color:var(--brand-ink)}
-.fl-bar.debt{background:var(--text-2)}
-.fl-bar.inst{background:var(--gold)} .fl-vals b.inst{color:var(--gold)} .ln-future .fl-bar.inst{border-color:var(--gold)}
-.fl-legend i.ln-k.ibar{background:var(--gold)}
-.fl-legend i.ln-k.dbar{background:var(--text-2)} .fl-legend i.ln-k.plan{background:none;border:2px dashed var(--text-3)}
+.fl-bar.ln-a{background:var(--ln-a)} .fl-bar.ln-b{background:var(--ln-b)} .fl-vals b.ln-a{color:var(--ln-a)} .fl-vals b.ln-b{color:var(--ln-b)}
+.fl-bar.ln-fcbar{background:var(--ln-a-soft)} .fl-bar.ln-fcbar .fl-solid{background:var(--ln-a)}
+.ln-future .fl-bar.ln-a{border-color:var(--ln-a)} .ln-future .fl-bar.ln-b{border-color:var(--ln-b)}
+.fl-legend i.ln-k.ibar{background:var(--ln-b)}
+.fl-legend i.ln-k.dbar{background:var(--ln-a)} .fl-legend i.ln-k.fcall{background:var(--ln-a-soft);border:1px solid var(--ln-a)} .fl-legend i.ln-k.plan{background:none;border:2px dashed var(--text-3)}
 .ln-stat.ln-chg small{font-weight:700} .ln-stat .up{color:var(--bad)} .ln-stat .down{color:var(--ok)}
 .ln-lead{margin:calc(-1 * var(--sp-3)) 0 var(--sp-4);font-size:var(--fs-2);color:var(--text-3)}
 .ln-fc .rc-amt{font-variant-numeric:tabular-nums}
 .ln-fc .rc.ln-late .rc-amt{color:var(--bad)}
-.ln-kb.checks{background:var(--gold-soft);color:var(--text)} .ln-kb.long{background:var(--brand-soft);color:var(--brand-ink)}
 .ln-sub{font-size:var(--fs-1);font-weight:800;color:var(--text-3);margin:var(--sp-5) 0 var(--sp-2)}
 .ln-cks{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:var(--sp-3)}
-.ln-ck{display:flex;flex-direction:column;align-items:center;gap:var(--sp-1);text-align:center;background:var(--card);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:var(--radius-sm);padding:var(--sp-3) var(--sp-2)}
+.ln-ck{display:flex;flex-direction:column;align-items:center;gap:var(--sp-1);text-align:center;background:var(--card);border:1px solid var(--border);border-top:3px solid var(--ln-b);border-radius:var(--radius-sm);padding:var(--sp-3) var(--sp-2)}
 .ln-ck-m{font-size:var(--fs-1);font-weight:700;color:var(--text-2);white-space:nowrap}
 .ln-ck b{font-size:var(--fs-3);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ln-ck small{font-size:var(--fs-1);color:var(--text-3)}
@@ -935,7 +936,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .fl-solid{position:absolute;inset-inline:0;bottom:0;height:calc(var(--s) * 100%);border-radius:inherit}
 .fl-bar.loan .fl-solid{background:var(--bad)} .fl-bar.rep .fl-solid{background:var(--ok)}
 .fl-vals b small{display:block;font-size:9px;font-weight:700;color:var(--text-3);text-align:center}
-.fl-legend i.ghost{background:var(--bad-soft);border:1px solid var(--bad)}
+.fl-legend i.ghost{background:var(--bad-soft);border:1px solid var(--bad)} .fl-legend i.ghost-rep{background:var(--ok-soft);border:1px solid var(--ok)}
 .fl-sum dd small{display:block;font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
 .fl-note{margin:calc(-1 * var(--sp-3)) 0 var(--sp-5);font-size:var(--fs-1);color:var(--text-3)}
 /* מדדי הסוגים — כפתור לכל סוג, זה מעל זה בתחתית המדד הכללי; פתוח — המדד מתחת לכפתור */
@@ -951,3 +952,11 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ix-nested .ix-head b{font-size:var(--fs-4)}
 /* תווית מעל עמודה — כל שורה ממורכזת, גם כשמתחתיה «מתוך» */
 .fl-vals b{text-align:center}
+.ln-charts h2{margin-bottom:0}
+.ln-charts .ix-subs{margin-top:var(--sp-5)}
+.ln-chart-in{padding:0 var(--sp-5) var(--sp-5)}
+.ln-charts .fl-hist{background:none;padding:0}
+.ln-fc-chart .fl-track .fl-col{flex-basis:calc(100cqi / 3)}
+.ln-kic{display:inline-flex;vertical-align:middle;color:var(--brand-ink)} .ln-kic .ico{width:20px;height:20px}
+/* צפי ההחזרים — כל העמודות הן צפי, ולכן בלי המסגרת המקווקות של החודשים המתוכננים */
+.ln-future .fl-bar.ln-fcbar{background:var(--ln-a-soft);border:0}

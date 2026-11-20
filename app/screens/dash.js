@@ -208,10 +208,11 @@ function flowHTML(m) {
   var max = 1;
   all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.added, f.repaid, f.tgt); });
   max *= 1.35; // מקום לשלוש שורות תווית מעל העמודה הגבוהה
-  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span><span><i class="ghost"></i>חיוור — מה שכוסה בהחזרים</span></div>' +
+  var legend = '<div class="fl-legend"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span><span><i class="ghost"></i>חיוור אדום — מה שכוסה בהחזרים</span><span><i class="ghost-rep"></i>חיוור ירוק — מה שכוסה בהלוואות חדשות</span></div>' +
     '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>' +
     '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>' +
-    '<p class="fl-note">עמודת ההלוואות בגובה כל ההלוואות החדשות של החודש, כולל היתר עסקה; החלק המודגש — מה שנשאר אחרי ההחזרים, והחיוור — מה שכוסה בהם.</p>';
+    '<p class="fl-note">עמודה אדומה — כשלקחנו יותר משהחזרנו: בגובה כל ההלוואות החדשות של החודש, כולל היתר עסקה; המודגש — מה שנשאר אחרי ההחזרים, והחיוור — מה שכוסה בהם. ' +
+      'עמודה ירוקה — כשהחזרנו יותר משלקחנו: בגובה כל ההחזרים; המודגש — מה שבאמת הוריד את החוב, והחיוור — מה שכוסה בהלוואות חדשות.</p>';
   var sumHTML = '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
     '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) +
       '<small>' + esc('חדשות ' + kShort(cur.added) + ' − החזרים ' + kShort(cur.repaid)) + '</small></dd></div></dl>';

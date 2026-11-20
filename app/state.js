@@ -37,6 +37,7 @@ var state = {
   // מיון ההלוואות — name · taken · end · status.
   loansSort: 'name', loansQ: '', loansStatus: '', loansOpen: null,
   ixOpen: {}, // מדדי הסוגים שבדשבורד — סגורים, ולחיצה פותחת
+  lnChartOpen: {}, // הגרפים שבמסך ההלוואות — סגורים, ולחיצה פותחת
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
   tasks_ui: { who: ASSIGNEES[0], stage: null, q: '' }
 };

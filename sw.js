@@ -1,7 +1,7 @@
 // sw.js — service worker של האפליקציה
 importScripts('./app.config.js');
 // מכאן נגזרת גרסת האפליקציה שבבאנר.
-var CACHE_NAME = self.APP.id + '-v374';
+var CACHE_NAME = self.APP.id + '-v375';
 
 var CORE = [
   './',
@@ -38,9 +38,9 @@ var CORE = [
   './app/snap.js',
   './app/main.js',
   './manifest.json',
-  './icons/icon-192.e41aec7c.png',
-  './icons/icon-512.fb5ab1da.png',
-  './icons/icon-maskable-512.08b13791.png',
+  './icons/icon-192.b225b07c.png',
+  './icons/icon-512.63f94757.png',
+  './icons/icon-maskable-512.7df76cf4.png',
 ];
 
 // גרסה נעוצה במדויק ולא major צף — שחרור של הספק שובר את האפליקציה בלי שינוי קוד.

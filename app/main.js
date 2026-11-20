@@ -201,7 +201,7 @@ var EMBLEM_D = 'M229.8,424.5C222.5,423.8 215.9,422.2 214.1,420.9C212.9,419.9 213
 function markSVG(cls) {
   return '<svg class="' + cls + '" viewBox="0 0 512 512" aria-hidden="true">' +
     '<rect width="512" height="512" rx="115" fill="#1E8188"/>' +
-    '<g transform="translate(256 256) scale(.88) translate(-255.5 -255.5)"><path fill="#FAF6EC" d="' + EMBLEM_D + '"/></g></svg>';
+    '<g transform="translate(256 256) scale(.88) translate(-255.5 -255.5)"><path fill="#FFFFFF" d="' + EMBLEM_D + '"/></g></svg>';
 }
 
 function renderShell() {
@@ -421,6 +421,8 @@ var DOM_ACTIONS = {
   },
   'loan-kind': loanKindPick,
   // מדד של סוג הלוואה בדשבורד — נפתח ונסגר בכפתור שלו
+  // גרף במסך ההלוואות — נפתח ונסגר בכפתור שלו
+  'ln-chart': function (el) { state.lnChartOpen[el.dataset.k] = !state.lnChartOpen[el.dataset.k]; render(); },
   'ix-toggle': function (el) { state.ixOpen[el.dataset.k] = !state.ixOpen[el.dataset.k]; render(); },
   // מהצפי — ההלוואה נפתחת ברשימה, בלי חיפוש ובלי סינון, והמסך נגלל אליה.
   'loan-open': function (el) {

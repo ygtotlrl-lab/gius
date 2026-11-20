@@ -197,12 +197,13 @@ function loanLeft(l, mk) { return Math.max(0, loanTotal(l) - loanPaidGross(l, mk
 // החזרים (חלק הקרן — לטווח ארוך לפי תאריך התנועה, ובתשלומים לפי התשלומים) · היתר עסקה (חלקו בתשלומי החודש — כאילו נלקחה עוד הלוואה) ·
 // ונטו = חדשות ועוד היתר העסקה, פחות ההחזרים.
 function loanFlow(mk) {
-  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0, intLong: 0, intInst: 0 }, prev = shiftMonth(mk, -1);
+  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0, intLong: 0, intInst: 0, grossLong: 0, grossInst: 0 }, prev = shiftMonth(mk, -1);
   state.loans.forEach(function (l) {
     var k = loanIsChecks(l) ? 'Inst' : 'Long';
     if (loanTakenMonth(l) === mk) f[k.toLowerCase()] += +l.amount || 0;
     f['rep' + k] += loanPaidBy(l, mk) - loanPaidBy(l, prev);
     f['int' + k] += loanInterestBy(l, mk) - loanInterestBy(l, prev);
+    f['gross' + k] += loanPaidGross(l, mk) - loanPaidGross(l, prev);
   });
   f.interest = f.intLong + f.intInst;
   f.added = f.long + f.inst + f.interest; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
