@@ -929,12 +929,6 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ix-dot b{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;white-space:nowrap;color:var(--text);text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2)}
 .ix-head small.ix-sub{display:block;margin-top:var(--sp-1);font-weight:700}
 .ix-sub .up{color:var(--bad)} .ix-sub .down{color:var(--ok)} .ix-sub .int{color:var(--warn)}
-.ix-pair{display:grid;gap:var(--sp-6)}
-@media (min-width:900px){.ix-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
-.ix-pair > .card{margin:0}
-.ix-small .ix-head b{font-size:var(--fs-4)}
-.ix-small .fl-track .fl-col{flex-basis:calc(100cqi / 6)}
-.ix-small .ix-line{width:calc(var(--n) * max(52px, 100cqi / 6))}
 
 /* הלוואות נטו — העמודה כולה חיוורת בגובה הסכום המלא, והחלק המודגש בתחתיתה */
 .fl-bar.ghost.loan{background:var(--bad-soft)} .fl-bar.ghost.rep{background:var(--ok-soft)}
@@ -944,3 +938,16 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .fl-legend i.ghost{background:var(--bad-soft);border:1px solid var(--bad)}
 .fl-sum dd small{display:block;font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
 .fl-note{margin:calc(-1 * var(--sp-3)) 0 var(--sp-5);font-size:var(--fs-1);color:var(--text-3)}
+/* מדדי הסוגים — כפתור לכל סוג, זה מעל זה בתחתית המדד הכללי; פתוח — המדד מתחת לכפתור */
+.ix-subs{display:grid;gap:var(--sp-4);margin-top:var(--sp-6)}
+.ix-sub-wrap{border:1px solid var(--border);border-radius:var(--r-6);background:var(--card);overflow:hidden}
+.ix-sub-wrap.open{border-color:var(--brand-fill)}
+.ix-btn{display:flex;align-items:center;gap:var(--sp-5);width:100%;background:none;border:0;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-5) var(--sp-6)}
+.ix-btn-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1);font-weight:800;font-size:var(--fs-4)}
+.ix-btn-t small{font-size:var(--fs-2);font-weight:700}
+.ix-btn-t small.up{color:var(--bad)} .ix-btn-t small.down{color:var(--ok)}
+.ix-btn-c{color:var(--text-3)} .ix-btn-c .ico{width:20px;height:20px}
+.ix-nested{padding:0 var(--sp-5) var(--sp-5)}
+.ix-nested .ix-head b{font-size:var(--fs-4)}
+/* תווית מעל עמודה — כל שורה ממורכזת, גם כשמתחתיה «מתוך» */
+.fl-vals b{text-align:center}

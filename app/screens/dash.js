@@ -148,13 +148,15 @@ function indexHTML(all, o) {
     '<span class="ix-ic">' + icon(ch > 0 ? 'up' : 'down') + '</span><div><b>' +
     esc(ch > 0 ? o.name + ' עלה ב־' + ils(ch) : ch < 0 ? o.name + ' ירד ב־' + ils(-ch) : o.name + ' לא השתנה') +
     '</b><small>' + esc('מתחילת התקופה · היום ' + ils(now)) + '</small>' + (o.sub ? '<small class="ix-sub">' + o.sub + '</small>' : '') + '</div></div>';
-  return '<section class="card ix' + (o.cls ? ' ' + o.cls : '') + '"><h2>' + esc(o.title) + '</h2>' + head + o.legend +
+  // מדד בתוך מדד (o.nested) — בלי כרטיס ובלי כותרת: הכפתור שפתח אותו הוא הכותרת; o.after — תוכן בסוף הרכיב
+  var tag = o.nested ? 'div' : 'section';
+  return '<' + tag + ' class="' + (o.nested ? 'ix ix-nested' : 'card ix') + '">' + (o.nested ? '' : '<h2>' + esc(o.title) + '</h2>') + head + o.legend +
     '<div class="fl-hist"><div class="fl-scroll" tabindex="0" aria-label="' + esc(o.title) + ' לפי חודש"><div class="fl-track">' +
       (n ? '<svg class="ix-line" style="--n:' + n + '" viewBox="0 0 ' + n + ' 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg>' : '') +
       all.slice().reverse().map(function (f) {
         var dot = '<span class="ix-dot" style="--v:' + dv(f[o.key]) + '" title="' + esc('החוב ' + ils(f[o.key])) + '"><b>' + esc(kShort(f[o.key])) + '</b></span>';
         return colHTML(f.m, o.bars(f), maxB, 0, false, dot);
-      }).join('') + '</div></div></div></section>';
+      }).join('') + '</div></div></div>' + (o.after || '') + '</' + tag + '>';
 }
 function chgTxt(all, key, kind) {
   var c = (all.length ? all[all.length - 1][key] : 0) - loanDebt(shiftMonth(APP_FIRST_MONTH, -1), kind);
@@ -163,27 +165,36 @@ function chgTxt(all, key, kind) {
 function lg(items) {
   return '<div class="fl-legend"><div class="fl-lg">' + items.map(function (x) { return '<span><i class="' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
 }
-// שלושה מדדים: הכללי — הכנסות · הלוואות חדשות · החזרים, וקו החוב כולו; ומתחתיו, זה לצד זה, לטווח ארוך ובתשלומים.
+// שלושה מדדים: הכללי — הכנסות · הלוואות חדשות · היתר עסקה · החזרים, וקו החוב כולו; ובתוכו, בסופו, שני כפתורים זה מעל זה —
+// לטווח ארוך ובתשלומים: סגורים, ולחיצה פותחת את המדד של הסוג מתחת לכפתור (`state.ixOpen`).
 function indicesHTML(all) {
-  var sub = '<span class="' + (chgTxt(all, 'debtLong', 'long').indexOf('עלה') === 0 ? 'up' : 'down') + '">לטווח ארוך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
-    '<span class="' + (chgTxt(all, 'debtInst', 'inst').indexOf('עלה') === 0 ? 'up' : 'down') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
+  var tone = function (key, kind) { return chgTxt(all, key, kind).indexOf('עלה') === 0 ? 'up' : 'down'; };
+  var sub = '<span class="' + tone('debtLong', 'long') + '">לטווח ארוך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
+    '<span class="' + tone('debtInst', 'inst') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
     ' · <span class="int">היתר עסקה ' + esc(kShort(sum(all, function (f) { return f.interest; }))) + '</span>';
   var debtLine = ['debt', 'החוב בסוף החודש'];
-  return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub,
+  var kinds = [
+    { k: 'long', key: 'debtLong', title: 'הלוואות לטווח ארוך',
+      bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'חדשות' }, { v: f.intLong, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
+    { k: 'inst', key: 'debtInst', title: 'הלוואות בתשלומים',
+      bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'חדשות' }, { v: f.intInst, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
+  var open = state.ixOpen || {};
+  var subs = '<div class="ix-subs">' + kinds.map(function (x) {
+    var on = !!open[x.k];
+    return '<div class="ix-sub-wrap' + (on ? ' open' : '') + '">' +
+      '<button class="ix-btn" data-act="ix-toggle" data-k="' + x.k + '" aria-expanded="' + on + '">' +
+        '<span class="ix-btn-t">' + esc(x.title) + '<small class="' + tone(x.key, x.k) + '">' + esc('החוב ' + chgTxt(all, x.key, x.k)) + '</small></span>' +
+        '<span class="ix-btn-c" aria-hidden="true">' + icon(on ? 'up' : 'down') + '</span></button>' +
+      (on ? indexHTML(all, { key: x.key, kind: x.k, title: x.title, name: 'החוב', nested: true, bars: x.bars,
+              legend: lg([['loan', 'חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) : '') +
+    '</div>';
+  }).join('') + '</div>';
+  return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs,
       bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות חדשות' },
                                    { v: f.interest, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
-      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) +
-    '<div class="ix-pair">' +
-      indexHTML(all, { key: 'debtLong', kind: 'long', title: 'הלוואות לטווח ארוך', name: 'החוב', cls: 'ix-small',
-        bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'חדשות' }, { v: f.intLong, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; },
-        legend: lg([['loan', 'חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) +
-      indexHTML(all, { key: 'debtInst', kind: 'inst', title: 'הלוואות בתשלומים', name: 'החוב', cls: 'ix-small',
-        bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'חדשות' }, { v: f.intInst, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; },
-        legend: lg([['loan', 'חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) +
-    '</div>';
+      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) });
 }
 
-// הלוואות נטו — אדומה כשהחוב גדל, וירוקה («החזר נטו») כשהוחזר יותר משנלקח.
 // הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש (כולל היתר עסקה) וחיוורת, והחלק המודגש — מה שנשאר אחרי ההחזרים;
 // ובחודש שהוחזר בו יותר משנלקח — עמודה ירוקה בגובה ההחזרים, והמודגש — «החזר נטו».
 function netBars(f) {

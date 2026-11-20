@@ -420,6 +420,8 @@ var DOM_ACTIONS = {
     return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id, function () { if (state.loansOpen === el.dataset.id) state.loansOpen = null; });
   },
   'loan-kind': loanKindPick,
+  // מדד של סוג הלוואה בדשבורד — נפתח ונסגר בכפתור שלו
+  'ix-toggle': function (el) { state.ixOpen[el.dataset.k] = !state.ixOpen[el.dataset.k]; render(); },
   // מהצפי — ההלוואה נפתחת ברשימה, בלי חיפוש ובלי סינון, והמסך נגלל אליה.
   'loan-open': function (el) {
     state.loansQ = ''; state.loansStatus = ''; state.loansOpen = el.dataset.id; render();

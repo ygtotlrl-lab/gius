@@ -36,6 +36,7 @@ var state = {
   cards: { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false },
   // מיון ההלוואות — name · taken · end · status.
   loansSort: 'name', loansQ: '', loansStatus: '', loansOpen: null,
+  ixOpen: {}, // מדדי הסוגים שבדשבורד — סגורים, ולחיצה פותחת
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.
   tasks_ui: { who: ASSIGNEES[0], stage: null, q: '' }
 };
