@@ -26,7 +26,7 @@ import { cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay,
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { addLoanMove, formLoan, formLoanMove, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
+import { addLoanMove, ckSync, formLoan, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -419,6 +419,13 @@ var DOM_ACTIONS = {
   'loan-del': function (el) {
     return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id, function () { if (state.loansOpen === el.dataset.id) state.loansOpen = null; });
   },
+  'loan-kind': loanKindPick,
+  // מהצפי — ההלוואה נפתחת ברשימה, בלי חיפוש ובלי סינון, והמסך נגלל אליה.
+  'loan-open': function (el) {
+    state.loansQ = ''; state.loansStatus = ''; state.loansOpen = el.dataset.id; render();
+    var row = document.getElementById('ln-' + el.dataset.id);
+    if (row) row.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  },
   'loan-toggle': function (el) { state.loansOpen = state.loansOpen === el.dataset.id ? null : el.dataset.id; render(); },
   'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, MSG_SAVED_OK); },
   'loan-move-edit': function (el) { var m = findIn(state.loanMoves, el.dataset.id); if (m) formLoanMove(m); },
@@ -533,6 +540,7 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
   if (el.dataset.inp === 'sht-q') { state.sht.q = el.value; state.sht.lim = 0; shtListRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
+  if (el.dataset.inp === 'ck-sync') ckSync();
   if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
 });
 
@@ -549,6 +557,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }
   // תאריך שנבחר מעביר את החודש אחריו — שני שדות שסותרים זה את זה היו נשמרים בשקט.
   if (el.dataset.chg === 'so-uneq') { soUneqToggle(el.dataset.px); return; }
+  if (el.dataset.chg === 'ck-sync' || el.dataset.chg === 'ck-uneq') { ckSync(); return; }
   if (el.dataset.chg === 'when-date') {
     var mInp = document.getElementById(el.dataset.m);
     if (mInp && el.value) mInp.value = monthKeyOf(el.value);

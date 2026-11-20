@@ -3,7 +3,7 @@ import { esc, methodIcon, receiptHTML } from '../../core/ui.js';
 import { stIcon } from '../../core/icons.js';
 import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
-import { APP_FIRST_MONTH, ASSIGNEES, STAGES } from '../constants.js';
+import { APP_FIRST_MONTH, ASSIGNEES, MONTH_SHORT, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { dayToday } from '../../core/util.js';
@@ -94,7 +94,6 @@ function tasksHTML() {
 
 // ── הכנסות מול הלוואות ──
 // הכנסה — מה שנספר בחודש (monthAmount של התשלומים היזומים); הלוואה — לפי חודש הלקיחה.
-var MONTH_SHORT = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
 function loanMonth(l) { return l.taken_date ? monthKeyOf(l.taken_date) : (l.taken_month || ''); }
 function flowOf(m) {
   return { m: m, inc: sum(monthTxnsInit(m), monthAmount),

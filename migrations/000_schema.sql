@@ -398,12 +398,20 @@ create table if not exists public.g_loans (
   updated_at bigint not null,
   deleted_by text,
   taken_month text,
+  kind text,
+  check_count integer,
+  check_amount numeric,
+  first_check_month text,
+  check_amounts jsonb,
   last_check_month text,
   constraint g_loans_pkey PRIMARY KEY (client_id),
   constraint g_loans_taken_month_check CHECK (taken_month IS NULL OR taken_month ~ '^\d{4}-(0[1-9]|1[0-2])$'),
   constraint g_loans_last_check_month_check CHECK (last_check_month IS NULL OR last_check_month ~ '^\d{4}-(0[1-9]|1[0-2])$'),
   constraint g_loans_taken_one_check CHECK (taken_date IS NULL OR taken_month IS NULL),
   constraint g_loans_last_check_one_check CHECK (last_check_date IS NULL OR last_check_month IS NULL),
+  constraint g_loans_kind_check CHECK (kind IS NULL OR kind = ANY (ARRAY['checks'::text, 'long'::text])),
+  constraint g_loans_check_count_check CHECK (check_count IS NULL OR check_count > 0),
+  constraint g_loans_first_check_month_check CHECK (first_check_month IS NULL OR first_check_month ~ '^\d{4}-\d{2}$'),
   constraint g_loans_status_check CHECK ((status IS NULL OR status = ANY (ARRAY['נמסר'::text, 'לטיפול'::text, 'להגשה'::text, 'בהתראה'::text])))
 );
 
@@ -452,6 +460,7 @@ create table if not exists public.g_loan_moves (
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
   deleted_by text,
+  move_date date,
   constraint g_loan_moves_pkey PRIMARY KEY (client_id),
   constraint g_loan_moves_loan_fk FOREIGN KEY (loan_client_id) REFERENCES public.g_loans(client_id) ON DELETE RESTRICT
 );
