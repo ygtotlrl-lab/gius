@@ -1,3 +1,4 @@
+// נוצר מהתצורה — app.config.js, ב-node tools/gen-app.mjs: אין לערוך ביד
 plugins {
     id 'com.android.application' version '8.5.2' apply false
 }
