@@ -142,8 +142,13 @@ function indexHTML(all, o) {
   all.forEach(function (f) { o.bars(f).forEach(function (x) { maxB = Math.max(maxB, x.v); }); maxD = Math.max(maxD, f[o.key], start); });
   maxB *= 2.1; // העמודות בחצי התחתון, והקו מעליהן
   var dv = function (v) { return Math.round((0.55 + 0.4 * Math.min(1, v / maxD)) * 1000) / 1000; };
-  var n = all.length;
-  var pts = all.map(function (f, i) { return (i + 0.5) + ',' + Math.round((1 - dv(f[o.key])) * 1000) / 10; }).join(' ');
+  // נקודת ההתחלה — «תחילת <החודש הראשון>», החוב בסוף החודש שלפניו: הקו מתחיל מאותה נקודה שממנה נמדדת הכותרת,
+  // וההפרש בין תחילתו לסופו הוא בדיוק המספר שבכותרת
+  var n = all.length + 1, y = function (v) { return Math.round((1 - dv(v)) * 1000) / 10; };
+  var pts = '0.5,' + y(start) + ' ' + all.map(function (f, i) { return (i + 1.5) + ',' + y(f[o.key]); }).join(' ');
+  var fp = APP_FIRST_MONTH.split('-');
+  var startCol = '<div class="fl-col ix-start"><div class="fl-plot"><span class="ix-dot" style="--v:' + dv(start) + '" title="' + esc('החוב בתחילת התקופה ' + ils(start)) + '"><b>' + esc(kShort(start)) + '</b></span></div>' +
+    '<span class="fl-lab">' + esc('תחילת ' + MONTH_SHORT[+fp[1] - 1] + ' ' + fp[0].slice(2)) + '</span></div>';
   var head = '<div class="ix-head ' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' +
     '<span class="ix-ic">' + icon(ch > 0 ? 'up' : 'down') + '</span><div><b>' +
     esc(ch > 0 ? o.name + ' עלה ב־' + ils(ch) : ch < 0 ? o.name + ' ירד ב־' + ils(-ch) : o.name + ' לא השתנה') +
@@ -152,11 +157,11 @@ function indexHTML(all, o) {
   var tag = o.nested ? 'div' : 'section';
   return '<' + tag + ' class="' + (o.nested ? 'ix ix-nested' : 'card ix') + '">' + (o.nested ? '' : '<h2>' + esc(o.title) + '</h2>') + head +
     '<div class="fl-hist"><div class="fl-scroll" tabindex="0" aria-label="' + esc(o.title) + ' לפי חודש"><div class="fl-track">' +
-      (n ? '<svg class="ix-line" style="--n:' + n + '" viewBox="0 0 ' + n + ' 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg>' : '') +
+      ('<svg class="ix-line" style="--n:' + n + '" viewBox="0 0 ' + n + ' 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg>') +
       all.slice().reverse().map(function (f) {
         var dot = '<span class="ix-dot" style="--v:' + dv(f[o.key]) + '" title="' + esc('החוב ' + ils(f[o.key])) + '"><b>' + esc(kShort(f[o.key])) + '</b></span>';
         return colHTML(f.m, o.bars(f), maxB, 0, false, dot);
-      }).join('') + '</div></div></div>' + o.legend.replace('class="fl-legend"', 'class="fl-legend fl-legend-below"') + (o.after || '') + '</' + tag + '>';
+      }).join('') + startCol + '</div></div></div>' + o.legend.replace('class="fl-legend"', 'class="fl-legend fl-legend-below"') + (o.after || '') + '</' + tag + '>';
 }
 function chgTxt(all, key, kind) {
   var c = (all.length ? all[all.length - 1][key] : 0) - loanDebt(shiftMonth(APP_FIRST_MONTH, -1), kind);

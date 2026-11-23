@@ -67,11 +67,13 @@ function loanDashHTML() {
 // ── הגרפים — חדשות מול החזרים · החוב בסוף כל חודש, לפי סוג; החודשים הבאים מקווקוים — מתוכננים ──
 function hFr(v, max) { return Math.round(Math.min(1, Math.max(0, v || 0) / max) * 1000) / 1000; }
 function monthLab(m) { var p = m.split('-'); return MONTH_SHORT[+p[1] - 1] + ' ' + p[0].slice(2); }
-function colWrap(m, plot) {
+function colWrap(m, plot, lab) {
   var cur = curMonth();
-  return '<div class="fl-col' + (m > cur ? ' ln-future' : '') + (m === cur ? ' ln-now' : '') + '"><div class="fl-plot">' + plot + '</div>' +
-    '<div class="fl-lab">' + esc(m === cur ? 'היום' : monthLab(m)) + '</div></div>';
+  return '<div class="fl-col' + (m > cur ? ' ln-future' : '') + (m === cur ? ' ln-now' : '') + (lab ? ' ln-start' : '') + '"><div class="fl-plot">' + plot + '</div>' +
+    '<div class="fl-lab">' + esc(lab || (m === cur ? 'היום' : monthLab(m))) + '</div></div>';
 }
+// נקודת ההתחלה — «תחילת <החודש הראשון>»: החוב בסוף החודש שלפניו, כך שהגרף מתחיל מאותה נקודה שממנה נמדד «מתחילת התקופה»
+function startLab() { return 'תחילת ' + monthLab(APP_FIRST_MONTH); }
 // עמודה בלי סכום אינה מצוירת — בחודש מתוכנן המסגרת המקווקות הייתה נשארת כקו
 function bar(v, h, cls, lbl) { return v > 0 ? '<span class="fl-bar ' + cls + '" style="--v:' + h + '" title="' + esc(lbl + ' ' + ils(v)) + '"></span>' : ''; }
 function vals(list, top) {
@@ -90,7 +92,7 @@ function fcColHTML(f, max) {
 function debtColHTML(o, max) {
   var hl = hFr(o.long, max), hi = hFr(o.inst, max);
   return colWrap(o.m, bar(o.long, hl, 'ln-a', 'לטווח ארוך') + bar(o.inst, hi, 'ln-b', 'בתשלומים') +
-    vals([{ v: o.long, h: hl, cls: 'ln-a' }, { v: o.inst, h: hi, cls: 'ln-b' }], Math.max(hl, hi)));
+    vals([{ v: o.long, h: hl, cls: 'ln-a' }, { v: o.inst, h: hi, cls: 'ln-b' }], Math.max(hl, hi)), o.lab);
 }
 // שני גרפים, סגורים בכפתורים זה מעל זה (`state.lnChartOpen`): צפי ההחזרים לרבעון הקרוב · החוב בסוף כל חודש.
 var FC_MONTHS = 3;
@@ -113,7 +115,8 @@ function loanChartsHTML() {
       '<div class="ln-fc-chart">' + track(fcFlows, fcColHTML, max) + '</div>';
   });
   h += btn('debt', 'החוב בסוף כל חודש', 'היום ' + ils(loanDebt(cur)), function () {
-    var months = loanMonths(), debt = months.map(function (m) { return { m: m, long: loanDebt(m, 'long'), inst: loanDebt(m, 'inst') }; }), max = 1;
+    var s0 = startMonth(), months = loanMonths(), debt = [{ m: s0, lab: startLab(), long: loanDebt(s0, 'long'), inst: loanDebt(s0, 'inst') }]
+      .concat(months.map(function (m) { return { m: m, long: loanDebt(m, 'long'), inst: loanDebt(m, 'inst') }; })), max = 1;
     debt.forEach(function (o) { max = Math.max(max, o.long, o.inst); });
     return '<div class="fl-legend"><div class="fl-lg"><span><i class="ln-k dbar"></i>לטווח ארוך</span><span><i class="ln-k ibar"></i>בתשלומים</span>' +
       '<span><i class="ln-k plan"></i>מקווקו — מתוכנן לפי תאריכי הפירעון והתשלומים</span></div></div>' + track(debt, debtColHTML, max);
