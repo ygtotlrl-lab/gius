@@ -1001,3 +1001,12 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .dx-l{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dx-d{flex:none;color:var(--text-2);font-size:var(--fs-2)}
 .dx-add{border:1px dashed var(--border);border-radius:var(--r-4);padding:var(--sp-4)}
+/* הלוואות לפי אנשים — כותרת לכל מלווה: השם, סמל הכרטיס כשהוא משויך, מספר ההלוואות וסך הנותר */
+.ln-person{margin-bottom:var(--sp-6)}
+.ln-ph{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-2);border-bottom:2px solid var(--brand-soft);margin-bottom:var(--sp-3)}
+.ln-ph b{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);min-width:0;overflow-wrap:anywhere}
+.ln-ph .cnt{font-size:var(--fs-1);font-weight:700;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
+.ln-ph-sum{margin-inline-start:auto;display:flex;flex-direction:column;align-items:flex-end;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ln-ph-sum small{font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
+.ln-card{display:inline-grid;place-items:center;color:var(--brand-ink);vertical-align:middle}
+.ln-card .ico{width:16px;height:16px}

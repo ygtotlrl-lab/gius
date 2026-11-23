@@ -255,7 +255,7 @@ function go(screen) {
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') { state.planMonth = m; state.planOpen = {}; }
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false };
-  if (screen === 'loans') { state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
+  if (screen === 'loans') { state.loansBy = 'loan'; state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.lim = 0; state.sht.nav = []; }
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
@@ -433,6 +433,7 @@ var DOM_ACTIONS = {
   'note-del': function (el) { return delAsk(MSG_DEL_NOTE, 'g_notes', el.dataset.id, function () { closeNoteFull(false); }); },
   'loan-new': function () { formLoan(null); },
   'loans-sort': function (el) { state.loansSort = el.dataset.v; render(); },
+  'loans-by': function (el) { state.loansBy = el.dataset.v; render(); },
   'loan-edit': function (el) { var l = findIn(state.loans, el.dataset.id); if (l) formLoan(l); },
   'loan-save': saver(saveLoan, MSG_SAVED_OK),
   'loan-del': function (el) {
