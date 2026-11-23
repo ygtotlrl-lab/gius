@@ -107,7 +107,7 @@ tfoot td{font-weight:700;border-top:1px solid var(--border);border-bottom:0;back
 .tabbar button .ic .ico{width:24px;height:24px}
 .ic .ico{display:block;width:100%;height:100%}
 /* הלשונית הפעילה — האייקון בגלולה רכה ברך הזהות, והאייקון והתווית בדיו הזהות */
-.tabbar button.on{color:var(--brand-ink);font-weight:700}
+.tabbar button.on{color:var(--brand-ink)}
 .tabbar button.on .ic{background:var(--brand-soft)}
 /* מסך שלפני העלייה ממלא את החלון כולו — בלי ריפוד המיכל. */
 .app.is-bare > main{padding:0;max-width:none}
