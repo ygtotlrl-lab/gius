@@ -330,6 +330,10 @@ function formLoan(l) {
         '<label class="fld" id="o-ck-a-box"' + (uneq ? ' hidden' : '') + '><span>סכום לתשלום *</span><input class="inp" id="o-ck-a" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.check_amount || '') + '"></label>' +
         '<label class="fld"><span>חודש התשלום הראשון *</span><input class="inp" type="month" id="o-ck-m" data-chg="ck-sync" value="' + esc(l && l.first_check_month || '') + '"></label>' +
       '</div>' +
+      // היתר עסקה באחוזים — מהסכום ומהתשלום החודשי נגזרים מספר התשלומים והאחרון (היתרה)
+      '<div class="ln-int"><div class="ln-int-h">היתר עסקה</div>' +
+      '<p class="ln-int-lead">ממלאים אחוז, וממנו — לפי סכום ההלוואה והסכום לתשלום — נקבעים מספר התשלומים והאחרון שבהם. בלי היתר עסקה — משאירים ריק.</p>' +
+      '<div class="ln-int-row"><label class="fld"><span>אחוז</span><input class="inp" id="o-ck-int" inputmode="decimal" data-inp="ck-int" placeholder="למשל 5" value="' + esc(ckIntOf(l)) + '"></label></div></div>' +
       '<label class="fld chk"><input type="checkbox" id="o-ck-uneq" data-chg="ck-uneq"' + (uneq ? ' checked' : '') + '><span>התשלומים אינם שווים</span></label>' +
       '<div class="ln-ck-list" id="o-ck-list">' + (uneq ? ckListHTML(l.check_count, l.first_check_month, l.check_amounts) : '') + '</div>' +
       '<div class="ln-ck-sum" id="o-ck-sum"></div>' +
@@ -366,6 +370,29 @@ function ckListHTML(n, first, vals) {
   }
   return h;
 }
+// האחוז שבהלוואה קיימת — סך התשלומים מול הסכום
+function ckIntOf(l) {
+  if (!l || l.kind !== 'checks' || !(+l.amount > 0)) return '';
+  var tot = l.check_amounts && l.check_amounts.length ? l.check_amounts.reduce(function (a, v) { return a + (+v || 0); }, 0) : (+l.check_count || 0) * (+l.check_amount || 0);
+  return tot > +l.amount ? Math.round((tot / l.amount - 1) * 10000) / 100 : '';
+}
+// אחוז ⟵ סך להחזר = סכום × (1 + אחוז); מספר התשלומים = עיגול למעלה של הסך בתשלום, והאחרון — מה שנשאר
+function ckInt() {
+  var p = readNum($('#o-ck-int'), 0), amt = readNum($('#o-amount'), 0), uneq = $('#o-ck-uneq');
+  var per = uneq && uneq.checked ? (ckReadList()[0] || 0) : readNum($('#o-ck-a'), 0);
+  if (!(p > 0) || !(amt > 0) || !(per > 0)) { ckSync(); return; }
+  var tot = Math.round(amt * (1 + p / 100) * 100) / 100, n = Math.ceil(tot / per - 1e-9), last = Math.round((tot - per * (n - 1)) * 100) / 100;
+  if (n > 60) { ckSync(); return; }
+  $('#o-ck-n').value = n; $('#o-ck-a').value = per;
+  var list = $('#o-ck-list');
+  if (last === per) { uneq.checked = false; list.innerHTML = ''; }
+  else {
+    uneq.checked = true;
+    var vals = []; for (var i = 0; i < n; i++) vals.push(i < n - 1 ? per : last);
+    list.innerHTML = ckListHTML(n, val('o-ck-m'), vals); list.dataset.first = val('o-ck-m');
+  }
+  ckSync();
+}
 function ckReadList() {
   return Array.prototype.map.call(document.querySelectorAll('#o-ck-list [data-ck]'), function (el) { return readNum(el, 0); });
 }
@@ -389,7 +416,7 @@ function ckSync() {
   } else if (list.innerHTML) list.innerHTML = '';
   var tot = uneq ? sum(ckReadList(), function (v) { return v; }) : n * readNum($('#o-ck-a'), 0), amt = readNum($('#o-amount'), 0);
   // מעבר לסכום ההלוואה — היתר עסקה; פחות ממנו — אזהרה
-  out.textContent = n ? 'סה״כ התשלומים ' + ils(tot) + (amt && tot > amt ? ' — מתוכם היתר עסקה ' + ils(tot - amt) : amt && tot < amt ? ' — פחות מסכום ההלוואה ' + ils(amt) : '') : '';
+  out.textContent = n ? 'סה״כ התשלומים ' + ils(tot) + (amt && tot > amt ? ' — מתוכם היתר עסקה ' + ils(tot - amt) + ' (' + (Math.round((tot / amt - 1) * 10000) / 100) + '%)' : amt && tot < amt ? ' — פחות מסכום ההלוואה ' + ils(amt) : '') : '';
   out.classList.toggle('warn', !!(n && amt && tot < amt));
 }
 
@@ -440,4 +467,4 @@ function saveLoan(id) {
   return id ? update('g_loans', id, row) : insert('g_loans', row);
 }
 
-export { addLoanMove, ckSync, formLoan, intSync, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans };
+export { addLoanMove, ckInt, ckSync, formLoan, intSync, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans };
