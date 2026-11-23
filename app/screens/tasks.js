@@ -35,16 +35,38 @@ function dueCls(iso) {
   var d = new Date(iso + 'T12:00:00'), now = new Date(), days = (d - now) / 864e5;
   return days < -0.5 ? ' late' : days <= 7 ? ' soon' : '';
 }
+// תת-משימות — כמו בגוגל טאסקים: עיגול קטן לכל אחת, ולחיצה עליו מסמנת «הושלם» (ירוק, והכותרת מחוקה) בלי לפתוח את המשימה;
+// ובשבבים — כמה הושלמו מתוך כולן. נשמרות במשימה עצמה (`subtasks`: מזהה · כותרת · הושלם).
+function subsOf(t) { return Array.isArray(t.subtasks) ? t.subtasks.filter(function (x) { return x && x.title; }) : []; }
+function subsHTML(t) {
+  var subs = subsOf(t);
+  if (!subs.length) return '';
+  return '<ul class="tk-subs">' + subs.map(function (x) {
+    return '<li class="tk-sub' + (x.done ? ' done' : '') + '"><button class="sub-dot" data-act="task-sub" data-id="' + esc(t.client_id) + '" data-sid="' + esc(x.id) +
+      '" aria-pressed="' + !!x.done + '" aria-label="' + esc((x.done ? 'בטל סימון: ' : 'סימון כהושלם: ') + x.title) + '">' + icon('check') + '</button>' +
+      '<span>' + esc(x.title) + '</span></li>';
+  }).join('') + '</ul>';
+}
+function taskSubToggle(el) {
+  var t = null;
+  for (var i = 0; i < state.tasks.length; i++) if (state.tasks[i].client_id === el.dataset.id) t = state.tasks[i];
+  if (!t) return;
+  var subs = subsOf(t).map(function (x) { return x.id === el.dataset.sid ? Object.assign({}, x, { done: !x.done }) : x; });
+  return update('g_tasks', t.client_id, { subtasks: subs });
+}
 function taskRowHTML(t) {
-  var st = stageOf(t.stage), made = createdLabel(t);
+  var st = stageOf(t.stage), made = createdLabel(t), subs = subsOf(t);
+  var nDone = subs.filter(function (x) { return x.done; }).length;
   return '<div class="tk ' + st.cls + '" data-act="task-open" data-id="' + esc(t.client_id) + '">' +
     '<button class="tk-check ' + st.cls + '" data-act="task-step" data-id="' + esc(t.client_id) + '" aria-label="' + esc('שלב: ' + st.id) + '" title="' + esc(st.id) + '">' +
       icon(st.cls === 'off' ? 'close' : 'check') + '</button>' +
     '<div class="tk-main"><b>' + esc(t.title) + '</b>' +
       pendTag(pendRowKey('g_tasks', t.client_id)) +
       '<div class="tk-chips">' + (t.domain ? '<span>' + esc(t.domain) + '</span>' : '') +
+        (subs.length ? '<span class="tk-prog' + (nDone === subs.length ? ' all' : '') + '">' + icon('check') + nDone + '/' + subs.length + '</span>' : '') +
         (t.due_date ? '<span class="due' + dueCls(t.due_date) + '">יעד ' + esc(dmyDate(t.due_date)) + '</span>' : '') + '</div>' +
       '<small class="tk-meta">' + esc([t.note, made ? 'נוצרה ' + made : ''].filter(Boolean).join(' · ')) + '</small>' +
+      subsHTML(t) +
     '</div>' +
     '<button class="task-star' + (t.starred ? ' on' : '') + '" data-act="task-star" data-id="' + esc(t.client_id) +
       '" aria-pressed="' + !!t.starred + '" aria-label="עדיפות">' + icon('star') + '</button>' +
@@ -111,10 +133,42 @@ function formTask(t) {
       '<label class="fld"><span>תחום</span>' + selectHTML('k-domain', lookupLabels(LK_DOMAIN), t ? t.domain : '', '— ללא —') + '</label>' +
       '<label class="fld"><span>תאריך יעד</span><input class="inp" type="date" id="k-due" value="' + esc(t && t.due_date ? t.due_date : '') + '"></label>' +
     '</div>' +
-    '<label class="fld"><span>הערות</span><textarea class="inp" id="k-note">' + esc(t ? t.note || '' : '') + '</textarea></label>',
+    '<label class="fld"><span>הערות</span><textarea class="inp" id="k-note">' + esc(t ? t.note || '' : '') + '</textarea></label>' +
+    '<div class="fld"><span>תת-משימות</span><div id="k-subs" class="sub-eds">' + (t ? subsOf(t) : []).map(subEdHTML).join('') + '</div>' +
+      '<button type="button" class="btn ghost sm sub-add" data-act="sub-add">' + icon('plus') + 'תת-משימה</button></div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (t ? '<button class="btn danger" data-act="task-del" data-id="' + esc(t.client_id) + '">מחיקה</button>' : '') +
     '<button class="btn" data-act="task-save" data-id="' + esc(t ? t.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
+}
+
+// שורה בעורך — העיגול (הסימון נשמר עם המשימה), הכותרת והסרה; Enter בשורה פותח את הבאה
+function subEdHTML(x) {
+  x = x || { id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: '', done: false };
+  return '<div class="sub-ed' + (x.done ? ' done' : '') + '" data-sid="' + esc(x.id) + '" data-done="' + (x.done ? '1' : '') + '">' +
+    '<button type="button" class="sub-dot" data-act="sub-ed-dot" aria-label="הושלם">' + icon('check') + '</button>' +
+    '<input class="inp sub-in" data-key="sub-in" value="' + esc(x.title) + '" placeholder="תת-משימה" aria-label="תת-משימה">' +
+    '<button type="button" class="sub-rm" data-act="sub-rm" aria-label="הסרה">' + icon('close') + '</button></div>';
+}
+function subAdd() {
+  var box = document.getElementById('k-subs');
+  if (!box) return;
+  box.insertAdjacentHTML('beforeend', subEdHTML(null));
+  var ins = box.querySelectorAll('.sub-in');
+  if (ins.length) ins[ins.length - 1].focus();
+}
+function subRm(el) { var r = el.closest('.sub-ed'); if (r) r.remove(); }
+function subEdDot(el) {
+  var r = el.closest('.sub-ed');
+  if (!r) return;
+  var on = r.dataset.done !== '1';
+  r.dataset.done = on ? '1' : '';
+  r.classList.toggle('done', on);
+}
+function readSubs() {
+  return Array.prototype.map.call(document.querySelectorAll('#k-subs .sub-ed'), function (r) {
+    var i = r.querySelector('.sub-in');
+    return { id: r.dataset.sid, title: i ? i.value.trim() : '', done: r.dataset.done === '1' };
+  }).filter(function (x) { return x.title; });
 }
 
 // משימה חדשה — בסוף הרשימה; הסדר הקיים נשמר כפי שהיה בגיליון.
@@ -122,9 +176,9 @@ function saveTask(id) {
   var title = val('k-title');
   if (!title) { toast(MSG_NEED_TITLE, null, 'warn'); return; }
   var row = { title: title, assignee: val('k-who'), stage: val('k-stage'), domain: nullable(val('k-domain')),
-              due_date: nullable(val('k-due')), note: nullable(val('k-note')) };
+              due_date: nullable(val('k-due')), note: nullable(val('k-note')), subtasks: readSubs() };
   if (id) return update('g_tasks', id, row);
   return insert('g_tasks', Object.assign(row, { sort: nextSort(state.tasks), starred: false }));
 }
 
-export { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks };
+export { formTask, saveTask, subAdd, subEdDot, subRm, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks };

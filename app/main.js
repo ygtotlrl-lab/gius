@@ -26,7 +26,7 @@ import { DATEPAIR_ACTIONS } from '../core/datepair.js';
 import { datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync,
          soUneqToggle, viewCards } from './screens/cards.js';
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
-import { formTask, saveTask, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
+import { formTask, saveTask, subAdd, subEdDot, subRm, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, ckSync, formLoan, intSync, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
@@ -418,6 +418,11 @@ var DOM_ACTIONS = {
     if (!t) return;
     return update('g_tasks', t.client_id, { starred: !t.starred }).then(function () { render(); }).catch(errToast);
   },
+  // תת-משימה — העיגול בשורה מסמן «הושלם» בלי לפתוח; בעורך — הוספה, הסרה וסימון שנשמרים עם המשימה
+  'task-sub': function (el) { var p = taskSubToggle(el); return p && p.then(function () { render(); }).catch(errToast); },
+  'sub-add': function () { subAdd(); },
+  'sub-rm': function (el) { subRm(el); },
+  'sub-ed-dot': function (el) { subEdDot(el); },
   'task-save': saver(saveTask, MSG_TASK_SAVED),
   'task-del': function (el) { return delAsk(MSG_DEL_TASK, 'g_tasks', el.dataset.id); },
 
@@ -565,6 +570,10 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
 });
 
+// Enter בשורת תת-משימה פותח את הבאה — ואינו שומר את הטופס
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('sub-in')) { e.preventDefault(); e.stopPropagation(); subAdd(); }
+}, true);
 document.addEventListener('note-close', function () { DOM_ACTIONS['note-close'](); });
 document.addEventListener('change', function (e) {
   var el = e.target;

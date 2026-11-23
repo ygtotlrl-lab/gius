@@ -303,9 +303,9 @@ function formDonor(d) {
   openModal(d ? TTL_DONOR_EDIT : TTL_DONOR_NEW,
     '<label class="fld"><span>שם *</span><input class="inp" id="d-name" value="' + esc(d ? d.name : '') + '"></label>' +
     '<label class="fld"><span>שגריר</span>' + selectHTML('d-amb', amb, d ? d.ambassador : '', '— ללא —') + '</label>' +
-    '<div class="f2 dp-pair">' + datePairHTML('d-birth', d && d.birth_date ? d.birth_date : '', { empty: true, clear: true, start: '1980-01-01',
+    '<div class="f2 f2-tight dp-pair">' + datePairHTML('d-birth', d && d.birth_date ? d.birth_date : '', { empty: true, clear: true, start: '1980-01-01',
       labels: ['יום הולדת — לועזי', 'יום הולדת — עברי'] }) + '</div>' +
-    '<div class="f2">' +
+    '<div class="f2 f2-tight">' +
       '<label class="fld"><span>טלפון</span><input class="inp" id="d-phone" inputmode="tel" value="' + esc(d ? d.phone || '' : '') + '"></label>' +
       '<label class="fld"><span>תפקיד</span><input class="inp" id="d-role" value="' + esc(d ? d.role || '' : '') + '"></label>' +
     '</div>' +
@@ -314,7 +314,7 @@ function formDonor(d) {
       '<div class="dx-add"><div class="f2">' +
         '<label class="fld"><span>סוג</span>' + selectHTML('dx-kind', DATE_KINDS.map(function (k) { return k[1]; }), DATE_KINDS[0][1], '') + '</label>' +
         '<label class="fld"><span>של מי / פירוט</span><input class="inp" id="dx-label" placeholder="למשל: הבת רבקה"></label>' +
-      '</div><div class="f2 dp-pair">' + datePairHTML('dx', '', { empty: true, start: '1980-01-01' }) + '</div>' +
+      '</div><div class="f2 f2-tight dp-pair">' + datePairHTML('dx', '', { empty: true, start: '1980-01-01' }) + '</div>' +
       '<button type="button" class="btn ghost" data-act="dx-add">' + icon('plus') + 'הוספת תאריך</button></div></div>' +
     affChipsHTML(d) +
     '<label class="fld chk"><input type="checkbox" id="d-general"' + (d && d.is_general ? ' checked' : '') + '><span>כרטיס כללי — מגבית, פרויקט וכדומה; מוצג בנפרד בתחתית הרשימה</span></label>',
