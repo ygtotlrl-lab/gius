@@ -60,7 +60,7 @@ function loanDashHTML() {
       loanStat('הלוואות החודש', esc(ils(f.added)), esc('לטווח ארוך ' + kShort(f.long) + ' · בתשלומים ' + kShort(f.inst)), f.added > 0 ? 'bad' : '') +
       loanStat('החזרים החודש', esc(ils(f.repaid)), esc('לטווח ארוך ' + kShort(f.repLong) + ' · בתשלומים ' + kShort(f.repInst)) +
         // היתר העסקה — הוצאה: כתוב לצד ההחזרים, ואינו בחוב ובנטו
-        (f.interest > 0 ? '<span class="int">' + esc('ועוד היתר עסקה ' + kShort(f.interest) + ' — הוצאה, לא חוב') + '</span>' : ''), f.repaid > 0 ? 'ok' : '') +
+        (f.interest > 0 ? '<span class="int">' + esc('ועוד היתר עסקה ' + kShort(f.interest)) + '</span>' : ''), f.repaid > 0 ? 'ok' : '') +
       loanStat('נטו החודש', esc(signed(f.net)), esc(f.net > 0 ? 'החוב גדל' : f.net < 0 ? 'החוב קטן' : 'ללא שינוי'), f.net > 0 ? 'bad' : f.net < 0 ? 'ok' : '') +
       loanStat('החוב הכללי', esc(ils(debt)), chg('מתחילת התקופה', null) + ' · ' + chg('לטווח ארוך', 'long') + ' · ' + chg('בתשלומים', 'inst'), 'ln-chg') +
     '</div></section>';
