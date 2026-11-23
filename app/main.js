@@ -8,6 +8,7 @@ import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
+import { GAUTH_ACTIONS, gauthClientOpts, gauthGate, gauthHeaders, gauthUser } from '../core/gauth.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboMore, comboPick,
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, modalDismiss, openModal, shellBare,
          swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
@@ -41,6 +42,8 @@ appConfigure({
   get DEV_CFG() { return DEV_CFG; },
   get DOM_ACTIONS() { return DOM_ACTIONS; },
   get ERA_CFG() { return ERA_CFG; },
+  get GAUTH_CFG() { return GAUTH_CFG; },
+  get NOTIFY_CFG() { return NOTIFY_CFG; },
   get LOOKUP_CFG() { return LOOKUP_CFG; },
   get LS_CFG() { return LS_CFG; },
   get MIRROR_CFG() { return MIRROR_CFG; },
@@ -50,6 +53,17 @@ appConfigure({
   get RTY_CFG() { return RTY_CFG; },
   get saveRefresh() { return saveRefresh; }
 });
+
+// הכניסה עם Google (core/gauth.js) — הלקוח של האפליקציה, וכרטיס החשבון בצורת שאר הכרטיסים;
+// וההתראות (core/push.js) — המשתמש מזוהה מול השער באסימון הסשן
+var GAUTH_CFG = {
+  sb: function () { return S.sb; },
+  card: function (title, inner) { return '<section class="card ga-card"><h2>' + esc(title) + '</h2>' + inner + '</section>'; }
+};
+var NOTIFY_CFG = {
+  auth: async function () { return { headers: await gauthHeaders() }; },
+  user: function () { return gauthUser(); }
+};
 
 // הרשימות לסידור — השורות והכתיבה של גיוס, והזריעה והסידור בליבה; הכתיבה המקומית כבר דורכת את הדחיפה.
 var LOOKUP_CFG = {
@@ -93,7 +107,8 @@ var BK_CFG = {
   prefix: '',
   device: function () { try { return getDeviceId(); } catch (e) { return null; } },
   // אין כניסה ולכן אין שם משתמש — המכשיר הוא הזהות היחידה, ושדה מומצא היה עדות שאיש לא מסר.
-  user: function () { return null; },
+  // המשתמש המחובר — שמו ביומן הגיבוי
+  user: function () { var u = gauthUser(); return u ? (u.full_name || u.login) : null; },
   // secrets ריק — אין היום סוד, והמנגנון נשאר דרוך לסוד עתידי.
   secrets: [],
   sources: function () {
@@ -138,7 +153,8 @@ var RTY_CFG = {
 var PL_CFG = {
   every:  3000,
   // אין כניסה — הבדיקה המחזורית פעילה כל עוד הלשונית גלויה, ותנאי של משתמש מחובר לא היה מתקיים כאן לעולם.
-  active: function () { return document.visibilityState !== 'hidden'; },
+  // הבדיקה המחזורית — כל עוד הלשונית גלויה ויש משתמש מחובר
+  active: function () { return document.visibilityState !== 'hidden' && !!gauthUser(); },
   seen:   function () { return S._gSeenTs; },
   note:   function (ts) { S._gSeenTs = ts; },
   ok:     function () { S._lastSeenOk = Date.now(); },
@@ -530,7 +546,7 @@ var DOM_ACTIONS = {
 };
 
 // ── מאזינים גלובליים ──
-Object.assign(DOM_ACTIONS, DATEPAIR_ACTIONS);
+Object.assign(DOM_ACTIONS, GAUTH_ACTIONS, DATEPAIR_ACTIONS);
 actWire(DOM_ACTIONS);
 
 // החיפוש מרנדר רק את הרשימה — רינדור מלא בונה מחדש את השדה ומאבד את הפוקוס אחרי כל תו.
@@ -610,10 +626,11 @@ function start() {
       '<button class="btn block" data-act="reload">רענון</button></div></div>');
     return;
   }
-  S.sb = sbWatch(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false }
-  }));
-
+  // הלקוח — עם הסשן של האפליקציה (core/gauth.js)
+  S.sb = sbWatch(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, gauthClientOpts()));
+  return true;
+}
+function startData() {
   // הליבה עולה לפני המסך — הסימונים, הגיבוי והמראה, והמסך עולה מהדיסק לפני שנוגעים ברשת.
   bootRun();
   boot();
@@ -621,6 +638,9 @@ function start() {
 
 // האחסון נפתח לפני כל קריאה ממנו — אחרי שה-CFG הוגדרו, כי המרשם קורא אותם.
 await lsOpen();
-start();
-
-window.bootOk();
+if (start()) {
+  window.bootOk();
+  // הכניסה — מסך הכניסה מעל הכל, עד שנכנס משתמש מהרשימה; והנתונים רק אחריה
+  await gauthGate();
+  startData();
+} else window.bootOk();

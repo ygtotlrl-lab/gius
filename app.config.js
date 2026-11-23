@@ -14,6 +14,8 @@ self.APP = Object.freeze({
     url: 'https://zrftjkghhjhqzopvdzou.supabase.co',
     key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZnRqa2doaGpocXpvcHZkem91Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMDc4MzQsImV4cCI6MjEwMDg4MzgzNH0.DWcW3o4Y9Is3jGx1frHkrUz7cc045aH1m1uKsrwRhIA'
   },
+  // הכניסה — חובה, בחשבון Google מתוך רשימת המשתמשים (core/gauth.js); דרכים: google · password
+  auth: { required: true, ways: ['google'] },
   android: {
     package: 'com.gius.app',
     // ממנה נגזר המקור היחיד שגשר השיתוף מקבל
