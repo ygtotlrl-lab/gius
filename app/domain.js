@@ -1,4 +1,5 @@
 // app/domain.js — הסנכרון, הכתיבה המקומית, הנגזרות ורכיבי הממשק
+import { hebDate, hebDayLabel, hebNext } from '../core/hebrew.js';
 import { DAY_MONTHS, MSG_LOAD_FAIL_PRE, MSG_SYNC_BACK, dayNoon, dayToday, sortCompare } from '../core/util.js';
 import { PL_STAMP_KEY, _rowsPaged, ctxEpoch, ctxStale, errToast, idEq, mergeCore,
          newClientId, pendAll, pendClearMany, pendHas, pendMark, pendMarkMany, pendRender,
@@ -74,7 +75,32 @@ function bySort(a, b) {
 
 // כרטיסים — לפי הסכום שנותר לגבות, מהגבוה (ברירת המחדל; הוא המספר שעל האריח), לפי א״ב, או לפי שגריר
 // ובתוכו לפי הנותר; בכל שוויון — א״ב. כרטיס בלי שגריר בסוף מיון השגרירים.
+// התאריך הקרוב של כרטיס — יום ההולדת והתאריכים הנוספים, לפי הלוח העברי, מהיום ואילך (hebNext של הליבה)
+var DONOR_DATE_KINDS = { family: 'יום הולדת במשפחה', yahrzeit: 'יארצייט', other: 'תאריך' };
+function donorNextDate(d) {
+  var best = null;
+  var take = function (src, label) {
+    var n = hebNext(src);
+    if (n && (!best || n < best.iso)) best = { iso: n, label: label };
+  };
+  if (d.birth_date) take(d.birth_date, 'יום הולדת');
+  (Array.isArray(d.dates) ? d.dates : []).forEach(function (x) {
+    if (x && x.date) take(x.date, x.label || DONOR_DATE_KINDS[x.kind] || DONOR_DATE_KINDS.other);
+  });
+  if (best) { var h = hebDate(new Date(best.iso + 'T12:00:00')); best.heb = h.ok ? hebDayLabel(h.day) + ' ' + h.monthName : ''; best.month = h.ok ? h.monthName + ' ' + h.yearLabelFull : ''; }
+  return best;
+}
 function gSortDonors(list, mode) {
+  if (mode === 'date') {
+    var nx = {};
+    var next = function (d) { return nx[d.client_id] !== undefined ? nx[d.client_id] : (nx[d.client_id] = donorNextDate(d)); };
+    return list.filter(function (d) { return next(d); }).sort(function (a, b) {
+      var x = next(a), y = next(b);
+      if (!x !== !y) return x ? -1 : 1;
+      if (x && y && x.iso !== y.iso) return x.iso < y.iso ? -1 : 1;
+      return sortCompare(a.name || '', b.name || '');
+    });
+  }
   var tot = {};
   var total = function (d) { return tot[d.client_id] != null ? tot[d.client_id] : (tot[d.client_id] = donorLeft(d.client_id)); };
   return list.slice().sort(function (a, b) {
@@ -752,7 +778,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { loanBalance, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { donorNextDate, loanBalance, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

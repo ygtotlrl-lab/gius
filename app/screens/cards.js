@@ -13,7 +13,7 @@ import { datePairHTML, dpSet, hebFull } from '../../core/datepair.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
-         monthKeyOf, monthLabel, statusClass, txnSoLabel, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
+         donorNextDate, monthKeyOf, monthLabel, statusClass, txnSoLabel, txnWhen, txnsOfDonor, txnsOfPledge, update, val } from '../domain.js';
 
 // ── הרשימה ──
 // אריחים — שלושה בשורה במסך רחב, אחד בטלפון. הכרטיס הפתוח — בחלון משלו מעל הרשימה (cardWinHTML);
@@ -28,7 +28,7 @@ function cardRowsHTML() {
   // קבוצה — רשת משלה, כדי שהאריחים לא יעברו בין כותרות בזמן שהכרטיס הפתוח נפרש.
   var groups = [];
   people.forEach(function (d) {
-    var t = c.sort === 'amb' ? (d.ambassador || 'ללא שגריר') : '';
+    var t = c.sort === 'amb' ? (d.ambassador || 'ללא שגריר') : c.sort === 'date' ? ((donorNextDate(d) || {}).month || '') : '';
     if (!groups.length || groups[groups.length - 1].title !== t) groups.push({ title: t, items: [] });
     groups[groups.length - 1].items.push(d);
   });
@@ -53,6 +53,14 @@ function avTone(s) {
   return t ? 'tone-' + (h % AV_TONES) : 'tone-none';
 }
 
+// במיון לפי תאריכים — התאריך הקרוב באריח: הסוג והיום העברי, ו«היום» · «מחר» כשהוא קרוב
+function ctDateHTML(d) {
+  var n = donorNextDate(d);
+  if (!n) return '';
+  var t = dayToday(), when = n.iso === t ? 'היום' : n.iso === dayToday(1) ? 'מחר' : '';
+  return '<span class="ct-date' + (when ? ' soon' : '') + '">' + icon('calendar') + '<span>' + esc(n.label) + ' · ' + esc(n.heb) + '</span>' +
+    (when ? '<b>' + when + '</b>' : '') + '</span>';
+}
 function cardTileHTML(d) {
   var c = state.cards, open = d.client_id === c.open;
   var left = donorLeft(d.client_id), total = donorTotal(d.client_id), paid = Math.max(0, total - left);
@@ -63,6 +71,7 @@ function cardTileHTML(d) {
       '<span class="ct-name"><b>' + (d.starred ? '<span class="star-ic" aria-label="מסומן">' + icon('star') + '</span> ' : '') + esc(d.name) +
         pendTag(pendRowKey('g_donors', d.client_id)) + '</b>' +
         '<small>' + esc(d.ambassador || d.role || '—') + '</small></span></span>' +
+    (c.sort === 'date' ? ctDateHTML(d) : '') +
     '<span class="ct-amt"><small>' + (left > 0 ? 'נותר' : total > 0 ? 'שולם במלואו' : 'אין התחייבות') + '</small>' +
       '<b>' + (total > 0 ? ils(left) : '—') + '</b></span>' +
     (total > 0 ? bar(pct) +
@@ -96,7 +105,7 @@ function viewCards() {
         selectHTML('cards-aff', affs, c.aff, 'אפשרויות סינון', 'cards-aff') +
         pledgeFilterHTML(c.pf) +
         '<div class="seg" role="group" aria-label="מיון">' +
-          [['abc', 'סדר'], ['sum', 'סכום'], ['amb', 'שגריר']].map(function (o) {
+          [['abc', 'סדר'], ['sum', 'סכום'], ['amb', 'שגריר'], ['date', 'תאריכים']].map(function (o) {
             return '<button class="' + (c.sort === o[0] ? 'on' : '') + '" data-act="cards-sort" data-v="' + o[0] + '">' + o[1] + '</button>';
           }).join('') +
         '</div>' +
