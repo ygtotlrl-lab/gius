@@ -1,0 +1,27 @@
+{
+  "project_info": {
+    "project_number": "1083124359240",
+    "project_id": "ygtotlrl-apps",
+    "storage_bucket": "ygtotlrl-apps.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1083124359240:android:d94f69cafad85e731fb87d",
+        "android_client_info": {
+          "package_name": "com.gius.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9RqoTsLJ3CW7a54OdQbzbiqMc5ZdzvOk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {}
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
