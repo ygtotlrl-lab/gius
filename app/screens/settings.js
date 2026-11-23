@@ -2,6 +2,7 @@
 import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../../core/ui.js';
 import { readNum } from '../../core/util.js';
 import { KV_TABLE, LISTS, LK_AMBASSADOR, MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, SHT_PAGE_URL, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH, TTL_ADD_PRE, TTL_EDIT_PRE, TTL_GOAL_DEFAULT } from '../constants.js';
+import { gauthCardHTML } from '../../core/gauth.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
@@ -82,7 +83,7 @@ function viewSettings() {
       '<div class="main"><b>' + esc(monthLabel(t.target_month)) + '</b><small>נגבה ' + ils(got) + ' · ' + pct.toFixed(0) + '%</small></div>' +
       '<div class="end">' + ils(t.amount) + '<small>יעד</small></div></div>';
   }).join('');
-  return h + '</section>';
+  return h + '</section>' + gauthCardHTML();
 }
 
 // כפתור אחד לשני המסלולים, ומחיקה רק בעריכה.
