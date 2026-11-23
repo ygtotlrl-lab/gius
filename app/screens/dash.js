@@ -170,7 +170,7 @@ function chgTxt(all, key, kind) {
 function lg(items) {
   return '<div class="fl-legend"><div class="fl-lg">' + items.map(function (x) { return '<span><i class="' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
 }
-// שלושה מדדים: הכללי — הכנסות · הלוואות חדשות · היתר עסקה · החזרים, וקו החוב כולו; ובתוכו, בסופו, שני כפתורים זה מעל זה —
+// שלושה מדדים: הכללי — הכנסות · הלוואות · היתר עסקה · החזרים, וקו החוב כולו; ובתוכו, בסופו, שני כפתורים זה מעל זה —
 // לטווח ארוך ובתשלומים: סגורים, ולחיצה פותחת את המדד של הסוג מתחת לכפתור (`state.ixOpen`).
 function indicesHTML(all) {
   var tone = function (key, kind) { return chgTxt(all, key, kind).indexOf('עלה') === 0 ? 'up' : 'down'; };
@@ -180,9 +180,9 @@ function indicesHTML(all) {
   var debtLine = ['debt', 'החוב בסוף החודש'];
   var kinds = [
     { k: 'long', key: 'debtLong', title: 'הלוואות לטווח ארוך',
-      bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'חדשות' }, { v: f.intLong, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
+      bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'הלוואות' }, { v: f.intLong, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
     { k: 'inst', key: 'debtInst', title: 'הלוואות בתשלומים',
-      bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'חדשות' }, { v: f.intInst, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
+      bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'הלוואות' }, { v: f.intInst, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
   var open = state.ixOpen || {};
   var subs = '<div class="ix-subs">' + kinds.map(function (x) {
     var on = !!open[x.k];
@@ -191,13 +191,13 @@ function indicesHTML(all) {
         '<span class="ix-btn-t">' + esc(x.title) + '<small class="' + tone(x.key, x.k) + '">' + esc('החוב ' + chgTxt(all, x.key, x.k)) + '</small></span>' +
         '<span class="ix-btn-c" aria-hidden="true">' + icon(on ? 'up' : 'down') + '</span></button>' +
       (on ? indexHTML(all, { key: x.key, kind: x.k, title: x.title, name: 'החוב', nested: true, bars: x.bars,
-              legend: lg([['loan', 'חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) : '') +
+              legend: lg([['loan', 'הלוואות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) : '') +
     '</div>';
   }).join('') + '</div>';
   return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs,
-      bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות חדשות' },
+      bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' },
                                    { v: f.interest, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
-      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות חדשות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) });
+      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) });
 }
 
 // הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש (כולל היתר עסקה) וחיוורת, והחלק המודגש — מה שנשאר אחרי ההחזרים;
@@ -221,7 +221,7 @@ function flowHTML(m) {
     '<p class="fl-note">החלק המודגש — כמה החוב גדל (אדום) או קטן (ירוק). החלק החיוור — הלוואות והחזרים שקיזזו זה את זה.</p>';
   var sumHTML = '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
     '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) +
-      '<small>' + esc('חדשות ' + kShort(cur.added) + ' − החזרים ' + kShort(cur.repaid)) + '</small></dd></div></dl>';
+      '<small>' + esc('הלוואות ' + kShort(cur.added) + ' − החזרים ' + kShort(cur.repaid)) + '</small></dd></div></dl>';
   // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
   return indicesHTML(all) +
     '<section class="card"><h2>הכנסות מול הלוואות נטו</h2>' + total +
