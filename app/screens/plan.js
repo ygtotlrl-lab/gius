@@ -6,7 +6,7 @@ import { comboValue, esc, openModal, toast } from '../../core/ui.js';
 import { APP_FIRST_MONTH, LK_AMBASSADOR, MSG_PICK_DONOR, PLAN_KINDS, TTL_PLAN_EDIT, TTL_PLAN_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
-import { snapShare } from '../snap.js';
+import { snapShare } from '../../core/snap.js';
 import { $, dmyDate, donorById, donorFieldHTML, donorName, emptyBox, gSortPlan, ils, insert,
          lookupLabels, monthLabel, nextSort, nullable, pendRowKey, planActual, planOfMonth,
          selectHTML, sum, update, val } from '../domain.js';

@@ -1,7 +1,7 @@
 // sw.js — service worker של האפליקציה
 importScripts('./app.config.js');
 // מכאן נגזרת גרסת האפליקציה שבבאנר.
-var CACHE_NAME = self.APP.id + '-v383';
+var CACHE_NAME = self.APP.id + '-v384';
 
 var CORE = [
   './',
@@ -10,6 +10,7 @@ var CORE = [
   './core/boot.js',
   './core/sw.js',
   './core/ui.css',
+  './core/datepair.js',
   './core/chart.css',
   './app/style.css',
   './core/util.js',
@@ -35,7 +36,7 @@ var CORE = [
   './app/screens/settings.js',
   './app/screens/shtarot.js',
   './app/screens/tasks.js',
-  './app/snap.js',
+  './core/snap.js',
   './app/main.js',
   './manifest.json',
   './icons/icon-192.edb680d1.png',

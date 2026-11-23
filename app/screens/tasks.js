@@ -4,7 +4,7 @@ import { esc, openModal, toast } from '../../core/ui.js';
 import { ASSIGNEES, LK_DOMAIN, MSG_NEED_TITLE, STAGES, TTL_TASK_EDIT, TTL_TASK_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
-import { snapShare } from '../snap.js';
+import { snapShare } from '../../core/snap.js';
 import { dmyDate, emptyBox, gSortTasks, insert, lookupLabels, nextSort, nullable, pendRowKey,
          selectHTML, update, val } from '../domain.js';
 

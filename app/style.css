@@ -968,3 +968,12 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-kic{display:inline-flex;vertical-align:middle;color:var(--brand-ink)} .ln-kic .ico{width:20px;height:20px}
 /* צפי ההחזרים — כל העמודות הן צפי, ולכן בלי המסגרת המקווקות של החודשים המתוכננים */
 .ln-future .fl-bar.ln-fcbar{background:var(--ln-a-soft);border:0}
+/* ── תאריכים בכרטיס — יום ההולדת ותאריכים נוספים ── */
+.dp-pair .fld{margin-bottom:var(--sp-4)}
+.dx>span{display:block;font-weight:600;margin-bottom:var(--sp-3)}
+.dx-list{list-style:none;margin:0 0 var(--sp-4);padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
+.dx-list li{display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-3) var(--sp-4);border:1px solid var(--border);border-radius:var(--r-4);background:var(--card-2)}
+.dx-k{flex:none;font-size:var(--fs-1);font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border-radius:999px;padding:2px 10px}
+.dx-l{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx-d{flex:none;color:var(--text-2);font-size:var(--fs-2)}
+.dx-add{border:1px dashed var(--border);border-radius:var(--r-4);padding:var(--sp-4)}

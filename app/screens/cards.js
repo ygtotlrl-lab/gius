@@ -8,7 +8,8 @@ import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MS
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
-import { snapShare } from '../snap.js';
+import { snapShare } from '../../core/snap.js';
+import { datePairHTML, dpSet, hebFull } from '../../core/datepair.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
@@ -262,17 +263,50 @@ function affChipsHTML(d) {
 function affRead() {
   return Array.prototype.map.call(document.querySelectorAll('.d-aff:checked'), function (x) { return x.value; });
 }
+// ── תאריכים — יום ההולדת ותאריכים נוספים (ימי הולדת של בני משפחה, יארצייט, אחר); ההתראות — בעברי, מחר ובבוקר היום ──
+var DATE_KINDS = [['family', 'יום הולדת — בן משפחה'], ['yahrzeit', 'יארצייט'], ['other', 'אחר']];
+function dateKindLabel(k) { for (var i = 0; i < DATE_KINDS.length; i++) if (DATE_KINDS[i][0] === k) return DATE_KINDS[i][1]; return 'אחר'; }
+var _dates = [];
+function datesListHTML() {
+  if (!_dates.length) return '';
+  return '<ul class="dx-list">' + _dates.map(function (x, i) {
+    return '<li><span class="dx-k">' + esc(dateKindLabel(x.kind)) + '</span><span class="dx-l">' + esc(x.label || '') + '</span>' +
+      '<span class="dx-d">' + esc(hebFull(x.date)) + '</span>' +
+      '<button type="button" class="btn ghost sm ic" data-act="dx-del" data-i="' + i + '" aria-label="הסרה">' + icon('close') + '</button></li>';
+  }).join('') + '</ul>';
+}
+function datesRedraw() { var el = $('#dx-wrap'); if (el) el.innerHTML = datesListHTML(); }
+function datesAdd() {
+  var iso = val('dx-date'), kl = val('dx-kind'), label = val('dx-label'), kind = 'other';
+  // הסוג נשמר במזהה ולא בתווית — השם שבבורר יכול להשתנות
+  DATE_KINDS.forEach(function (k) { if (k[1] === kl) kind = k[0]; });
+  if (!iso) { toast('בוחרים תאריך — עברי או לועזי', null, 'warn'); return; }
+  _dates.push({ id: String(Date.now()) + Math.random().toString(36).slice(2, 6), kind: kind, label: label, date: iso });
+  datesRedraw();
+  var l = $('#dx-label'); if (l) l.value = '';
+  dpSet('dx', '');
+}
+function datesDel(i) { _dates.splice(+i, 1); datesRedraw(); }
+
 function formDonor(d) {
   var amb = lookupLabels(LK_AMBASSADOR);
+  _dates = d && Array.isArray(d.dates) ? d.dates.map(function (x) { return Object.assign({}, x); }) : [];
   openModal(d ? TTL_DONOR_EDIT : TTL_DONOR_NEW,
     '<label class="fld"><span>שם *</span><input class="inp" id="d-name" value="' + esc(d ? d.name : '') + '"></label>' +
     '<label class="fld"><span>שגריר</span>' + selectHTML('d-amb', amb, d ? d.ambassador : '', '— ללא —') + '</label>' +
+    '<div class="f2 dp-pair">' + datePairHTML('d-birth', d && d.birth_date ? d.birth_date : '', { empty: true, clear: true, start: '1980-01-01',
+      labels: ['יום הולדת — לועזי', 'יום הולדת — עברי'] }) + '</div>' +
     '<div class="f2">' +
-      '<label class="fld"><span>יום הולדת</span><input class="inp" type="date" id="d-birth" value="' + esc(d && d.birth_date ? d.birth_date : '') + '"></label>' +
+      '<label class="fld"><span>טלפון</span><input class="inp" id="d-phone" inputmode="tel" value="' + esc(d ? d.phone || '' : '') + '"></label>' +
       '<label class="fld"><span>תפקיד</span><input class="inp" id="d-role" value="' + esc(d ? d.role || '' : '') + '"></label>' +
     '</div>' +
-    '<label class="fld"><span>טלפון</span><input class="inp" id="d-phone" inputmode="tel" value="' + esc(d ? d.phone || '' : '') + '"></label>' +
     '<label class="fld"><span>הערות</span><textarea class="inp" id="d-notes">' + esc(d ? d.notes || '' : '') + '</textarea></label>' +
+    '<div class="fld dx"><span>תאריכים נוספים</span><div id="dx-wrap">' + datesListHTML() + '</div>' +
+      '<div class="dx-add"><div class="f2">' +
+        '<label class="fld"><span>סוג</span>' + selectHTML('dx-kind', DATE_KINDS.map(function (k) { return k[1]; }), DATE_KINDS[0][1], '') + '</label>' +
+        '<label class="fld"><span>של מי / פירוט</span><input class="inp" id="dx-label" placeholder="למשל: הבת רבקה"></label>' +
+      '</div><div class="f2 dp-pair">' + datePairHTML('dx', '', { empty: true, start: '1980-01-01' }) + '</div>' +
+      '<button type="button" class="btn ghost" data-act="dx-add">' + icon('plus') + 'הוספת תאריך</button></div></div>' +
     affChipsHTML(d) +
     '<label class="fld chk"><input type="checkbox" id="d-general"' + (d && d.is_general ? ' checked' : '') + '><span>כרטיס כללי — מגבית, פרויקט וכדומה; מוצג בנפרד בתחתית הרשימה</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -284,9 +318,9 @@ function formDonor(d) {
 function saveDonor(id) {
   var name = val('d-name');
   if (!name) { toast(MSG_NEED_NAME, null, 'warn'); return; }
-  var row = { name: name, ambassador: nullable(val('d-amb')), birth_date: nullable(val('d-birth')),
+  var row = { name: name, ambassador: nullable(val('d-amb')), birth_date: nullable(val('d-birth-date')),
               role: nullable(val('d-role')), phone: nullable(val('d-phone')), notes: nullable(val('d-notes')),
-              is_general: checked('d-general'), affiliations: affRead() };
+              is_general: checked('d-general'), affiliations: affRead(), dates: _dates.slice() };
   if (id) return update('g_donors', id, row);
   return insert('g_donors', Object.assign(row, { starred: false })).then(function (d) {
     state.cards.open = d.client_id;
@@ -535,5 +569,5 @@ function savePay(id, pledgeId) {
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
+export { datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
 
