@@ -67,7 +67,7 @@ function tasksBodyHTML() {
 
   if (ui.stage || q) {
     var list = tasksOf(ui.who, ui.stage);
-    // «בהרצה» — ייצוא רשימת האחראי כתמונה, בכותרת.
+    // «בעבודה» — ייצוא רשימת האחראי כתמונה, בכותרת.
     var run = ui.stage === STAGES[0].id;
     h += '<section class="card"><h2>' + esc(ui.stage || 'חיפוש') + ' · ' + esc(ui.who) + '<span class="cnt">' + list.length + '</span>' +
       (run ? '<span class="sp"><button class="btn ghost xs ic" data-act="tasks-share" aria-label="ייצוא תמונה" title="ייצוא תמונה">' + icon('share') + '</button></span>' : '') + '</h2>';
@@ -77,7 +77,7 @@ function tasksBodyHTML() {
   return h;
 }
 
-// ייצוא המשימות בהרצה של האחראי — כל המשימות שבשלב, בלי סינון החיפוש.
+// ייצוא המשימות בעבודה של האחראי — כל המשימות שבשלב, בלי סינון החיפוש.
 function tasksShare() {
   var who = state.tasks_ui.who, st = STAGES[0].id;
   var list = gSortTasks(state.tasks.filter(function (t) { return t.assignee === who && t.stage === st; }));

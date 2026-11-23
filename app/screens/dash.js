@@ -77,7 +77,7 @@ function breakdownHTML(rows, total, withIcon) {
   }).join('') + '</div>';
 }
 
-// מצב המשימות לכל אחראי — שלושת השלבים ומספריהם, והמספר הבולט — בהרצה; מנותב למסך המשימות.
+// מצב המשימות לכל אחראי — שלושת השלבים ומספריהם, והמספר הבולט — בעבודה; מנותב למסך המשימות.
 function tasksHTML() {
   return '<div class="who-grid">' + ASSIGNEES.map(function (who) {
     var mine = state.tasks.filter(function (t) { return t.assignee === who; });

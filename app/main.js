@@ -387,7 +387,7 @@ var DOM_ACTIONS = {
   },
   'task-new': function () { formTask(null); },
   'task-open': function (el) { var t = findIn(state.tasks, el.dataset.id); if (t) formTask(t); },
-  // העיגול שבשורת המשימה — בהרצה ⟵ הושלם, ומהושלם או מלא רלוונטי — חזרה להרצה.
+  // העיגול שבשורת המשימה — בעבודה ⟵ הושלם, ומהושלם או מלא רלוונטי — חזרה לעבודה.
   'task-step': function (el) {
     var t = findIn(state.tasks, el.dataset.id);
     if (!t) return;

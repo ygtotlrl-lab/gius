@@ -42,7 +42,7 @@ var LISTS = [
 var ASSIGNEES = ['הרב יוסי', 'אלישע', 'מענדי פרידמן'];
 
 var STAGES = [
-  { id: 'בהרצה', cls: 'run' },
+  { id: 'בעבודה', cls: 'run' },
   { id: 'הושלם', cls: 'done' },
   { id: 'לא רלוונטי', cls: 'off' }
 ];
