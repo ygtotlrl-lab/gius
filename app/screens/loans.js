@@ -144,8 +144,6 @@ function forecastHTML() {
   })) + '</div></section>';
 }
 
-// מפתח שם — המילים בלי רווחים כפולים ובלי תלות בסדרן
-function nameKey(n) { return String(n || '').trim().split(/\s+/).filter(Boolean).sort().join(' '); }
 // המלווה — הכרטיס שההלוואה משויכת אליו (`donor_client_id`), ובלעדיו — השם שהוקלד (`lender`)
 function lenderOf(l) { var d = l.donor_client_id ? donorById(l.donor_client_id) : null; return d ? d.name : l.lender || ''; }
 function loanMatches() {
@@ -199,13 +197,11 @@ function loansBodyHTML() {
   if (!list.length) return h + emptyBox('loans', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות');
   if ((state.loansBy || 'loan') === 'person') {
     // לפי אנשים — קבוצה לכל מלווה (הכרטיס, ובלעדיו השם), ובכותרת מספר ההלוואות וסך הנותר להחזיר
-    // אדם אחד — קבוצה אחת: הכרטיס, ושם חופשי זהה לשם של כרטיס — לאותו כרטיס; ושמות חופשיים — לפי המילים, בלי תלות בסדרן
-    // («נעים מנשה» ו«מנשה נעים» — אדם אחד)
-    var groups = {}, order = [], byName = {};
-    state.donors.forEach(function (d) { if (!d.deleted) byName[nameKey(d.name)] = byName[nameKey(d.name)] || d.client_id; });
+    // קבוצה לכל כרטיס, ולכל שם חופשי כפי שהוקלד — שם חופשי אינו משויך לכרטיס מעצמו: אי אפשר לדעת שזה אותו אדם
+    var groups = {}, order = [];
     list.forEach(function (l) {
-      var nk = nameKey(l.lender), did = l.donor_client_id || byName[nk];
-      var k = did ? 'd:' + did : 'n:' + nk;
+      var did = l.donor_client_id || '';
+      var k = did ? 'd:' + did : 'n:' + String(l.lender || '').trim();
       if (!groups[k]) { groups[k] = { name: did ? (donorById(did) || {}).name || lenderOf(l) : lenderOf(l), card: !!did, list: [] }; order.push(k); }
       groups[k].list.push(l);
     });
