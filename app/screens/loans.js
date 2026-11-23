@@ -144,6 +144,8 @@ function forecastHTML() {
   })) + '</div></section>';
 }
 
+// מפתח שם — המילים בלי רווחים כפולים ובלי תלות בסדרן
+function nameKey(n) { return String(n || '').trim().split(/\s+/).filter(Boolean).sort().join(' '); }
 // המלווה — הכרטיס שההלוואה משויכת אליו (`donor_client_id`), ובלעדיו — השם שהוקלד (`lender`)
 function lenderOf(l) { var d = l.donor_client_id ? donorById(l.donor_client_id) : null; return d ? d.name : l.lender || ''; }
 function loanMatches() {
@@ -197,10 +199,14 @@ function loansBodyHTML() {
   if (!list.length) return h + emptyBox('loans', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות');
   if ((state.loansBy || 'loan') === 'person') {
     // לפי אנשים — קבוצה לכל מלווה (הכרטיס, ובלעדיו השם), ובכותרת מספר ההלוואות וסך הנותר להחזיר
-    var groups = {}, order = [];
+    // אדם אחד — קבוצה אחת: הכרטיס, ושם חופשי זהה לשם של כרטיס — לאותו כרטיס; ושמות חופשיים — לפי המילים, בלי תלות בסדרן
+    // («נעים מנשה» ו«מנשה נעים» — אדם אחד)
+    var groups = {}, order = [], byName = {};
+    state.donors.forEach(function (d) { if (!d.deleted) byName[nameKey(d.name)] = byName[nameKey(d.name)] || d.client_id; });
     list.forEach(function (l) {
-      var k = l.donor_client_id ? 'd:' + l.donor_client_id : 'n:' + String(l.lender || '').trim();
-      if (!groups[k]) { groups[k] = { name: lenderOf(l), card: !!l.donor_client_id, list: [] }; order.push(k); }
+      var nk = nameKey(l.lender), did = l.donor_client_id || byName[nk];
+      var k = did ? 'd:' + did : 'n:' + nk;
+      if (!groups[k]) { groups[k] = { name: did ? (donorById(did) || {}).name || lenderOf(l) : lenderOf(l), card: !!did, list: [] }; order.push(k); }
       groups[k].list.push(l);
     });
     order.sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name, 'he'); });
@@ -299,20 +305,16 @@ comboDef('loan-donor', { val: true, max: 30,
       return { value: d.client_id, label: d.name, sub: d.phone || '', find: [d.name, d.phone || ''].join('\n') };
     });
   },
-  pick: function (it) {
-    var d = it ? donorById(it.value) : null, nm = $('#o-lender');
-    if (nm) { if (d) nm.value = d.name; nm.disabled = !!d; }
-  } });
+  pick: function () {} });
 function formLoan(l) {
   var ld = l && l.donor_client_id ? donorById(l.donor_client_id) : null;
   var kind = l ? l.kind || '' : '', uneq = !!(l && Array.isArray(l.check_amounts) && l.check_amounts.length);
   openModal(l ? TTL_LOAN_EDIT : TTL_LOAN_NEW,
-    // המלווה — כרטיס בגיוס, ושמו נשאב ממנו; ומי שאין לו כרטיס — שם בטקסט חופשי
-    '<div class="fld"><span>כרטיס בגיוס</span>' +
-      comboHTML('loan-donor', { id: 'o-donor', label: 'חיפוש כרטיס לפי שם או טלפון', placeholder: 'חיפוש כרטיס — או שם המלווה למטה',
-                               picked: ld ? { value: ld.client_id, label: ld.name } : null }) + '</div>' +
+    // המלווה — שדה אחד, כמו בתכנית: ההקלדה מחפשת בכרטיסים, ובחירה משייכת לכרטיס; ומי שאין לו כרטיס — מה שהוקלד נשמר כשם חופשי
     '<div class="f2">' +
-      '<label class="fld"><span>מלווה *</span><input class="inp" id="o-lender" value="' + esc(l ? lenderOf(l) : '') + '"' + (ld ? ' disabled' : '') + '></label>' +
+      '<div class="fld"><span>מלווה *</span>' +
+        comboHTML('loan-donor', { id: 'o-donor', label: 'מלווה — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
+                                 picked: l ? { value: ld ? ld.client_id : '', label: lenderOf(l) } : null }) + '</div>' +
       '<label class="fld"><span>סכום *</span><input class="inp" id="o-amount" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.amount != null ? l.amount : '') + '"></label>' +
     '</div>' +
     '<input type="hidden" id="o-kind" value="' + esc(kind) + '">' +
@@ -405,8 +407,8 @@ function intSum() {
   out.textContent = amt > 0 && tt > amt ? 'קרן ' + ils(amt) + ' + היתר עסקה ' + ils(tt - amt) + ' = מחזירים ' + ils(tt) : '';
 }
 function saveLoan(id) {
-  var donorId = nullable(comboValue('o-donor')), dn = donorId ? donorById(donorId) : null;
-  var lender = dn ? dn.name : val('o-lender'), amount = readNum($('#o-amount'), 0), kind = val('o-kind') || null;
+  var donorId = nullable(comboValue('o-donor')), dn = donorId ? donorById(donorId) : null, q = $('#o-donor [data-combo-q]');
+  var lender = dn ? dn.name : (q ? q.value.trim() : ''), amount = readNum($('#o-amount'), 0), kind = val('o-kind') || null;
   if (!lender) { toast(MSG_NEED_NAME, null, 'warn'); return; }
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   // בלי סוג ההחזר אין דרך לדעת מתי ההלוואה יורדת מהחוב
