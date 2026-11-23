@@ -176,7 +176,7 @@ function indicesHTML(all) {
   var tone = function (key, kind) { return chgTxt(all, key, kind).indexOf('עלה') === 0 ? 'up' : 'down'; };
   var sub = '<span class="' + tone('debtLong', 'long') + '">לטווח ארוך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
     '<span class="' + tone('debtInst', 'inst') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
-    ' · <span class="int">היתר עסקה ' + esc(kShort(sum(all, function (f) { return f.interest; }))) + '</span>';
+    ' · <span class="int">היתר עסקה (הוצאה) ' + esc(kShort(sum(all, function (f) { return f.interest; }))) + '</span>';
   var debtLine = ['debt', 'החוב בסוף החודש'];
   var kinds = [
     { k: 'long', key: 'debtLong', title: 'הלוואות לטווח ארוך',
@@ -191,16 +191,16 @@ function indicesHTML(all) {
         '<span class="ix-btn-t">' + esc(x.title) + '<small class="' + tone(x.key, x.k) + '">' + esc('החוב ' + chgTxt(all, x.key, x.k)) + '</small></span>' +
         '<span class="ix-btn-c" aria-hidden="true">' + icon(on ? 'up' : 'down') + '</span></button>' +
       (on ? indexHTML(all, { key: x.key, kind: x.k, title: x.title, name: 'החוב', nested: true, bars: x.bars,
-              legend: lg([['loan', 'הלוואות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) : '') +
+              legend: lg([['loan', 'הלוואות'], ['int', 'היתר עסקה — הוצאה, לא חוב'], ['rep', 'החזרים'], debtLine]) }) : '') +
     '</div>';
   }).join('') + '</div>';
   return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs,
       bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' },
                                    { v: f.interest, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
-      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) });
+      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'היתר עסקה — הוצאה, לא חוב'], ['rep', 'החזרים'], debtLine]) });
 }
 
-// הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש (כולל היתר עסקה) וחיוורת, והחלק המודגש — מה שנשאר אחרי ההחזרים;
+// הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש וחיוורת (היתר העסקה — הוצאה, ואינו בה), והחלק המודגש — מה שנשאר אחרי ההחזרים;
 // ובחודש שהוחזר בו יותר משנלקח — עמודה ירוקה בגובה ההחזרים, והמודגש — «החזר נטו».
 function netBars(f) {
   return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' },

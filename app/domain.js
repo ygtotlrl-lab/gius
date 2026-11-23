@@ -220,8 +220,8 @@ function loanInterestBy(l, mk) { return Math.max(0, loanPaidGross(l, mk) - loanP
 function loanBalance(l, mk) { return Math.max(0, (+l.amount || 0) - loanPaidBy(l, mk || loanCurMonth())); }
 function loanLeft(l, mk) { return Math.max(0, loanTotal(l) - loanPaidGross(l, mk || loanCurMonth())); }
 // חודש אחד, לכל סוג — `long` (לטווח ארוך) · `inst` (בתשלומים): חדשות (הקרן, לפי חודש הלקיחה) ·
-// החזרים (חלק הקרן — לטווח ארוך לפי תאריך התנועה, ובתשלומים לפי התשלומים) · היתר עסקה (חלקו בתשלומי החודש — כאילו נלקחה עוד הלוואה) ·
-// ונטו = חדשות ועוד היתר העסקה, פחות ההחזרים.
+// החזרים (חלק הקרן — לטווח ארוך לפי תאריך התנועה, ובתשלומים לפי התשלומים) · היתר עסקה (חלקו בתשלומי החודש — הוצאה, ואינו חוב) ·
+// ונטו = חדשות פחות ההחזרים: היתר העסקה אינו מגדיל או מקטין את החוב.
 function loanFlow(mk) {
   var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0, intLong: 0, intInst: 0, grossLong: 0, grossInst: 0 }, prev = shiftMonth(mk, -1);
   state.loans.forEach(function (l) {
@@ -232,16 +232,16 @@ function loanFlow(mk) {
     f['gross' + k] += loanPaidGross(l, mk) - loanPaidGross(l, prev);
   });
   f.interest = f.intLong + f.intInst;
-  f.added = f.long + f.inst + f.interest; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
+  f.added = f.long + f.inst; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
   return f;
 }
-// החוב בסוף חודש — המדד: יתרת הקרן של ההלוואות שנלקחו עד אז (ובלי תאריך לקיחה — תמיד), ועוד היתר העסקה ששולם עד אז —
-// כאילו נלקחה עליו הלוואה; kind — `long` · `inst`, ובלעדיו — הכל.
+// החוב בסוף חודש — המדד: יתרת הקרן של ההלוואות שנלקחו עד אז (ובלי תאריך לקיחה — תמיד); היתר העסקה — הוצאה, ואינו בחוב;
+// kind — `long` · `inst`, ובלעדיו — הכל.
 function loanDebt(mk, kind) {
   return sum(state.loans.filter(function (l) {
     var t = loanTakenMonth(l), k = loanIsChecks(l) ? 'inst' : 'long';
     return (!kind || kind === k) && (!t || t <= mk);
-  }), function (l) { return loanBalance(l, mk) + loanInterestBy(l, mk); });
+  }), function (l) { return loanBalance(l, mk); });
 }
 
 // הלוואות — לפי שם המלווה.
