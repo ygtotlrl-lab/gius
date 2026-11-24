@@ -75,7 +75,7 @@ function formBudget(b, evId) {
     '<label class="fld"><span>פריט *</span><input class="inp" id="b-item" value="' + esc(b ? b.item : '') + '"></label>' +
     '<div class="f2">' +
       '<label class="fld"><span>קטגוריה</span><input class="inp" id="b-cat" list="b-cats" value="' + esc(b ? b.category || '' : '') + '"></label>' +
-      '<label class="fld"><span>עלות</span><input class="inp" id="b-cost" inputmode="decimal" value="' + esc(b && b.cost != null ? b.cost : '') + '"></label>' +
+      '<label class="fld"><span>עלות</span><input class="inp" data-amt id="b-cost" inputmode="decimal" value="' + esc(b && b.cost != null ? b.cost : '') + '"></label>' +
     '</div>' +
     '<datalist id="b-cats">' + cats.map(function (c) { return '<option value="' + esc(c) + '"></option>'; }).join('') + '</datalist>' +
     '<label class="fld"><span>הערה</span><input class="inp" id="b-note" value="' + esc(b ? b.note || '' : '') + '"></label>',

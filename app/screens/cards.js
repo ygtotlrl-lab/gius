@@ -1,7 +1,7 @@
 // app/screens/cards.js — כרטיסים ותשלומים: הרשימה, הכרטיס הפתוח, ההתחייבויות והתשלומים
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
+import { amtSet, cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
          MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
          MSG_SO_FIRST_OVER, TTL_DONOR_EDIT, TTL_DONOR_NEW, TTL_PAY_EDIT, TTL_PAY_NEW, TTL_PLEDGE_EDIT, TTL_PLEDGE_NEW } from '../constants.js';
@@ -124,10 +124,14 @@ function cardOpenHTML(d) {
   var chips = [d.ambassador ? 'שגריר: ' + d.ambassador : '', d.role, d.phone].concat(d.affiliations || []).filter(Boolean);
   var h = '<div class="copen cw-card">' +
     '<div class="cp-band cw-band">' +
-      '<span class="cp-av">' + esc(initials(d.name)) + '</span>' +
+      // בפס — העיגול והשם בלבד; השגריר, התפקיד, הטלפון, השייכויות וההערות — בלחיצה על העיגול
+      ((chips.length || d.notes) ? '<button class="cp-av" data-act="card-who" aria-expanded="false" aria-label="פרטי הכרטיס" title="פרטי הכרטיס">' + esc(initials(d.name)) + '</button>'
+                                 : '<span class="cp-av">' + esc(initials(d.name)) + '</span>') +
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
+        '<div class="cp-more" hidden>' +
         (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
         (d.notes ? '<div class="cp-note">' + esc(d.notes) + '</div>' : '') +
+        '</div>' +
       '</div>' +
       '<div class="cp-sum">' +
         '<span><small>התחייב</small><b>' + ils(total) + '</b></span>' +
@@ -135,9 +139,9 @@ function cardOpenHTML(d) {
         '<span class="left"><small>נותר</small><b>' + ils(left) + '</b></span>' +
       '</div>' +
       '<div class="cp-acts">' +
+        '<button class="cp-btn star' + (d.starred ? ' on' : '') + '" data-act="card-star" data-id="' + id + '" aria-pressed="' + !!d.starred + '" aria-label="כוכב">' + icon('star') + '</button>' +
         '<button class="cp-btn" data-act="card-share" data-id="' + id + '" aria-label="ייצוא תמונה" title="ייצוא תמונה">' + icon('share') + '</button>' +
         '<button class="cp-btn" data-act="donor-edit" data-id="' + id + '" aria-label="עריכת פרטי הכרטיס" title="עריכת פרטי הכרטיס">' + icon('edit') + '</button>' +
-        '<button class="cp-btn star' + (d.starred ? ' on' : '') + '" data-act="card-star" data-id="' + id + '" aria-pressed="' + !!d.starred + '" aria-label="כוכב">' + icon('star') + '</button>' +
         '<button class="cp-btn" data-act="card-close" aria-label="סגירה">' + icon('close') + '</button>' +
       '</div>' +
     '</div>' +
@@ -350,7 +354,7 @@ function formPledge(p, donorId) {
     '</div>' +
     '<div class="f2-main">' +
       '<label class="fld"><span>פירוט</span><input class="inp" id="p-detail" value="' + esc(p ? p.detail || '' : '') + '"></label>' +
-      '<label class="fld"><span>סכום</span><input class="inp" id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
+      '<label class="fld"><span>סכום</span><input class="inp" data-amt id="p-amount" inputmode="decimal" value="' + esc(p && +p.amount ? p.amount : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="p-note" value="' + esc(p ? p.note || '' : '') + '"></label>';
   // חודש · תאריך · אמצעי — של התשלום שנרשם עם ההתחייבות; מוצגים רק כשמסמנים.
@@ -360,8 +364,8 @@ function formPledge(p, donorId) {
     // הו״ק — כמו בטופס התשלום: פעימות, והסכום לפעימה נגזר מסכום ההתחייבות; החודש סופר את הפעימה הראשונה בלבד.
     '<div class="hidden" id="p-so"><div class="f2 f2-tight">' +
       '<label class="fld"><span>פעימות *</span><input class="inp" id="p-so-n" inputmode="numeric" data-inp="p-so"></label>' +
-      '<label class="fld" id="p-so-per"><span>סכום לפעימה</span><input class="inp" id="p-so-amt" readonly tabindex="-1"></label>' +
-      '<label class="fld" id="p-so-first-box" hidden><span>הפעימה הראשונה *</span><input class="inp" id="p-so-first" inputmode="decimal"></label>' +
+      '<label class="fld" id="p-so-per"><span>סכום לפעימה</span><input class="inp" id="p-so-amt" data-amt readonly tabindex="-1"></label>' +
+      '<label class="fld" id="p-so-first-box" hidden><span>הפעימה הראשונה *</span><input class="inp" id="p-so-first" inputmode="decimal" data-amt></label>' +
     '</div>' + uneqHTML('p', false) + '</div>' +
     '<div class="chk-row"><label class="fld chk"><input type="checkbox" id="p-cleared"><span>סליקה בפועל</span></label>' +
     noInitHTML('p', false) + '</div></div>';
@@ -444,9 +448,9 @@ function soHTML(t, open) {
   return '<div class="' + (open ? '' : 'hidden') + '" id="t-so"><div class="f2 f2-tight">' +
     '<label class="fld"><span>פעימות *</span><input class="inp" id="t-so-n" inputmode="numeric" data-inp="pay-so" value="' +
       (has ? esc(t.installments) : '') + '"></label>' +
-    '<label class="fld" id="t-so-per"' + (uneq ? ' hidden' : '') + '><span>סכום לפעימה *</span><input class="inp" id="t-so-amt" inputmode="decimal" data-inp="pay-so" value="' +
+    '<label class="fld" id="t-so-per"' + (uneq ? ' hidden' : '') + '><span>סכום לפעימה *</span><input class="inp" id="t-so-amt" inputmode="decimal" data-amt data-inp="pay-so" value="' +
       (has && !uneq ? esc(monthAmount(t)) : '') + '"></label>' +
-    '<label class="fld" id="t-so-first-box"' + (uneq ? '' : ' hidden') + '><span>הפעימה הראשונה *</span><input class="inp" id="t-so-first" inputmode="decimal" value="' +
+    '<label class="fld" id="t-so-first-box"' + (uneq ? '' : ' hidden') + '><span>הפעימה הראשונה *</span><input class="inp" id="t-so-first" inputmode="decimal" data-amt value="' +
       (uneq ? esc(t.first_installment) : '') + '"></label>' +
   '</div>' + uneqHTML('t', uneq) + '</div>';
 }
@@ -469,7 +473,7 @@ function readFirst(px, amount) {
 function soSync() {
   if (checked('t-so-uneq')) return;
   var n = readNum($('#t-so-n'), 0), per = readNum($('#t-so-amt'), 0), a = $('#t-amount');
-  if (a && n > 0 && per > 0) a.value = String(Math.round(n * per * 100) / 100);
+  if (a && n > 0 && per > 0) amtSet(a, Math.round(n * per * 100) / 100);
 }
 
 function soToggle(method) {
@@ -490,7 +494,7 @@ function soUneqToggle(px) {
 // התשלום המיידי שבטופס ההתחייבות — הו״ק פותח את הפעימות, והסכום לפעימה = סכום ההתחייבות ÷ הפעימות.
 function pSoSync() {
   var n = readNum($('#p-so-n'), 0), a = readNum($('#p-amount'), 0), o = $('#p-so-amt');
-  if (o) o.value = n > 0 && a > 0 ? String(Math.round(a / n * 100) / 100) : '';
+  if (o) amtSet(o, n > 0 && a > 0 ? Math.round(a / n * 100) / 100 : '');
 }
 function pSoToggle(method) {
   var box = $('#p-so');
@@ -522,7 +526,7 @@ function formPay(t, pledgeId, donorId) {
     '<div class="f2-main">' + (pick ? payPickHTML(pls, p.client_id) :
       '<label class="fld"><span>התחייבות</span><input class="inp" readonly tabindex="-1" value="' +
         esc([p.pledge_type, p.section, p.detail].filter(Boolean).join(' · ')) + '"></label>') +
-      '<label class="fld"><span>סכום *</span><input class="inp" id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
+      '<label class="fld"><span>סכום *</span><input class="inp" data-amt id="t-amount" inputmode="decimal" value="' + esc(amt) + '"' +
         (so && !uneq ? ' readonly' : '') + '></label>' +
     '</div>' +
     // חודש · תאריך בשורה, בחצאים; אמצעי — רשת העיגולים; שתי תיבות הסימון בשורה אחת.
@@ -547,7 +551,7 @@ function payPledgePick(el) {
   }
   el.dataset.cur = el.value;
   var p = pledgeById(el.value), a = $('#t-amount');
-  if (p && a && !a.readOnly) a.value = leftForPledge(p) || '';
+  if (p && a && !a.readOnly) amtSet(a, leftForPledge(p) || '');
   var s = $('[data-act="pay-save"]'); if (s) s.dataset.pledge = el.value;
 }
 

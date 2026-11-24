@@ -103,7 +103,7 @@ function formTarget(month) {
   openModal(MSG_MONTH_GOAL,
     '<div class="f2">' +
       '<label class="fld"><span>חודש *</span><input class="inp" type="month" id="tg-month" value="' + esc(m) + '"></label>' +
-      '<label class="fld"><span>סכום יעד *</span><input class="inp" id="tg-amount" inputmode="decimal" value="' + (own ? num(own.amount) : '') + '"></label>' +
+      '<label class="fld"><span>סכום יעד *</span><input class="inp" data-amt id="tg-amount" inputmode="decimal" value="' + (own ? num(own.amount) : '') + '"></label>' +
     '</div>' +
     '<div class="hint">היעד הקבוע: ' + ils(targetDefault()) + '. יעד שנקבע כאן חל על החודש הזה בלבד.</div>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -120,7 +120,7 @@ function saveTarget() {
 
 function formTargetDefault() {
   openModal(TTL_GOAL_DEFAULT,
-    '<label class="fld"><span>סכום *</span><input class="inp" id="tgd-amount" inputmode="decimal" value="' + (targetDefault() || '') + '"></label>',
+    '<label class="fld"><span>סכום *</span><input class="inp" data-amt id="tgd-amount" inputmode="decimal" value="' + (targetDefault() || '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     '<button class="btn" data-act="target-default-save" data-ksave>' + icon('save') + 'שמירה</button>');
 }

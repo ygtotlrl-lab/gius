@@ -99,7 +99,7 @@ function formPlan(r) {
       '<label class="fld"><span>סוג</span><select class="inp" id="pl-kind">' + PLAN_KINDS.map(function (k) {
         return '<option' + ((r ? r.kind : PLAN_KINDS[0]) === k ? ' selected' : '') + '>' + esc(k) + '</option>';
       }).join('') + '</select></label>' +
-      '<label class="fld"><span>צפי</span><input class="inp" id="pl-exp" inputmode="decimal" value="' + esc(r && r.expected != null ? r.expected : '') + '"></label>' +
+      '<label class="fld"><span>צפי</span><input class="inp" data-amt id="pl-exp" inputmode="decimal" value="' + esc(r && r.expected != null ? r.expected : '') + '"></label>' +
     '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>איש קשר</span>' + selectHTML('pl-amb', lookupLabels(LK_AMBASSADOR), r ? r.ambassador : (d && d.ambassador) || '', '— ללא —') + '</label>' +

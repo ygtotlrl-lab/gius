@@ -1,7 +1,7 @@
 // app/screens/loans.js — הלוואות
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { comboDef, comboHTML, comboValue, esc, openModal, receiptHTML, toast } from '../../core/ui.js';
+import { amtSet, comboDef, comboHTML, comboValue, esc, openModal, receiptHTML, toast } from '../../core/ui.js';
 import { APP_FIRST_MONTH, LOAN_KINDS, MONTH_SHORT, LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_CK_AMT, MSG_CK_COUNT, MSG_CK_FIRST, MSG_LOAN_KIND, MSG_CK_SUM_PRE, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME,
          TTL_LOAN_EDIT, TTL_LOAN_NEW, TTL_MOVE_EDIT } from '../constants.js';
 import { state } from '../state.js';
@@ -247,7 +247,7 @@ function loanCardHTML(l, cur) {
         }).join('') : l.kind === 'checks' ? '' : emptyBox('loans', 'אין עדיין תנועות בהלוואה')) +
         '<div class="total-row"><span>נותר להחזיר</span><b>' + ils(bal) + '</b></div>' +
         '<div class="lm-add" data-ks>' +
-          '<input class="inp lm-amt" id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
+          '<input class="inp lm-amt" data-amt id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
           '<input class="inp lm-date" id="lm-date" type="date" value="' + esc(dayToday()) + '" aria-label="תאריך התנועה">' +
           '<input class="inp lm-note" id="lm-note" placeholder="הערה" aria-label="הערה לתנועה">' +
           '<button class="btn sm" data-act="loan-move-add" data-id="' + id + '" data-ksave>' + icon('plus') + 'הוספה</button>' +
@@ -274,7 +274,7 @@ function checksHTML(l, moves) {
 function formLoanMove(m) {
   openModal(TTL_MOVE_EDIT,
     '<div class="f2">' +
-      '<label class="fld"><span>סכום *</span><input class="inp" id="lm-e-amt" inputmode="decimal" value="' + esc(m.amount) + '"></label>' +
+      '<label class="fld"><span>סכום *</span><input class="inp" data-amt id="lm-e-amt" inputmode="decimal" value="' + esc(m.amount) + '"></label>' +
       '<label class="fld"><span>תאריך</span><input class="inp" id="lm-e-date" type="date" value="' + esc(m.move_date || '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערה</span><input class="inp" id="lm-e-note" value="' + esc(m.note || '') + '"></label>',
@@ -316,7 +316,7 @@ function formLoan(l) {
       '<div class="fld"><span>מלווה *</span>' +
         comboHTML('loan-donor', { id: 'o-donor', label: 'מלווה — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
                                  picked: l ? { value: ld ? ld.client_id : '', label: lenderOf(l) } : null }) + '</div>' +
-      '<label class="fld"><span>סכום *</span><input class="inp" id="o-amount" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.amount != null ? l.amount : '') + '"></label>' +
+      '<label class="fld"><span>סכום *</span><input class="inp" data-amt id="o-amount" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.amount != null ? l.amount : '') + '"></label>' +
     '</div>' +
     '<input type="hidden" id="o-kind" value="' + esc(kind) + '">' +
     '<div class="fld"><span>סוג ההלוואה</span><div class="seg seg-wide ln-kind" role="radiogroup" aria-label="סוג ההלוואה">' +
@@ -327,7 +327,7 @@ function formLoan(l) {
     '<div class="ln-box" id="o-ck"' + (kind === 'checks' ? '' : ' hidden') + '>' +
       '<div class="f3">' +
         '<label class="fld"><span>מספר תשלומים *</span><input class="inp" id="o-ck-n" inputmode="numeric" data-inp="ck-sync" value="' + esc(l && l.check_count || '') + '"></label>' +
-        '<label class="fld" id="o-ck-a-box"' + (uneq ? ' hidden' : '') + '><span>סכום לתשלום *</span><input class="inp" id="o-ck-a" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.check_amount || '') + '"></label>' +
+        '<label class="fld" id="o-ck-a-box"' + (uneq ? ' hidden' : '') + '><span>סכום לתשלום *</span><input class="inp" data-amt id="o-ck-a" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.check_amount || '') + '"></label>' +
         '<label class="fld"><span>חודש התשלום הראשון *</span><input class="inp" type="month" id="o-ck-m" data-chg="ck-sync" value="' + esc(l && l.first_check_month || '') + '"></label>' +
       '</div>' +
       // היתר עסקה באחוזים — מהסכום ומהתשלום החודשי נגזרים מספר התשלומים והאחרון (היתרה)
@@ -345,7 +345,7 @@ function formLoan(l) {
       '<div class="ln-int-row"><label class="fld"><span>אחוז</span><input class="inp" id="o-int-p" inputmode="decimal" data-inp="int-p" placeholder="למשל 5" value="' +
         esc(l && +l.repay_total > +l.amount ? Math.round((l.repay_total / l.amount - 1) * 10000) / 100 : '') + '"></label>' +
       '<span class="ln-int-or">או</span>' +
-      '<label class="fld"><span>סכום להחזר, כולל היתר העסקה</span><input class="inp" id="o-total" inputmode="decimal" data-inp="int-t" value="' +
+      '<label class="fld"><span>סכום להחזר, כולל היתר העסקה</span><input class="inp" data-amt id="o-total" inputmode="decimal" data-inp="int-t" value="' +
         esc(l && +l.repay_total > +l.amount ? l.repay_total : '') + '"></label></div>' +
       '<div class="ln-int-sum" id="o-int-sum"></div></div></div>' +
     whenFieldsHTML('o-taken', 'תאריך לקיחה', l, 'taken') +
@@ -366,7 +366,7 @@ function ckListHTML(n, first, vals) {
   var h = '';
   for (var i = 0; i < n; i++) {
     h += '<label class="fld ln-ck-f"><span>תשלום ' + (i + 1) + (first ? ' · ' + mmYYYY(shiftMonth(first, i)) : '') + '</span>' +
-      '<input class="inp" inputmode="decimal" data-ck="' + i + '" data-inp="ck-sync" value="' + esc(vals && vals[i] != null ? vals[i] : '') + '"></label>';
+      '<input class="inp" inputmode="decimal" data-amt data-ck="' + i + '" data-inp="ck-sync" value="' + esc(vals && vals[i] != null ? vals[i] : '') + '"></label>';
   }
   return h;
 }
@@ -383,7 +383,7 @@ function ckInt() {
   if (!(p > 0) || !(amt > 0) || !(per > 0)) { ckSync(); return; }
   var tot = Math.round(amt * (1 + p / 100) * 100) / 100, n = Math.ceil(tot / per - 1e-9), last = Math.round((tot - per * (n - 1)) * 100) / 100;
   if (n > 60) { ckSync(); return; }
-  $('#o-ck-n').value = n; $('#o-ck-a').value = per;
+  $('#o-ck-n').value = n; amtSet($('#o-ck-a'), per);
   var list = $('#o-ck-list');
   if (last === per) { uneq.checked = false; list.innerHTML = ''; }
   else {
@@ -424,7 +424,7 @@ function ckSync() {
 function intSync(from) {
   var amt = readNum($('#o-amount'), 0), p = $('#o-int-p'), t = $('#o-total');
   if (!p || !t || !(amt > 0)) return;
-  if (from === 'p') { var pv = readNum(p, 0); t.value = pv > 0 ? Math.round(amt * (1 + pv / 100) * 100) / 100 : ''; }
+  if (from === 'p') { var pv = readNum(p, 0); amtSet(t, pv > 0 ? Math.round(amt * (1 + pv / 100) * 100) / 100 : ''); }
   else if (from === 't') { var tv = readNum(t, 0); p.value = tv > amt ? Math.round((tv / amt - 1) * 10000) / 100 : ''; }
   intSum();
 }

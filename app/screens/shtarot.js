@@ -3,7 +3,7 @@ import { getDeviceId, readNum } from '../../core/util.js';
 import { errToast, idEq, newClientId, pendTag } from '../../core/sync.js';
 import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML, methodIcon, receiptHTML,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
-import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK,
+import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK, MSG_SHT_STAR_B, MSG_SHT_STAR_T,
          MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS, MSG_SAVE_ACT, MSG_SHT_CLEARED, MSG_SHT_CLEARED_OK, MSG_SHT_CLEARED_PRE, MSG_SHT_CLEARED_Q, MSG_SHT_DUP_Q, MSG_SHT_DUP_TITLE, TTL_CALL_EDIT, TTL_SHT_EDIT, TTL_SHT_NEW } from '../constants.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
@@ -197,8 +197,8 @@ function shtListHTML() {
   var h = '<h2>' + esc(FILTER_TITLE[s.f] || FILTER_TITLE.queue) + '<span class="cnt">' + list.length + '</span></h2>';
   if (!list.length) return h + emptyBox('shtarot', state.shtarPeople.length ? 'אין כאן אף אחד כרגע' : 'הרשימה ריקה');
   h += list.slice(0, lim).map(function (r) {
-    var p = r.p, n = callsOf(p.client_id).length;
-    return '<div class="row sht-row' + (r.st.rank === 3 ? ' later' : '') + '" data-act="sht-open" data-id="' + esc(p.client_id) + '">' +
+    var p = r.p, n = callsOf(p.client_id).length, star = shtStarred(p);
+    return '<div class="row sht-row' + (r.st.rank === 3 ? ' later' : '') + (star ? ' star' : '') + '" data-act="sht-open" data-id="' + esc(p.client_id) + '">' +
       '<span class="av">' + (r.name ? esc(initials(r.name)) : icon('call')) + '</span>' +
       '<div class="main"><b' + (r.name ? '' : ' class="unk"') + '>' + esc(r.name || MSG_SHT_NO_NAME) + pendTag(pendRowKey('g_shtar_people', p.client_id)) + '</b>' +
         '<small dir="ltr">' + esc(phoneShow(p.phone)) + '</small>' + (n ? '<small> · ' + n + ' שיחות</small>' : '') + '</div>' +
@@ -252,7 +252,7 @@ function shtCardHTML(p) {
     '<div class="fld"><span>לא נוצר קשר</span><div class="sht-os">' + stBtn('na', st) + stBtn('wrong', st) + '</div></div>' +
     '<div class="fld"><span>תוצאת השיחה</span><div class="sht-os">' + ['yes', 'pl', 'int', 'cb', 'no', 'rmv'].map(function (k) { return stBtn(k, st); }).join('') + '</div></div>' +
     '<div id="sht-give-box"' + (give ? '' : ' hidden') + '>' +
-      '<label class="fld"><span>סכום</span><input class="inp" id="sht-amt" inputmode="decimal" value="' + esc(cur && cur.amount != null ? cur.amount : '') + '"></label>' +
+      '<label class="fld"><span>סכום</span><input class="inp" data-amt id="sht-amt" inputmode="decimal" value="' + esc(cur && cur.amount != null ? cur.amount : '') + '"></label>' +
       '<div class="fld"><span>אמצעי</span><input type="hidden" id="sht-method" value="' + esc(cur ? cur.method || '' : '') + '">' +
       methodGridHTML({ target: 'sht-method', list: lookupLabels(LK_METHOD), cur: cur ? cur.method || '' : '', label: 'אמצעי',
                        ico: function (l) { return icon(methodIcon(l)); } }) + '</div></div>' +
@@ -336,7 +336,18 @@ function lockBeat() {
 }
 
 // פתיחה — מהרשימה (ואז סדר «הקודם/הבא» נלכד מהרשימה כפי שהיא) או בצעד מתוך כרטיס פתוח.
+// כרטיס בגיוס שמסומן בכוכב — פונים לאדם רק אחרי אישור מאלישע; בשורה — מסגרת זהב, ובפתיחה — שאלה
+function shtStarred(p) {
+  var d = p && p.donor_client_id ? donorById(p.donor_client_id) : null;
+  return !!(d && d.starred);
+}
 function shtOpen(id, keepNav) {
+  if (shtStarred(personById(id)))
+    return ask(MSG_SHT_STAR_T, MSG_SHT_STAR_B, 'יש אישור', 'star', 'ביטול')
+      .then(function (ok) { return ok ? shtOpenNow(id, keepNav) : false; });
+  return shtOpenNow(id, keepNav);
+}
+function shtOpenNow(id, keepNav) {
   var s = state.sht;
   if (!keepNav) s.nav = shtMatches().map(function (r) { return r.p.client_id; });
   return lockTake(id).then(function (free) {
@@ -415,7 +426,7 @@ function formCall(c) {
         return '<option' + (c.ambassador === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></label>' +
     '</div>' +
     '<div id="sc-give-box"' + (give ? '' : ' hidden') + '>' +
-      '<label class="fld"><span>סכום</span><input class="inp" id="sc-amt" inputmode="decimal" value="' + esc(c.amount == null ? '' : c.amount) + '"></label>' +
+      '<label class="fld"><span>סכום</span><input class="inp" data-amt id="sc-amt" inputmode="decimal" value="' + esc(c.amount == null ? '' : c.amount) + '"></label>' +
       '<div class="fld"><span>אמצעי</span><input type="hidden" id="sc-method" value="' + esc(c.method || '') + '">' +
       methodGridHTML({ target: 'sc-method', list: lookupLabels(LK_METHOD), cur: c.method || '', label: 'אמצעי',
                        ico: function (l) { return icon(methodIcon(l)); } }) + '</div></div>' +
@@ -456,7 +467,7 @@ function formNext(c) {
       '<div class="sht-os">' + to.map(function (k) {
         return '<button type="button" class="sht-o ' + SHT_STATUS[k].cls + (one ? ' on' : '') + '" data-act="sht-next-to" data-v="' + k + '" aria-pressed="' + one + '">' + esc(SHT_STATUS[k].l) + '</button>';
       }).join('') + '</div></div>' +
-    '<label class="fld"><span>סכום</span><input class="inp" id="sn-amt" inputmode="decimal" value="' + esc(c.amount == null ? '' : c.amount) + '"></label>' +
+    '<label class="fld"><span>סכום</span><input class="inp" data-amt id="sn-amt" inputmode="decimal" value="' + esc(c.amount == null ? '' : c.amount) + '"></label>' +
     '<div class="fld"><span>אמצעי</span><input type="hidden" id="sn-method" value="' + esc(c.method || '') + '">' +
       methodGridHTML({ target: 'sn-method', list: lookupLabels(LK_METHOD), cur: c.method || '', label: 'אמצעי',
                        ico: function (l) { return icon(methodIcon(l)); } }) + '</div>',

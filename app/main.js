@@ -354,6 +354,13 @@ var DOM_ACTIONS = {
   'card-close': function () { state.cards.open = null; cardsRefresh(); },
   'card-share': function (el) { cardShare(el.dataset.id); },
   'card-tl': function () { state.cards.tlOpen = !state.cards.tlOpen; cardsRefresh(); },
+  // העיגול שבפס — פותח וסוגר את פרטי הכרטיס (שגריר, תפקיד, טלפון, שייכויות, הערות)
+  'card-who': function (el) {
+    var band = el.closest('.cp-band'), more = band && band.querySelector('.cp-more');
+    if (!more) return;
+    more.hidden = !more.hidden;
+    el.setAttribute('aria-expanded', String(!more.hidden));
+  },
   'card-star': function (el) {
     var d = donorById(el.dataset.id);
     if (!d) return;
