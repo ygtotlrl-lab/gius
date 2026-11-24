@@ -280,7 +280,8 @@ function loansBodyHTML() {
         '<div class="ln-pblock">' + g.list.map(function (l) { return loanRowHTML(l, cur); }).join('') + '</div>';
     });
   }
-  return h + '<div class="total-row ln-total"><span>סה״כ נותר להחזיר</span><b>' + ils(sum(list, function (l) { return loanLeft(l, cur); })) + '</b></div>';
+  // בלי שורת סה״כ בתחתית — החוב כבר בעיגול «החוב הכללי» בראש המסך
+  return h;
 }
 
 // התשלומים של ההלוואה — חודש · סכום · נפרע או עתידי; תשלום בלי חודש — «בלי תאריך», ואינו בצפי.

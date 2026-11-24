@@ -1140,3 +1140,16 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-person{font-size:var(--fs-5)}
 .ln-stat-h span{width:auto;height:auto;padding:var(--sp-3) var(--sp-6);border-radius:var(--r-6);font-size:var(--fs-4)}
 .ln-row .ln-r-name{display:block;font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}
+/* הלוואות — סבב 4: שם המלווה גדול ומודגש; שני הבוררים ברוחב אחד; האות במרכז העיגול; סוג ההחזר בשורה אחת בגובה השדה */
+.ln-person{font-size:var(--fs-6,1.5rem);font-weight:900}
+.ln-tools select.inp{width:170px}
+@media (max-width:639px){ .ln-tools select.inp{width:100%} }
+.ln-letter span{display:inline-block;text-align:center;line-height:52px;padding:0}
+.ln-stat-h span{line-height:1.3;padding:var(--sp-3) var(--sp-6)}
+.ln-f-kind .ln-seg{margin-bottom:0;flex-wrap:nowrap}
+.ln-f-kind .ln-seg button{white-space:nowrap;padding:var(--sp-3) var(--sp-4)}
+@media (min-width:640px){ .ln-p1-row{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) auto} }
+@media (min-width:900px){ .ln-p1-row{grid-template-columns:minmax(0,1fr) auto} }
+.ln-person{font-size:var(--fs-5)}
+/* בורר סוג ההחזר — בגובה שדה הסכום שלצדו */
+.ln-f-kind .ln-seg{box-sizing:border-box;height:calc(2 * var(--sp-5) + var(--fs-4) * 1.5 + 2px);align-items:stretch}
