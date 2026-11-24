@@ -1136,3 +1136,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-foot{display:flex;justify-content:flex-end;gap:var(--sp-4);padding:var(--sp-5) var(--sp-6);background:var(--card);border-top:1px solid var(--border);position:sticky;bottom:0;z-index:2}
 .ln-p1-acts{display:none}
 @media (max-width:639px){ .ln-tools{grid-template-columns:1fr 1fr} .ln-tools .search-box{grid-column:1 / -1} .ln-choice{grid-template-columns:1fr} }
+/* הלוואות — סבב 3: שם המלווה גדול יותר; במיון — כותרת הסטטוס במקום האות, ושם המלווה בשורה */
+.ln-person{font-size:var(--fs-5)}
+.ln-stat-h span{width:auto;height:auto;padding:var(--sp-3) var(--sp-6);border-radius:var(--r-6);font-size:var(--fs-4)}
+.ln-row .ln-r-name{display:block;font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}

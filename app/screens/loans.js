@@ -76,9 +76,9 @@ function loanInfo() {
     ['לטווח ארוך · בתשלומים', 'אותו חוב, לפי סוג ההחזר.'],
     ['עלויות מימון', 'מה שעלה המימון החודש: היתר עסקה (מה שמחזירים מעבר לקרן) ודמי התפשרות (סכום קבוע לכל חודש עד סגירת ההלוואה). הוצאה — אינה בחוב.'],
     ['החזרים החודש', 'חלק הקרן שהוחזר החודש — מקטין את החוב.'],
-    ['נקודות בצבע', 'אדום — חוב והלוואות · ירוק — החזרים וחוב שקטן · זהב — עלויות המימון.'],
     ['הלוואות החודש', 'סכום ההלוואות שנלקחו החודש — מגדיל את החוב.'],
-    ['נטו החודש', 'הלוואות פחות החזרים: אדום — החוב גדל, ירוק — החוב קטן.']
+    ['נטו החודש', 'הלוואות פחות החזרים: אדום — החוב גדל, ירוק — החוב קטן.'],
+    ['הצבעים', 'אדום — חוב והלוואות · ירוק — החזרים וחוב שקטן · זהב — עלויות המימון.']
   ].map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul>',
   '<button class="btn" data-act="modal-close">הבנתי</button>', icon('info'));
 }
@@ -177,6 +177,7 @@ function endKey(l) {
 function loanSort(list, mode) {
   var key = mode === 'taken' ? function (l) { return l.taken_date || (l.taken_month ? l.taken_month + '-01' : ''); } : mode === 'end' ? endKey : null;
   var st = function (l) { var i = LOAN_STATUSES.indexOf(l.status); return i < 0 ? LOAN_STATUSES.length : i; };
+  // בלי ערך — בסוף, לפי א״ב
   return list.slice().sort(function (a, b) {
     var r = 0;
     if (key) { var x = key(a), y = key(b); r = !x || !y ? (x ? 0 : 1) - (y ? 0 : 1) : (mode === 'taken' ? (y < x ? -1 : y > x ? 1 : 0) : (x < y ? -1 : x > y ? 1 : 0)); }
@@ -192,7 +193,7 @@ function viewLoans() {
   var h = '<section class="card ln-top">' +
       '<div class="ln-tools"><label class="search-box"><input aria-label="חיפוש לפי מלווה" class="inp search" id="loans-q" data-inp="loans-q" placeholder="חיפוש לפי מלווה" value="' + esc(state.loansQ) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
-        selectHTML('loans-status', LOAN_STATUSES, state.loansStatus, 'כל הסטטוסים', 'loans-status') +
+        selectHTML('loans-status', LOAN_STATUSES, state.loansStatus, 'סינון', 'loans-status') +
         '<select class="inp" id="loans-sort" data-chg="loans-sort" aria-label="מיון"><option value="">מיון</option>' + LOAN_SORTS.map(function (o) {
           return '<option value="' + o[0] + '"' + (state.loansSort === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
         }).join('') + '</select></div>' +
@@ -235,10 +236,10 @@ function lineHTML(x) {
   return '<span>' + (i > 0 ? '<b>' + esc(x.slice(0, i + 1)) + '</b> ' + esc(x.slice(i + 2)) : esc(x)) + '</span>';
 }
 // השורה — הסכום ואייקון סוג ההחזר בימין, ובצד השני הנותר להחזיר (בולט) והסטטוס; ומתחת — הפירוט. שם המלווה — מעל הרכיב, לא בשורה.
-function loanRowHTML(l, cur) {
+function loanRowHTML(l, cur, withName) {
   var lines = loanLines(l);
   return '<button class="ln-row' + (l.kind ? ' k-' + l.kind : '') + '" data-act="loan-open" data-id="' + esc(l.client_id) + '" aria-label="' + esc(lenderOf(l) + ' — ' + ils(l.amount)) + '">' +
-    '<span class="ln-r-main"><span class="ln-r-top"><b class="ln-r-amt">' + esc(ils(l.amount)) + '</b>' + pendTag(pendRowKey('g_loans', l.client_id)) +
+    '<span class="ln-r-main">' + (withName ? '<b class="ln-r-name">' + esc(lenderOf(l)) + '</b>' : '') + '<span class="ln-r-top"><b class="ln-r-amt">' + esc(ils(l.amount)) + '</b>' + pendTag(pendRowKey('g_loans', l.client_id)) +
       (l.kind ? '<span class="ln-kic" title="' + esc(LOAN_KINDS[l.kind]) + '" aria-label="' + esc(LOAN_KINDS[l.kind]) + '">' + icon(l.kind === 'checks' ? 'cheque' : 'calendar') + '</span>' : '') + '</span>' +
       (lines.length ? '<span class="ln-r-det">' + lines.map(lineHTML).join('') + '</span>' : '') + '</span>' +
     '<span class="ln-r-end"><small>נותר להחזיר</small><b>' + esc(ils(loanLeft(l, cur))) + '</b>' + (l.status ? '<span class="badge brand">' + esc(l.status) + '</span>' : '') + '</span>' +
@@ -250,22 +251,35 @@ function loansBodyHTML() {
   var list = loanMatches(), cur = curMonth();
   var h = '<div class="ln-list-h"><h2>הלוואות<span class="cnt">' + list.length + '</span></h2></div>';
   if (!list.length) return h + '<div class="card">' + emptyBox('loans', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות') + '</div>';
-  var groups = {}, order = [];
-  list.forEach(function (l) {
-    var did = l.donor_client_id || '';
-    var k = did ? 'd:' + did : 'n:' + String(l.lender || '').trim();
-    if (!groups[k]) { groups[k] = { name: lenderOf(l), list: [] }; order.push(k); }
-    groups[k].list.push(l);
-  });
-  // בלי מיון — לפי השם, ואות בעיגול לפני כל אות; במיון — סדר הקבוצות לפי ההלוואה הראשונה שלהן, בלי אותיות
-  if (!state.loansSort) order.sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name, 'he'); });
-  var letter = '';
-  order.forEach(function (k) {
-    var g = groups[k], L = (g.name.trim().charAt(0) || '#');
-    if (!state.loansSort && L !== letter) { letter = L; h += '<div class="ln-letter" aria-hidden="true"><span>' + esc(L) + '</span></div>'; }
-    h += '<div class="ln-person">' + esc(g.name) + (g.list.length > 1 ? '<span class="cnt">' + g.list.length + '</span>' : '') + '</div>' +
-      '<div class="ln-pblock">' + g.list.map(function (l) { return loanRowHTML(l, cur); }).join('') + '</div>';
-  });
+  // במיון — לא לפי אנשים: תאריך לקיחה או סיום — רשימה אחת, ושם המלווה בשורה; סטטוס — כותרת לכל סטטוס (במקום האות),
+  // ובלי סטטוס — בסוף (זמני: מהיום הסטטוס חובה)
+  if (state.loansSort === 'status') {
+    var cur0 = '\u0000';
+    list.forEach(function (l) {
+      var k = LOAN_STATUSES.indexOf(l.status) >= 0 ? l.status : '';
+      if (k !== cur0) { if (cur0 !== '\u0000') h += '</div>'; cur0 = k; h += '<div class="ln-letter ln-stat-h" aria-hidden="true"><span>' + esc(k || 'ללא סטטוס') + '</span></div><div class="ln-pblock">'; }
+      h += loanRowHTML(l, cur, true);
+    });
+    h += '</div>';
+  } else if (state.loansSort) {
+    h += '<div class="ln-pblock">' + list.map(function (l) { return loanRowHTML(l, cur, true); }).join('') + '</div>';
+  } else {
+    var groups = {}, order = [];
+    list.forEach(function (l) {
+      var did = l.donor_client_id || '';
+      var k = did ? 'd:' + did : 'n:' + String(l.lender || '').trim();
+      if (!groups[k]) { groups[k] = { name: lenderOf(l), list: [] }; order.push(k); }
+      groups[k].list.push(l);
+    });
+    order.sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name, 'he'); });
+    var letter = '';
+    order.forEach(function (k) {
+      var g = groups[k], L = (g.name.trim().charAt(0) || '#');
+      if (L !== letter) { letter = L; h += '<div class="ln-letter" aria-hidden="true"><span>' + esc(L) + '</span></div>'; }
+      h += '<div class="ln-person">' + esc(g.name) + (g.list.length > 1 ? '<span class="cnt">' + g.list.length + '</span>' : '') + '</div>' +
+        '<div class="ln-pblock">' + g.list.map(function (l) { return loanRowHTML(l, cur); }).join('') + '</div>';
+    });
+  }
   return h + '<div class="total-row ln-total"><span>סה״כ נותר להחזיר</span><b>' + ils(sum(list, function (l) { return loanLeft(l, cur); })) + '</b></div>';
 }
 
@@ -386,7 +400,7 @@ function loanWinHTML(l) {
         '<div class="fld"><span>מספר תשלומים</span><div class="ln-set-n">' +
           '<input class="inp" id="o-set-n" inputmode="numeric" placeholder="ללא הגבלה" value="' + esc(l && l.settle_count || '') + '"' + (l && +l.settle_count ? '' : ' readonly') + '>' +
           '<button type="button" class="ln-set-edit" data-act="set-count" aria-label="קביעת מספר תשלומים" title="קביעת מספר תשלומים">' + icon('edit') + '</button></div></div></div>' +
-        '<div class="ln-fin-note"><b>דמי התפשרות</b><span>סכום קבוע שמשולם כל חודש, מהחודש הראשון של ההלוואה — ללא הגבלה עד שהקרן מוחזרת, או עד מספר התשלומים שנקבע. נספר בעלויות המימון, ואינו מקטין את החוב.</span></div></div>' +
+        '<div class="ln-fin-note"><b>דמי התפשרות</b><span>ממלאים את הסכום לחודש, ומספר תשלומים — אם יש. משולם מהחודש הראשון של ההלוואה עד שהקרן מוחזרת, או עד מספר התשלומים. הסכום הוא עלות המימון, ואינו חוב.</span></div></div>' +
     '</div>';
   var p2 = '<section class="ln-p2a"><h3>פרטי ההחזר</h3>' +
     '<p class="ln-lead" id="o-kind-hint"' + (kind ? ' hidden' : '') + '>בוחרים את סוג ההחזר בפרטי ההלוואה.</p>' + ck + lg + '</section>';
