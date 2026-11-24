@@ -35,7 +35,7 @@ var state = {
   // כרטיסים ותשלומים — בכל כניסה למסך: בלי סינון, ממוין לפי א״ב, ובלי כרטיס פתוח.
   cards: { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false },
   // מיון ההלוואות — name · taken · end · status.
-  loansQ: '', loansStatus: '', loansOpen: null, // loansOpen — חלון ההלוואה ('new' — הלוואה חדשה)
+  loansQ: '', loansStatus: '', loansSort: '', loansOpen: null, // loansOpen — חלון ההלוואה ('new' — הלוואה חדשה)
   lnWin: '', // החלון שנפתח מהכפתורים: 'chart' (גרף הלוואות) · 'due' (תאריכי פירעון)
   ixOpen: {}, // מדדי הסוגים שבדשבורד — סגורים, ולחיצה פותחת
   // משימות — האחראי שנבחר, והרשימה שנפתחה (שלב), או null לשלושת הכרטיסים.

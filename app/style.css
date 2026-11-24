@@ -1105,3 +1105,34 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
   .ln-dot-c{width:72px;height:72px} .ln-dot-c b{font-size:var(--fs-4)}
   .ln-row{padding:var(--sp-5)} .ln-r-end b{font-size:var(--fs-5)}
 }
+
+/* הלוואות — סבב 2: אות בעיגול, שם המלווה מעל הרכיב, הסכום בראש השורה, בחירה בכרטיסים, וכפתורים בתחתית החלון */
+.ln-tools{grid-template-columns:1fr auto auto}
+.ln-wbtns{margin-top:var(--sp-4);padding-top:var(--sp-6);border-top:1px dashed var(--border)}
+.ln-letter{margin:var(--sp-7) var(--sp-2) var(--sp-4)}
+.ln-letter span{display:inline-grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--brand-fill);color:#fff;font-size:var(--fs-6,1.5rem);font-weight:900;line-height:1}
+.ln-person{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-5) var(--sp-3) var(--sp-3);font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}
+.ln-letter + .ln-person{margin-top:0}
+.ln-person .cnt{font-size:var(--fs-1);font-weight:700;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
+.ln-r-main{gap:var(--sp-4)}
+.ln-r-top .ln-r-amt{font-size:var(--fs-5);font-weight:800;color:var(--text)}
+.ln-r-det{gap:var(--sp-1);color:var(--text-2)}
+.ln-r-det b{font-weight:700;color:var(--text)}
+.ln-choice{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-bottom:var(--sp-5)}
+.ln-choice button{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 var(--sp-3);text-align:start;padding:var(--sp-4);
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--r-5);font:inherit;color:var(--text);cursor:pointer}
+.ln-choice button span{font-weight:800}
+.ln-choice button small{grid-column:2;font-size:var(--fs-1);color:var(--text-3)}
+.ln-choice .ln-radio{grid-row:1 / span 2;width:18px;height:18px;border-radius:50%;border:2px solid var(--text-3);box-sizing:border-box}
+.ln-choice button.on{border-color:var(--brand-fill);background:var(--brand-soft)}
+.ln-choice button.on .ln-radio{border:5px solid var(--brand-fill)}
+.ln-fin-chk{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-4);font-weight:800;cursor:pointer}
+.ln-fin-chk input{width:20px;height:20px;accent-color:var(--brand-fill)}
+.ln-set-n{display:flex;gap:var(--sp-2);align-items:center}
+.ln-set-n .inp{flex:1;min-width:0}
+.ln-set-n .inp[readonly]{background:var(--card-2);color:var(--text-3)}
+.ln-set-edit{flex:none;width:44px;height:44px;border-radius:var(--r-5);border:1px solid var(--border);background:var(--card);color:var(--brand-ink);display:grid;place-items:center;cursor:pointer}
+.ln-set-edit .ico{width:18px;height:18px}
+.ln-foot{display:flex;justify-content:flex-end;gap:var(--sp-4);padding:var(--sp-5) var(--sp-6);background:var(--card);border-top:1px solid var(--border);position:sticky;bottom:0;z-index:2}
+.ln-p1-acts{display:none}
+@media (max-width:639px){ .ln-tools{grid-template-columns:1fr 1fr} .ln-tools .search-box{grid-column:1 / -1} .ln-choice{grid-template-columns:1fr} }

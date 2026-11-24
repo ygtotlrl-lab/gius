@@ -28,7 +28,7 @@ import { datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, pay
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, subAdd, subEdDot, subRm, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { addLoanMove, ckInt, ckMode, ckSync, finMode, intSync, formLoanMove, loanInfo, loanKindPick, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans } from './screens/loans.js';
+import { addLoanMove, ckMode, ckSync, finMode, finOn, intSync, formLoanMove, loanInfo, loanKindPick, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -258,7 +258,7 @@ function go(screen) {
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') { state.planMonth = m; state.planOpen = {}; }
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false };
-  if (screen === 'loans') { state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; state.lnWin = ''; }
+  if (screen === 'loans') { state.loansQ = ''; state.loansStatus = ''; state.loansSort = ''; state.loansOpen = null; state.lnWin = ''; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.lim = 0; state.sht.nav = []; }
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
@@ -572,8 +572,7 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
   if (el.dataset.inp === 'sht-q') { state.sht.q = el.value; state.sht.lim = 0; shtListRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
-  if (el.dataset.inp === 'ck-sync') { if ((el.id === 'o-ck-a' || el.id === 'o-amount') && val('o-ck-int')) ckInt(); else ckSync(); intSync('p'); }
-  if (el.dataset.inp === 'ck-int') ckInt();
+  if (el.dataset.inp === 'ck-sync') { ckSync(); intSync('p'); }
   if (el.dataset.inp === 'int-p') intSync('p');
   if (el.dataset.inp === 'int-t') intSync('t');
   if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
@@ -589,6 +588,8 @@ document.addEventListener('change', function (e) {
   if (!el.dataset) return;
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
+  if (el.dataset.chg === 'loans-sort') { state.loansSort = el.value; loansRefresh(); return; }
+  if (el.dataset.chg === 'fin-on') { finOn(el); return; }
   if (el.dataset.chg === 'sc-status') { callStatusPick(el.value); return; }
   if (el.dataset.chg === 'sht-res') { state.sht.f = el.value || 'queue'; state.sht.lim = 0; render(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
