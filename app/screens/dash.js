@@ -124,9 +124,9 @@ function colHTML(m, bars, max, tgt, big, extra) {
       '<span class="fl-solid" style="--s:' + hFr(x.v, x.full) + '"></span></span>';
     return '<span class="fl-bar ' + x.cls + '" style="--v:' + hs[i] + '" title="' + esc(x.lbl + ' ' + ils(x.v)) + '"></span>';
   }).join('');
-  var lbls = bars.map(function (x, i) { return { v: x.v, full: x.full, h: hs[i], cls: x.cls }; }).filter(function (x) { return x.v > 0 || x.full > 0; })
+  var lbls = bars.map(function (x, i) { return { v: x.v, full: x.full, h: hs[i], cls: x.cls, sumLbl: x.sumLbl }; }).filter(function (x) { return x.v > 0 || x.full > 0; })
     .sort(function (a, b) { return a.h - b.h; })
-    .map(function (x) { return '<b class="' + x.cls + '">' + fmt(x.v) + (x.full > x.v ? '<small>מתוך ' + fmt(x.full) + '</small>' : '') + '</b>'; }).join('');
+    .map(function (x) { return '<b class="' + x.cls + '">' + (x.sumLbl ? fmt(x.full > x.v ? x.full : x.v) : fmt(x.v) + (x.full > x.v ? '<small>מתוך ' + fmt(x.full) + '</small>' : '')) + '</b>'; }).join('');
   return '<div class="fl-col">' +
     '<div class="fl-plot">' + (tgt > 0 ? '<i class="fl-tgt" style="--v:' + hFr(tgt, max) + '"></i>' : '') + plot +
       (lbls ? '<span class="fl-vals" style="--v:' + top + '">' + lbls + '</span>' : '') + (extra || '') + '</div>' +
@@ -167,6 +167,9 @@ function chgTxt(all, key, kind) {
   var c = (all.length ? all[all.length - 1][key] : 0) - loanDebt(shiftMonth(APP_FIRST_MONTH, -1), kind);
   return (c > 0 ? 'עלה ' : c < 0 ? 'ירד ' : 'ללא שינוי ') + (c ? kShort(Math.abs(c)) : '');
 }
+// עלויות המימון — עמודה אחת: הכהה בתחתיתה — היתר עסקה, והחיוור מעליו — דמי התפשרות; התווית — הסך
+function fin(interest, total) { return { v: interest, full: total, cls: 'int', lbl: 'היתר עסקה', sumLbl: true }; }
+var FIN_NOTE = '<p class="fl-note"><span class="fl-sw int"></span>עלויות מימון — הכהה: היתר עסקה · החיוור: דמי התפשרות</p>';
 function lg(items) {
   return '<div class="fl-legend"><div class="fl-lg">' + items.map(function (x) { return '<span><i class="' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
 }
@@ -176,13 +179,13 @@ function indicesHTML(all) {
   var tone = function (key, kind) { return chgTxt(all, key, kind).indexOf('עלה') === 0 ? 'up' : 'down'; };
   var sub = '<span class="' + tone('debtLong', 'long') + '">לטווח ארוך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
     '<span class="' + tone('debtInst', 'inst') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
-    ' · <span class="int">היתר עסקה ' + esc(kShort(sum(all, function (f) { return f.interest; }))) + '</span>';
+    ' · <span class="int">עלויות מימון ' + esc(kShort(sum(all, function (f) { return f.finance; }))) + '</span>';
   var debtLine = ['debt', 'החוב בסוף החודש'];
   var kinds = [
     { k: 'long', key: 'debtLong', title: 'הלוואות לטווח ארוך',
-      bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'הלוואות' }, { v: f.intLong, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
+      bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'הלוואות' }, fin(f.intLong, f.finLong), { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
     { k: 'inst', key: 'debtInst', title: 'הלוואות בתשלומים',
-      bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'הלוואות' }, { v: f.intInst, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
+      bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'הלוואות' }, fin(f.intInst, f.finInst), { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
   var open = state.ixOpen || {};
   var subs = '<div class="ix-subs">' + kinds.map(function (x) {
     var on = !!open[x.k];
@@ -191,13 +194,13 @@ function indicesHTML(all) {
         '<span class="ix-btn-t">' + esc(x.title) + '<small class="' + tone(x.key, x.k) + '">' + esc('החוב ' + chgTxt(all, x.key, x.k)) + '</small></span>' +
         '<span class="ix-btn-c" aria-hidden="true">' + icon(on ? 'up' : 'down') + '</span></button>' +
       (on ? indexHTML(all, { key: x.key, kind: x.k, title: x.title, name: 'החוב', nested: true, bars: x.bars,
-              legend: lg([['loan', 'הלוואות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) }) : '') +
+              legend: lg([['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE }) : '') +
     '</div>';
   }).join('') + '</div>';
   return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs,
       bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' },
-                                   { v: f.interest, cls: 'int', lbl: 'היתר עסקה' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
-      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'היתר עסקה'], ['rep', 'החזרים'], debtLine]) });
+                                   fin(f.interest, f.finance), { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
+      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE });
 }
 
 // הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש וחיוורת (היתר העסקה — הוצאה, ואינו בה), והחלק המודגש — מה שנשאר אחרי ההחזרים;

@@ -216,6 +216,19 @@ function loanPaidBy(l, mk) {
   return t > 0 ? Math.min(a, g * a / t) : g;
 }
 function loanInterestBy(l, mk) { return Math.max(0, loanPaidGross(l, mk) - loanPaidBy(l, mk)); }
+// דמי התפשרות — לטווח ארוך בלבד: סכום קבוע לכל חודש מחודש הלקיחה, כל עוד הקרן לא הוחזרה (נבדק בסוף החודש הקודם),
+// ובמספר תשלומים — עד שנגמרו; הוצאה, כמו היתר העסקה: אינם בחוב, בהלוואות ובנטו. נגזרים ואינם נשמרים.
+function loanSettleMonths(l, mk) {
+  var a = +l.settle_amount || 0, t = loanTakenMonth(l), cap = +l.settle_count || 0, n = 0, m = t;
+  if (!(a > 0) || !t || loanIsChecks(l) || mk < t) return 0;
+  while (m <= mk && n < 600) {
+    if (cap && n >= cap) break;
+    if (m > t && loanBalance(l, shiftMonth(m, -1)) <= 0) break;
+    n++; m = shiftMonth(m, 1);
+  }
+  return n;
+}
+function loanSettleBy(l, mk) { return loanSettleMonths(l, mk) * (+l.settle_amount || 0); }
 // יתרת הקרן — החוב; ו«נותר להחזיר» — מה שהמלווה עוד מצפה לקבל, כולל היתר העסקה.
 function loanBalance(l, mk) { return Math.max(0, (+l.amount || 0) - loanPaidBy(l, mk || loanCurMonth())); }
 function loanLeft(l, mk) { return Math.max(0, loanTotal(l) - loanPaidGross(l, mk || loanCurMonth())); }
@@ -223,15 +236,18 @@ function loanLeft(l, mk) { return Math.max(0, loanTotal(l) - loanPaidGross(l, mk
 // החזרים (חלק הקרן — לטווח ארוך לפי תאריך התנועה, ובתשלומים לפי התשלומים) · היתר עסקה (חלקו בתשלומי החודש — הוצאה, ואינו חוב) ·
 // ונטו = חדשות פחות ההחזרים: היתר העסקה אינו מגדיל או מקטין את החוב.
 function loanFlow(mk) {
-  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0, intLong: 0, intInst: 0, grossLong: 0, grossInst: 0 }, prev = shiftMonth(mk, -1);
+  var f = { m: mk, long: 0, inst: 0, repLong: 0, repInst: 0, intLong: 0, intInst: 0, grossLong: 0, grossInst: 0, setLong: 0 }, prev = shiftMonth(mk, -1);
   state.loans.forEach(function (l) {
     var k = loanIsChecks(l) ? 'Inst' : 'Long';
     if (loanTakenMonth(l) === mk) f[k.toLowerCase()] += +l.amount || 0;
     f['rep' + k] += loanPaidBy(l, mk) - loanPaidBy(l, prev);
     f['int' + k] += loanInterestBy(l, mk) - loanInterestBy(l, prev);
     f['gross' + k] += loanPaidGross(l, mk) - loanPaidGross(l, prev);
+    if (k === 'Long') f.setLong += loanSettleBy(l, mk) - loanSettleBy(l, prev);
   });
-  f.interest = f.intLong + f.intInst;
+  // עלויות המימון — היתר עסקה (כהה בגרפים) ודמי התפשרות (חיוור)
+  f.interest = f.intLong + f.intInst; f.settle = f.setLong;
+  f.finLong = f.intLong + f.setLong; f.finInst = f.intInst; f.finance = f.interest + f.settle;
   f.added = f.long + f.inst; f.repaid = f.repLong + f.repInst; f.net = f.added - f.repaid;
   return f;
 }
@@ -778,7 +794,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { donorNextDate, loanBalance, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

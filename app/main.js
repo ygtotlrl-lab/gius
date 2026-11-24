@@ -28,7 +28,7 @@ import { datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, pay
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { formTask, saveTask, subAdd, subEdDot, subRm, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { addLoanMove, ckInt, ckSync, formLoan, intSync, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans } from './screens/loans.js';
+import { addLoanMove, ckInt, ckMode, ckSync, finMode, intSync, formLoanMove, loanInfo, loanKindPick, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -241,7 +241,10 @@ function render() {
   renderShell();
   // שטרות — מסך שכבר מצויר מתעדכן בחלקיו: הרשימה ארוכה, והכרטיס הפתוח נושא שדות ומקום גלילה.
   if (state.screen === 'shtarot' && S.lastViewKey === 'shtarot' && shtRefresh()) return;
+  // הלוואות — כמו בשטרות: מסך שכבר מצויר מתעדכן בחלקיו, וטופס שפתוח בחלון ההלוואה אינו נדרס
+  if (state.screen === 'loans' && S.lastViewKey === 'loans' && loansPartial()) return;
   $('#view').innerHTML = (VIEWS[state.screen] || viewDash)();
+  if (state.screen === 'loans') loansAfter();
   // קופצים לראש רק במעבר מסך — render נקראת גם מהבדיקה המחזורית, וגלילה ללא תנאי הייתה מקפיצה את המסך באמצע עבודה.
   if (state.screen !== S.lastViewKey) { window.scrollTo(0, 0); S.lastViewKey = state.screen; }
 }
@@ -255,7 +258,7 @@ function go(screen) {
   if (screen === 'dash') { state.month = m; state.dashPayAll = false; }
   if (screen === 'plan') { state.planMonth = m; state.planOpen = {}; }
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false };
-  if (screen === 'loans') { state.loansBy = 'loan'; state.loansSort = 'name'; state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; }
+  if (screen === 'loans') { state.loansQ = ''; state.loansStatus = ''; state.loansOpen = null; state.lnWin = ''; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.lim = 0; state.sht.nav = []; }
   if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
@@ -438,26 +441,23 @@ var DOM_ACTIONS = {
   'note-edit': function (el) { var n = findIn(state.notes, el.dataset.id); if (n) formNote(n); },
   'note-close': function () { return runSave(function () { return closeNoteFull(true); }, MSG_SAVED_OK); },
   'note-del': function (el) { return delAsk(MSG_DEL_NOTE, 'g_notes', el.dataset.id, function () { closeNoteFull(false); }); },
-  'loan-new': function () { formLoan(null); },
-  'loans-sort': function (el) { state.loansSort = el.dataset.v; render(); },
-  'loans-by': function (el) { state.loansBy = el.dataset.v; render(); },
-  'loan-edit': function (el) { var l = findIn(state.loans, el.dataset.id); if (l) formLoan(l); },
-  'loan-save': saver(saveLoan, MSG_SAVED_OK),
+  'loan-new': function () { state.loansOpen = 'new'; render(); },
+  'loan-close': function () { state.loansOpen = null; render(); },
+  'loan-save': function (el) {
+    return runSave(function () { return saveLoan(el.dataset.id); }, MSG_SAVED_OK);
+  },
   'loan-del': function (el) {
     return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id, function () { if (state.loansOpen === el.dataset.id) state.loansOpen = null; });
   },
   'loan-kind': loanKindPick,
-  // מדד של סוג הלוואה בדשבורד — נפתח ונסגר בכפתור שלו
-  // גרף במסך ההלוואות — נפתח ונסגר בכפתור שלו
-  'ln-chart': function (el) { state.lnChartOpen[el.dataset.k] = !state.lnChartOpen[el.dataset.k]; render(); },
-  'ix-toggle': function (el) { state.ixOpen[el.dataset.k] = !state.ixOpen[el.dataset.k]; render(); },
-  // מהצפי — ההלוואה נפתחת ברשימה, בלי חיפוש ובלי סינון, והמסך נגלל אליה.
-  'loan-open': function (el) {
-    state.loansQ = ''; state.loansStatus = ''; state.loansOpen = el.dataset.id; render();
-    var row = document.getElementById('ln-' + el.dataset.id);
-    if (row) row.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  },
-  'loan-toggle': function (el) { state.loansOpen = state.loansOpen === el.dataset.id ? null : el.dataset.id; render(); },
+  'ck-mode': ckMode,
+  'fin-mode': finMode,
+  'set-count': setCount,
+  'ln-info': loanInfo,
+  'ln-win': function (el) { state.lnWin = el.dataset.k; render(); },
+  'ln-win-close': function () { state.lnWin = ''; render(); },
+  // מחלון «תאריכי פירעון» — חלון ההלוואה נפתח מעליו
+  'loan-open': function (el) { state.loansOpen = el.dataset.id; render(); },
   'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, MSG_SAVED_OK); },
   'loan-move-edit': function (el) { var m = findIn(state.loanMoves, el.dataset.id); if (m) formLoanMove(m); },
   'loan-move-save': saver(saveLoanMove, MSG_SAVED_OK),

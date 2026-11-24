@@ -1,9 +1,9 @@
 // app/screens/loans.js — הלוואות
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
-import { amtSet, comboDef, comboHTML, comboValue, esc, openModal, receiptHTML, toast } from '../../core/ui.js';
-import { APP_FIRST_MONTH, LOAN_KINDS, MONTH_SHORT, LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_CK_AMT, MSG_CK_COUNT, MSG_CK_FIRST, MSG_LOAN_KIND, MSG_CK_SUM_PRE, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME,
-         TTL_LOAN_EDIT, TTL_LOAN_NEW, TTL_MOVE_EDIT } from '../constants.js';
+import { amtSet, cardWinHTML, comboDef, comboHTML, comboValue, esc, openModal, receiptHTML, toast } from '../../core/ui.js';
+import { APP_FIRST_MONTH, LOAN_KINDS, MONTH_SHORT, LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_CK_AMT, MSG_CK_COUNT, MSG_CK_FIRST, MSG_LOAN_KIND, MSG_CK_SUM_PRE, MSG_LOAN_STATUS, MSG_LOAN_TAKEN, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME, MSG_SET_AMT,
+         TTL_MOVE_EDIT } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, dmyDate, donorById, emptyBox, gSortDonors, gSortLoans, ils, insert, loanBalance, loanCheckList, loanInterest, loanLeft, loanTotal, loanCurMonth, loanDueMonth, loanDebt, loanFlow, loanIsChecks, loanMovesOf,
@@ -42,31 +42,47 @@ function kShort(v) {
 }
 function signed(v) { return (v < 0 ? '−' : '') + ils(Math.abs(v)); }
 
-// ── לוח ההלוואות — כל החוב, משני הסוגים: לטווח ארוך ובתשלומים ──
-function loanStat(lab, valHTML, small, cls) {
-  return '<div class="stat ln-stat' + (cls ? ' ' + cls : '') + '"><span>' + esc(lab) + '</span><b>' + valHTML + '</b>' +
-    (small ? '<small>' + small + '</small>' : '') + '</div>';
-}
+// ── מצב ההלוואות — עיגולים, ומתחת לכל אחד הכותרת והשינוי; הסכומים בצבעם: אדום — חוב והלוואות,
+// ירוק — החזרים, נטו של החזר וסגירת חוב, וזהב — עלויות המימון (היתר עסקה ודמי התפשרות); ההסבר — בכפתור המידע ──
 function startMonth() { return shiftMonth(APP_FIRST_MONTH, -1); }
-// השינוי מתחילת התקופה, כל חלק בצבעו: עלה — אדום, ירד — ירוק
-function chg(lab, kind) {
-  var c = loanDebt(curMonth(), kind) - loanDebt(startMonth(), kind);
-  return '<span class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '">' + esc(lab + ' ' + (c > 0 ? '↑ ' : c < 0 ? '↓ ' : '') + kShort(Math.abs(c))) + '</span>';
+function debtChg(kind) { return loanDebt(curMonth(), kind) - loanDebt(startMonth(), kind); }
+function chgTxt(c) { return c > 0 ? 'עלה ב־' + kShort(c) : c < 0 ? 'ירד ב־' + kShort(-c) : 'ללא שינוי'; }
+function dot(o) {
+  return '<div class="ln-dot ' + o.tone + '" title="' + esc(o.t + ' ' + ils(o.v)) + '"><span class="ln-dot-c"><b>' + esc(o.neg ? '−' + kShort(Math.abs(o.v)) : kShort(o.v)) + '</b></span>' +
+    '<span class="ln-dot-t">' + esc(o.t) + '</span>' + (o.sub ? '<small class="' + (o.subTone || '') + '">' + esc(o.sub) + '</small>' : '') + '</div>';
+}
+function finSince() {
+  var cur = curMonth(), m = APP_FIRST_MONTH, t = 0;
+  while (m <= cur) { t += loanFlow(m).finance; m = shiftMonth(m, 1); }
+  return t;
 }
 function loanDashHTML() {
-  var cur = curMonth(), f = loanFlow(cur), debt = loanDebt(cur), ch = debt - loanDebt(startMonth());
-  return '<section class="card ln-dash"><h2>מצב ההלוואות<span class="sp ln-dash-m">' + esc(monthLabel(cur)) + '</span></h2>' +
-    '<div class="hero-stats ln-stats">' +
-      loanStat('הלוואות החודש', esc(ils(f.added)), esc('לטווח ארוך ' + kShort(f.long) + ' · בתשלומים ' + kShort(f.inst)), f.added > 0 ? 'bad' : '') +
-      loanStat('החזרים החודש', esc(ils(f.repaid)), esc('לטווח ארוך ' + kShort(f.repLong) + ' · בתשלומים ' + kShort(f.repInst)) +
-        // היתר העסקה — הוצאה: כתוב לצד ההחזרים, ואינו בחוב ובנטו
-        (f.interest > 0 ? '<span class="int">' + esc('ועוד היתר עסקה ' + kShort(f.interest)) + '</span>' : ''), f.repaid > 0 ? 'ok' : '') +
-      loanStat('נטו החודש', esc(signed(f.net)), esc(f.net > 0 ? 'החוב גדל' : f.net < 0 ? 'החוב קטן' : 'ללא שינוי'), f.net > 0 ? 'bad' : f.net < 0 ? 'ok' : '') +
-      loanStat('החוב הכללי', esc(ils(debt)), chg('מתחילת התקופה', null) + ' · ' + chg('לטווח ארוך', 'long') + ' · ' + chg('בתשלומים', 'inst'), 'ln-chg') +
-    '</div></section>';
+  var cur = curMonth(), f = loanFlow(cur), dc = debtChg(null), lc = debtChg('long'), ic = debtChg('inst');
+  var tone = function (c) { return c > 0 ? 'bad' : c < 0 ? 'ok' : ''; };
+  return '<div class="ln-dots">' + [
+    { t: 'החוב הכללי', v: loanDebt(cur), tone: 'bad', sub: chgTxt(dc) + ' מתחילת התקופה', subTone: tone(dc) },
+    { t: 'לטווח ארוך', v: loanDebt(cur, 'long'), tone: 'bad', sub: chgTxt(lc), subTone: tone(lc) },
+    { t: 'בתשלומים', v: loanDebt(cur, 'inst'), tone: 'bad', sub: chgTxt(ic), subTone: tone(ic) },
+    { t: 'עלויות מימון', v: f.finance, tone: 'gold', sub: 'מתחילת התקופה ' + kShort(finSince()) },
+    { t: 'החזרים החודש', v: f.repaid, tone: 'ok', sub: 'ארוך ' + kShort(f.repLong) + ' · תשלומים ' + kShort(f.repInst) },
+    { t: 'הלוואות החודש', v: f.added, tone: 'bad', sub: 'ארוך ' + kShort(f.long) + ' · תשלומים ' + kShort(f.inst) },
+    { t: 'נטו החודש', v: f.net, neg: f.net < 0, tone: f.net > 0 ? 'bad' : 'ok', sub: f.net > 0 ? 'החוב גדל' : f.net < 0 ? 'החוב קטן' : 'ללא שינוי' }
+  ].map(dot).join('') + '</div>';
+}
+// ההסבר — חלון, ולא מלל על המסך
+function loanInfo() {
+  openModal('מצב ההלוואות — מה כל עיגול', '<ul class="ln-info">' + [
+    ['החוב הכללי', 'הקרן שעוד לא הוחזרה, בכל ההלוואות. מתחתיו — כמה עלה או ירד מתחילת התקופה.'],
+    ['לטווח ארוך · בתשלומים', 'אותו חוב, לפי סוג ההחזר.'],
+    ['עלויות מימון', 'מה שעלה המימון החודש: היתר עסקה (מה שמחזירים מעבר לקרן) ודמי התפשרות (סכום קבוע לכל חודש עד סגירת ההלוואה). הוצאה — אינה בחוב.'],
+    ['החזרים החודש', 'חלק הקרן שהוחזר החודש — מקטין את החוב.'],
+    ['הלוואות החודש', 'הקרן של ההלוואות שנלקחו החודש — מגדילה את החוב.'],
+    ['נטו החודש', 'הלוואות פחות החזרים: אדום — החוב גדל, ירוק — החוב קטן.']
+  ].map(function (x) { return '<li><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></li>'; }).join('') + '</ul>',
+  '<button class="btn" data-act="modal-close">הבנתי</button>', icon('info'));
 }
 
-// ── הגרפים — חדשות מול החזרים · החוב בסוף כל חודש, לפי סוג; החודשים הבאים מקווקוים — מתוכננים ──
+// ── הגרפים — חלון אחד: צפי ההחזרים לרבעון הקרוב, והחוב בסוף כל חודש; החודשים הבאים מקווקוים — מתוכננים ──
 function hFr(v, max) { return Math.round(Math.min(1, Math.max(0, v || 0) / max) * 1000) / 1000; }
 function monthLab(m) { var p = m.split('-'); return MONTH_SHORT[+p[1] - 1] + ' ' + p[0].slice(2); }
 function colWrap(m, plot, lab) {
@@ -96,38 +112,28 @@ function debtColHTML(o, max) {
   return colWrap(o.m, bar(o.long, hl, 'ln-a', 'לטווח ארוך') + bar(o.inst, hi, 'ln-b', 'בתשלומים') +
     vals([{ v: o.long, h: hl, cls: 'ln-a' }, { v: o.inst, h: hi, cls: 'ln-b' }], Math.max(hl, hi)), o.lab);
 }
-// שני גרפים, סגורים בכפתורים זה מעל זה (`state.lnChartOpen`): צפי ההחזרים לרבעון הקרוב · החוב בסוף כל חודש.
 var FC_MONTHS = 3;
-function loanChartsHTML() {
-  var open = state.lnChartOpen || {}, cur = curMonth(), h = '';
-  var btn = function (k, title, sub, body) {
-    var on = !!open[k];
-    return '<div class="ix-sub-wrap' + (on ? ' open' : '') + '"><button class="ix-btn" data-act="ln-chart" data-k="' + k + '" aria-expanded="' + on + '">' +
-      '<span class="ix-btn-t">' + esc(title) + '<small>' + esc(sub) + '</small></span>' +
-      '<span class="ix-btn-c" aria-hidden="true">' + icon(on ? 'up' : 'down') + '</span></button>' + (on ? '<div class="ln-chart-in">' + body() + '</div>' : '') + '</div>';
-  };
-  var track = function (list, fn, max) {
-    return '<div class="fl-scroll" tabindex="0"><div class="fl-track">' + list.slice().reverse().map(function (x) { return fn(x, max * 1.35); }).join('') + '</div></div>';
-  };
-  var fcMonths = []; for (var i = 0; i < FC_MONTHS; i++) fcMonths.push(shiftMonth(cur, i));
-  var fcFlows = fcMonths.map(loanFlow), fcTot = sum(fcFlows, function (f) { return f.grossLong + f.grossInst; });
-  h += btn('fc', 'צפי ההחזרים לרבעון הקרוב', 'סה״כ ' + ils(fcTot), function () {
-    var max = 1; fcFlows.forEach(function (f) { max = Math.max(max, f.grossLong + f.grossInst); });
-    return '<div class="fl-legend"><div class="fl-lg"><span><i class="ln-k fcall"></i>כל ההחזרים</span><span><i class="ln-k dbar"></i>מתוכם לטווח ארוך</span></div></div>' +
-      '<div class="ln-fc-chart">' + track(fcFlows, fcColHTML, max) + '</div>';
-  });
-  h += btn('debt', 'החוב בסוף כל חודש', 'היום ' + ils(loanDebt(cur)), function () {
-    var s0 = startMonth(), months = loanMonths(), debt = [{ m: s0, lab: startLab(), long: loanDebt(s0, 'long'), inst: loanDebt(s0, 'inst') }]
-      .concat(months.map(function (m) { return { m: m, long: loanDebt(m, 'long'), inst: loanDebt(m, 'inst') }; })), max = 1;
-    debt.forEach(function (o) { max = Math.max(max, o.long, o.inst); });
-    return '<div class="fl-legend"><div class="fl-lg"><span><i class="ln-k dbar"></i>לטווח ארוך</span><span><i class="ln-k ibar"></i>בתשלומים</span>' +
-      '<span><i class="ln-k plan"></i>מקווקו — מתוכנן לפי תאריכי הפירעון והתשלומים</span></div></div>' + track(debt, debtColHTML, max);
-  });
-  return '<section class="card ln-charts"><h2>גרפים</h2><div class="ix-subs">' + h + '</div></section>';
+function track(list, fn, max) {
+  return '<div class="fl-scroll" tabindex="0"><div class="fl-track">' + list.slice().reverse().map(function (x) { return fn(x, max * 1.35); }).join('') + '</div></div>';
+}
+function chartsBodyHTML() {
+  var cur = curMonth(), fcMonths = [];
+  for (var i = 0; i < FC_MONTHS; i++) fcMonths.push(shiftMonth(cur, i));
+  var fcFlows = fcMonths.map(loanFlow), fcTot = sum(fcFlows, function (f) { return f.grossLong + f.grossInst; }), fmax = 1;
+  fcFlows.forEach(function (f) { fmax = Math.max(fmax, f.grossLong + f.grossInst); });
+  var s0 = startMonth(), debt = [{ m: s0, lab: startLab(), long: loanDebt(s0, 'long'), inst: loanDebt(s0, 'inst') }]
+    .concat(loanMonths().map(function (m) { return { m: m, long: loanDebt(m, 'long'), inst: loanDebt(m, 'inst') }; })), dmax = 1;
+  debt.forEach(function (o) { dmax = Math.max(dmax, o.long, o.inst); });
+  return '<div class="ln-wsec"><h3>החוב בסוף כל חודש<span class="sp">היום ' + esc(ils(loanDebt(cur))) + '</span></h3>' +
+      '<div class="fl-legend"><div class="fl-lg"><span><i class="ln-k dbar"></i>לטווח ארוך</span><span><i class="ln-k ibar"></i>בתשלומים</span>' +
+      '<span><i class="ln-k plan"></i>מקווקו — מתוכנן לפי תאריכי הפירעון והתשלומים</span></div></div>' + track(debt, debtColHTML, dmax) + '</div>' +
+    '<div class="ln-wsec"><h3>צפי ההחזרים לרבעון הקרוב<span class="sp">סה״כ ' + esc(ils(fcTot)) + '</span></h3>' +
+      '<div class="fl-legend"><div class="fl-lg"><span><i class="ln-k fcall"></i>כל ההחזרים</span><span><i class="ln-k dbar"></i>מתוכם לטווח ארוך</span></div></div>' +
+      '<div class="ln-fc-chart">' + track(fcFlows, fcColHTML, fmax) + '</div></div>';
 }
 
 // ── תאריכי פירעון — הלוואות לטווח ארוך שנקבע להן מועד: באיחור, ומה שמועדו בשנה הקרובה ──
-function forecastHTML() {
+function dueItems() {
   var cur = curMonth(), items = [];
   state.loans.forEach(function (l) {
     var bal = loanLeft(l, cur), d = loanDueMonth(l);
@@ -136,17 +142,18 @@ function forecastHTML() {
     if (d < cur) items.push({ m: '', late: true, l: l, a: bal, sub: sub });
     else if (d <= shiftMonth(cur, 12)) items.push({ m: d, l: l, a: bal, sub: sub });
   });
-  items.sort(function (x, y) { return x.late !== y.late ? (x.late ? -1 : 1) : x.m < y.m ? -1 : x.m > y.m ? 1 : y.a - x.a; });
-  var total = sum(items, function (it) { return it.a; });
-  var h = '<section class="card ln-fc"><h2>תאריכי פירעון<span class="cnt">' + items.length + '</span>' +
-    '<span class="sp ln-fc-tot">' + esc(ils(total)) + '</span></h2>' +
-    '<p class="ln-lead">הלוואות לטווח ארוך שנקבע להן מועד החזר, בשנה הקרובה. הלוואה בלי מועד אינה ברשימה — כדאי לקבוע לה מועד.</p>';
-  if (!items.length) return h + emptyBox('loans', 'אין תאריכי פירעון בשנה הקרובה') + '</section>';
+  return items.sort(function (x, y) { return x.late !== y.late ? (x.late ? -1 : 1) : x.m < y.m ? -1 : x.m > y.m ? 1 : y.a - x.a; });
+}
+function dueBodyHTML() {
+  var items = dueItems(), total = sum(items, function (it) { return it.a; });
+  var h = '<div class="ln-wsec"><h3>בשנה הקרובה<span class="cnt">' + items.length + '</span><span class="sp">' + esc(ils(total)) + '</span></h3>' +
+    '<p class="ln-lead">הלוואות לטווח ארוך שנקבע להן מועד החזר. הלוואה בלי מועד אינה ברשימה — כדאי לקבוע לה מועד.</p>';
+  if (!items.length) return h + emptyBox('loans', 'אין תאריכי פירעון בשנה הקרובה') + '</div>';
   return h + '<div class="rc-list">' + receiptHTML(items.map(function (it) {
     return { day: it.late ? 'באיחור — עבר המועד ולא נרשם החזר' : monthLabel(it.m), amt: esc(ils(it.a)), method: 'פירעון', ico: icon('calendar'),
              dashed: it.late, cls: it.late ? 'ln-late' : '',
              who: '<b>' + esc(lenderOf(it.l)) + '</b><small>' + esc(it.sub) + '</small>', act: 'loan-open', id: it.l.client_id };
-  })) + '</div></section>';
+  })) + '</div></div>';
 }
 
 // המלווה — הכרטיס שההלוואה משויכת אליו (`donor_client_id`), ובלעדיו — השם שהוקלד (`lender`)
@@ -157,105 +164,81 @@ function loanMatches() {
   return gSortLoans(state.loans.filter(function (l) {
     if (st && l.status !== st) return false;
     return !q || lenderOf(l).toLowerCase().indexOf(q) >= 0;
-  }), state.loansSort);
+  }), 'name');
 }
 
+// המסך: בראש — רכיב אחד: חיפוש וסינון, ומתחתם העיגולים ושני כפתורים (הגרפים · תאריכי פירעון) שפותחים חלון;
+// ואחריו ההלוואות — לפי אנשים, קבוע.
 function viewLoans() {
-  return loanDashHTML() + loanChartsHTML() + forecastHTML() +
-    '<section class="card list-tools">' +
-      '<label class="search-box"><input aria-label="חיפוש הלוואה" class="inp search" id="loans-q" data-inp="loans-q" placeholder="חיפוש הלוואה" value="' + esc(state.loansQ) + '">' +
+  var dues = dueItems().length;
+  var h = '<section class="card ln-top">' +
+      '<div class="ln-tools"><label class="search-box"><input aria-label="חיפוש לפי מלווה" class="inp search" id="loans-q" data-inp="loans-q" placeholder="חיפוש לפי מלווה" value="' + esc(state.loansQ) + '">' +
         '<span class="search-ic">' + icon('search') + '</span></label>' +
-      '<div class="tools-row">' + selectHTML('loans-status', LOAN_STATUSES, state.loansStatus, 'סינון לפי סטטוס', 'loans-status') +
-      '<div class="seg" role="group" aria-label="תצוגה">' +
-      [['loan', 'לפי הלוואות'], ['person', 'לפי אנשים']].map(function (o) {
-        return '<button class="' + ((state.loansBy || 'loan') === o[0] ? 'on' : '') + '" data-act="loans-by" data-v="' + o[0] + '">' + o[1] + '</button>';
-      }).join('') + '</div>' +
-      '<div class="seg" role="group" aria-label="מיון">' +
-      [['name', 'שם'], ['taken', 'תאריך לקיחה'], ['end', 'תאריך סיום'], ['status', 'סטטוס']].map(function (o) {
-        return '<button class="' + (state.loansSort === o[0] ? 'on' : '') + '" data-act="loans-sort" data-v="' + o[0] + '">' + o[1] + '</button>';
-      }).join('') + '</div></div></section>' +
-    '<section class="card" id="loans-list">' + loansBodyHTML() + '</section>';
-}
-
-// פרטי ההחזר בשורה — בתשלומים: מספר, סכום וחודשים; לטווח ארוך: מועד ההחזר.
-function repayLine(l) {
-  if (l.kind === 'checks' && +l.check_count) {
-    var c = checkList(l), uneq = Array.isArray(l.check_amounts) && l.check_amounts.length;
-    return c.length + ' תשלומים' + (uneq ? ' בסכומים שונים' : ' × ' + ils(l.check_amount)) +
-      (l.first_check_month ? ' · מ־' + mmYYYY(l.first_check_month) + ' עד ' + mmYYYY(lastCheckMonth(l)) : ' · בלי תאריך');
-  }
-  if (l.kind === 'long') return loanWhen(l, 'last_check') ? 'מועד ההחזר ' + loanWhen(l, 'last_check') : 'בלי מועד החזר';
-  return '';
-}
-// קרן · היתר עסקה · להחזר — רק כשיש היתר עסקה.
-function interestLine(l) {
-  var i = loanInterest(l);
-  return i > 0 ? 'קרן ' + ils(l.amount) + ' · היתר עסקה ' + ils(i) + ' · להחזר ' + ils(loanTotal(l)) : '';
-}
-
-// הלוואה סגורה — מלווה · פרטים · יתרה; לחיצה פותחת את התנועות, הלוואה אחת פתוחה בכל פעם.
-function loansBodyHTML() {
-  var list = loanMatches(), cur = curMonth();
-  if (state.loansOpen && !list.some(function (l) { return l.client_id === state.loansOpen; })) state.loansOpen = null;
-  var h = '<h2>הלוואות<span class="cnt">' + list.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="loan-new">' + icon('plus') + 'הלוואה</button></span></h2>';
-  if (!list.length) return h + emptyBox('loans', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות');
-  if ((state.loansBy || 'loan') === 'person') {
-    // לפי אנשים — קבוצה לכל מלווה (הכרטיס, ובלעדיו השם), ובכותרת מספר ההלוואות וסך הנותר להחזיר
-    // קבוצה לכל כרטיס, ולכל שם חופשי כפי שהוקלד — שם חופשי אינו משויך לכרטיס מעצמו: אי אפשר לדעת שזה אותו אדם
-    var groups = {}, order = [];
-    list.forEach(function (l) {
-      var did = l.donor_client_id || '';
-      var k = did ? 'd:' + did : 'n:' + String(l.lender || '').trim();
-      if (!groups[k]) { groups[k] = { name: did ? (donorById(did) || {}).name || lenderOf(l) : lenderOf(l), card: !!did, list: [] }; order.push(k); }
-      groups[k].list.push(l);
-    });
-    order.sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name, 'he'); });
-    h += order.map(function (k) {
-      var g = groups[k];
-      return '<div class="ln-person"><div class="ln-ph"><b>' + esc(g.name) + '</b>' +
-          (g.card ? '<span class="ln-card" title="משויך לכרטיס">' + icon('cards') + '</span>' : '') +
-          '<span class="cnt">' + g.list.length + '</span>' +
-          '<span class="ln-ph-sum"><small>נותר להחזיר</small>' + ils(sum(g.list, function (l) { return loanLeft(l, cur); })) + '</span></div>' +
-        '<div class="evs">' + g.list.map(function (l) { return loanCardHTML(l, cur); }).join('') + '</div></div>';
-    }).join('');
-  } else h += '<div class="evs">' + list.map(function (l) { return loanCardHTML(l, cur); }).join('') + '</div>';
-  h += '<div class="total-row"><span>סה״כ נותר להחזיר</span><b>' + ils(sum(list, function (l) { return loanLeft(l, cur); })) + '</b></div>';
+        selectHTML('loans-status', LOAN_STATUSES, state.loansStatus, 'כל הסטטוסים', 'loans-status') + '</div>' +
+      '<div class="ln-top-h"><h2>מצב ההלוואות<span class="sp ln-dash-m">' + esc(monthLabel(curMonth())) + '</span></h2>' +
+        '<button class="ln-info-btn" data-act="ln-info" aria-label="מה כל עיגול" title="מה כל עיגול">' + icon('info') + '</button></div>' +
+      loanDashHTML() +
+      '<div class="ln-wbtns">' +
+        '<button class="btn soft" data-act="ln-win" data-k="chart">' + icon('chart') + 'גרף הלוואות</button>' +
+        '<button class="btn soft" data-act="ln-win" data-k="due">' + icon('calendar') + 'תאריכי פירעון' + (dues ? '<span class="cnt">' + dues + '</span>' : '') + '</button>' +
+      '</div></section>' +
+    '<section class="ln-list" id="loans-list">' + loansBodyHTML() + '</section>';
+  if (state.lnWin) h += auxWinHTML();
+  if (state.loansOpen) h += loanWinHTML(state.loansOpen === 'new' ? null : state.loans.find(function (l) { return l.client_id === state.loansOpen; }) || null);
   return h;
 }
 
-// כרטיס הלוואה סגור — מלווה · פרטים · יתרה; לחיצה פותחת את התנועות. בתצוגה לפי אנשים — בלי השם, שכבר בכותרת הקבוצה
-function loanCardHTML(l, cur) {
-    var open = state.loansOpen === l.client_id, id = esc(l.client_id), moves = movesOf(l.client_id), bal = loanLeft(l, cur);
-    var r = '<div class="ev' + (open ? ' open' : '') + '" id="ln-' + id + '">' +
-      '<button class="ev-hd" data-act="loan-toggle" data-id="' + id + '" aria-expanded="' + open + '">' +
-        '<span class="ev-name"><b>' + (state.loansBy === 'person' ? 'הלוואה ' + esc(ils(l.amount)) : esc(lenderOf(l)) + (l.donor_client_id ? ' <span class="ln-card" title="משויך לכרטיס">' + icon('cards') + '</span>' : '')) + pendTag(pendRowKey('g_loans', l.client_id)) +
-          // סוג ההחזר — האייקון שלו (השם ברמז); הסטטוס — תגית בצבע האפליקציה, אחת לכולם
-          (l.kind ? ' <span class="ln-kic" title="' + esc(LOAN_KINDS[l.kind]) + '" aria-label="' + esc(LOAN_KINDS[l.kind]) + '">' + icon(l.kind === 'checks' ? 'cheque' : 'calendar') + '</span>' : '') +
-          (l.status ? ' <span class="badge brand">' + esc(l.status) + '</span>' : '') + '</b>' +
-          '<small>' + esc([loanWhen(l, 'taken') ? 'נלקחה ' + loanWhen(l, 'taken') : '', repayLine(l), interestLine(l), l.repay_terms, l.note]
-            .filter(Boolean).join(' · ')) + '</small></span>' +
-        '<span class="ln-amt"><small>נותר להחזיר</small><b>' + ils(bal) + '</b><small>מתוך ' + ils(loanTotal(l)) + '</small></span>' +
-        '<span class="ev-chev" aria-hidden="true">' + icon(open ? 'up' : 'down') + '</span>' +
-      '</button>';
-    if (open) {
-      r += '<div class="ev-body" data-ks-area>' + (l.kind === 'checks' ? checksHTML(l, moves) : '') +
-        (moves.length ? '<div class="ln-sub">תנועות</div>' + moves.map(function (m) {
-          return '<div class="row" data-act="loan-move-edit" data-id="' + esc(m.client_id) + '">' +
-            '<div class="main"><b>' + ils(m.amount) + pendTag(pendRowKey('g_loan_moves', m.client_id)) + '</b>' +
-              '<small>' + esc([m.move_date ? dmyDate(m.move_date) : '', m.note].filter(Boolean).join(' · ') || '—') + '</small></div></div>';
-        }).join('') : l.kind === 'checks' ? '' : emptyBox('loans', 'אין עדיין תנועות בהלוואה')) +
-        '<div class="total-row"><span>נותר להחזיר</span><b>' + ils(bal) + '</b></div>' +
-        '<div class="lm-add" data-ks>' +
-          '<input class="inp lm-amt" data-amt id="lm-amt" inputmode="decimal" placeholder="סכום" aria-label="סכום התנועה">' +
-          '<input class="inp lm-date" id="lm-date" type="date" value="' + esc(dayToday()) + '" aria-label="תאריך התנועה">' +
-          '<input class="inp lm-note" id="lm-note" placeholder="הערה" aria-label="הערה לתנועה">' +
-          '<button class="btn sm" data-act="loan-move-add" data-id="' + id + '" data-ksave>' + icon('plus') + 'הוספה</button>' +
-        '</div>' +
-        '<div class="btnrow ev-acts"><button class="btn ghost sm" data-act="loan-edit" data-id="' + id + '">עריכת ההלוואה</button></div>' +
-      '</div>';
-    }
-    return r + '</div>';
+// פרטי ההלוואה, שורה אחרי שורה — לפי מה שמולא בה
+function loanLines(l) {
+  var cur = curMonth(), out = [], when = loanWhen(l, 'taken');
+  if (when) out.push('תאריך: ' + when);
+  if (l.kind === 'checks' && +l.check_count) {
+    var c = checkList(l), uneq = Array.isArray(l.check_amounts) && l.check_amounts.length;
+    out.push(uneq ? 'תשלומים לא שווים: ' + c.length + ', סה״כ ' + ils(loanTotal(l)) : 'תשלומים שווים: ' + c.length + ', כל אחד ע״ס ' + ils(l.check_amount));
+    var done = c.filter(function (x) { return x.m && x.m <= cur; }).length;
+    if (l.first_check_month) out.push('בוצעו: ' + done + ' תשלומים · מ־' + mmYYYY(l.first_check_month) + ' עד ' + mmYYYY(lastCheckMonth(l)));
+  }
+  if (l.kind === 'long' && loanWhen(l, 'last_check')) out.push('מועד ההחזר: ' + loanWhen(l, 'last_check'));
+  var i = loanInterest(l);
+  if (i > 0) out.push('היתר עסקה: ' + ils(i));
+  if (+l.settle_amount > 0 && l.kind === 'long') out.push('דמי התפשרות: ' + ils(l.settle_amount) + ' לחודש' + (+l.settle_count ? ', ' + l.settle_count + ' תשלומים' : ' — עד סגירת ההלוואה'));
+  if (l.kind === 'long') { var mv = sum(movesOf(l.client_id), function (m) { return m.amount; }); if (mv) out.push('הוחזר: ' + ils(mv)); }
+  var note = [l.repay_terms, l.note].filter(Boolean).join(' · ');
+  if (note) out.push('הערה: ' + note);
+  return out;
+}
+// השורה — מלווה (גדול) · הסכום · אייקון סוג ההחזר, ובצד השני הנותר להחזיר (בולט) והסטטוס; ומתחת — הפירוט. פס צבע בקצה לפי הסוג.
+function loanRowHTML(l, cur) {
+  var lines = loanLines(l);
+  return '<button class="ln-row' + (l.kind ? ' k-' + l.kind : '') + '" data-act="loan-open" data-id="' + esc(l.client_id) + '">' +
+    '<span class="ln-r-main"><span class="ln-r-top"><b class="ln-r-name">' + esc(lenderOf(l)) + '</b>' + pendTag(pendRowKey('g_loans', l.client_id)) +
+      '<span class="ln-r-amt">' + esc(ils(l.amount)) + '</span>' +
+      (l.kind ? '<span class="ln-kic" title="' + esc(LOAN_KINDS[l.kind]) + '" aria-label="' + esc(LOAN_KINDS[l.kind]) + '">' + icon(l.kind === 'checks' ? 'cheque' : 'calendar') + '</span>' : '') + '</span>' +
+      (lines.length ? '<span class="ln-r-det">' + lines.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</span>' : '') + '</span>' +
+    '<span class="ln-r-end"><small>נותר להחזיר</small><b>' + esc(ils(loanLeft(l, cur))) + '</b>' + (l.status ? '<span class="badge brand">' + esc(l.status) + '</span>' : '') + '</span>' +
+  '</button>';
+}
+// לפי אנשים, קבוע: אות גדולה לפני כל קבוצת אנשים שמתחילים בה, ולכל מלווה — רכיב לבן ובו ההלוואות שלו.
+// קבוצה לכל כרטיס, ולכל שם חופשי כפי שהוקלד — שם חופשי אינו משויך לכרטיס מעצמו: אי אפשר לדעת שזה אותו אדם
+function loansBodyHTML() {
+  var list = loanMatches(), cur = curMonth();
+  var h = '<div class="ln-list-h"><h2>הלוואות<span class="cnt">' + list.length + '</span></h2></div>';
+  if (!list.length) return h + '<div class="card">' + emptyBox('loans', state.loans.length ? 'אין הלוואה התואמת את החיפוש או הסינון' : 'אין הלוואות רשומות') + '</div>';
+  var groups = {}, order = [];
+  list.forEach(function (l) {
+    var did = l.donor_client_id || '';
+    var k = did ? 'd:' + did : 'n:' + String(l.lender || '').trim();
+    if (!groups[k]) { groups[k] = { name: lenderOf(l), list: [] }; order.push(k); }
+    groups[k].list.push(l);
+  });
+  order.sort(function (a, b) { return groups[a].name.localeCompare(groups[b].name, 'he'); });
+  var letter = '';
+  order.forEach(function (k) {
+    var g = groups[k], L = (g.name.trim().charAt(0) || '#');
+    if (L !== letter) { letter = L; h += '<div class="ln-letter" aria-hidden="true">' + esc(L) + '</div>'; }
+    h += '<div class="ln-pblock">' + g.list.map(function (l) { return loanRowHTML(l, cur); }).join('') + '</div>';
+  });
+  return h + '<div class="total-row ln-total"><span>סה״כ נותר להחזיר</span><b>' + ils(sum(list, function (l) { return loanLeft(l, cur); })) + '</b></div>';
 }
 
 // התשלומים של ההלוואה — חודש · סכום · נפרע או עתידי; תשלום בלי חודש — «בלי תאריך», ואינו בצפי.
@@ -307,57 +290,165 @@ comboDef('loan-donor', { val: true, max: 30,
     });
   },
   pick: function () {} });
-function formLoan(l) {
-  var ld = l && l.donor_client_id ? donorById(l.donor_client_id) : null;
+// ── כרטיס ההלוואה — חלון כמו הכרטיסים (cardWinHTML), בשני חלקים: פרטי ההלוואה (בגוון האפליקציה) · פרטי ההחזר (לבן);
+// במחשב — שליש ושני שלישים, ובטלפון — זה מעל זה. השדות של שני החלקים — טופס אחד, שנשמר בכפתור (data-ks);
+// והתנועות — מחוץ לטופס, ונשמרות כל אחת מיד. הלוואה חדשה — אותו חלון ריק, והתנועות — אחרי השמירה.
+function seg(act, cur, opts, label) {
+  return '<div class="seg seg-wide ln-seg" role="radiogroup" aria-label="' + esc(label) + '">' + opts.map(function (o) {
+    return '<button type="button" role="radio" aria-checked="' + (cur === o[0]) + '" class="' + (cur === o[0] ? 'on' : '') + '" data-act="' + act + '" data-v="' + o[0] + '">' +
+      (o[2] ? icon(o[2]) : '') + esc(o[1]) + '</button>';
+  }).join('') + '</div>';
+}
+function loanWinHTML(l) {
+  var id = l ? esc(l.client_id) : '', ld = l && l.donor_client_id ? donorById(l.donor_client_id) : null, cur = curMonth();
   var kind = l ? l.kind || '' : '', uneq = !!(l && Array.isArray(l.check_amounts) && l.check_amounts.length);
-  openModal(l ? TTL_LOAN_EDIT : TTL_LOAN_NEW,
-    // המלווה — שדה אחד, כמו בתכנית: ההקלדה מחפשת בכרטיסים, ובחירה משייכת לכרטיס; ומי שאין לו כרטיס — מה שהוקלד נשמר כשם חופשי
-    '<div class="f2">' +
-      '<div class="fld"><span>מלווה *</span>' +
+  var fin = l && +l.settle_amount > 0 ? 'set' : (l && +l.repay_total > +l.amount ? 'int' : '');
+  var note = l ? [l.repay_terms, l.note].filter(Boolean).join('\n') : '';
+  var band = '<div class="cp-band cw-band ln-band" id="ln-band">' + loanBandHTML(l) +
+    '<div class="cp-acts"><button class="cp-btn" data-act="loan-close" data-ks-leave aria-label="סגירה">' + icon('close') + '</button></div></div>';
+  // חלק א — פרטי ההלוואה
+  var p1 = '<section class="ln-p1"><h3>פרטי ההלוואה</h3>' +
+    '<div class="ln-p1-row">' +
+      '<div class="fld ln-f-lender"><span>מלווה *</span>' +
         comboHTML('loan-donor', { id: 'o-donor', label: 'מלווה — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
                                  picked: l ? { value: ld ? ld.client_id : '', label: lenderOf(l) } : null }) + '</div>' +
-      '<label class="fld"><span>סכום *</span><input class="inp" data-amt id="o-amount" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.amount != null ? l.amount : '') + '"></label>' +
+      '<label class="fld ln-f-amt"><span>סכום *</span><input class="inp" data-amt id="o-amount" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.amount != null ? l.amount : '') + '"></label>' +
+      '<div class="fld ln-f-kind"><span>סוג ההחזר *</span><input type="hidden" id="o-kind" value="' + esc(kind) + '">' +
+        seg('loan-kind', kind, [['checks', 'תשלומים', 'cheque'], ['long', 'טווח ארוך', 'calendar']], 'סוג ההחזר') + '</div>' +
     '</div>' +
-    '<input type="hidden" id="o-kind" value="' + esc(kind) + '">' +
-    '<div class="fld"><span>סוג ההלוואה</span><div class="seg seg-wide ln-kind" role="radiogroup" aria-label="סוג ההלוואה">' +
-      Object.keys(LOAN_KINDS).map(function (k) {
-        return '<button type="button" role="radio" aria-checked="' + (kind === k) + '" class="' + (kind === k ? 'on' : '') + '" data-act="loan-kind" data-v="' + k + '">' +
-          icon(k === 'checks' ? 'cheque' : 'calendar') + esc(LOAN_KINDS[k]) + '</button>';
-      }).join('') + '</div></div>' +
-    '<div class="ln-box" id="o-ck"' + (kind === 'checks' ? '' : ' hidden') + '>' +
-      '<div class="f3">' +
-        '<label class="fld"><span>מספר תשלומים *</span><input class="inp" id="o-ck-n" inputmode="numeric" data-inp="ck-sync" value="' + esc(l && l.check_count || '') + '"></label>' +
-        '<label class="fld" id="o-ck-a-box"' + (uneq ? ' hidden' : '') + '><span>סכום לתשלום *</span><input class="inp" data-amt id="o-ck-a" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.check_amount || '') + '"></label>' +
-        '<label class="fld"><span>חודש התשלום הראשון *</span><input class="inp" type="month" id="o-ck-m" data-chg="ck-sync" value="' + esc(l && l.first_check_month || '') + '"></label>' +
-      '</div>' +
-      // היתר עסקה באחוזים — מהסכום ומהתשלום החודשי נגזרים מספר התשלומים והאחרון (היתרה)
-      '<div class="ln-int"><div class="ln-int-h">היתר עסקה</div>' +
-      '<p class="ln-int-lead">ממלאים אחוז, וממנו — לפי סכום ההלוואה והסכום לתשלום — נקבעים מספר התשלומים והאחרון שבהם. בלי היתר עסקה — משאירים ריק.</p>' +
-      '<div class="ln-int-row"><label class="fld"><span>אחוז</span><input class="inp" id="o-ck-int" inputmode="decimal" data-inp="ck-int" placeholder="למשל 5" value="' + esc(ckIntOf(l)) + '"></label></div></div>' +
-      '<label class="fld chk"><input type="checkbox" id="o-ck-uneq" data-chg="ck-uneq"' + (uneq ? ' checked' : '') + '><span>התשלומים אינם שווים</span></label>' +
-      '<div class="ln-ck-list" id="o-ck-list">' + (uneq ? ckListHTML(l.check_count, l.first_check_month, l.check_amounts) : '') + '</div>' +
-      '<div class="ln-ck-sum" id="o-ck-sum"></div>' +
+    '<div class="f2">' +
+      '<label class="fld"><span>תאריך לקיחה *</span><input class="inp" type="date" id="o-taken" value="' + esc(l && l.taken_date ? l.taken_date : '') + '"></label>' +
+      '<label class="fld"><span>או חודש בלבד</span><input class="inp" type="month" id="o-taken-m" value="' + esc(l && l.taken_month ? l.taken_month : '') + '"></label>' +
     '</div>' +
-    '<div class="ln-box" id="o-lg"' + (kind === 'long' ? '' : ' hidden') + '>' + whenFieldsHTML('o-check', 'מועד ההחזר', l, 'last_check') +
-      // היתר עסקה — אחוז או סכום להחזר: ממלאים אחד, והשני מתמלא לבד; ריק — בלי היתר עסקה
-      '<div class="ln-int"><div class="ln-int-h">היתר עסקה</div>' +
-      '<p class="ln-int-lead">ממלאים <b>אחד</b> מהשניים — אחוז או סכום, והשני מתמלא לבד. בלי היתר עסקה — משאירים ריק.</p>' +
-      '<div class="ln-int-row"><label class="fld"><span>אחוז</span><input class="inp" id="o-int-p" inputmode="decimal" data-inp="int-p" placeholder="למשל 5" value="' +
-        esc(l && +l.repay_total > +l.amount ? Math.round((l.repay_total / l.amount - 1) * 10000) / 100 : '') + '"></label>' +
-      '<span class="ln-int-or">או</span>' +
-      '<label class="fld"><span>סכום להחזר, כולל היתר העסקה</span><input class="inp" data-amt id="o-total" inputmode="decimal" data-inp="int-t" value="' +
-        esc(l && +l.repay_total > +l.amount ? l.repay_total : '') + '"></label></div>' +
-      '<div class="ln-int-sum" id="o-int-sum"></div></div></div>' +
-    whenFieldsHTML('o-taken', 'תאריך לקיחה', l, 'taken') +
-    '<label class="fld"><span>תנאי החזר</span><input class="inp" id="o-terms" value="' + esc(l ? l.repay_terms || '' : '') + '"></label>' +
-    '<label class="fld"><span>סטטוס</span><select class="inp" id="o-status"><option value="">— ללא —</option>' + LOAN_STATUSES.map(function (s) {
+    '<label class="fld"><span>תנאי החזר / הערה</span><textarea class="inp" id="o-note" rows="2">' + esc(note) + '</textarea></label>' +
+    '<label class="fld"><span>סטטוס *</span><select class="inp" id="o-status"><option value="">— בחירה —</option>' + LOAN_STATUSES.map(function (s) {
       return '<option' + (l && l.status === s ? ' selected' : '') + '>' + esc(s) + '</option>';
     }).join('') + '</select></label>' +
-    '<label class="fld"><span>הערה</span><input class="inp" id="o-note" value="' + esc(l ? l.note || '' : '') + '"></label>',
-    '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
-    (l ? '<button class="btn danger" data-act="loan-del" data-id="' + esc(l.client_id) + '">מחיקה</button>' : '') +
-    '<button class="btn" data-act="loan-save" data-id="' + esc(l ? l.client_id : '') + '" data-ksave>' + icon('save') + 'שמירה</button>');
-  ckSync(); intSum();
+    '<div class="btnrow ln-p1-acts">' + (l ? '<button class="btn danger" data-act="loan-del" data-id="' + id + '">מחיקה</button>' : '') +
+      '<button class="btn" data-act="loan-save" data-id="' + id + '" data-ksave>' + icon('save') + 'שמירה</button></div>' +
+  '</section>';
+  // חלק ב — פרטי ההחזר, לפי הסוג
+  var ck = '<div class="ln-box" id="o-ck"' + (kind === 'checks' ? '' : ' hidden') + '>' +
+      '<input type="checkbox" id="o-ck-uneq" hidden' + (uneq ? ' checked' : '') + '>' +
+      seg('ck-mode', uneq ? 'uneq' : 'eq', [['eq', 'תשלומים שווים'], ['uneq', 'תשלומים לא שווים']], 'סוג התשלומים') +
+      '<div class="f3">' +
+        '<label class="fld"><span>מספר תשלומים *</span><input class="inp" id="o-ck-n" inputmode="numeric" data-inp="ck-sync" value="' + esc(l && l.check_count || '') + '"></label>' +
+        '<label class="fld" id="o-ck-a-box"' + (uneq ? ' hidden' : '') + '><span>סכום תשלום *</span><input class="inp" data-amt id="o-ck-a" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.check_amount || '') + '"></label>' +
+        '<label class="fld"><span>חודש התשלום הראשון *</span><input class="inp" type="month" id="o-ck-m" data-chg="ck-sync" value="' + esc(l && l.first_check_month || '') + '"></label>' +
+      '</div>' +
+      '<div class="ln-ck-list" id="o-ck-list">' + (uneq ? ckListHTML(l.check_count, l.first_check_month, l.check_amounts) : '') + '</div>' +
+      // היתר עסקה באחוזים (רשות) — מהסכום ומהתשלום נגזרים מספר התשלומים והאחרון
+      '<label class="fld ln-ck-pct"><span>היתר עסקה באחוזים (רשות) — ממלא את התשלומים</span><input class="inp" id="o-ck-int" inputmode="decimal" data-inp="ck-int" value="' + esc(ckIntOf(l)) + '"></label>' +
+      '<div class="ln-ck-sum" id="o-ck-sum"></div>' +
+      '<div class="ln-fin-note" id="o-ck-note" hidden><b>היתר עסקה</b><span id="o-ck-note-t"></span></div>' +
+    '</div>';
+  var lg = '<div class="ln-box" id="o-lg"' + (kind === 'long' ? '' : ' hidden') + '>' +
+      whenFieldsHTML('o-check', 'מועד ההחזר (רשות)', l, 'last_check') +
+      '<h4 class="ln-h4">עלויות מימון</h4><input type="hidden" id="o-fin" value="' + fin + '">' +
+      seg('fin-mode', fin, [['int', 'היתר עסקה'], ['set', 'דמי התפשרות']], 'עלויות מימון') +
+      '<div class="ln-fin" id="o-fin-int"' + (fin === 'int' ? '' : ' hidden') + '>' +
+        '<div class="ln-int-row"><label class="fld"><span>אחוז</span><input class="inp" id="o-int-p" inputmode="decimal" data-inp="int-p" value="' +
+          esc(l && +l.repay_total > +l.amount ? Math.round((l.repay_total / l.amount - 1) * 10000) / 100 : '') + '"></label>' +
+        '<span class="ln-int-or">או</span>' +
+        '<label class="fld"><span>סכום להחזר, כולל היתר העסקה</span><input class="inp" data-amt id="o-total" inputmode="decimal" data-inp="int-t" value="' +
+          esc(l && +l.repay_total > +l.amount ? l.repay_total : '') + '"></label></div>' +
+        '<div class="ln-int-sum" id="o-int-sum"></div></div>' +
+      '<div class="ln-fin" id="o-fin-set"' + (fin === 'set' ? '' : ' hidden') + '>' +
+        '<div class="f2"><label class="fld"><span>סכום לחודש</span><input class="inp" data-amt id="o-set-a" inputmode="decimal" value="' + esc(l && l.settle_amount || '') + '"></label>' +
+        '<div class="fld"><span>תשלומים</span>' +
+          '<div class="ln-set-free" id="o-set-free"' + (l && +l.settle_count ? ' hidden' : '') + '><span>בהקפאה, בלי הגבלה — עד סגירת ההלוואה</span>' +
+            '<button type="button" class="btn ghost sm" data-act="set-count">מספר תשלומים</button></div>' +
+          '<input class="inp" id="o-set-n" inputmode="numeric" placeholder="מספר תשלומים" value="' + esc(l && l.settle_count || '') + '"' + (l && +l.settle_count ? '' : ' hidden') + '></div></div>' +
+        '<p class="ln-lead">מחודש הלקיחה, כל חודש — עד שהקרן מוחזרת (או עד שנגמרו התשלומים). נספר בעלויות המימון, ואינו חוב.</p></div>' +
+    '</div>';
+  var p2 = '<section class="ln-p2a"><h3>פרטי ההחזר</h3>' +
+    '<p class="ln-lead" id="o-kind-hint"' + (kind ? ' hidden' : '') + '>בוחרים את סוג ההחזר בפרטי ההלוואה.</p>' + ck + lg + '</section>';
+  var moves = '<section class="ln-p2b" id="ln-moves"' + (l ? ' data-ks' : '') + '>' + loanMovesHTML(l) + '</section>';
+  return cardWinHTML({ id: 'ln-w-loan', label: l ? lenderOf(l) : 'הלוואה חדשה', close: 'loan-close',
+    body: '<div class="copen cw-card ln-win" data-ks-area data-key="' + (l ? id : 'new') + '">' + band +
+      '<div class="ln-split"><div class="ln-form" data-ks>' + p1 + p2 + '</div>' + moves + '</div></div>' });
+}
+// הפס — המלווה, הסוג והסטטוס, והנותר להחזיר מתוך הסכום להחזר
+function loanBandHTML(l) {
+  if (!l) return '<div class="cp-who"><h3>הלוואה חדשה</h3></div>';
+  var cur = curMonth();
+  return '<div class="cp-who"><h3>' + esc(lenderOf(l)) + '</h3></div>' +
+    '<div class="cp-sum"><span><small>קרן</small><b>' + ils(l.amount) + '</b></span>' +
+      (loanInterest(l) > 0 ? '<span><small>היתר עסקה</small><b>' + ils(loanInterest(l)) + '</b></span>' : '') +
+      '<span class="left"><small>נותר להחזיר</small><b>' + ils(loanLeft(l, cur)) + '</b></span></div>';
+}
+// התנועות — מעליהן הוספה (סכום · תאריך · הערה), ובתשלומים — גם לוח התשלומים
+function loanMovesHTML(l) {
+  if (!l) return '<h3>תנועות תשלומים</h3><p class="ln-lead">אחרי השמירה אפשר להוסיף תנועות.</p>';
+  var id = esc(l.client_id), moves = movesOf(l.client_id);
+  return (l.kind === 'checks' ? checksHTML(l, moves) : '') +
+    '<h3>תנועות תשלומים<span class="cnt">' + moves.length + '</span></h3>' +
+    '<div class="lm-add">' +
+      '<input class="inp lm-amt" data-amt id="lm-amt" inputmode="decimal" placeholder="סכום *" aria-label="סכום התנועה">' +
+      '<input class="inp lm-date" id="lm-date" type="date" value="' + esc(dayToday()) + '" aria-label="תאריך התנועה">' +
+      '<input class="inp lm-note" id="lm-note" placeholder="הערה" aria-label="הערה לתנועה">' +
+      '<button class="btn sm" data-act="loan-move-add" data-id="' + id + '" data-ksave>' + icon('plus') + 'הוספה</button>' +
+    '</div>' +
+    (moves.length ? moves.map(function (m) {
+      return '<div class="row" data-act="loan-move-edit" data-id="' + esc(m.client_id) + '">' +
+        '<div class="main"><b>' + ils(m.amount) + pendTag(pendRowKey('g_loan_moves', m.client_id)) + '</b>' +
+          '<small>' + esc([m.move_date ? dmyDate(m.move_date) : '', m.note].filter(Boolean).join(' · ') || '—') + '</small></div></div>';
+    }).join('') : emptyBox('loans', 'אין עדיין תנועות בהלוואה'));
+}
+// ציור חלקי — בכל ציור של המסך (גם מהבדיקה המחזורית): העיגולים, הרשימה, והחלונות — בלי לגעת בטופס שפתוח בחלון
+function loansPartial() {
+  var view = $('#view'), top = $('.ln-dots'), list = $('#loans-list');
+  if (!view || !top || !list) return false;
+  top.outerHTML = loanDashHTML();
+  list.innerHTML = loansBodyHTML();
+  var aux = $('#ln-w-aux'), want = state.lnWin || '';
+  if (aux && aux.dataset.key !== want) { aux.remove(); aux = null; }
+  if (want && !aux) view.insertAdjacentHTML('beforeend', auxWinHTML());
+  else if (aux) { var b = $('.ln-wbody', aux); if (b) b.innerHTML = want === 'chart' ? chartsBodyHTML() : dueBodyHTML(); }
+  var lw = $('#ln-w-loan'), key = state.loansOpen || '', has = lw && $('.ln-win', lw);
+  var l = key && key !== 'new' ? state.loans.find(function (x) { return x.client_id === key; }) : null;
+  if (key && key !== 'new' && !l) key = state.loansOpen = '';
+  if (lw && (!key || has.dataset.key !== key)) { lw.remove(); lw = null; }
+  if (key && !lw) { view.insertAdjacentHTML('beforeend', loanWinHTML(l)); loansAfter(); }
+  else if (lw && l) {
+    $('#ln-band').innerHTML = loanBandHTML(l) + '<div class="cp-acts"><button class="cp-btn" data-act="loan-close" data-ks-leave aria-label="סגירה">' + icon('close') + '</button></div>';
+    // התנועות — רק כשלא מקלידים בהן
+    var mv = $('#ln-moves');
+    if (mv && !mv.contains(document.activeElement)) mv.innerHTML = loanMovesHTML(l);
+  }
+  return true;
+}
+function auxWinHTML() {
+  var k = state.lnWin, t = k === 'chart' ? 'גרף הלוואות' : 'תאריכי פירעון';
+  return cardWinHTML({ id: 'ln-w-aux', label: t, close: 'ln-win-close',
+    body: '<div class="copen cw-card ln-wwin"><div class="cp-band cw-band"><div class="cp-who"><h3>' + esc(t) + '</h3></div>' +
+      '<div class="cp-acts"><button class="cp-btn" data-act="ln-win-close" aria-label="סגירה">' + icon('close') + '</button></div></div>' +
+      '<div class="ln-wbody">' + (k === 'chart' ? chartsBodyHTML() : dueBodyHTML()) + '</div></div>' }).replace('<div class="card-win"', '<div class="card-win" data-key="' + esc(k) + '"');
+}
+// אחרי שחלון ההלוואה נפתח — הסיכומים שמתחת לשדות
+function loansAfter() { if ($('#ln-w-loan')) { ckSync(); intSum(); } }
+// הבוררים בחלון — סוג התשלומים, עלויות המימון ומספר התשלומים של דמי ההתפשרות
+function segSet(el, hidden) {
+  var on = hidden.value;
+  el.closest('.ln-seg').querySelectorAll('button').forEach(function (b) { var x = b.dataset.v === on; b.classList.toggle('on', x); b.setAttribute('aria-checked', x); });
+}
+function ckMode(el) {
+  var c = $('#o-ck-uneq'); if (!c) return;
+  c.checked = el.dataset.v === 'uneq';
+  el.closest('.ln-seg').querySelectorAll('button').forEach(function (b) { var x = b === el; b.classList.toggle('on', x); b.setAttribute('aria-checked', x); });
+  ckSync();
+}
+function finMode(el) {
+  var h = $('#o-fin'); if (!h) return;
+  h.value = h.value === el.dataset.v ? '' : el.dataset.v;
+  segSet(el, h);
+  $('#o-fin-int').hidden = h.value !== 'int';
+  $('#o-fin-set').hidden = h.value !== 'set';
+  intSum();
+}
+function setCount() {
+  var f = $('#o-set-free'), n = $('#o-set-n'); if (!f || !n) return;
+  f.hidden = true; n.hidden = false; n.focus();
 }
 
 // סכום לכל תשלום — שורה לכל תשלום, ובה החודש שלו כשיש חודש ראשון.
@@ -402,6 +493,7 @@ function loanKindPick(el) {
   document.querySelectorAll('.ln-kind button').forEach(function (b) { var on = b.dataset.v === h.value; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
   $('#o-ck').hidden = h.value !== 'checks';
   $('#o-lg').hidden = h.value !== 'long';
+  var hint = $('#o-kind-hint'); if (hint) hint.hidden = !!h.value;
   ckSync();
 }
 // מספר התשלומים, החודש הראשון והסימון — הרשימה נבנית מחדש ושומרת את מה שהוקלד; ומתחת — סך הצ׳קים מול סכום ההלוואה.
@@ -418,6 +510,12 @@ function ckSync() {
   // מעבר לסכום ההלוואה — היתר עסקה; פחות ממנו — אזהרה
   out.textContent = n ? 'סה״כ התשלומים ' + ils(tot) + (amt && tot > amt ? ' — מתוכם היתר עסקה ' + ils(tot - amt) + ' (' + (Math.round((tot / amt - 1) * 10000) / 100) + '%)' : amt && tot < amt ? ' — פחות מסכום ההלוואה ' + ils(amt) : '') : '';
   out.classList.toggle('warn', !!(n && amt && tot < amt));
+  // החזר שעולה על הקרן — הערה בצבע עלויות המימון
+  var nb = $('#o-ck-note'), nt = $('#o-ck-note-t');
+  if (nb && nt) {
+    nb.hidden = !(n && amt && tot > amt);
+    nt.textContent = nb.hidden ? '' : 'סכום ההחזר (' + ils(tot) + ') עולה על סכום הקרן (' + ils(amt) + '), ולכן ההפרש — ' + ils(tot - amt) + ' — בתשלומים האחרונים מחושב כהיתר עסקה.';
+  }
 }
 
 // היתר עסקה — אחוז ⟵ סכום להחזר, וסכום להחזר ⟵ אחוז, מול סכום ההלוואה.
@@ -433,18 +531,21 @@ function intSum() {
   var out = $('#o-int-sum'), amt = readNum($('#o-amount'), 0), tt = readNum($('#o-total'), 0);
   if (!out) return;
   out.textContent = amt > 0 && tt > amt ? 'קרן ' + ils(amt) + ' + היתר עסקה ' + ils(tt - amt) + ' = מחזירים ' + ils(tt) : '';
+  out.classList.toggle('ln-fin-note', !!out.textContent);
 }
 function saveLoan(id) {
   var donorId = nullable(comboValue('o-donor')), dn = donorId ? donorById(donorId) : null, q = $('#o-donor [data-combo-q]');
   var lender = dn ? dn.name : (q ? q.value.trim() : ''), amount = readNum($('#o-amount'), 0), kind = val('o-kind') || null;
+  var td = nullable(val('o-taken')), tm = td ? null : nullable(val('o-taken-m')), status = nullable(val('o-status'));
   if (!lender) { toast(MSG_NEED_NAME, null, 'warn'); return; }
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   // בלי סוג ההחזר אין דרך לדעת מתי ההלוואה יורדת מהחוב
   if (!kind) { toast(MSG_LOAN_KIND, null, 'warn'); return; }
-  var td = nullable(val('o-taken'));
+  if (!td && !tm) { toast(MSG_LOAN_TAKEN, null, 'warn'); return; }
+  if (!status) { toast(MSG_LOAN_STATUS, null, 'warn'); return; }
+  // תנאי ההחזר וההערה — שדה אחד, נשמר בהערה
   var row = { lender: lender, donor_client_id: dn ? donorId : null, amount: amount, kind: kind,
-              taken_date: td, taken_month: td ? null : nullable(val('o-taken-m')),
-              repay_terms: nullable(val('o-terms')), status: nullable(val('o-status')), note: nullable(val('o-note')) };
+              taken_date: td, taken_month: tm, repay_terms: null, status: status, note: nullable(val('o-note')) };
   if (kind === 'checks') {
     var n = readNum($('#o-ck-n'), 0), uneq = $('#o-ck-uneq').checked;
     if (!(n > 0) || n !== Math.round(n)) { toast(MSG_CK_COUNT, null, 'warn'); return; }
@@ -458,13 +559,22 @@ function saveLoan(id) {
   } else {
     row.check_count = null; row.check_amount = null; row.check_amounts = null; row.first_check_month = null;
   }
+  row.repay_total = null; row.settle_amount = null; row.settle_count = null;
   if (kind === 'long') {
     var cd = nullable(val('o-check'));
     row.last_check_date = cd; row.last_check_month = cd ? null : nullable(val('o-check-m'));
-    var tt = readNum($('#o-total'), 0);
-    row.repay_total = tt > amount ? tt : null;
-  } else row.repay_total = null;
-  return id ? update('g_loans', id, row) : insert('g_loans', row);
+    // עלויות המימון — אחת מהשתיים: היתר עסקה (הסכום להחזר) או דמי התפשרות (סכום לחודש, ומספר תשלומים — רשות)
+    var fin = val('o-fin');
+    if (fin === 'int') { var tt = readNum($('#o-total'), 0); row.repay_total = tt > amount ? tt : null; }
+    if (fin === 'set') {
+      var sa = readNum($('#o-set-a'), 0), sn = $('#o-set-n') && !$('#o-set-n').hidden ? readNum($('#o-set-n'), 0) : 0;
+      if (!(sa > 0)) { toast(MSG_SET_AMT, null, 'warn'); return; }
+      row.settle_amount = sa; row.settle_count = sn > 0 ? Math.round(sn) : null;
+    }
+  }
+  if (id) return update('g_loans', id, row);
+  // הלוואה חדשה — אחרי השמירה החלון נשאר פתוח עליה, וההוספה של תנועות נפתחת
+  return insert('g_loans', row).then(function (r) { state.loansOpen = r && r.client_id ? r.client_id : null; return r; });
 }
 
-export { addLoanMove, ckInt, ckSync, formLoan, intSync, formLoanMove, loanKindPick, saveLoanMove, loansBodyHTML, saveLoan, viewLoans };
+export { addLoanMove, ckInt, ckMode, ckSync, finMode, intSync, formLoanMove, loanInfo, loanKindPick, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans };

@@ -972,6 +972,10 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .fl-bar.ghost.loan{background:var(--bad-soft)} .fl-bar.ghost.rep{background:var(--ok-soft)}
 .fl-solid{position:absolute;inset-inline:0;bottom:0;height:calc(var(--s) * 100%);border-radius:inherit}
 .fl-bar.loan .fl-solid{background:var(--bad)} .fl-bar.rep .fl-solid{background:var(--ok)}
+/* עלויות מימון — החיוור (דמי התפשרות) מעל הכהה (היתר עסקה) */
+.fl-bar.ghost.int{background:color-mix(in srgb,var(--warn) 38%,var(--card))} .fl-bar.int .fl-solid{background:var(--warn)}
+.fl-sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-inline-end:var(--sp-2)}
+.fl-sw.int{background:linear-gradient(to top,var(--warn) 50%,color-mix(in srgb,var(--warn) 38%,var(--card)) 50%)}
 .fl-vals b small{display:block;font-size:9px;font-weight:700;color:var(--text-3);text-align:center}
 .fl-legend i.ghost{background:var(--bad-soft);border:1px solid var(--bad)} .fl-legend i.ghost-rep{background:var(--ok-soft);border:1px solid var(--ok)}
 .fl-sum dd small{display:block;font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
@@ -1017,3 +1021,87 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-ph-sum small{font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
 .ln-card{display:inline-grid;place-items:center;color:var(--brand-ink);vertical-align:middle}
 .ln-card .ico{width:16px;height:16px}
+
+/* ── הלוואות — המסך החדש (24.11): רכיב עליון (חיפוש וסינון · עיגולים · שני כפתורים), ההלוואות לפי אנשים, וחלון ההלוואה בשני חלקים ── */
+.ln-top{display:grid;gap:var(--sp-5)}
+.ln-tools{display:grid;grid-template-columns:1fr auto;gap:var(--sp-4);align-items:center}
+.ln-tools .search-box{margin:0}
+.ln-top-h{display:flex;align-items:center;gap:var(--sp-3)}
+.ln-top-h h2{margin:0;flex:1}
+.ln-top-h .ln-dash-m{font-size:var(--fs-3);font-weight:700;color:var(--text-3);margin-inline-start:var(--sp-3)}
+.ln-info-btn{width:36px;height:36px;border-radius:50%;border:0;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;cursor:pointer}
+.ln-info-btn .ico{width:20px;height:20px}
+/* העיגולים — הסכום בצבעו בתוך עיגול רך, ומתחתיו הכותרת והשינוי */
+.ln-dots{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--sp-5) var(--sp-3)}
+.ln-dot{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-2);min-width:0}
+.ln-dot-c{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:var(--card-2);box-shadow:inset 0 0 0 3px var(--border)}
+.ln-dot-c b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums;direction:ltr}
+.ln-dot.bad .ln-dot-c{background:var(--bad-soft);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--bad) 35%,transparent)} .ln-dot.bad b{color:var(--bad)}
+.ln-dot.ok .ln-dot-c{background:var(--ok-soft);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)} .ln-dot.ok b{color:var(--ok)}
+.ln-dot.gold .ln-dot-c{background:var(--warn-soft);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--warn) 35%,transparent)} .ln-dot.gold b{color:var(--warn)}
+.ln-dot-t{font-size:var(--fs-2);font-weight:800;color:var(--text)}
+.ln-dot small{font-size:var(--fs-1);color:var(--text-3);font-weight:600;line-height:1.3}
+.ln-dot small.bad{color:var(--bad)} .ln-dot small.ok{color:var(--ok)}
+.ln-wbtns{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4)}
+.ln-wbtns .btn{gap:var(--sp-3)}
+.ln-wbtns .cnt{margin-inline-start:var(--sp-2)}
+.ln-info{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-4)}
+.ln-info li{display:grid;gap:2px} .ln-info b{color:var(--brand-ink)} .ln-info span{color:var(--text-2);font-size:var(--fs-3)}
+/* ההלוואות — לפי אנשים: אות גדולה, ורכיב לבן לכל מלווה; שורה לכל הלוואה, ופס צבע בקצה לפי הסוג */
+.ln-list{margin-bottom:var(--sp-6)}
+.ln-list-h h2{font-size:var(--fs-5);color:var(--brand-ink);margin:var(--sp-5) var(--sp-2) var(--sp-3);display:flex;align-items:center;gap:var(--sp-3)}
+.ln-letter{font-size:var(--fs-7,2rem);font-weight:900;color:var(--brand-ink);line-height:1;margin:var(--sp-6) var(--sp-3) var(--sp-3)}
+.ln-pblock{background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);overflow:hidden;margin-bottom:var(--sp-4)}
+.ln-row{display:flex;align-items:flex-start;gap:var(--sp-5);width:100%;background:none;border:0;font:inherit;color:inherit;text-align:start;cursor:pointer;
+  padding:var(--sp-5) var(--sp-6);border-inline-start:5px solid transparent}
+.ln-row + .ln-row{border-top:1px solid var(--border)}
+.ln-row.k-checks{border-inline-start-color:var(--ln-b)} .ln-row.k-long{border-inline-start-color:var(--ln-a)}
+.ln-r-main{flex:1;min-width:0;display:grid;gap:var(--sp-2)}
+.ln-r-top{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
+.ln-r-name{font-size:var(--fs-5);font-weight:800;color:var(--text)}
+.ln-r-amt{font-size:var(--fs-3);font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+.ln-r-det{display:grid;gap:1px;font-size:var(--fs-2);color:var(--text-3)}
+.ln-r-end{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-1);flex:none;font-variant-numeric:tabular-nums}
+.ln-r-end small{font-size:var(--fs-1);color:var(--text-3)}
+.ln-r-end b{font-size:var(--fs-6,1.5rem);font-weight:900;color:var(--bad)}
+@media (hover:hover){ .ln-row:hover{background:var(--card-2)} }
+.ln-total{background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-5) var(--sp-6)}
+/* חלון ההלוואה — שליש ושני שלישים במחשב, וזה מעל זה בטלפון */
+.cw-in:has(.ln-win),.cw-in:has(.ln-wwin){max-width:1120px}
+.ln-split{display:grid;grid-template-columns:1fr}
+.ln-form{display:contents}
+.ln-p1{background:var(--brand-soft);padding:var(--sp-6)}
+.ln-p2a,.ln-p2b{background:var(--card);padding:var(--sp-6)}
+.ln-p2b{padding-top:0}
+.ln-split h3{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);margin:0 0 var(--sp-5);display:flex;align-items:center;gap:var(--sp-3)}
+.ln-p1-row{display:grid;grid-template-columns:1fr;gap:0 var(--sp-4)}
+.ln-p1-acts{margin-top:var(--sp-5)}
+.ln-seg{margin-bottom:var(--sp-5)} .ln-seg button{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);padding-inline:var(--sp-3)}
+.ln-h4{font-size:var(--fs-3);font-weight:800;color:var(--text);margin:var(--sp-6) 0 var(--sp-4)}
+.ln-fin-note{display:grid;gap:var(--sp-1);background:var(--warn-soft);color:var(--warn);border-radius:var(--r-5);padding:var(--sp-4) var(--sp-5);margin-top:var(--sp-4);font-size:var(--fs-2)}
+.ln-fin-note[hidden]{display:none} .ln-fin-note b{font-size:var(--fs-3)}
+.ln-set-free{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-height:44px;font-size:var(--fs-2);color:var(--text-2)}
+.ln-set-free[hidden]{display:none}
+.ln-band .cp-sum{margin-inline-start:auto}
+.ln-wbody{padding:var(--sp-6);background:var(--card)}
+.ln-wsec + .ln-wsec{margin-top:var(--sp-7)}
+.ln-wsec h3{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);display:flex;align-items:center;gap:var(--sp-3);margin:0 0 var(--sp-4)}
+.ln-wsec h3 .sp{margin-inline-start:auto;font-size:var(--fs-3);color:var(--text-2)}
+.ln-wsec .fl-scroll{padding-top:calc(2 * var(--sp-7))}
+@media (min-width:640px){
+  .ln-p1-row{grid-template-columns:1.6fr 1fr 1.5fr}
+}
+@media (min-width:900px){
+  .ln-split{grid-template-columns:1fr 2fr;grid-template-rows:auto 1fr}
+  .ln-p1{grid-column:1;grid-row:1 / span 2}
+  .ln-p2a{grid-column:2;grid-row:1} .ln-p2b{grid-column:2;grid-row:2}
+  /* בשליש של המחשב — המלווה בשורה משלו, והסכום והסוג זה לצד זה */
+  .ln-p1-row{grid-template-columns:1fr 1.3fr} .ln-p1-row .ln-f-lender{grid-column:1 / -1}
+  .ln-dots{grid-template-columns:repeat(7,1fr)}
+}
+@media (max-width:639px){
+  .ln-tools{grid-template-columns:1fr}
+  .ln-dots{grid-template-columns:repeat(3,1fr)}
+  .ln-dot-c{width:72px;height:72px} .ln-dot-c b{font-size:var(--fs-4)}
+  .ln-row{padding:var(--sp-5)} .ln-r-end b{font-size:var(--fs-5)}
+}
