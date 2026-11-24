@@ -499,19 +499,18 @@ comboDef('sht-donor', { val: true, max: 30,
     });
   },
   pick: function (it) {
-    var d = it ? donorById(it.value) : null, nm = $('#sp-name'), ph = $('#sp-phone');
-    if (nm) { nm.value = d ? d.name : ''; nm.disabled = !!d; }
+    var d = it ? donorById(it.value) : null, ph = $('#sp-phone');
     if (ph && d && d.phone && !ph.value.trim()) ph.value = d.phone;
   } });
 
 function formShtar(p) {
   var d = p && p.donor_client_id ? donorById(p.donor_client_id) : null;
   openModal(p ? TTL_SHT_EDIT : TTL_SHT_NEW,
-    '<div class="fld"><span>כרטיס בגיוס</span>' +
-      comboHTML('sht-donor', { id: 'sp-donor', label: 'חיפוש כרטיס לפי שם או טלפון', placeholder: 'חיפוש כרטיס — או שם וטלפון למטה',
-                               picked: d ? { value: d.client_id, label: d.name } : null }) + '</div>' +
+    // השם — שדה אחד, כמו המלווה בהלוואות: ההקלדה מחפשת בכרטיסים, ובחירה משייכת לכרטיס; ומי שאין לו כרטיס — מה שהוקלד נשמר כשם חופשי
     '<div class="f2">' +
-      '<label class="fld"><span>שם</span><input class="inp" id="sp-name" value="' + esc(p ? personName(p) : '') + '"' + (d ? ' disabled' : '') + '></label>' +
+      '<div class="fld"><span>שם</span>' +
+        comboHTML('sht-donor', { id: 'sp-donor', label: 'שם — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
+                                 picked: p ? { value: d ? d.client_id : '', label: personName(p) } : null }) + '</div>' +
       '<label class="fld"><span>טלפון *</span><input class="inp" id="sp-phone" inputmode="tel" dir="ltr" value="' + esc(p ? p.phone : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערה</span><input class="inp" id="sp-note" value="' + esc(p ? p.note || '' : '') + '"></label>',
@@ -532,7 +531,9 @@ function shtDup(id, name, phone) {
 }
 
 function saveShtar(id) {
-  var donor = nullable(comboValue('sp-donor')), phone = val('sp-phone').replace(/[\s-]/g, ''), name = donor ? '' : val('sp-name');
+  var donor = nullable(comboValue('sp-donor')), q = $('#sp-donor [data-combo-q]'), phone = val('sp-phone').replace(/[\s-]/g, '');
+  if (donor && !donorById(donor)) donor = null;
+  var name = donor ? '' : (q ? q.value.trim() : '');
   if (!digits(phone)) { toast(MSG_SHT_PHONE, null, 'warn'); return; }
   var row = { donor_client_id: donor, name: nullable(name), phone: phone, note: nullable(val('sp-note')) };
   var dup = shtDup(id, donor ? donorById(donor).name : name, phone);
