@@ -53,8 +53,9 @@
 .reload-btn{margin-top:var(--sp-6)}
 
 /* ── נקודות שבירה ── */
+/* 360 · 480 — אין שינוי: הפריסה הבסיסית היא של הטלפון. */
 /* מסך רחב — כל המסכים בסרגל, בלי «עוד». */
-@media (min-width:1100px){
+@media (min-width:1200px){
   .tabbar .wide-only{display:flex}
   .tabbar .narrow-only{display:none}
 }
@@ -193,7 +194,7 @@
 .fl-legend{display:flex;flex-wrap:wrap;gap:var(--sp-3);font-size:var(--fs-2);font-weight:600;color:var(--text-2);margin-bottom:var(--sp-5)}
 .fl-lg > span{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .fl-lg{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
-@media (max-width:639px){.fl-lg{flex-basis:100%}}
+@media not all and (min-width:640px){.fl-lg{flex-basis:100%}}
 .fl-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
 .fl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
 .fl-legend i.inc{background:var(--brand-fill)} .fl-legend i.loan{background:var(--bad)}
@@ -302,7 +303,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 /* כרטיס האיש — מספר הטלפון מתחת לאייקונים של החיוג וההודעה. */
 .sht-side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-3);flex:none}
 .sht-phone{font-size:var(--fs-2);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.16);border-radius:var(--r-7);padding:var(--sp-1) var(--sp-5)}
-@media (max-width:639px){
+@media not all and (min-width:640px){
   .sht-side{position:absolute;top:var(--sp-5);inset-inline-end:var(--sp-5)}
   .sht-side .cp-acts{position:static}
   .sht-card .cp-who{min-height:64px}
@@ -458,7 +459,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
   .ln-p1-row{grid-template-columns:1fr 1.3fr} .ln-p1-row .ln-f-lender{grid-column:1 / -1}
   .ln-dots{grid-template-columns:repeat(7,1fr)}
 }
-@media (max-width:639px){
+@media not all and (min-width:640px){
   .ln-tools{grid-template-columns:1fr}
   .ln-dots{grid-template-columns:repeat(3,1fr)}
   .ln-dot-c{width:72px;height:72px} .ln-dot-c b{font-size:var(--fs-4)}
@@ -494,7 +495,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-set-edit .ico{width:18px;height:18px}
 .ln-foot{display:flex;justify-content:flex-end;gap:var(--sp-4);padding:var(--sp-5) var(--sp-6);background:var(--card);border-top:1px solid var(--border);position:sticky;bottom:0;z-index:2}
 .ln-p1-acts{display:none}
-@media (max-width:639px){ .ln-tools{grid-template-columns:1fr 1fr} .ln-tools .search-box{grid-column:1 / -1} .ln-choice{grid-template-columns:1fr} }
+@media not all and (min-width:640px){ .ln-tools{grid-template-columns:1fr 1fr} .ln-tools .search-box{grid-column:1 / -1} .ln-choice{grid-template-columns:1fr} }
 /* הלוואות — סבב 3: שם המלווה גדול יותר; במיון — כותרת הסטטוס במקום האות, ושם המלווה בשורה */
 .ln-person{font-size:var(--fs-5)}
 .ln-stat-h span{width:auto;height:auto;padding:var(--sp-3) var(--sp-6);border-radius:var(--r-6);font-size:var(--fs-4)}
@@ -502,7 +503,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 /* הלוואות — סבב 4: שם המלווה גדול ומודגש; שני הבוררים ברוחב אחד; האות במרכז העיגול; סוג ההחזר בשורה אחת בגובה השדה */
 .ln-person{font-size:var(--fs-6,1.5rem);font-weight:900}
 .ln-tools select.inp{width:170px}
-@media (max-width:639px){ .ln-tools select.inp{width:100%} }
+@media not all and (min-width:640px){ .ln-tools select.inp{width:100%} }
 .ln-letter span{display:inline-block;text-align:center;line-height:52px;padding:0}
 .ln-stat-h span{line-height:1.3;padding:var(--sp-3) var(--sp-6)}
 .ln-f-kind .ln-seg{margin-bottom:0;flex-wrap:nowrap}

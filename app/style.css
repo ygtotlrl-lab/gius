@@ -298,7 +298,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .g-list > div{display:flex;align-items:center;gap:var(--sp-5);padding:var(--sp-4) 0;border-bottom:1px solid var(--border-2)}
 .g-list > div:last-child{border-bottom:0}
 /* מתחת ל-900px — הרשימה בשתי עמודות, לרוחב המסך */
-@media (max-width:899px){
+@media not all and (min-width:900px){
   .g-list{display:grid;grid-template-columns:1fr 1fr;column-gap:var(--sp-5)}
   .g-list > div:nth-last-child(-n+2){border-bottom:0}
 }
@@ -475,7 +475,7 @@ button.cp-av[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 .cp-bar h4{flex:1;display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}
 .cp-bar .cnt{font-size:var(--fs-2);font-weight:700;background:var(--border-2);color:var(--text-3);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
 .cp-body{padding:var(--sp-5) var(--sp-7) var(--sp-6)}
-@media (max-width:639px){
+@media not all and (min-width:640px){
   .cp-band,.cp-bar,.cp-body{padding-inline:var(--sp-5)}
   .cp-band{gap:var(--sp-4)}
   .cp-av{width:44px;height:44px;font-size:var(--fs-4)}
@@ -516,7 +516,7 @@ button.cp-av[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 .pl-end .badge{font-size:var(--fs-1);padding:0 var(--sp-3)}
 .pl-chev{color:var(--text-3);flex:none}
 /* בטלפון — שתי קומות: הסעיף, הסוג והפירוט על כל הרוחב, ומתחתם הנותר והנגבה בשורה אחת; כך השם אינו נדחס לעמודה צרה. */
-@media (max-width:639px){
+@media not all and (min-width:640px){
   .pl-hd{flex-wrap:wrap;row-gap:var(--sp-3)}
   .pl-what{flex:1 1 calc(100% - 40px)}
   .pl-chev{order:2}
@@ -564,7 +564,7 @@ button.cp-av[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 .lm-add .btn{flex:none}
 .lm-add .lm-date{flex:0 1 10rem;min-width:0}
 /* בטלפון — סכום ותאריך בחצאים, ומתחתם ההערה וכפתור ההוספה; התאריך בגופן ובריפוד שנכנסים בחצי שורה */
-@media (max-width:639px){
+@media not all and (min-width:640px){
   .lm-add{flex-wrap:wrap}
   .lm-add .lm-amt,.lm-add .lm-date{flex:1 1 calc(50% - var(--sp-3));min-width:0;width:0}
   .lm-add .lm-date{font-size:var(--fs-3);padding-inline:var(--sp-3)}
