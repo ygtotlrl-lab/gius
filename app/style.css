@@ -61,7 +61,7 @@ html,body{height:100%}
 body{-webkit-tap-highlight-color:transparent}
 body{
   margin:0; background:var(--bg); color:var(--text);
-  font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Hebrew","Rubik",Arial,sans-serif;
+  font-family:Heebo,sans-serif;
   font-size:var(--fs-4); line-height:var(--lh-4); -webkit-text-size-adjust:100%;
   overflow-wrap:anywhere;
 }
