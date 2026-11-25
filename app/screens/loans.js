@@ -2,7 +2,7 @@
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { amtSet, cardWinHTML, comboDef, comboHTML, comboValue, esc, openModal, receiptHTML, toast } from '../../core/ui.js';
-import { APP_FIRST_MONTH, LOAN_KINDS, MONTH_SHORT, LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_CK_AMT, MSG_CK_COUNT, MSG_CK_FIRST, MSG_LOAN_KIND, MSG_CK_SUM_PRE, MSG_LOAN_STATUS, MSG_LOAN_TAKEN, MSG_NEED_MOVE_AMOUNT, MSG_NEED_NAME, MSG_SET_AMT,
+import { APP_FIRST_MONTH, LOAN_KINDS, MONTH_SHORT, LOAN_STATUSES, MSG_AMOUNT_POSITIVE, MSG_CK_AMT, MSG_CK_COUNT, MSG_CK_FIRST, MSG_LOAN_KIND, MSG_CK_SUM_PRE, MSG_LOAN_STATUS, MSG_LOAN_TAKEN, MSG_NEED_MOVE_AMOUNT, MSG_NEED_LENDER, MSG_SET_AMT,
          TTL_MOVE_EDIT } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
@@ -74,7 +74,7 @@ function loanInfo() {
   openModal('מצב ההלוואות', '<ul class="ln-info">' + [
     ['החוב הכללי', 'הקרן שעוד לא הוחזרה, בכל ההלוואות. מתחתיו — כמה עלה או ירד מתחילת התקופה.'],
     ['לטווח ארוך · בתשלומים', 'אותו חוב, לפי סוג ההחזר.'],
-    ['עלויות מימון', 'מה שעלה המימון החודש: היתר עסקה (מה שמחזירים מעבר לקרן) ודמי התפשרות (סכום קבוע לכל חודש עד סגירת ההלוואה). הוצאה — אינה בחוב.'],
+    ['עלויות מימון', 'מה שעלה המימון החודש: היתר עסקה (מה שמחזירים מעבר לקרן) ודמי התפשרות (סכום קבוע לכל חודש). זו הוצאה, ואינה חוב.'],
     ['החזרים החודש', 'חלק הקרן שהוחזר החודש — מקטין את החוב.'],
     ['הלוואות החודש', 'סכום ההלוואות שנלקחו החודש — מגדיל את החוב.'],
     ['נטו החודש', 'הלוואות פחות החזרים: אדום — החוב גדל, ירוק — החוב קטן.'],
@@ -395,13 +395,13 @@ function loanWinHTML(l) {
         '<span class="ln-int-or">או</span>' +
         '<label class="fld"><span>סכום להחזר, כולל היתר העסקה</span><input class="inp" data-amt id="o-total" inputmode="decimal" data-inp="int-t" value="' +
           esc(l && +l.repay_total > +l.amount ? l.repay_total : '') + '"></label></div>' +
-        '<div class="ln-fin-note" id="o-int-note"><b>היתר עסקה</b><span id="o-int-sum">ממלאים אחד מהשניים — האחוז או הסכום להחזר. ההפרש מעל הקרן הוא עלות המימון, ואינו חוב.</span></div></div>' +
+        '<div class="ln-fin-note" id="o-int-note"><b>היתר עסקה</b><span id="o-int-sum">ממלאים אחד מהשניים — אחוז או סכום להחזר. ההפרש מעל הקרן הוא עלות המימון, ואינו חוב.</span></div></div>' +
       '<div class="ln-fin" id="o-fin-set"' + (fin === 'set' ? '' : ' hidden') + '>' +
         '<div class="f2"><label class="fld"><span>סכום לחודש *</span><input class="inp" data-amt id="o-set-a" inputmode="decimal" value="' + esc(l && l.settle_amount || '') + '"></label>' +
         '<div class="fld"><span>מספר תשלומים</span><div class="ln-set-n">' +
           '<input class="inp" id="o-set-n" inputmode="numeric" placeholder="ללא הגבלה" value="' + esc(l && l.settle_count || '') + '"' + (l && +l.settle_count ? '' : ' readonly') + '>' +
           '<button type="button" class="ln-set-edit" data-act="set-count" aria-label="קביעת מספר תשלומים" title="קביעת מספר תשלומים">' + icon('edit') + '</button></div></div></div>' +
-        '<div class="ln-fin-note"><b>דמי התפשרות</b><span>ממלאים את הסכום לחודש, ומספר תשלומים — אם יש. משולם מהחודש הראשון של ההלוואה עד שהקרן מוחזרת, או עד מספר התשלומים. הסכום הוא עלות המימון, ואינו חוב.</span></div></div>' +
+        '<div class="ln-fin-note"><b>דמי התפשרות</b><span>ממלאים סכום לחודש, ומספר תשלומים — אם יש. משולם מהחודש הראשון ועד שהקרן מוחזרת, או עד מספר התשלומים. זו עלות המימון, ואינה חוב.</span></div></div>' +
     '</div>';
   var p2 = '<section class="ln-p2a"><h3>פרטי ההחזר</h3>' +
     '<p class="ln-lead" id="o-kind-hint"' + (kind ? ' hidden' : '') + '>בוחרים את סוג ההחזר בפרטי ההלוואה.</p>' + ck + lg + '</section>';
@@ -447,6 +447,7 @@ function loansPartial() {
   if (!view || !top || !list) return false;
   top.outerHTML = loanDashHTML();
   list.innerHTML = loansBodyHTML();
+  centerLetters();
   var aux = $('#ln-w-aux'), want = state.lnWin || '';
   if (aux && aux.dataset.key !== want) { aux.remove(); aux = null; }
   if (want && !aux) view.insertAdjacentHTML('beforeend', auxWinHTML());
@@ -472,7 +473,26 @@ function auxWinHTML() {
       '<div class="ln-wbody">' + (k === 'chart' ? chartsBodyHTML() : dueBodyHTML()) + '</div></div>' }).replace('<div class="card-win"', '<div class="card-win" data-key="' + esc(k) + '"');
 }
 // אחרי שחלון ההלוואה נפתח — הסיכומים שמתחת לשדות
-function loansAfter() { if ($('#ln-w-loan')) { ckSync(); intSum(); } }
+function loansAfter() { centerLetters(); if ($('#ln-w-loan')) { ckSync(); intSum(); } }
+// האות בעיגול — במרכז לפי הגליף עצמו: מידות השורה (ascent · descent) שונות בין גופנים ומחשבים, וכל מרכוז ב-CSS נשען עליהן.
+// כאן נמדדים קצות האות בפועל (measureText), והאות מוזזת כך שמרכזה במרכז העיגול.
+var _lnCtx = null;
+function centerLetters() {
+  var run = function () {
+    document.querySelectorAll('.ln-letter b').forEach(function (b) {
+      var cs = getComputedStyle(b), fs = parseFloat(cs.fontSize) || 16;
+      _lnCtx = _lnCtx || document.createElement('canvas').getContext('2d');
+      _lnCtx.font = cs.fontWeight + ' ' + fs + 'px ' + cs.fontFamily;
+      var m = _lnCtx.measureText(b.textContent || '');
+      if (!m.fontBoundingBoxAscent) return;
+      var base = (fs - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+      var mid = base - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+      b.style.transform = 'translateY(' + (fs / 2 - mid).toFixed(2) + 'px)';
+    });
+  };
+  run();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+}
 // הבוררים בחלון — סוג התשלומים, עלויות המימון ומספר התשלומים של דמי ההתפשרות
 function segSet(el, hidden) {
   var on = hidden.value;
@@ -547,7 +567,7 @@ function ckSync() {
   if (nb && nt) {
     nb.hidden = !(n && amt && tot > amt);
     // היתר העסקה בתשלומים — אינו שדה: נגזר מהתשלומים, בסכום ובאחוזים
-    nt.textContent = nb.hidden ? '' : ils(tot - amt) + ' (' + (Math.round((tot / amt - 1) * 10000) / 100) + '%) — סך התשלומים (' + ils(tot) + ') מעל הקרן (' + ils(amt) + '). ההפרש הוא עלות המימון, ואינו חוב.';
+    nt.textContent = nb.hidden ? '' : 'סך התשלומים ' + ils(tot) + ', הקרן ' + ils(amt) + ' — היתר עסקה ' + ils(tot - amt) + ' (' + (Math.round((tot / amt - 1) * 10000) / 100) + '%). זו עלות המימון, ואינה חוב.';
   }
 }
 
@@ -563,14 +583,14 @@ function intSync(from) {
 function intSum() {
   var out = $('#o-int-sum'), amt = readNum($('#o-amount'), 0), tt = readNum($('#o-total'), 0);
   if (!out) return;
-  out.textContent = amt > 0 && tt > amt ? 'קרן ' + ils(amt) + ' + היתר עסקה ' + ils(tt - amt) + ' = מחזירים ' + ils(tt) + '. ההפרש הוא עלות המימון, ואינו חוב.'
-    : 'ממלאים אחד מהשניים — האחוז או הסכום להחזר. ההפרש מעל הקרן הוא עלות המימון, ואינו חוב.';
+  out.textContent = amt > 0 && tt > amt ? 'מחזירים ' + ils(tt) + ', הקרן ' + ils(amt) + ' — היתר עסקה ' + ils(tt - amt) + ' (' + (Math.round((tt / amt - 1) * 10000) / 100) + '%). זו עלות המימון, ואינה חוב.'
+    : 'ממלאים אחד מהשניים — אחוז או סכום להחזר. ההפרש מעל הקרן הוא עלות המימון, ואינו חוב.';
 }
 function saveLoan(id) {
   var donorId = nullable(comboValue('o-donor')), dn = donorId ? donorById(donorId) : null, q = $('#o-donor [data-combo-q]');
   var lender = dn ? dn.name : (q ? q.value.trim() : ''), amount = readNum($('#o-amount'), 0), kind = val('o-kind') || null;
   var td = nullable(val('o-taken')), tm = td ? null : nullable(val('o-taken-m')), status = nullable(val('o-status'));
-  if (!lender) { toast(MSG_NEED_NAME, null, 'warn'); return; }
+  if (!lender) { toast(MSG_NEED_LENDER, null, 'warn'); return; }
   if (!(amount > 0)) { toast(MSG_AMOUNT_POSITIVE, null, 'warn'); return; }
   // בלי סוג ההחזר אין דרך לדעת מתי ההלוואה יורדת מהחוב
   if (!kind) { toast(MSG_LOAN_KIND, null, 'warn'); return; }
