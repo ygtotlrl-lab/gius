@@ -275,7 +275,7 @@ function loansBodyHTML() {
     var letter = '';
     order.forEach(function (k) {
       var g = groups[k], L = (g.name.trim().charAt(0) || '#');
-      if (L !== letter) { letter = L; h += '<div class="ln-letter" aria-hidden="true"><span>' + esc(L) + '</span></div>'; }
+      if (L !== letter) { letter = L; h += '<div class="ln-letter" aria-hidden="true"><span><b>' + esc(L) + '</b></span></div>'; }
       h += '<div class="ln-person">' + esc(g.name) + (g.list.length > 1 ? '<span class="cnt">' + g.list.length + '</span>' : '') + '</div>' +
         '<div class="ln-pblock">' + g.list.map(function (l) { return loanRowHTML(l, cur); }).join('') + '</div>';
     });

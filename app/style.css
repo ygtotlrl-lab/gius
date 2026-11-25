@@ -1153,3 +1153,6 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-person{font-size:var(--fs-5)}
 /* בורר סוג ההחזר — בגובה שדה הסכום שלצדו */
 .ln-f-kind .ln-seg{box-sizing:border-box;height:calc(2 * var(--sp-5) + var(--fs-4) * 1.5 + 2px);align-items:stretch}
+/* האות בעיגול — במרכז לפי הגליף עצמו ולא לפי מידות השורה של הגופן (שונות בין מכשירים): השורה נחתכת לגובה האות */
+.ln-letter span{display:inline-grid;place-items:center;line-height:1}
+.ln-letter span b{display:block;font-weight:900;line-height:1;text-box:trim-both cap alphabetic}
