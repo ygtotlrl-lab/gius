@@ -1,0 +1,517 @@
+/* app/style.screens.css — המשך app/style.css: הפרקים שאחריו, באותו סדר */
+/* ── רשומות ── */
+.notes{display:grid;gap:var(--sp-5)}
+.note-card{position:relative;border-radius:var(--r-5);padding:var(--sp-5);border:1px solid var(--border);min-height:96px}
+.note-card.dragging{opacity:var(--op-2)}
+.note-card > .grip{position:absolute;inset-inline-end:var(--sp-3);top:var(--sp-3);color:var(--text-3);touch-action:none;cursor:grab;padding:var(--sp-1)}
+.note-open{display:block;width:100%;text-align:start;background:none;border:0;cursor:pointer;padding:0}
+.note-open b{display:block;font-size:var(--fs-4);margin-inline-end:var(--sp-6);margin-bottom:var(--sp-3)}
+.note-body{display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;
+  font-size:var(--fs-3);color:var(--text-2)}
+.nc-sand{background:var(--nc-sand)} .nc-terra{background:var(--nc-terra)} .nc-sage{background:var(--nc-sage)}
+.nc-sky{background:var(--nc-sky)} .nc-rose{background:var(--nc-rose)} .nc-plum{background:var(--nc-plum)}
+.swatches{display:flex;gap:var(--sp-4);flex-wrap:wrap}
+.sw{width:36px;height:36px;border-radius:var(--r-7);border:2px solid var(--border);cursor:pointer;display:grid;place-items:center}
+.sw input{appearance:none;margin:0;width:100%;height:100%;border-radius:var(--r-7);cursor:pointer}
+.sw input:checked{box-shadow:0 0 0 3px var(--brand-ink)}
+.note-ta{min-height:220px}
+/* הפתק הפתוח — על כל המסך, בצבע הפתק; מעל הסרגל ומתחת לחלון האישור. */
+.note-full{position:fixed;inset:0;z-index:var(--z-3);display:flex;justify-content:center;overflow-y:auto;
+  padding:calc(var(--sp-6) + env(safe-area-inset-top)) var(--sp-6) calc(var(--sp-6) + env(safe-area-inset-bottom))}
+.nf-in{width:100%;max-width:760px;display:flex;flex-direction:column;gap:var(--sp-5);min-height:100%}
+.nf-bar{display:flex;align-items:center;gap:var(--sp-4)}
+.nf-grow{flex:1}
+.nf-btn{height:42px;min-width:42px;padding:0 var(--sp-5);border:0;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-6);background:rgba(0,0,0,.06);color:var(--text);
+  font:inherit;font-size:var(--fs-4);font-weight:700;cursor:pointer}
+.nf-del{color:var(--bad);font-size:var(--fs-3)}
+/* כפתור אייקון בלבד (✕) — עיגול מלא, האייקון במרכזו ולא על קו הבסיס של הטקסט */
+.nf-btn:has(> .ico:only-child){width:42px;padding:0}
+.nf-title{border:0;background:none;font:inherit;font-size:var(--fs-6);font-weight:800;color:var(--text);outline:none;padding:var(--sp-3) 0}
+.nf-body{flex:1;min-height:50vh;border:0;background:none;font:inherit;font-size:var(--fs-4);line-height:1.7;color:var(--text);outline:none;resize:none;padding:0}
+.nf-title::placeholder,.nf-body::placeholder{color:var(--text-3)}
+.nf-colors{padding-top:var(--sp-4);border-top:1px solid rgba(0,0,0,.08)}
+/* ── סיכום רשימה ── */
+.total-row{display:flex;justify-content:space-between;padding:var(--sp-5) var(--sp-2) 0;margin-top:var(--sp-3);
+  border-top:1px solid var(--border);font-weight:700;font-variant-numeric:tabular-nums}
+/* ── עוד ── */
+.more-tiles{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5)}
+.more-tiles button{display:flex;flex-direction:column;align-items:center;gap:var(--sp-3);cursor:pointer;
+  background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-6) var(--sp-4);
+  font-size:var(--fs-3);font-weight:700}
+.more-tiles button .ic{display:block;width:30px;height:30px;color:var(--brand-ink)}
+.more-tiles button.on{border-color:var(--brand-ink);background:var(--brand-soft);color:var(--brand-ink)}
+/* ── הגדרות ── */
+
+.list-item{align-items:center;display:flex;border-bottom:1px solid var(--border-2);gap:var(--sp-3);padding:var(--sp-3) 0}
+
+.list-val{font-size:var(--fs-3);flex:1}
+/* רשימת המנהלים — touch-action:none על הידית בלבד: ביטולו על כל השורה היה נועל את גלילת הרשימה. */
+.look-list .list-item{cursor:pointer}
+.look-list .list-item.dragging{opacity:var(--op-2)}
+.look-list .grip{color:var(--text-3);touch-action:none;cursor:grab;padding:0 var(--sp-2)}
+.look-list .grip:active{cursor:grabbing;color:var(--brand-ink)}
+.reload-btn{margin-top:var(--sp-6)}
+
+/* ── נקודות שבירה ── */
+/* מסך רחב — כל המסכים בסרגל, בלי «עוד». */
+@media (min-width:1100px){
+  .tabbar .wide-only{display:flex}
+  .tabbar .narrow-only{display:none}
+}
+@media (min-width:900px){
+  .tabbar{
+      position:static;display:flex;gap:var(--sp-2);border:0;background:none;padding:0;height:auto;
+      margin-inline:var(--sp-6) 0;
+    }
+}
+@media (min-width:900px){
+  .tabbar button{flex-direction:row;gap:var(--sp-3);font-size:var(--fs-3);padding:var(--sp-4) var(--sp-5);border-radius:var(--r-4)}
+}
+@media (min-width:900px){
+  .tabbar button .ic,.tabbar button .ic .ico{width:20px;height:20px}
+  .tabbar button.on .ic{background:none}
+}
+@media (min-width:900px){
+  .tabbar button.on{background:var(--brand-soft)}
+}
+@media (min-width:900px){
+  main{padding:var(--sp-7);padding-bottom:var(--sp-7)}
+}
+@media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
+/* מסך רחב — המד במרכז הכרטיס, והרשימה צמודה לשוליים השמאליים (העמודה השלישית ב-RTL). */
+@media (min-width:900px){
+  .gauge-row{grid-template-columns:1fr minmax(0,400px) 1fr;gap:var(--sp-6)}
+  .gauge{grid-column:2}
+  .g-list{grid-column:3;justify-self:end;width:min(100%,280px)}
+}
+@media (min-width:1200px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
+@media (min-width:640px){.f2{grid-template-columns:1fr 1fr}}
+@media (min-width:640px){.notes{grid-template-columns:1fr 1fr}}
+@media (min-width:900px){.notes{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:900px){.who-grid{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:900px){.fab{bottom:26px}}
+/* במסך רחב הסרגל עולה לראש המסך והכפתור הצף נשאר בתחתית — הטוסט מעליו בלבד. */
+@media (min-width:900px){:root{--toast-bottom:calc(26px + 60px + 10px)}}
+@media (min-width:640px){.veil{align-items:center}}
+@media (min-width:640px){.sheet{border-radius:var(--r-6);animation:pop var(--dur-3) ease-out}}
+/* ── אייקונים ── */
+.ico{width:1.15em;height:1.15em;flex:none}
+/* הכוכב המסומן מלא — אותו קו, ומילוי בצבע הטקסט. */
+.star-ic .ico,.cp-btn.star.on .ico,.task-star.on .ico{fill:currentColor}
+.cp-btn .ico,.nf-btn .ico,.task-star .ico{width:20px;height:20px}
+.p-now-box:not([hidden]){display:contents}
+
+/* ── תשלומי החודש — «קבלה»: הסכום בראש השורה, בירוק; קבוצה לכל יום; אמצעי התשלום באייקון. ── */
+
+/* ── התכנית — «צפי מול בפועל»: פס התקדמות לכל שורה, הסוג בפס צבע בקצה, וסיכום לכל שגריר. ── */
+.plan-sub .sum{margin-inline-start:auto;font-size:var(--fs-1);color:var(--text-3);font-variant-numeric:tabular-nums}
+.pr{position:relative;display:grid;grid-template-columns:1fr auto;gap:var(--sp-2) var(--sp-4);align-items:center;
+  padding-block:var(--sp-4);padding-inline:var(--sp-6) 40px;border-bottom:1px solid var(--border-2)}
+.pr::before{content:"";position:absolute;inset-block:var(--sp-3);inset-inline-start:0;width:4px;border-radius:2px;background:var(--brand-fill)}
+.pr.k-raise::before{background:var(--gold)}
+.pr-main{min-width:0;cursor:pointer}
+.pr-main b{display:block;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.pr-main small{display:block;color:var(--text-3);font-size:var(--fs-2)}
+.pr-fig{font-size:var(--fs-2);color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pr-fig b{color:var(--text);font-size:var(--fs-3)}
+.pr-bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--border-2);overflow:hidden}
+.pr-bar i{display:block;height:100%;border-radius:3px;background:var(--gold)}
+.pr-bar i.full{background:var(--ok)}
+.pr-menu{position:absolute;inset-inline-end:var(--sp-1);top:50%;transform:translateY(-50%);background:none;border:0;color:var(--text-3);cursor:pointer;padding:0;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center}
+.pr-menu .ico{width:18px;height:18px}
+.pr.irr{padding-block:var(--sp-2);opacity:var(--op-4)}
+.pr.irr .pr-bar,.pr.irr .pr-main small{display:none}
+.pr.irr .pr-main b{font-weight:500;font-size:var(--fs-2)}
+
+/* ── המשימות — «רשימת עבודה»: עיגול סימון בצבע השלב, ותאריך היעד בשבב שמזהיר. ── */
+.tk{display:flex;align-items:flex-start;gap:var(--sp-4);padding:var(--sp-4) var(--sp-2);border-bottom:1px solid var(--border-2);cursor:pointer}
+.tk:last-child{border-bottom:0}
+.tk-check{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--warn);background:none;display:grid;place-items:center;
+  color:transparent;cursor:pointer;padding:0;margin-top:2px}
+.tk-check .ico{width:18px;height:18px}
+.tk-check.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.tk-check.off{border-color:var(--bad);border-style:dashed;color:var(--bad)}
+.tk-main{flex:1;min-width:0}
+.tk-main b{font-weight:700}
+.tk.done .tk-main b{text-decoration:line-through;color:var(--text-3)}
+.tk-chips{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:var(--sp-2)}
+.tk-chips span{font-size:var(--fs-1);font-weight:700;border-radius:var(--r-6);padding:0 var(--sp-3);background:var(--border-2);color:var(--text-3)}
+.tk-chips .due.late{background:var(--bad-soft);color:var(--bad)}
+.tk-chips .due.soon{background:var(--gold-soft,var(--warn-soft));color:var(--gold)}
+.tk-meta{display:block;color:var(--text-3);font-size:var(--fs-1);margin-top:var(--sp-2)}
+/* תת-משימות — עיגול קטן לכל אחת, ירוק כשהושלמה והכותרת מחוקה; ובשבבים — כמה הושלמו מתוך כולן */
+.tk-chips .tk-prog{display:inline-flex;align-items:center;gap:2px;background:var(--brand-soft);color:var(--brand-ink)}
+.tk-chips .tk-prog .ico{width:12px;height:12px}
+.tk-chips .tk-prog.all{background:var(--ok-soft,var(--brand-soft));color:var(--ok)}
+.tk-subs{list-style:none;margin:var(--sp-3) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.tk-sub{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2)}
+.tk-sub.done span{text-decoration:line-through;color:var(--text-3)}
+.sub-dot{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--text-3);background:none;display:grid;place-items:center;
+  color:transparent;cursor:pointer;padding:0}
+.sub-dot .ico{width:13px;height:13px}
+.tk-sub.done .sub-dot,.sub-ed.done .sub-dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.sub-eds{display:flex;flex-direction:column;gap:var(--sp-2)}
+.sub-ed{display:flex;align-items:center;gap:var(--sp-3)}
+.sub-ed .sub-in{flex:1;min-width:0}
+.sub-ed.done .sub-in{text-decoration:line-through;color:var(--text-3)}
+.sub-rm{flex:none;width:32px;height:32px;border:0;background:none;color:var(--text-3);display:grid;place-items:center;cursor:pointer;border-radius:50%}
+.sub-rm .ico{width:16px;height:16px}
+.sub-add{align-self:flex-start;margin-top:var(--sp-2)}
+
+/* ── ציר התשלומים בכרטיס ── */
+.tl-toggle{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:0;border-top:1px solid var(--border-2);background:none;font:inherit;color:var(--brand-ink);font-weight:800;font-size:var(--fs-3);padding:var(--sp-5) var(--sp-7);cursor:pointer;text-align:start}
+.tl-toggle .cnt{font-size:var(--fs-1);background:var(--brand-soft);border-radius:var(--r-6);padding:0 var(--sp-4)}
+.tl-toggle .chev{margin-inline-start:auto;display:inline-flex;width:20px;height:20px}
+.tl{padding:0 var(--sp-7) var(--sp-6)}
+.tl-year{display:flex;align-items:baseline;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-3);font-size:var(--fs-4);font-weight:800;border-bottom:2px solid var(--brand-soft);padding-bottom:var(--sp-2)}
+.tl-year:first-child{margin-top:var(--sp-3)}
+.tl-year.muted{color:var(--text-3);font-size:var(--fs-3)}
+.tl-sum{margin-inline-start:auto;font-variant-numeric:tabular-nums;color:var(--ok);font-weight:800}
+.tl-year.muted .tl-sum{color:var(--text-3)}
+.tl-month{position:relative;padding-inline-start:var(--sp-6);margin-bottom:var(--sp-4);border-inline-start:2px solid var(--border)}
+.tl-mh{display:flex;align-items:baseline;font-weight:700;color:var(--text-2);font-size:var(--fs-2);margin-bottom:var(--sp-2)}
+.tl-mh::before{content:"";position:absolute;inset-inline-start:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--brand-fill)}
+.tl-mh .tl-sum{font-size:var(--fs-2);color:var(--text-2)}
+.tl-row{display:grid;grid-template-columns:44px 1fr auto;gap:var(--sp-3);align-items:center;padding:var(--sp-3) 0;border-top:1px dashed var(--border-2)}
+.tl-day{color:var(--text-3);font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+.tl-what{min-width:0}
+.tl-what b{display:block;font-size:var(--fs-2);font-weight:700}
+.tl-what small{display:block;color:var(--text-3);font-size:var(--fs-1)}
+.tl-amt{font-weight:800;font-variant-numeric:tabular-nums}
+.tl-row.uncleared{opacity:var(--op-5)}
+
+/* ── ייצוא תמונה — שורש הפלט מחוץ לתצוגה, ברוחב קבוע ── */
+.snap{position:fixed;top:0;left:-10000px;width:720px;padding:var(--sp-7);background:var(--bg);direction:rtl;color:var(--text)}
+.snap-hd{margin-bottom:var(--sp-5)}
+.snap-hd small{color:var(--text-3);font-size:var(--fs-2)}
+.snap-hd h2{font-size:var(--fs-6);color:var(--brand-ink)}
+.snap-sub{padding:var(--sp-3) 0;border-bottom:1px solid var(--border)}
+.snap-card{margin:0;box-shadow:none}
+.snap .task-star:not(.on){display:none}
+
+/* ── הכנסות מול הלוואות: רכיב החודש, ולצדו ההיסטוריה שנגללת בתוכה (בטלפון — זה מעל זה) ── */
+.fl-legend{display:flex;flex-wrap:wrap;gap:var(--sp-3);font-size:var(--fs-2);font-weight:600;color:var(--text-2);margin-bottom:var(--sp-5)}
+.fl-lg > span{background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.fl-lg{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+@media (max-width:639px){.fl-lg{flex-basis:100%}}
+.fl-legend span{display:inline-flex;align-items:center;gap:var(--sp-2)}
+.fl-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
+.fl-legend i.inc{background:var(--brand-fill)} .fl-legend i.loan{background:var(--bad)}
+.fl-legend i.rep{background:var(--ok)} .fl-legend i.int{background:var(--warn)}
+.fl-bar.int{background:var(--warn)} .fl-vals b.int{color:var(--warn)} .ln-future .fl-bar.int{border-color:var(--warn)}
+.fl-legend i.debt{height:0;width:20px;border-top:2px solid var(--text);border-radius:0}
+.fl-legend i.tgt{height:0;width:20px;border-top:2px dashed var(--text-2);border-radius:0}
+.fl-legend i.avg{height:0;width:20px;border-top:2px dotted var(--brand-ink);border-radius:0}
+.flow{display:grid;gap:var(--sp-6)}
+@media (min-width:900px){.flow{grid-template-columns:minmax(0,1fr) minmax(0,3fr)}}
+.fl-month,.fl-hist{background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-5);min-width:0}
+.fl-title{margin-bottom:var(--sp-4)}
+.fl-title span{display:inline-block;font-size:var(--fs-2);font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.fl-col{--plot:180px;display:flex;flex-direction:column;align-items:stretch;flex:none}
+.fl-plot{position:relative;height:var(--plot);display:flex;align-items:flex-end;justify-content:center;gap:3px;border-bottom:1px solid var(--border);padding-inline:var(--sp-2)}
+.fl-bar{position:relative;width:14px;height:calc(var(--v) * 100%);border-radius:4px 4px 0 0}
+.fl-bar.inc{background:var(--brand-fill)} .fl-bar.loan{background:var(--bad)} .fl-bar.rep{background:var(--ok)}
+
+.fl-vals{position:absolute;inset-inline:0;bottom:calc(var(--v) * 100%);display:flex;flex-direction:column-reverse;align-items:center;padding-bottom:2px;z-index:2;pointer-events:none}
+.fl-vals b{font-size:10px;font-weight:800;line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums;text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2),0 0 2px var(--card-2)}
+.fl-vals b.inc{color:var(--brand-ink)} .fl-vals b.loan{color:var(--bad)} .fl-vals b.rep{color:var(--ok)}
+.fl-tgt{position:absolute;inset-inline:0;bottom:calc(var(--v) * 100%);border-top:2px dashed var(--text-2);pointer-events:none}
+.fl-lab{height:22px;line-height:22px;text-align:center;font-size:var(--fs-1);color:var(--text-3);white-space:nowrap}
+.fl-month .fl-col{--plot:200px}
+.fl-month .fl-plot{gap:var(--sp-4)}
+.fl-month .fl-bar{width:44px}
+.fl-month .fl-vals b{font-size:var(--fs-1)}
+.fl-sum{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin:var(--sp-5) 0 0}
+.fl-sum div{display:flex;flex-direction:column;align-items:center}
+.fl-sum dt{display:inline-flex;align-items:center;gap:var(--sp-2);font-size:var(--fs-2);font-weight:600;color:var(--text-3)}
+.fl-sum dt i{width:10px;height:10px;border-radius:3px}
+.fl-sum dt i.inc{background:var(--brand-fill)} .fl-sum dt i.loan{background:var(--bad)} .fl-sum dt i.rep{background:var(--ok)}
+.fl-total{font-size:var(--fs-2);font-weight:600;color:var(--text-2);margin:calc(-1 * var(--sp-3)) 0 var(--sp-5)}
+.fl-total b{color:var(--brand-ink);font-variant-numeric:tabular-nums} .fl-total b.loan{color:var(--bad)} .fl-total b.rep{color:var(--ok)}
+.fl-sum dd{margin:0;font-size:var(--fs-5);font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.fl-scroll{container-type:inline-size;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-top:var(--sp-5)}
+.fl-track{position:relative;display:flex;width:max-content;min-width:100%}
+/* שנים עשר חודשים ברוחב הנראה; מעבר להם — גלילה שמאלה */
+.fl-track .fl-col{flex:0 0 calc(100cqi / 12);min-width:52px}
+.fl-avg{position:absolute;inset-inline:0;bottom:calc(22px + var(--v) * 180px);border-top:2px dotted var(--brand-ink);pointer-events:none;z-index:1}
+
+/* ── שטרות ── */
+/* הלוח הקטן — ארבע קוביות של נתונים בלבד: שתיים בשורה בטלפון וארבע במסך רחב; המספרים בצבע הזהות, והסכום בירוק. */
+.sht-dash{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-4);margin:0 0 var(--sp-5)}
+.sht-k{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
+.sht-k span{font-size:var(--fs-2);color:var(--text-3);font-weight:600}
+.sht-k b{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);font-variant-numeric:tabular-nums;color:var(--brand-ink)}
+.sht-k.ok b{color:var(--ok)}
+@media (min-width:640px){.sht-dash{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* שורת הסינון — כפתור לכל אפשרות, כולם ברוחב אחד: הבחירה אינה משנה את גודל הכפתור; שניים בשורה בטלפון, וחמישה מ-640px. */
+.sht-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex:2 1 16rem;min-width:0}
+.sht-tools select{flex:1 1 9rem}
+.sht-seg button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-inline:var(--sp-2)}
+/* «לפי תוצאה» — כשנבחרה תוצאה, הבורר מסומן כמו כפתור פעיל. */
+.sht-tools select.on{border-color:var(--brand-fill);background:var(--brand-soft);color:var(--brand-ink);font-weight:700}
+.sht-row{cursor:pointer}
+.sht-row .av .ico{width:18px;height:18px}
+.sht-row .main small{unicode-bidi:isolate}
+.sht-row .main b.unk{color:var(--text-3);font-weight:600}
+.sht-row.later{opacity:var(--op-5)}
+.sht-more{justify-content:center;margin-top:var(--sp-5)}
+/* כרטיס האיש — בחלון הכרטיס של גיוס: הפס בצבע הזהות, ומתחתיו העובדות, השיחה וההיסטוריה. */
+.sht-card a.cp-btn{text-decoration:none}
+.sht-card .cp-av .ico{width:24px;height:24px}
+.sht-facts{display:grid;gap:var(--sp-3);margin:0 0 var(--sp-6);background:var(--card-2);border:1px solid var(--border-2);border-radius:var(--r-5);padding:var(--sp-5)}
+.sht-facts div{display:grid;grid-template-columns:8.5rem minmax(0,1fr);gap:var(--sp-4);font-size:var(--fs-3)}
+.sht-facts dt{color:var(--text-3);font-weight:600}
+.sht-facts dd{margin:0;overflow-wrap:anywhere}
+.sht-wait{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);background:var(--warn-soft);color:var(--warn);font-weight:700;
+  border-radius:var(--r-5);padding:var(--sp-4) var(--sp-5);margin-bottom:var(--sp-6)}
+.sht-os{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
+.sht-o{font:inherit;font-size:var(--fs-3);font-weight:650;cursor:pointer;color:var(--text-2);background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
+.sht-o.on{background:var(--brand-fill);border-color:var(--brand-fill);color:var(--on-brand)}
+.sht-o.ok.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.sht-o.warn.on{background:var(--warn);border-color:var(--warn);color:#fff}
+.sht-o.bad.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.sht-card textarea.inp{resize:vertical;min-height:84px;font:inherit}
+.sht-hist{display:grid;gap:var(--sp-3);margin-bottom:var(--sp-6)}
+.sht-h{border:1px solid var(--border-2);border-radius:var(--r-5);padding:var(--sp-4) var(--sp-5);font-size:var(--fs-3);display:grid;gap:var(--sp-2)}
+.sht-h small{color:var(--text-3);font-size:var(--fs-2)}
+.sht-hn{color:var(--text-2);overflow-wrap:anywhere;white-space:pre-wrap}
+.sht-nav{display:flex;gap:var(--sp-4);border-top:1px solid var(--border);padding-top:var(--sp-5)}
+.sht-nav .btn{flex:1;justify-content:center}
+/* בהגדרות, ליד כל שגריר — העתקת הקישור האישי לדף השטרות. */
+.look-link{flex:none;display:inline-flex;align-items:center;gap:var(--sp-2);font:inherit;font-size:var(--fs-2);font-weight:650;cursor:pointer;
+  color:var(--brand-ink);background:var(--brand-soft);border:0;border-radius:var(--r-6);padding:var(--sp-2) var(--sp-4)}
+.look-link .ico{width:15px;height:15px}
+/* ממתינים לטיפול — רכיב אחד מתחת ללוח, חלק לכל תוצאה, ושורות «קבלה»; הרכיב עטוף, ולכן המרווח שמתחתיו כאן. */
+main #sht-give > .card{margin-bottom:var(--sp-6)}
+.sht-give .list-sub{display:flex;align-items:center;gap:var(--sp-3)}
+.sht-give .list-sub .cnt{font-weight:700;background:var(--border-2);color:var(--text-3);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.sht-give .rc .btn{flex:none}
+.sht-noamt .rc-amt,.sht-noamt .rc-end{display:none}
+.sht-o.gold.on{background:var(--gold);border-color:var(--gold);color:#fff}
+/* בכרטיס — ההתחייבויות שהסתיימו, תחת כותרת משלהן. */
+.pl-sub{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-weight:800;color:var(--text-3);padding:var(--sp-5) var(--sp-2) var(--sp-3)}
+.pl-sub .cnt{font-weight:700;background:var(--border-2);border-radius:var(--r-6);padding:var(--sp-1) var(--sp-4)}
+.sht-save{margin:0 0 var(--sp-6)}
+.sht-save .btn{flex:1;justify-content:center}
+.sht-card [hidden]{display:none}
+/* שיחה קודמת — אייקון העריכה בקצה השורה. */
+.sht-h{position:relative;padding-inline-end:calc(36px + var(--sp-6))}
+.sht-h-edit{position:absolute;top:var(--sp-3);inset-inline-end:var(--sp-3)}
+.sht-h-edit .ico{width:17px;height:17px}
+/* כרטיס האיש — מספר הטלפון מתחת לאייקונים של החיוג וההודעה. */
+.sht-side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-3);flex:none}
+.sht-phone{font-size:var(--fs-2);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.16);border-radius:var(--r-7);padding:var(--sp-1) var(--sp-5)}
+@media (max-width:639px){
+  .sht-side{position:absolute;top:var(--sp-5);inset-inline-end:var(--sp-5)}
+  .sht-side .cp-acts{position:static}
+  .sht-card .cp-who{min-height:64px}
+  .sht-card .cp-who h3{padding-inline-end:164px}
+}
+/* בתמונה — ראשי התיבות במרכז העיגול: html2canvas מציב טקסט ברשת נמוך מהאמצע, ולכן שורה בגובה העיגול. */
+.snap .cp-av{display:block;box-sizing:border-box;line-height:48px;padding-bottom:8px;text-align:center}
+
+/* ── מדד החוב לטווח ארוך — הדשבורד ── */
+.ix-head{display:flex;align-items:center;gap:var(--sp-5);background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-5) var(--sp-6);margin-bottom:var(--sp-5)}
+.ix-ic{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--border-2);color:var(--text-2)}
+.ix-ic .ico{width:22px;height:22px}
+.ix-head b{display:block;font-size:var(--fs-5);font-weight:800}
+.ix-head small{font-size:var(--fs-2);color:var(--text-3)}
+.ix-head.up .ix-ic{background:var(--bad-soft);color:var(--bad)} .ix-head.up b{color:var(--bad)}
+.ix-head.down .ix-ic{background:var(--ok-soft);color:var(--ok)} .ix-head.down b{color:var(--ok)}
+.ix .fl-track{position:relative}
+.ix-line{position:absolute;top:0;inset-inline-start:0;width:calc(var(--n) * max(52px, 100cqi / 12));height:180px;pointer-events:none;z-index:2;overflow:visible}
+.ix-line polyline{fill:none;stroke:var(--text);stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.ix-dot{position:absolute;left:50%;bottom:calc(var(--v) * 100%);width:9px;height:9px;border-radius:50%;background:var(--text);border:2px solid var(--card-2);transform:translate(-50%,50%);z-index:3}
+.ix-dot b{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;white-space:nowrap;color:var(--text);text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2)}
+.ix-head small.ix-sub{display:block;margin-top:var(--sp-1);font-weight:700}
+.ix-sub .up{color:var(--bad)} .ix-sub .down{color:var(--ok)} .ix-sub .int{color:var(--warn)}
+
+/* הלוואות נטו — העמודה כולה חיוורת בגובה הסכום המלא, והחלק המודגש בתחתיתה */
+.fl-bar.ghost.loan{background:var(--bad-soft)} .fl-bar.ghost.rep{background:var(--ok-soft)}
+.fl-solid{position:absolute;inset-inline:0;bottom:0;height:calc(var(--s) * 100%);border-radius:inherit}
+.fl-bar.loan .fl-solid{background:var(--bad)} .fl-bar.rep .fl-solid{background:var(--ok)}
+/* עלויות מימון — החיוור (דמי התפשרות) מעל הכהה (היתר עסקה) */
+.fl-bar.ghost.int{background:color-mix(in srgb,var(--warn) 38%,var(--card))} .fl-bar.int .fl-solid{background:var(--warn)}
+.fl-sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-inline-end:var(--sp-2)}
+.fl-sw.int{background:linear-gradient(to top,var(--warn) 50%,color-mix(in srgb,var(--warn) 38%,var(--card)) 50%)}
+.fl-vals b small{display:block;font-size:9px;font-weight:700;color:var(--text-3);text-align:center}
+.fl-legend i.ghost{background:var(--bad-soft);border:1px solid var(--bad)} .fl-legend i.ghost-rep{background:var(--ok-soft);border:1px solid var(--ok)}
+.fl-sum dd small{display:block;font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
+.fl-note{margin:var(--sp-2) 0 0;font-size:var(--fs-2);color:var(--text-3)}
+.fl-legend.fl-legend-below{margin:var(--sp-5) 0 0}
+.fl-legend i.ghost + i.ghost-rep{margin-inline-start:-6px}
+/* מדדי הסוגים — כפתור לכל סוג, זה מעל זה בתחתית המדד הכללי; פתוח — המדד מתחת לכפתור */
+.ix-subs{display:grid;gap:var(--sp-4);margin-top:var(--sp-6)}
+.ix-sub-wrap{border:1px solid var(--border);border-radius:var(--r-6);background:var(--card);overflow:hidden}
+.ix-sub-wrap.open{border-color:var(--brand-fill)}
+.ix-btn{display:flex;align-items:center;gap:var(--sp-5);width:100%;background:none;border:0;font:inherit;color:inherit;text-align:start;cursor:pointer;padding:var(--sp-5) var(--sp-6)}
+.ix-btn-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-1);font-weight:800;font-size:var(--fs-4)}
+.ix-btn-t small{font-size:var(--fs-2);font-weight:700}
+.ix-btn-t small.up{color:var(--bad)} .ix-btn-t small.down{color:var(--ok)}
+.ix-btn-c{color:var(--text-3)} .ix-btn-c .ico{width:20px;height:20px}
+.ix-nested{padding:0 var(--sp-5) var(--sp-5)}
+.ix-nested .ix-head b{font-size:var(--fs-4)}
+/* תווית מעל עמודה — כל שורה ממורכזת, גם כשמתחתיה «מתוך» */
+.fl-vals b{text-align:center}
+.ln-charts h2{margin-bottom:0}
+.ln-charts .ix-subs{margin-top:var(--sp-5)}
+.ln-chart-in{padding:0 var(--sp-5) var(--sp-5)}
+.ln-charts .fl-hist{background:none;padding:0}
+.ln-fc-chart .fl-track .fl-col{flex-basis:calc(100cqi / 3)}
+.ln-kic{display:inline-flex;vertical-align:middle;color:var(--brand-ink)} .ln-kic .ico{width:20px;height:20px}
+/* צפי ההחזרים — כל העמודות הן צפי, ולכן בלי המסגרת המקווקות של החודשים המתוכננים */
+.ln-future .fl-bar.ln-fcbar{background:var(--ln-a-soft);border:0}
+/* ── תאריכים בכרטיס — יום ההולדת ותאריכים נוספים ── */
+.dp-pair .fld{margin-bottom:var(--sp-4)}
+.dx>span{display:block;font-weight:600;margin-bottom:var(--sp-3)}
+.dx-list{list-style:none;margin:0 0 var(--sp-4);padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
+.dx-list li{display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-3) var(--sp-4);border:1px solid var(--border);border-radius:var(--r-4);background:var(--card-2)}
+.dx-k{flex:none;font-size:var(--fs-1);font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border-radius:999px;padding:2px 10px}
+.dx-l{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx-d{flex:none;color:var(--text-2);font-size:var(--fs-2)}
+.dx-add{border:1px dashed var(--border);border-radius:var(--r-4);padding:var(--sp-4)}
+/* הלוואות לפי אנשים — כותרת לכל מלווה: השם, סמל הכרטיס כשהוא משויך, מספר ההלוואות וסך הנותר */
+.ln-person{margin-bottom:var(--sp-6)}
+.ln-ph{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3) var(--sp-2);border-bottom:2px solid var(--brand-soft);margin-bottom:var(--sp-3)}
+.ln-ph b{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);min-width:0;overflow-wrap:anywhere}
+.ln-ph .cnt{font-size:var(--fs-1);font-weight:700;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
+.ln-ph-sum{margin-inline-start:auto;display:flex;flex-direction:column;align-items:flex-end;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ln-ph-sum small{font-size:var(--fs-1);font-weight:600;color:var(--text-3)}
+.ln-card{display:inline-grid;place-items:center;color:var(--brand-ink);vertical-align:middle}
+.ln-card .ico{width:16px;height:16px}
+
+/* ── הלוואות — המסך החדש (24.11): רכיב עליון (חיפוש וסינון · עיגולים · שני כפתורים), ההלוואות לפי אנשים, וחלון ההלוואה בשני חלקים ── */
+.ln-top{display:grid;gap:var(--sp-5)}
+.ln-tools{display:grid;grid-template-columns:1fr auto;gap:var(--sp-4);align-items:center}
+.ln-tools .search-box{margin:0}
+.ln-top-h{display:flex;align-items:center;gap:var(--sp-3)}
+.ln-top-h h2{margin:0;flex:1}
+.ln-top-h .ln-dash-m{font-size:var(--fs-3);font-weight:700;color:var(--text-3);margin-inline-start:var(--sp-3)}
+.ln-info-btn{width:36px;height:36px;border-radius:50%;border:0;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;cursor:pointer}
+.ln-info-btn .ico{width:20px;height:20px}
+/* העיגולים — הסכום בצבעו בתוך עיגול רך, ומתחתיו הכותרת והשינוי */
+.ln-dots{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:var(--sp-5) var(--sp-3)}
+.ln-dot{display:flex;flex-direction:column;align-items:center;text-align:center;gap:var(--sp-2);min-width:0}
+.ln-dot-c{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:var(--card-2);box-shadow:inset 0 0 0 3px var(--border)}
+.ln-dot-c b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums;direction:ltr}
+.ln-dot.bad .ln-dot-c{background:var(--bad-soft);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--bad) 35%,transparent)} .ln-dot.bad b{color:var(--bad)}
+.ln-dot.ok .ln-dot-c{background:var(--ok-soft);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)} .ln-dot.ok b{color:var(--ok)}
+.ln-dot.gold .ln-dot-c{background:var(--warn-soft);box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--warn) 35%,transparent)} .ln-dot.gold b{color:var(--warn)}
+.ln-dot-t{font-size:var(--fs-2);font-weight:800;color:var(--text)}
+.ln-dot small{font-size:var(--fs-1);color:var(--text-3);font-weight:600;line-height:1.3}
+.ln-dot small.bad{color:var(--bad)} .ln-dot small.ok{color:var(--ok)}
+.ln-wbtns{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4)}
+.ln-wbtns .btn{gap:var(--sp-3)}
+.ln-wbtns .cnt{margin-inline-start:var(--sp-2)}
+.ln-info{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-4)}
+.ln-info li{display:grid;gap:2px} .ln-info b{color:var(--brand-ink)} .ln-info span{color:var(--text-2);font-size:var(--fs-3)}
+/* ההלוואות — לפי אנשים: אות גדולה, ורכיב לבן לכל מלווה; שורה לכל הלוואה, ופס צבע בקצה לפי הסוג */
+.ln-list{margin-bottom:var(--sp-6)}
+.ln-list-h h2{font-size:var(--fs-5);color:var(--brand-ink);margin:var(--sp-5) var(--sp-2) var(--sp-3);display:flex;align-items:center;gap:var(--sp-3)}
+.ln-letter{font-size:var(--fs-7,2rem);font-weight:900;color:var(--brand-ink);line-height:1;margin:var(--sp-6) var(--sp-3) var(--sp-3)}
+.ln-pblock{background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);overflow:hidden;margin-bottom:var(--sp-4)}
+.ln-row{display:flex;align-items:flex-start;gap:var(--sp-5);width:100%;background:none;border:0;font:inherit;color:inherit;text-align:start;cursor:pointer;
+  padding:var(--sp-5) var(--sp-6);border-inline-start:5px solid transparent}
+.ln-row + .ln-row{border-top:1px solid var(--border)}
+.ln-row.k-checks{border-inline-start-color:var(--ln-b)} .ln-row.k-long{border-inline-start-color:var(--ln-a)}
+.ln-r-main{flex:1;min-width:0;display:grid;gap:var(--sp-2)}
+.ln-r-top{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
+.ln-r-name{font-size:var(--fs-5);font-weight:800;color:var(--text)}
+.ln-r-amt{font-size:var(--fs-3);font-weight:700;color:var(--text-2);font-variant-numeric:tabular-nums}
+.ln-r-det{display:grid;gap:1px;font-size:var(--fs-2);color:var(--text-3)}
+.ln-r-end{display:flex;flex-direction:column;align-items:flex-end;gap:var(--sp-1);flex:none;font-variant-numeric:tabular-nums}
+.ln-r-end small{font-size:var(--fs-1);color:var(--text-3)}
+.ln-r-end b{font-size:var(--fs-6,1.5rem);font-weight:900;color:var(--bad)}
+@media (hover:hover){ .ln-row:hover{background:var(--card-2)} }
+.ln-total{background:var(--card);border:1px solid var(--border);border-radius:var(--r-6);padding:var(--sp-5) var(--sp-6)}
+/* חלון ההלוואה — שליש ושני שלישים במחשב, וזה מעל זה בטלפון */
+.cw-in:has(.ln-win),.cw-in:has(.ln-wwin){max-width:1120px}
+.ln-split{display:grid;grid-template-columns:1fr}
+.ln-form{display:contents}
+.ln-p1{background:var(--brand-soft);padding:var(--sp-6)}
+.ln-p2a,.ln-p2b{background:var(--card);padding:var(--sp-6)}
+.ln-p2b{padding-top:0}
+.ln-split h3{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);margin:0 0 var(--sp-5);display:flex;align-items:center;gap:var(--sp-3)}
+.ln-p1-row{display:grid;grid-template-columns:1fr;gap:0 var(--sp-4)}
+.ln-p1-acts{margin-top:var(--sp-5)}
+.ln-seg{margin-bottom:var(--sp-5)} .ln-seg button{display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);padding-inline:var(--sp-3)}
+.ln-h4{font-size:var(--fs-3);font-weight:800;color:var(--text);margin:var(--sp-6) 0 var(--sp-4)}
+.ln-fin-note{display:grid;gap:var(--sp-1);background:var(--warn-soft);color:var(--warn);border-radius:var(--r-5);padding:var(--sp-4) var(--sp-5);margin-top:var(--sp-4);font-size:var(--fs-2)}
+.ln-fin-note[hidden]{display:none} .ln-fin-note b{font-size:var(--fs-3)}
+.ln-set-free{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;min-height:44px;font-size:var(--fs-2);color:var(--text-2)}
+.ln-set-free[hidden]{display:none}
+.ln-band .cp-sum{margin-inline-start:auto}
+.ln-wbody{padding:var(--sp-6);background:var(--card)}
+.ln-wsec + .ln-wsec{margin-top:var(--sp-7)}
+.ln-wsec h3{font-size:var(--fs-4);font-weight:800;color:var(--brand-ink);display:flex;align-items:center;gap:var(--sp-3);margin:0 0 var(--sp-4)}
+.ln-wsec h3 .sp{margin-inline-start:auto;font-size:var(--fs-3);color:var(--text-2)}
+.ln-wsec .fl-scroll{padding-top:calc(2 * var(--sp-7))}
+@media (min-width:640px){
+  .ln-p1-row{grid-template-columns:1.6fr 1fr 1.5fr}
+}
+@media (min-width:900px){
+  .ln-split{grid-template-columns:1fr 2fr;grid-template-rows:auto 1fr}
+  .ln-p1{grid-column:1;grid-row:1 / span 2}
+  .ln-p2a{grid-column:2;grid-row:1} .ln-p2b{grid-column:2;grid-row:2}
+  /* בשליש של המחשב — המלווה בשורה משלו, והסכום והסוג זה לצד זה */
+  .ln-p1-row{grid-template-columns:1fr 1.3fr} .ln-p1-row .ln-f-lender{grid-column:1 / -1}
+  .ln-dots{grid-template-columns:repeat(7,1fr)}
+}
+@media (max-width:639px){
+  .ln-tools{grid-template-columns:1fr}
+  .ln-dots{grid-template-columns:repeat(3,1fr)}
+  .ln-dot-c{width:72px;height:72px} .ln-dot-c b{font-size:var(--fs-4)}
+  .ln-row{padding:var(--sp-5)} .ln-r-end b{font-size:var(--fs-5)}
+}
+
+/* הלוואות — סבב 2: אות בעיגול, שם המלווה מעל הרכיב, הסכום בראש השורה, בחירה בכרטיסים, וכפתורים בתחתית החלון */
+.ln-tools{grid-template-columns:1fr auto auto}
+.ln-wbtns{margin-top:var(--sp-4);padding-top:var(--sp-6);border-top:1px dashed var(--border)}
+.ln-letter{margin:var(--sp-7) var(--sp-2) var(--sp-4)}
+.ln-letter span{display:inline-grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--brand-fill);color:#fff;font-size:var(--fs-6,1.5rem);font-weight:900;line-height:1}
+.ln-person{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-5) var(--sp-3) var(--sp-3);font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}
+.ln-letter + .ln-person{margin-top:0}
+.ln-person .cnt{font-size:var(--fs-1);font-weight:700;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
+.ln-r-main{gap:var(--sp-4)}
+.ln-r-top .ln-r-amt{font-size:var(--fs-5);font-weight:800;color:var(--text)}
+.ln-r-det{gap:var(--sp-1);color:var(--text-2)}
+.ln-r-det b{font-weight:700;color:var(--text)}
+.ln-choice{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-bottom:var(--sp-5)}
+.ln-choice button{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 var(--sp-3);text-align:start;padding:var(--sp-4);
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--r-5);font:inherit;color:var(--text);cursor:pointer}
+.ln-choice button span{font-weight:800}
+.ln-choice button small{grid-column:2;font-size:var(--fs-1);color:var(--text-3)}
+.ln-choice .ln-radio{grid-row:1 / span 2;width:18px;height:18px;border-radius:50%;border:2px solid var(--text-3);box-sizing:border-box}
+.ln-choice button.on{border-color:var(--brand-fill);background:var(--brand-soft)}
+.ln-choice button.on .ln-radio{border:5px solid var(--brand-fill)}
+.ln-fin-chk{display:flex;align-items:center;gap:var(--sp-3);margin:var(--sp-6) 0 var(--sp-4);font-weight:800;cursor:pointer}
+.ln-fin-chk input{width:20px;height:20px;accent-color:var(--brand-fill)}
+.ln-set-n{display:flex;gap:var(--sp-2);align-items:center}
+.ln-set-n .inp{flex:1;min-width:0}
+.ln-set-n .inp[readonly]{background:var(--card-2);color:var(--text-3)}
+.ln-set-edit{flex:none;width:44px;height:44px;border-radius:var(--r-5);border:1px solid var(--border);background:var(--card);color:var(--brand-ink);display:grid;place-items:center;cursor:pointer}
+.ln-set-edit .ico{width:18px;height:18px}
+.ln-foot{display:flex;justify-content:flex-end;gap:var(--sp-4);padding:var(--sp-5) var(--sp-6);background:var(--card);border-top:1px solid var(--border);position:sticky;bottom:0;z-index:2}
+.ln-p1-acts{display:none}
+@media (max-width:639px){ .ln-tools{grid-template-columns:1fr 1fr} .ln-tools .search-box{grid-column:1 / -1} .ln-choice{grid-template-columns:1fr} }
+/* הלוואות — סבב 3: שם המלווה גדול יותר; במיון — כותרת הסטטוס במקום האות, ושם המלווה בשורה */
+.ln-person{font-size:var(--fs-5)}
+.ln-stat-h span{width:auto;height:auto;padding:var(--sp-3) var(--sp-6);border-radius:var(--r-6);font-size:var(--fs-4)}
+.ln-row .ln-r-name{display:block;font-size:var(--fs-4);font-weight:800;color:var(--brand-ink)}
+/* הלוואות — סבב 4: שם המלווה גדול ומודגש; שני הבוררים ברוחב אחד; האות במרכז העיגול; סוג ההחזר בשורה אחת בגובה השדה */
+.ln-person{font-size:var(--fs-6,1.5rem);font-weight:900}
+.ln-tools select.inp{width:170px}
+@media (max-width:639px){ .ln-tools select.inp{width:100%} }
+.ln-letter span{display:inline-block;text-align:center;line-height:52px;padding:0}
+.ln-stat-h span{line-height:1.3;padding:var(--sp-3) var(--sp-6)}
+.ln-f-kind .ln-seg{margin-bottom:0;flex-wrap:nowrap}
+.ln-f-kind .ln-seg button{white-space:nowrap;padding:var(--sp-3) var(--sp-4)}
+@media (min-width:640px){ .ln-p1-row{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) auto} }
+@media (min-width:900px){ .ln-p1-row{grid-template-columns:minmax(0,1fr) auto} }
+.ln-person{font-size:var(--fs-5)}
+/* בורר סוג ההחזר — בגובה שדה הסכום שלצדו */
+.ln-f-kind .ln-seg{box-sizing:border-box;height:calc(2 * var(--sp-5) + var(--fs-4) * 1.5 + 2px);align-items:stretch}
+/* האות בעיגול — במרכז לפי הגליף עצמו ולא לפי מידות השורה של הגופן (שונות בין מכשירים): השורה נחתכת לגובה האות */
+.ln-letter span{display:inline-grid;place-items:center;line-height:1}
+.ln-letter span b{display:block;font-weight:900;line-height:1}
