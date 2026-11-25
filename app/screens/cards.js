@@ -3,7 +3,7 @@ import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { amtSet, cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
-         MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
+         MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_DATE, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
          MSG_SO_FIRST_OVER, TTL_DONOR_EDIT, TTL_DONOR_NEW, TTL_PAY_EDIT, TTL_PAY_NEW, TTL_PLEDGE_EDIT, TTL_PLEDGE_NEW } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
@@ -293,7 +293,7 @@ function datesAdd() {
   var iso = val('dx-date'), kl = val('dx-kind'), label = val('dx-label'), kind = 'other';
   // הסוג נשמר במזהה ולא בתווית — השם שבבורר יכול להשתנות
   DATE_KINDS.forEach(function (k) { if (k[1] === kl) kind = k[0]; });
-  if (!iso) { toast('בוחרים תאריך — עברי או לועזי', null, 'warn'); return; }
+  if (!iso) { toast(MSG_PICK_DATE, null, 'warn'); return; }
   _dates.push({ id: String(Date.now()) + Math.random().toString(36).slice(2, 6), kind: kind, label: label, date: iso });
   datesRedraw();
   var l = $('#dx-label'); if (l) l.value = '';
