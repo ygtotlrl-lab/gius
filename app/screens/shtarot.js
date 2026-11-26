@@ -8,7 +8,7 @@ import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP
 import { gauthUser } from '../../core/gauth.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
-import { $, canSettings, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
+import { $, canSettings, selectHTML, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
          update, val } from '../domain.js';
 
 // ── האיש ──
@@ -556,6 +556,8 @@ comboDef('sht-donor', { val: true, max: 30,
   pick: function (it) {
     var d = it ? donorById(it.value) : null, ph = $('#sp-phone');
     if (ph && d && d.phone && !ph.value.trim()) ph.value = d.phone;
+    var am = $('#sp-amb');
+    if (am && d && d.ambassador && !am.value) am.value = d.ambassador;
   } });
 
 function formShtar(p) {
@@ -568,10 +570,8 @@ function formShtar(p) {
                                  picked: p ? { value: d ? d.client_id : '', label: personName(p) } : null }) + '</div>' +
       '<label class="fld"><span>טלפון *</span><input class="inp" id="sp-phone" inputmode="tel" dir="ltr" value="' + esc(p ? p.phone : '') + '"></label>' +
     '</div>' +
-    // השגריר — ריק: השגריר שבכרטיס (ומשתנה איתו); בחירה כאן — של האיש בשטרות בלבד, והכרטיס אינו משתנה
-    '<label class="fld"><span>שגריר</span><select class="inp" id="sp-amb"><option value="">' + esc(d && d.ambassador ? 'מהכרטיס — ' + d.ambassador : 'ללא שגריר') + '</option>' +
-      lookupLabels(LK_AMBASSADOR).concat(p && p.ambassador && lookupLabels(LK_AMBASSADOR).indexOf(p.ambassador) < 0 ? [p.ambassador] : []).map(function (a) {
-        return '<option' + (p && p.ambassador === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></label>' +
+    // השגריר — כמו איש הקשר בתכנית: נלקח מהכרטיס כברירה, ונשמר באיש בלבד — הכרטיס אינו משתנה
+    '<label class="fld"><span>שגריר</span>' + selectHTML('sp-amb', lookupLabels(LK_AMBASSADOR), p ? personAmb(p) : '', '— ללא —') + '</label>' +
     '<label class="fld"><span>הערה</span><input class="inp" id="sp-note" value="' + esc(p ? p.note || '' : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="sht-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
