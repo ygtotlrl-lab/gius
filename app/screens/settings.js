@@ -3,9 +3,9 @@ import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../
 import { readNum } from '../../core/util.js';
 import { KV_TABLE, LISTS, LK_AMBASSADOR, MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, SHT_PAGE_URL, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH, TTL_ADD_PRE, TTL_EDIT_PRE, TTL_GOAL_DEFAULT } from '../constants.js';
 import { gauthCardHTML } from '../../core/gauth.js';
-import { state } from '../state.js';
+import { S, shell, state } from '../state.js';
 import { icon } from '../icons.js';
-import { $, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
+import { $, settingJson, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
          targetDefault, targetOwn, upsertBy, val } from '../domain.js';
 
 // ── הרשימות ──
@@ -16,6 +16,22 @@ function lookupShown(l) {
   return l.dflt.map(function (label) { return { client_id: l.kind + ':' + label, label: label }; });
 }
 
+// השגרירים שהם מנהלים — מי שהמייל שלו (ambassador_logins) שייך למשתמש מנהל פעיל ב-g_users; נמשך פעם אחת, והמסך מצויר שוב כשהגיע.
+var _admins = null;
+function adminLogins() {
+  if (_admins) return _admins;
+  _admins = {};
+  if (S.sb) S.sb.from('g_users').select('login,role,active').then(function (r) {
+    (r.data || []).forEach(function (u) { if (u.role === 'admin' && u.active !== false) _admins[String(u.login).toLowerCase()] = 1; });
+    if (state.screen === 'settings' && shell.render) shell.render();
+  });
+  return _admins;
+}
+function isAdminAmb(label) {
+  var map = settingJson('ambassador_logins', {}), login = map && map[label];
+  return !!login && !!adminLogins()[String(login).toLowerCase()];
+}
+
 function lookupCardHTML(l) {
   var rows = lookupShown(l);
   var h = '<section class="card look-card"><h2>' + esc(l.title) + '<span class="cnt">' + rows.length + '</span>' +
@@ -24,7 +40,8 @@ function lookupCardHTML(l) {
   return h + '<div class="look-list">' + rows.map(function (r) {
     return '<div class="list-item" data-act="look-edit" data-k="' + esc(l.kind) + '" data-drag="' + esc(l.kind) + '" data-id="' + esc(r.client_id) + '">' +
       '<span class="grip" data-grip aria-hidden="true">⣿</span>' +
-      '<span class="list-val">' + esc(r.label) + '</span>' +
+      '<span class="list-val">' + esc(r.label) +
+        (l.kind === LK_AMBASSADOR && isAdminAmb(r.label) ? '<span class="look-admin" title="מנהל" aria-label="מנהל">' + icon('admin') + '</span>' : '') + '</span>' +
       (l.kind === LK_AMBASSADOR ? '<button class="look-link" data-act="sht-link" data-id="' + esc(r.client_id) + '" aria-label="העתקת קישור אישי לשטרות" title="העתקת קישור אישי לשטרות">' +
         icon('link') + '<span>העתקת קישור</span></button>' : '') + '</div>';
   }).join('') + '</div></section>';

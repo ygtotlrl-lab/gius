@@ -5,6 +5,7 @@ import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK, MSG_SHT_STAR_B, MSG_SHT_STAR_T,
          MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS, MSG_SAVE_ACT, MSG_SHT_CLEARED, MSG_SHT_CLEARED_OK, MSG_SHT_CLEARED_PRE, MSG_SHT_CLEARED_Q, MSG_SHT_DUP_Q, MSG_SHT_DUP_TITLE, TTL_CALL_EDIT, TTL_SHT_EDIT, TTL_SHT_NEW } from '../constants.js';
+import { gauthIsAdmin } from '../../core/gauth.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
 import { $, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
@@ -19,6 +20,12 @@ function personById(id) {
 function personName(p) {
   var d = p.donor_client_id ? donorById(p.donor_client_id) : null;
   return (d && d.name) || p.name || '';
+}
+// השגריר של האיש — מה שנקבע לו בשטרות, ובלעדיו השגריר שבכרטיס המקושר; העריכה כאן אינה נוגעת בכרטיס.
+function personAmb(p) {
+  if (p.ambassador) return p.ambassador;
+  var d = p.donor_client_id ? donorById(p.donor_client_id) : null;
+  return (d && d.ambassador) || '';
 }
 function digits(s) { return String(s || '').replace(/\D/g, ''); }
 function phoneShow(ph) {
@@ -86,6 +93,7 @@ function shtMatches() {
   var s = state.sht, q = String(s.q || '').trim().toLowerCase(), qd = digits(q), f = FILTERS[s.f] || FILTERS.queue;
   var rows = [];
   state.shtarPeople.forEach(function (p) {
+    if (s.amb_f && (s.amb_f === '-' ? personAmb(p) : personAmb(p) !== s.amb_f)) return;
     var st = pState(p);
     if (!f(st, p)) return;
     var name = personName(p);
@@ -127,6 +135,46 @@ function shtDashHTML() {
   }).join('');
 }
 
+// היום לפי שגריר — למנהלים: לכל שגריר כמה בתור אצלו (לפי השגריר של האיש), ומה עשה היום (לפי השגריר שבשיחה) —
+// שיחות, תרומות וסכום, באותו חשבון כמו בלוח. שגריר בלי תור ובלי שיחה היום — אינו מוצג.
+function shtByAmbHTML() {
+  if (!gauthIsAdmin()) return '';
+  var t0 = new Date(); t0.setHours(0, 0, 0, 0); t0 = +t0;
+  var rows = {}, row = function (a) { return rows[a] || (rows[a] = { q: 0, calls: 0, n: 0, sum: 0 }); };
+  var g = function (c) { return !!c && isGive(c); }, amt = function (c) { return g(c) ? num(c.amount) : 0; };
+  state.shtarPeople.forEach(function (p) {
+    if (pState(p).k !== 'done') row(personAmb(p) || '').q++;
+    var cs = callsOf(p.client_id), last = cs[cs.length - 1], before = null;
+    cs.forEach(function (c) { if (Date.parse(c.call_at) >= t0) row(c.ambassador || '').calls++; });
+    if (!last || Date.parse(last.call_at) < t0) return;
+    for (var i = cs.length - 1; i >= 0; i--) if (Date.parse(cs[i].call_at) < t0) { before = cs[i]; break; }
+    var r = row(last.ambassador || '');
+    r.n += (g(last) ? 1 : 0) - (g(before) ? 1 : 0);
+    r.sum += amt(last) - amt(before);
+  });
+  var order = lookupLabels(LK_AMBASSADOR).concat(Object.keys(rows)).filter(function (a, i, all) { return all.indexOf(a) === i && rows[a] && (rows[a].q || rows[a].calls); });
+  if (!order.length) return '';
+  return '<section class="card sht-amb"><h2>היום לפי שגריר</h2><div class="sht-amb-t" role="table">' +
+    '<div class="sht-amb-r hd" role="row"><span>שגריר</span><span>בתור</span><span>שיחות</span><span>תרומות</span><span>סכום</span></div>' +
+    order.map(function (a) {
+      var r = rows[a];
+      return '<button class="sht-amb-r' + (state.sht.amb_f === (a || '-') ? ' on' : '') + '" role="row" data-act="sht-amb-f" data-v="' + esc(a || '-') + '">' +
+        '<b>' + esc(a || 'ללא שגריר') + '</b><span>' + r.q + '</span><span>' + r.calls + '</span><span>' + r.n + '</span><span class="ok">' + (r.sum ? ils(r.sum) : '—') + '</span></button>';
+    }).join('') + '</div></section>';
+}
+
+// הבורר «שגריר» — כל השגרירים, או מי ששייכים לשגריר אחד, וליד כל אחד — כמה בתור אצלו.
+function shtAmbSelHTML() {
+  var n = {}, f = state.sht.amb_f || '';
+  state.shtarPeople.forEach(function (p) { if (pState(p).k !== 'done') { var a = personAmb(p) || '-'; n[a] = (n[a] || 0) + 1; } });
+  var list = lookupLabels(LK_AMBASSADOR).filter(function (a) { return n[a]; });
+  if (n['-']) list.push('-');
+  return '<select class="inp' + (f ? ' on' : '') + '" id="sht-amb-f" aria-label="סינון לפי שגריר" data-chg="sht-amb-f">' +
+    '<option value="">כל השגרירים</option>' + list.map(function (a) {
+      return '<option value="' + esc(a) + '"' + (f === a ? ' selected' : '') + '>' + esc(a === '-' ? 'ללא שגריר' : a) + ' · ' + n[a] + '</option>';
+    }).join('') + '</select>';
+}
+
 // «לפי תוצאה» — בורר אחד לשמונה התוצאות, בסדר התפריט שבשיחה, וליד כל אחת — כמה שזו תוצאת השיחה האחרונה שלהם.
 function shtResHTML() {
   var n = {}, f = state.sht.f;
@@ -143,6 +191,7 @@ function shtResHTML() {
 function viewShtarot() {
   var s = state.sht;
   return '<section class="sht-dash" id="sht-dash">' + shtDashHTML() + '</section>' +
+    '<div id="sht-by-amb">' + shtByAmbHTML() + '</div>' +
     '<div id="sht-give">' + shtGiveHTML() + '</div>' +
     '<section class="card list-tools">' +
       '<label class="search-box"><input aria-label="חיפוש לפי שם או טלפון" class="inp search" id="sht-q" data-inp="sht-q" placeholder="חיפוש לפי שם או טלפון" value="' + esc(s.q) + '">' +
@@ -150,7 +199,7 @@ function viewShtarot() {
       '<div class="tools-row sht-tools"><div class="seg sht-seg" role="group" aria-label="סינון">' +
       FILTER_LIST.slice(0, 2).map(function (o) {
         return '<button class="' + (s.f === o[0] ? 'on' : '') + '" data-act="sht-filter" data-v="' + o[0] + '">' + o[1] + '</button>';
-      }).join('') + '</div>' + shtResHTML() + '</div></section>' +
+      }).join('') + '</div>' + shtResHTML() + shtAmbSelHTML() + '</div></section>' +
     '<section class="card" id="sht-list">' + shtListHTML() + '</section>' +
     '<div id="sht-win">' + shtWinHTML() + '</div>';
 }
@@ -201,7 +250,8 @@ function shtListHTML() {
     return '<div class="row sht-row' + (r.st.rank === 3 ? ' later' : '') + (star ? ' star' : '') + '" data-act="sht-open" data-id="' + esc(p.client_id) + '">' +
       '<span class="av">' + (r.name ? esc(initials(r.name)) : icon('call')) + '</span>' +
       '<div class="main"><b' + (r.name ? '' : ' class="unk"') + '>' + esc(r.name || MSG_SHT_NO_NAME) + pendTag(pendRowKey('g_shtar_people', p.client_id)) + '</b>' +
-        '<small dir="ltr">' + esc(phoneShow(p.phone)) + '</small>' + (n ? '<small> · ' + n + ' שיחות</small>' : '') + '</div>' +
+        '<small dir="ltr">' + esc(phoneShow(p.phone)) + '</small>' + (n ? '<small> · ' + n + ' שיחות</small>' : '') +
+        (personAmb(p) ? '<small> · ' + esc(personAmb(p)) + '</small>' : '') + '</div>' +
       '<div class="end">' + stBadge(r.st) + '</div></div>';
   }).join('');
   if (list.length > lim) h += '<div class="btnrow sht-more"><button class="btn ghost sm" data-act="sht-more">הצג עוד · ' + (list.length - lim) + '</button></div>';
@@ -235,7 +285,8 @@ function shtCardHTML(p) {
     '<div class="cp-band cw-band">' +
       '<span class="cp-av">' + (name ? esc(initials(name)) : icon('call')) + '</span>' +
       '<div class="cp-who"><h3>' + esc(name || MSG_SHT_NO_NAME) + '</h3>' +
-        (p.donor_client_id ? '<div class="cp-chips"><span>כרטיס בגיוס</span></div>' : '') + '</div>' +
+        ((p.donor_client_id || personAmb(p)) ? '<div class="cp-chips">' + (personAmb(p) ? '<span>' + esc(personAmb(p)) + '</span>' : '') +
+          (p.donor_client_id ? '<span>כרטיס בגיוס</span>' : '') + '</div>' : '') + '</div>' +
       '<div class="sht-side"><div class="cp-acts">' +
         '<a class="cp-btn" href="tel:' + esc(p.phone) + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</a>' +
         '<a class="cp-btn" href="' + esc(waLink(p.phone)) + '" target="_blank" rel="noopener noreferrer" aria-label="וואטסאפ" title="וואטסאפ">' + icon('whatsapp') + '</a>' +
@@ -290,6 +341,10 @@ function shtRefresh() {
   list.innerHTML = shtListHTML();
   var give = $('#sht-give');
   if (give) give.innerHTML = shtGiveHTML();
+  var by = $('#sht-by-amb');
+  if (by) by.innerHTML = shtByAmbHTML();
+  var af = $('#sht-amb-f');
+  if (af && document.activeElement !== af) af.outerHTML = shtAmbSelHTML();
   document.querySelectorAll('.sht-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === state.sht.f); });
   var res = $('#sht-res');
   if (res && document.activeElement !== res) res.outerHTML = shtResHTML();
@@ -513,6 +568,10 @@ function formShtar(p) {
                                  picked: p ? { value: d ? d.client_id : '', label: personName(p) } : null }) + '</div>' +
       '<label class="fld"><span>טלפון *</span><input class="inp" id="sp-phone" inputmode="tel" dir="ltr" value="' + esc(p ? p.phone : '') + '"></label>' +
     '</div>' +
+    // השגריר — ריק: השגריר שבכרטיס (ומשתנה איתו); בחירה כאן — של האיש בשטרות בלבד, והכרטיס אינו משתנה
+    '<label class="fld"><span>שגריר</span><select class="inp" id="sp-amb"><option value="">' + esc(d && d.ambassador ? 'מהכרטיס — ' + d.ambassador : 'ללא שגריר') + '</option>' +
+      lookupLabels(LK_AMBASSADOR).concat(p && p.ambassador && lookupLabels(LK_AMBASSADOR).indexOf(p.ambassador) < 0 ? [p.ambassador] : []).map(function (a) {
+        return '<option' + (p && p.ambassador === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></label>' +
     '<label class="fld"><span>הערה</span><input class="inp" id="sp-note" value="' + esc(p ? p.note || '' : '') + '"></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
     (p ? '<button class="btn danger" data-act="sht-del" data-id="' + esc(p.client_id) + '">מחיקה</button>' : '') +
@@ -535,7 +594,7 @@ function saveShtar(id) {
   if (donor && !donorById(donor)) donor = null;
   var name = donor ? '' : (q ? q.value.trim() : '');
   if (!digits(phone)) { toast(MSG_SHT_PHONE, null, 'warn'); return; }
-  var row = { donor_client_id: donor, name: nullable(name), phone: phone, note: nullable(val('sp-note')) };
+  var row = { donor_client_id: donor, name: nullable(name), phone: phone, note: nullable(val('sp-note')), ambassador: nullable(val('sp-amb')) };
   var dup = shtDup(id, donor ? donorById(donor).name : name, phone);
   var go = function () { return id ? update('g_shtar_people', id, row) : insert('g_shtar_people', row); };
   if (!dup) return go();

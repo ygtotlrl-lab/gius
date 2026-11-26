@@ -8,7 +8,7 @@ import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
-import { GAUTH_ACTIONS, gauthClientOpts, gauthGate, gauthHeaders, gauthUser } from '../core/gauth.js';
+import { GAUTH_ACTIONS, gauthAccountOpen, gauthClientOpts, gauthGate, gauthHeaders, gauthIsAdmin, gauthUser } from '../core/gauth.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboMore, comboPick,
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, modalDismiss, openModal, shellBare,
          swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
@@ -189,20 +189,24 @@ var FAB_ACT = { cards: 'donor-new', plan: 'plan-new', tasks: 'task-new', notes: 
 var VIEWS = { dash: viewDash, cards: viewCards, plan: viewPlan, tasks: viewTasks, notes: viewNotes,
               loans: viewLoans, budget: viewBudget, shtarot: viewShtarot, settings: viewSettings };
 
+// ההגדרות — למנהלים בלבד: מי שאינו מנהל אינו רואה את המסך, ובמקומו — «חשבון» (התראות במכשיר ויציאה), בחלון.
+var ACCOUNT_TAB = { id: 'account', ic: 'user', label: 'חשבון' };
+function moreTabs() { return MORE.map(function (t) { return t.id === 'settings' && !gauthIsAdmin() ? ACCOUNT_TAB : t; }); }
+
 function tabOf(id) {
-  var all = TABS.concat(MORE);
+  var all = TABS.concat(moreTabs());
   for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
   return TABS[0];
 }
 
-function inMore(id) { return MORE.some(function (t) { return t.id === id; }); }
+function inMore(id) { return moreTabs().some(function (t) { return t.id === id; }); }
 
 // סמל רמת אביב שבראש המסך — נכס האייקון שהמחולל גוזר מ-design/icon-master.svg, ולא העתק שלו: מקור אחד, והמחולל מעדכן את ההפניה.
 var MARK_SRC = 'icons/icon-512.7f9e73d9.png';
 
 function renderShell() {
   // המשניים נצבעים גם הם, ומוצגים רק במסך רחב — שם «עוד» נעלם והסרגל פורס את כל המסכים.
-  var tabsHTML = TABS.concat(MORE).map(function (t) {
+  var tabsHTML = TABS.concat(moreTabs()).map(function (t) {
     var cls = (state.screen === t.id ? 'on' : '') + (inMore(t.id) ? ' wide-only' : '');
     return '<button data-act="tab" data-tab="' + t.id + '" class="' + cls.trim() + '">' +
       '<span class="ic">' + icon(t.ic) + '</span><span>' + t.label + '</span></button>';
@@ -238,6 +242,8 @@ function render() {
 
 // כניסה למסך — לוח הבקרה והתכנית בחודש של היום; הכרטיסים בלי סינון, לפי א״ב ובלי כרטיס פתוח.
 function go(screen) {
+  if (screen === 'account') { gauthAccountOpen(); return; }
+  if (screen === 'settings' && !gauthIsAdmin()) screen = 'dash';
   // איש שנשאר פתוח בשטרות — הנעילה שלו משתחררת ביציאה מהמסך.
   if (state.sht.open) shtClose();
   state.screen = screen;
@@ -247,7 +253,7 @@ function go(screen) {
   if (screen === 'cards') state.cards = { q: '', aff: '', pf: '', sort: 'sum', open: null, plOpen: null, tlOpen: false };
   if (screen === 'loans') { state.loansQ = ''; state.loansStatus = ''; state.loansSort = ''; state.loansOpen = null; state.lnWin = ''; }
   if (screen === 'budget') state.budgetOpen = null;
-  if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.lim = 0; state.sht.nav = []; }
+  if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.amb_f = ''; state.sht.lim = 0; state.sht.nav = []; }
   if (screen === 'tasks') { state.tasks_ui.extra = ''; state.tasks_ui.q = ''; }
   closeModal();
   render();
@@ -313,8 +319,10 @@ var DOM_ACTIONS = {
   'ls-alert-close':      function () { var el = document.getElementById('ls-alert'); if (el) el.remove(); },
   'pend-alert-ok':       function () { pendAlertDismiss(); },
   'tab': function (el) { go(el.dataset.tab); },
+  // השורה בטבלת «היום לפי שגריר» — מסננת את הרשימה לשגריר שלה, ולחיצה נוספת מבטלת
+  'sht-amb-f': function (el) { state.sht.amb_f = state.sht.amb_f === el.dataset.v ? '' : el.dataset.v; state.sht.lim = 0; render(); },
   'more': function () {
-    openModal(TTL_MORE, '<div class="more-tiles">' + MORE.map(function (t) {
+    openModal(TTL_MORE, '<div class="more-tiles">' + moreTabs().map(function (t) {
       return '<button data-act="tab" data-tab="' + t.id + '" class="' + (state.screen === t.id ? 'on' : '') + '">' +
         '<span class="ic">' + icon(t.ic) + '</span><span>' + esc(t.label) + '</span></button>';
     }).join('') + '</div>', '');
@@ -590,6 +598,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'fin-on') { finOn(el); return; }
   if (el.dataset.chg === 'sc-status') { callStatusPick(el.value); return; }
   if (el.dataset.chg === 'sht-res') { state.sht.f = el.value || 'queue'; state.sht.lim = 0; render(); return; }
+  if (el.dataset.chg === 'sht-amb-f') { state.sht.amb_f = el.value; state.sht.lim = 0; render(); return; }
   if (el.dataset.chg === 'cards-pf') { state.cards.pf = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'p-now') { var nb = $('#p-now-box'); if (nb) nb.hidden = !el.checked; return; }
   if (el.dataset.chg === 'note-color') { noteColorPick(el.value); return; }

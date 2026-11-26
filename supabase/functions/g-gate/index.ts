@@ -2,6 +2,8 @@
 // הקוד נבדק בכל בקשה מול g_shtar_links, והשגריר שבשיחה החדשה נקבע כאן — לא בדף.
 // העריכה כמו באפליקציה: פרטי האיש (כרטיס בגיוס · שם · טלפון · הערה) ומחיקתו עם שיחותיו, וכל שיחה קודמת — תוצאה · שגריר · סכום ואמצעי או מועד · סיכום, ומחיקתה.
 // הכרטיסים יוצאים עם הכוכב (starred) — איש שמקושר לכרטיס בכוכב: מסגרת זהב, ופתיחה רק ב«יש אישור», כמו באפליקציה.
+// כל שגריר רואה רק את האנשים שלו — השגריר של האיש (ambassador), ובלעדיו השגריר שבכרטיס המקושר — ואת שיחותיהם, וכותב רק בהם;
+// ושגריר מנהל (המייל שלו ב-ambassador_logins שייך למשתמש מנהל פעיל) — את כולם, ויכול לשייך איש לשגריר.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ORIGINS = ["https://ygtotlrl-lab.github.io"];
@@ -44,6 +46,33 @@ async function ambOf(code: string) {
   const { data: a } = await sb.from("g_lookups").select("label").eq("client_id", l.ambassador_client_id).eq("kind", "ambassador").eq("deleted", false).maybeSingle();
   return a ? String(a.label) : null;
 }
+// שגריר מנהל — המייל שלו (ambassador_logins) שייך למשתמש מנהל פעיל.
+async function isAdmin(amb: string) {
+  const { data: s } = await sb.from("g_settings").select("value").eq("key", "ambassador_logins").maybeSingle();
+  let map: Record<string, string> = {};
+  try { map = s ? JSON.parse(String(s.value)) || {} : {}; } catch { map = {}; }
+  const login = map[amb];
+  if (!login) return false;
+  const { data: u } = await sb.from("g_users").select("role,active").eq("login", String(login).toLowerCase()).maybeSingle();
+  return !!u && u.role === "admin" && u.active !== false;
+}
+// השגריר של האיש — מה שנקבע לו, ובלעדיו השגריר שבכרטיס.
+function ambOfPerson(p: Record<string, unknown>, donorAmb: Record<string, string>) {
+  return String(p.ambassador || (p.donor_client_id ? donorAmb[p.donor_client_id as string] || "" : ""));
+}
+// מה שהשגריר רואה — null: הכל (מנהל); ואחרת קבוצת המזהים של האנשים שלו.
+async function visible(amb: string, admin: boolean) {
+  if (admin) return null;
+  const people = await all("g_shtar_people", "client_id,donor_client_id,ambassador");
+  const donors = await all("g_donors", "client_id,ambassador");
+  const da: Record<string, string> = {};
+  donors.forEach((d) => { da[d.client_id as string] = String(d.ambassador || ""); });
+  return new Set(people.filter((p) => ambOfPerson(p, da) === amb).map((p) => p.client_id as string));
+}
+async function callPerson(id: string) {
+  const { data } = await sb.from("g_shtar_calls").select("person_client_id").eq("client_id", id).maybeSingle();
+  return data ? String(data.person_client_id) : null;
+}
 async function labels(kind: string) {
   const { data } = await sb.from("g_lookups").select("label,sort").eq("kind", kind).eq("deleted", false).order("sort");
   return (data || []).map((x) => String(x.label));
@@ -61,7 +90,7 @@ function tomb(dev: string) {
 }
 
 const CALL_COLS = "client_id,person_client_id,call_at,ambassador,status,amount,method,callback_at,note,handled";
-const PEOPLE_COLS = "client_id,donor_client_id,name,phone,db_name,wa_groups,sources,tried,past,note";
+const PEOPLE_COLS = "client_id,donor_client_id,name,phone,db_name,wa_groups,sources,tried,past,note,ambassador";
 
 // פרטי השיחה מהבקשה — תוצאה, ולפיה סכום ואמצעי או מועד לחזור, וסיכום.
 function callFields(c: Record<string, unknown>) {
@@ -79,10 +108,13 @@ function callFields(c: Record<string, unknown>) {
 
 async function personOut(id: string) {
   const { data: p } = await sb.from("g_shtar_people").select(PEOPLE_COLS).eq("client_id", id).maybeSingle();
-  if (p && p.donor_client_id) {
-    const { data: d } = await sb.from("g_donors").select("name").eq("client_id", p.donor_client_id).maybeSingle();
-    if (d) p.name = d.name;
+  if (!p) return p;
+  let da = "";
+  if (p.donor_client_id) {
+    const { data: d } = await sb.from("g_donors").select("name,ambassador").eq("client_id", p.donor_client_id).maybeSingle();
+    if (d) { p.name = d.name; da = String(d.ambassador || ""); }
   }
+  (p as Record<string, unknown>).amb = String(p.ambassador || da);
   return p;
 }
 
@@ -98,21 +130,29 @@ Deno.serve(async (req: Request) => {
     if (!amb) return out(req, { ok: false, why: "code" }, 403);
     const a = b.a;
     const dev = str(b.dev, 80) || "page";
+    const admin = await isAdmin(amb);
+    const vis = await visible(amb, admin);
+    const sees = (pid: string | null) => !!pid && (!vis || vis.has(pid));
+    const deny = () => out(req, { ok: false, why: "owner" }, 403);
 
     if (a === "load" || a === "calls") {
-      const calls = await all("g_shtar_calls", CALL_COLS);
+      const calls = (await all("g_shtar_calls", CALL_COLS)).filter((c) => sees(c.person_client_id as string));
       if (a === "calls") return out(req, { ok: true, calls });
-      const people = await all("g_shtar_people", PEOPLE_COLS);
-      const donors = await all("g_donors", "client_id,name,phone,starred");
-      const names: Record<string, string> = {};
-      donors.forEach((d) => { names[d.client_id as string] = d.name as string; });
-      people.forEach((p) => { if (p.donor_client_id && names[p.donor_client_id as string]) p.name = names[p.donor_client_id as string]; });
-      return out(req, { ok: true, amb, people, calls, donors, methods: await labels("method"), ambs: await labels("ambassador") });
+      const people = (await all("g_shtar_people", PEOPLE_COLS)).filter((p) => sees(p.client_id as string));
+      const donors = await all("g_donors", "client_id,name,phone,starred,ambassador");
+      const names: Record<string, string> = {}, da: Record<string, string> = {};
+      donors.forEach((d) => { names[d.client_id as string] = d.name as string; da[d.client_id as string] = String(d.ambassador || ""); });
+      people.forEach((p) => {
+        p.amb = ambOfPerson(p, da);
+        if (p.donor_client_id && names[p.donor_client_id as string]) p.name = names[p.donor_client_id as string];
+      });
+      return out(req, { ok: true, amb, admin, people, calls, donors, methods: await labels("method"), ambs: await labels("ambassador") });
     }
 
     if (a === "open" || a === "beat" || a === "release") {
       const person = str(b.person, 80);
       if (!person || !str(b.dev, 80)) return out(req, { ok: false, why: "args" }, 400);
+      if (!sees(person)) return deny();
       const { data: r } = await sb.from("g_shtar_locks").select("client_id,device,updated_at").eq("person_client_id", person).maybeSingle();
       const mine = !!r && r.device === dev, now = Date.now();
       if (a === "open") {
@@ -132,6 +172,7 @@ Deno.serve(async (req: Request) => {
       const id = str(c.client_id, 80), person = str(c.person_client_id, 80);
       const f = callFields(c);
       if (!id || !person || !f.row) return out(req, { ok: false, why: f.why || "args" }, 400);
+      if (!sees(person)) return deny();
       const { data: cur } = await sb.from("g_shtar_calls").select("client_id,ambassador,person_client_id,deleted").eq("client_id", id).maybeSingle();
       if (cur) {
         if (cur.deleted || cur.ambassador !== amb || cur.person_client_id !== person) return out(req, { ok: false, why: "owner" }, 403);
@@ -154,6 +195,7 @@ Deno.serve(async (req: Request) => {
       const c = (b.call || {}) as Record<string, unknown>;
       const id = str(c.client_id, 80), who = str(c.ambassador, 200), f = callFields(c);
       if (!id || !who || !f.row) return out(req, { ok: false, why: f.why || "args" }, 400);
+      if (!sees(await callPerson(id))) return deny();
       const { data: cur } = await sb.from("g_shtar_calls").select("ambassador,deleted").eq("client_id", id).maybeSingle();
       if (!cur || cur.deleted) return out(req, { ok: false, why: "gone" }, 404);
       if (who !== cur.ambassador && !(await labels("ambassador")).includes(who)) return out(req, { ok: false, why: "amb" }, 400);
@@ -166,6 +208,7 @@ Deno.serve(async (req: Request) => {
     if (a === "call_del") {
       const id = str(b.id, 80);
       if (!id) return out(req, { ok: false, why: "args" }, 400);
+      if (!sees(await callPerson(id))) return deny();
       const { error } = await sb.from("g_shtar_calls").update(tomb(dev)).eq("client_id", id).eq("deleted", false);
       if (error) throw error;
       await touch();
@@ -177,14 +220,22 @@ Deno.serve(async (req: Request) => {
       const id = str(b.id, 80), donor = b.donor ? str(b.donor, 80) : null;
       const phone = (str(b.phone, 40) || "").replace(/[\s-]/g, "");
       if (!id || !/\d/.test(phone)) return out(req, { ok: false, why: "phone" }, 400);
+      if (!sees(id)) return deny();
       const { data: p } = await sb.from("g_shtar_people").select("deleted").eq("client_id", id).maybeSingle();
       if (!p || p.deleted) return out(req, { ok: false, why: "gone" }, 404);
       if (donor) {
         const { data: d } = await sb.from("g_donors").select("client_id").eq("client_id", donor).eq("deleted", false).maybeSingle();
         if (!d) return out(req, { ok: false, why: "donor" }, 400);
       }
-      const { error } = await sb.from("g_shtar_people").update({ donor_client_id: donor, name: donor ? null : str(String(b.name || "").trim(), 200),
-        phone, note: str(String(b.note || "").trim(), 4000), updated_at: Date.now() }).eq("client_id", id);
+      const row: Record<string, unknown> = { donor_client_id: donor, name: donor ? null : str(String(b.name || "").trim(), 200),
+        phone, note: str(String(b.note || "").trim(), 4000), updated_at: Date.now() };
+      // השגריר של האיש — רק מנהל משייך; ריק — השגריר שבכרטיס.
+      if (admin && "amb" in b) {
+        const who = b.amb ? str(b.amb, 200) : null;
+        if (who && !(await labels("ambassador")).includes(who)) return out(req, { ok: false, why: "amb" }, 400);
+        row.ambassador = who;
+      }
+      const { error } = await sb.from("g_shtar_people").update(row).eq("client_id", id);
       if (error) throw error;
       await touch();
       return out(req, { ok: true, person: await personOut(id) });
@@ -193,6 +244,7 @@ Deno.serve(async (req: Request) => {
     if (a === "person_del") {
       const id = str(b.id, 80);
       if (!id) return out(req, { ok: false, why: "args" }, 400);
+      if (!sees(id)) return deny();
       const t = tomb(dev);
       const { error } = await sb.from("g_shtar_people").update(t).eq("client_id", id).eq("deleted", false);
       if (error) throw error;
@@ -207,6 +259,7 @@ Deno.serve(async (req: Request) => {
     if (a === "cleared") {
       const id = str(b.id, 80);
       if (!id) return out(req, { ok: false, why: "args" }, 400);
+      if (!sees(await callPerson(id))) return deny();
       const { data: cur } = await sb.from("g_shtar_calls").select("status,handled,deleted").eq("client_id", id).maybeSingle();
       if (!cur || cur.deleted || cur.handled || cur.status !== "yes") return out(req, { ok: false, why: "state" }, 409);
       const { error } = await sb.from("g_shtar_calls").update({ handled: true, updated_at: Date.now() }).eq("client_id", id);
@@ -221,6 +274,7 @@ Deno.serve(async (req: Request) => {
       if (!from || !to || !id) return out(req, { ok: false, why: "args" }, 400);
       const { data: cur } = await sb.from("g_shtar_calls").select("person_client_id,status,handled,deleted").eq("client_id", from).maybeSingle();
       if (!cur || cur.deleted || cur.handled || !(NEXT[cur.status] || []).includes(to)) return out(req, { ok: false, why: "state" }, 409);
+      if (!sees(cur.person_client_id as string)) return deny();
       const f = callFields({ status: to, amount: b.amount, method: b.method });
       if (!f.row) return out(req, { ok: false, why: f.why }, 400);
       const { error } = await sb.from("g_shtar_calls").insert({ ...f.row, client_id: id, person_client_id: cur.person_client_id, ambassador: amb,

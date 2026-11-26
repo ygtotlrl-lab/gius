@@ -524,6 +524,8 @@ create table if not exists public.g_shtar_people (
   tried text,
   past text,
   note text,
+  -- השגריר של האיש — ריק: השגריר שבכרטיס המקושר; נערך בנפרד ואינו נוגע בכרטיס
+  ambassador text,
   deleted boolean not null default false,
   deleted_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
