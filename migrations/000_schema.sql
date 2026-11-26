@@ -826,7 +826,7 @@ drop policy if exists g_txns_users on public.g_txns;
 create policy g_txns_users on public.g_txns as permissive for all to authenticated using (g_is_user()) with check (g_is_user());
 alter table public.g_users enable row level security;
 drop policy if exists g_users_select on public.g_users;
-create policy g_users_select on public.g_users as permissive for select to authenticated using (g_is_user());
+create policy g_users_select on public.g_users as permissive for select to authenticated using (g_is_user() and login = lower(auth.jwt() ->> 'email'));
 
 drop trigger if exists g_events_history on public.g_events;
 create trigger g_events_history AFTER INSERT OR DELETE OR UPDATE ON public.g_events FOR EACH ROW EXECUTE FUNCTION sh_history_log('client_id');
