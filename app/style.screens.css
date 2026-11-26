@@ -416,11 +416,15 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .dx-toggle .cnt{font-size:var(--fs-1);font-weight:800;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
 .dx-toggle .chev{margin-inline-start:auto;display:inline-flex;width:20px;height:20px;color:var(--text-3)}
 .dx-body:not([hidden]){display:block;margin-top:var(--sp-4)}
-/* הטלפון — קידומת צרה (שלוש ספרות) ומספר בשאר הרוחב, משמאל לימין */
-.ph-pair{display:flex;gap:var(--sp-3)}
-.ph-pair .ph-pre{flex:none;width:4.2em;text-align:center;padding-inline:var(--sp-2)}
-.ph-pair .ph-num{flex:1;min-width:0;text-align:left}
-.ph-pair .inp{font-variant-numeric:tabular-nums}
+/* הטלפון — שדה אחד: הקידומת כתוספת צרה ברקע רך, קו דק, והמספר בשאר הרוחב, משמאל לימין */
+.ph-pair{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;
+  transition:border-color var(--dur-2),box-shadow var(--dur-2)}
+.ph-pair:focus-within{border-color:var(--brand-ink);box-shadow:0 0 0 3px var(--brand-soft)}
+.ph-pair .inp{border:0;border-radius:0;box-shadow:none;font-variant-numeric:tabular-nums}
+.ph-pair .inp:focus{box-shadow:none}
+.ph-pair .ph-pre{flex:none;width:4.4em;text-align:center;padding-inline:var(--sp-2);background:var(--brand-soft);border-right:1px solid var(--border)}
+.ph-pair .ph-pre::placeholder{font-size:var(--fs-1);color:var(--text-3)}
+.ph-pair .ph-num{flex:1;min-width:0;text-align:left;background:transparent}
 /* שורת הטלפון בפס הכרטיס — המספר, וחיוג ו-וואטסאפ קטנים לצדו */
 .cp-dial{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-variant-numeric:tabular-nums}
 .cp-btn.sm{width:30px;height:30px}

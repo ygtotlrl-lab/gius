@@ -355,11 +355,11 @@ function formDonor(d) {
   var n = $('#d-name'); if (n && !d) n.focus();
 }
 
-// ── הטלפון — קידומת צרה ומספר, ספרות בלבד, משמאל לימין; קידומת בלי 0 — קידומת מדינה ──
+// ── הטלפון — שדה אחד: הקידומת (תוספת צרה) והמספר, ספרות בלבד, משמאל לימין; קידומת בלי 0 — קידומת מדינה ──
 function phoneFieldHTML(ph) {
   var x = phoneSplit(ph);
   return '<div class="fld"><span>טלפון</span><div class="ph-pair" dir="ltr">' +
-    '<input class="inp ph-pre" id="d-ph-pre" inputmode="numeric" maxlength="4" aria-label="קידומת" value="' + esc(x.pre) + '">' +
+    '<input class="inp ph-pre" id="d-ph-pre" inputmode="numeric" maxlength="4" aria-label="קידומת" placeholder="קידומת" value="' + esc(x.pre) + '">' +
     '<input class="inp ph-num" id="d-ph-num" inputmode="numeric" aria-label="מספר" value="' + esc(x.num) + '"></div></div>';
 }
 // הבדיקה — רק בשמירה: קידומת ומספר שניהם או אף אחד, ובמספר ישראלי — 9 או 10 ספרות
