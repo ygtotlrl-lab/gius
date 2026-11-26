@@ -440,6 +440,8 @@ var DOM_ACTIONS = {
   'ln-info': loanInfo,
   'ln-win': function (el) { state.lnWin = el.dataset.k; render(); },
   'ln-win-close': function () { state.lnWin = ''; render(); },
+  // מדד של סוג הלוואה בדשבורד — נפתח ונסגר בכפתור שלו
+  'ix-toggle': function (el) { state.ixOpen[el.dataset.k] = !state.ixOpen[el.dataset.k]; render(); },
   // מחלון «תאריכי פירעון» — חלון ההלוואה נפתח מעליו
   'loan-open': function (el) { state.loansOpen = el.dataset.id; render(); },
   'loan-move-add': function (el) { return runSave(function () { return addLoanMove(el.dataset.id); }, MSG_SAVED_OK); },
