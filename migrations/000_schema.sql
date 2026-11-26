@@ -487,7 +487,11 @@ create table if not exists public.g_pledges (
   detail text,
   ambassador text,
   constraint g_pledges_pkey PRIMARY KEY (client_id),
-  constraint g_pledges_donor_client_id_fkey FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT
+  constraint g_pledges_donor_client_id_fkey FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT,
+  constraint g_pledges_amb_req CHECK ((deleted OR ((ambassador IS NOT NULL) AND (ambassador <> ''::text)))),
+  constraint g_pledges_amount_check CHECK (((amount IS NULL) OR (amount >= (0)::numeric))),
+  constraint g_pledges_section_req CHECK ((deleted OR ((section IS NOT NULL) AND (section <> ''::text)))),
+  constraint g_pledges_type_req CHECK ((deleted OR ((pledge_type IS NOT NULL) AND (pledge_type <> ''::text))))
 );
 
 create table if not exists public.g_settings (
@@ -632,6 +636,7 @@ create table if not exists public.g_txns (
   constraint g_txns_pkey PRIMARY KEY (client_id),
   constraint g_txns_donor_client_id_fkey FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT,
   constraint g_txns_pledge_client_id_fkey FOREIGN KEY (pledge_client_id) REFERENCES g_pledges(client_id) ON DELETE RESTRICT,
+  constraint g_txns_amount_check CHECK ((amount > (0)::numeric)),
   constraint g_txns_first_installment_check CHECK (((first_installment IS NULL) OR ((installments IS NOT NULL) AND (first_installment > (0)::numeric) AND (first_installment <= amount)))),
   constraint g_txns_installments_check CHECK (((installments IS NULL) OR (installments >= 2))),
   constraint g_txns_txn_month_check CHECK (((txn_month IS NULL) OR (txn_month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'::text)))
