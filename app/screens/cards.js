@@ -125,12 +125,11 @@ function cardOpenHTML(d) {
   var h = '<div class="copen cw-card">' +
     '<div class="cp-band cw-band">' +
       // בפס — העיגול והשם בלבד; השגריר, התפקיד, הטלפון, השייכויות וההערות — בלחיצה על העיגול
-      ((chips.length || d.notes) ? '<button class="cp-av" data-act="card-who" aria-expanded="false" aria-label="פרטי הכרטיס" title="פרטי הכרטיס">' + esc(initials(d.name)) + '</button>'
+      (chips.length ? '<button class="cp-av" data-act="card-who" aria-expanded="false" aria-label="פרטי הכרטיס" title="פרטי הכרטיס">' + esc(initials(d.name)) + '</button>'
                                  : '<span class="cp-av">' + esc(initials(d.name)) + '</span>') +
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
         '<div class="cp-more" hidden>' +
         (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
-        (d.notes ? '<div class="cp-note">' + esc(d.notes) + '</div>' : '') +
         '</div>' +
       '</div>' +
       '<div class="cp-sum">' +
@@ -150,7 +149,7 @@ function cardOpenHTML(d) {
       '<button class="btn sm" data-act="pledge-new" data-donor="' + id + '">' + icon('plus') + 'התחייבות</button>' +
     '</div><div class="cp-body">' +
     (pl.length ? pledgeGroupsHTML(pl) : '<div class="hint">אין התחייבויות. תרומה ששולמה מיד — התחייבות חדשה עם «הוספת תשלום מיידי».</div>') +
-    '</div>' + timelineHTML(d);
+    '</div>' + timelineHTML(d) + cardNoteHTML(d);
   return h + '</div>';
 }
 
@@ -193,6 +192,17 @@ function timelineHTML(d) {
   return '<button class="tl-toggle" data-act="card-tl" aria-expanded="' + on + '">ציר תשלומים<span class="cnt">' + tx.length + '</span>' +
     '<span class="chev">' + icon(on ? 'up' : 'down') + '</span></button>' +
     (on ? '<div class="tl">' + timelineBodyHTML(tx) + '</div>' : '');
+}
+
+// ── ההערה — מתחת לציר התשלומים, לקריאה ולעריכה במקום; נשמרת ביציאה מהשדה (`cardNoteSave`) ──
+function cardNoteHTML(d) {
+  return '<label class="cp-notes"><span>הערות</span><textarea class="inp" data-inp="card-note" data-id="' + esc(d.client_id) +
+    '" rows="2" placeholder="הערה על הכרטיס…">' + esc(d.notes || '') + '</textarea></label>';
+}
+function cardNoteSave(el) {
+  var d = donorById(el.dataset.id), v = el.value.trim();
+  if (!d || v === (d.notes || '')) return null;
+  return update('g_donors', d.client_id, { notes: v || null });
 }
 
 // ── ייצוא הכרטיס ──
@@ -288,7 +298,16 @@ function datesListHTML() {
       '<button type="button" class="btn ghost sm ic" data-act="dx-del" data-i="' + i + '" aria-label="הסרה">' + icon('close') + '</button></li>';
   }).join('') + '</ul>';
 }
-function datesRedraw() { var el = $('#dx-wrap'); if (el) el.innerHTML = datesListHTML(); }
+function datesRedraw() {
+  var el = $('#dx-wrap'); if (el) el.innerHTML = datesListHTML();
+  var n = $('#dx-n'); if (n) n.textContent = _dates.length;
+}
+function datesToggle(btn) {
+  var b = btn.parentNode.querySelector('.dx-body'), on = b.hidden;
+  b.hidden = !on;
+  btn.setAttribute('aria-expanded', on);
+  btn.querySelector('.chev').innerHTML = icon(on ? 'up' : 'down');
+}
 function datesAdd() {
   var iso = val('dx-date'), kl = val('dx-kind'), label = val('dx-label'), kind = 'other';
   // הסוג נשמר במזהה ולא בתווית — השם שבבורר יכול להשתנות
@@ -314,12 +333,14 @@ function formDonor(d) {
       '<label class="fld"><span>תפקיד</span><input class="inp" id="d-role" value="' + esc(d ? d.role || '' : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערות</span><textarea class="inp" id="d-notes">' + esc(d ? d.notes || '' : '') + '</textarea></label>' +
-    '<div class="fld dx"><span>תאריכים נוספים</span><div id="dx-wrap">' + datesListHTML() + '</div>' +
+    // תאריכים נוספים — סגור בפתיחה, ולחיצה על הכותרת פותחת
+    '<div class="fld dx"><button type="button" class="dx-toggle" data-act="dx-toggle" aria-expanded="false">תאריכים נוספים<span class="cnt" id="dx-n">' + _dates.length + '</span>' +
+      '<span class="chev">' + icon('down') + '</span></button><div class="dx-body" hidden><div id="dx-wrap">' + datesListHTML() + '</div>' +
       '<div class="dx-add"><div class="f2">' +
         '<label class="fld"><span>סוג</span>' + selectHTML('dx-kind', DATE_KINDS.map(function (k) { return k[1]; }), DATE_KINDS[0][1], '') + '</label>' +
         '<label class="fld"><span>של מי / פירוט</span><input class="inp" id="dx-label" placeholder="למשל: הבת רבקה"></label>' +
       '</div><div class="f2 f2-tight dp-pair">' + datePairHTML('dx', '', { empty: true, start: '1980-01-01' }) + '</div>' +
-      '<button type="button" class="btn ghost" data-act="dx-add">' + icon('plus') + 'הוספת תאריך</button></div></div>' +
+      '<button type="button" class="btn ghost" data-act="dx-add">' + icon('plus') + 'הוספת תאריך</button></div></div></div>' +
     affChipsHTML(d) +
     '<label class="fld chk"><input type="checkbox" id="d-general"' + (d && d.is_general ? ' checked' : '') + '><span>כרטיס כללי — מגבית, פרויקט וכדומה; מוצג בנפרד בתחתית הרשימה</span></label>',
     '<button class="btn ghost" data-act="modal-close">ביטול</button>' +
@@ -582,5 +603,5 @@ function savePay(id, pledgeId) {
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
+export { cardNoteSave, datesAdd, datesDel, datesToggle, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
 

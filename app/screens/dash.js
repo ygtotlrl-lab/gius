@@ -3,12 +3,12 @@ import { esc, methodIcon, receiptHTML } from '../../core/ui.js';
 import { stIcon } from '../../core/icons.js';
 import { bar } from '../../core/chart.js';
 import { pendTag } from '../../core/sync.js';
-import { APP_FIRST_MONTH, ASSIGNEES, MONTH_SHORT, STAGES } from '../constants.js';
+import { APP_FIRST_MONTH, MONTH_SHORT, STAGES } from '../constants.js';
 import { state } from '../state.js';
 import { icon } from '../icons.js';
 import { dayToday } from '../../core/util.js';
 import { donorName, emptyBox, gSortGroups, gSortTxns, ils, loanDebt, loanFlow, monthAmount, monthLabel, monthTxnsInit,
-         pendRowKey, pledgeById, shiftMonth, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
+         assigneeNames, pendRowKey, pledgeById, shiftMonth, sum, targetFor, txnSoLabel, txnWhen } from '../domain.js';
 
 // הסף בהודעת המומנטום הוא «גדול או שווה» — «גדול» משנה בשקט את ההודעה בקצה הטווח.
 function momentumMsg(pct) {
@@ -79,7 +79,7 @@ function breakdownHTML(rows, total, withIcon) {
 
 // מצב המשימות לכל אחראי — שלושת השלבים ומספריהם, והמספר הבולט — בעבודה; מנותב למסך המשימות.
 function tasksHTML() {
-  return '<div class="who-grid">' + ASSIGNEES.map(function (who) {
+  return '<div class="who-grid">' + assigneeNames().map(function (who) {
     var mine = state.tasks.filter(function (t) { return t.assignee === who; });
     var cnt = function (st) { return mine.filter(function (t) { return t.stage === st; }).length; };
     return '<button class="who-card" data-act="dash-who" data-who="' + esc(who) + '">' +

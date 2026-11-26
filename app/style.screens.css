@@ -159,6 +159,53 @@
 .sub-rm .ico{width:16px;height:16px}
 .sub-add{align-self:flex-start;margin-top:var(--sp-2)}
 
+/* «בעבודה» בחלקים — כותרת לכל חלק ומונה, ובתוכו כותרת קטנה לכל סוג */
+.tk-sec h2{display:flex;align-items:center;gap:var(--sp-3)}
+.tk-sec h2 .cnt,.tk-dom h3 .cnt,.tk-more-btn .cnt{font-size:var(--fs-1);font-weight:800;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
+.tk-late h2{color:var(--bad)}
+.tk-late h2 .cnt{background:var(--bad-soft);color:var(--bad)}
+.tk-dom+.tk-dom{margin-top:var(--sp-5)}
+.tk-dom h3{display:flex;align-items:center;gap:var(--sp-3);margin:0 0 var(--sp-1);font-size:var(--fs-2);font-weight:800;color:var(--text-3)}
+.tk-chips .tk-rep{display:inline-flex;align-items:center;gap:2px}
+.tk-chips .due{display:inline-flex;align-items:center;gap:3px}
+.tk-chips .ico{width:12px;height:12px}
+/* החיפוש וכפתור הייצוא בשורה אחת */
+.tk-tools{display:flex;align-items:center;gap:var(--sp-3)}
+.tk-tools .search-box{flex:1;min-width:0}
+/* «הושלמו» · «לא רלוונטי» — שני כפתורים בחצאים */
+.tk-more{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:var(--sp-6)}
+.tk-more-btn{display:flex;align-items:center;gap:var(--sp-3);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-4) var(--sp-5);
+  font:inherit;font-weight:700;color:var(--text);cursor:pointer;text-align:start;white-space:nowrap}
+.tk-more-btn .ico{width:16px;height:16px;margin-inline-start:auto;color:var(--text-3)}
+.tk-more-btn.on.done{background:var(--ok-soft);border-color:var(--ok)}
+.tk-more-btn.on.off{background:var(--bad-soft);border-color:var(--bad)}
+/* בורר התאריך, השעה והחזרה — כמו בגוגל טאסקים */
+.dt-btn{display:flex;align-items:center;gap:var(--sp-3);text-align:start;cursor:pointer}
+.dt-btn .ico{width:18px;height:18px;color:var(--brand-ink);flex:none}
+.dtp{margin-top:var(--sp-3);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-5);background:var(--card)}
+.dtp-hd{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.dtp-hd b{flex:1;font-size:var(--fs-3)}
+.dtp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dtp-w{font-size:var(--fs-1);font-weight:700;color:var(--text-3);padding:var(--sp-1) 0}
+.dtp-d{aspect-ratio:1;max-height:40px;border:0;background:none;border-radius:50%;font:inherit;font-variant-numeric:tabular-nums;cursor:pointer;color:var(--text)}
+.dtp-d.today{color:var(--brand-ink);font-weight:800}
+.dtp-d.on{background:var(--brand-fill);color:#fff;font-weight:800}
+.dtp-row{display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-4)}
+.dtp-row>.ico{width:20px;height:20px;color:var(--text-3);flex:none}
+.dtp-row .inp{flex:1;min-width:0}
+.dtp-row small{color:var(--text-3);font-size:var(--fs-1)}
+.dtp-n{max-width:72px;flex:none!important}
+.dtp-custom{border-top:1px solid var(--border-2);margin-top:var(--sp-4);padding-top:var(--sp-2)}
+.dtp-days{display:flex;gap:var(--sp-2);margin-top:var(--sp-4)}
+.dtp-dow{flex:1;height:34px;border-radius:50%;border:1px solid var(--border);background:none;font:inherit;font-size:var(--fs-1);font-weight:700;cursor:pointer;color:var(--text)}
+.dtp-dow.on{background:var(--brand-fill);border-color:var(--brand-fill);color:#fff}
+.dtp-end{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-4)}
+.dtp-end>span{font-weight:700;font-size:var(--fs-2)}
+.dtp-end input[type=radio]{accent-color:var(--brand-fill)}
+.dtp-end label{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2)}
+.dtp-end label .inp{flex:1;min-width:0}
+.dtp-ft{display:flex;justify-content:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)}
+
 /* ── ציר התשלומים בכרטיס ── */
 .tl-toggle{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:0;border-top:1px solid var(--border-2);background:none;font:inherit;color:var(--brand-ink);font-weight:800;font-size:var(--fs-3);padding:var(--sp-5) var(--sp-7);cursor:pointer;text-align:start}
 .tl-toggle .cnt{font-size:var(--fs-1);background:var(--brand-soft);border-radius:var(--r-6);padding:0 var(--sp-4)}
@@ -365,7 +412,14 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ln-future .fl-bar.ln-fcbar{background:var(--ln-a-soft);border:0}
 /* ── תאריכים בכרטיס — יום ההולדת ותאריכים נוספים ── */
 .dp-pair .fld{margin-bottom:var(--sp-4)}
-.dx>span{display:block;font-weight:600;margin-bottom:var(--sp-3)}
+.dx-toggle{display:flex;align-items:center;gap:var(--sp-3);width:100%;border:0;background:none;font:inherit;font-weight:600;color:var(--text);padding:0;cursor:pointer;text-align:start}
+.dx-toggle .cnt{font-size:var(--fs-1);font-weight:800;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
+.dx-toggle .chev{margin-inline-start:auto;display:inline-flex;width:20px;height:20px;color:var(--text-3)}
+.dx-body:not([hidden]){display:block;margin-top:var(--sp-4)}
+/* הערת הכרטיס — מתחת לציר התשלומים */
+.cp-notes{display:block;border-top:1px solid var(--border-2);padding:var(--sp-5) var(--sp-7) var(--sp-6)}
+.cp-notes>span{display:block;font-weight:800;color:var(--brand-ink);font-size:var(--fs-3);margin-bottom:var(--sp-3)}
+.cp-notes textarea{min-height:64px;resize:vertical}
 .dx-list{list-style:none;margin:0 0 var(--sp-4);padding:0;display:flex;flex-direction:column;gap:var(--sp-3)}
 .dx-list li{display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-3) var(--sp-4);border:1px solid var(--border);border-radius:var(--r-4);background:var(--card-2)}
 .dx-k{flex:none;font-size:var(--fs-1);font-weight:700;color:var(--brand-ink);background:var(--brand-soft);border-radius:999px;padding:2px 10px}

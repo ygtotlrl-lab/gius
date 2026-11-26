@@ -14,7 +14,7 @@ import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, 
          swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
 import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_DONOR, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_DEL_LOOKUP,
          MSG_DEL_NOTE, MSG_DEL_PAY, MSG_DEL_SHT, MSG_DEL_SHT_CALL, MSG_DEL_PLAN, MSG_DEL_PLEDGE, MSG_DEL_SOFT, MSG_DEL_TASK,
-         MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, STAGES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
+         MSG_NEED_VALUE, MSG_VALUE_EXISTS, PUSH_TABLES, SUPABASE_ANON_KEY, SUPABASE_URL, TABLES,
          TABS, APP_FIRST_MONTH, SHT_PAGE, MSG_CALL_SAVED, MSG_DELETED, MSG_GOAL_DEFAULT_SAVED, MSG_GOAL_RESET, MSG_GOAL_SAVED, MSG_REMOVED, MSG_SAVED_OK, MSG_SHT_MOVED, MSG_TASK_SAVED, TTL_MORE } from './constants.js';
 import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
@@ -23,10 +23,10 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
 import { DATEPAIR_ACTIONS } from '../core/datepair.js';
-import { datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync,
+import { cardNoteSave, datesToggle, datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync,
          soUneqToggle, viewCards } from './screens/cards.js';
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
-import { formTask, saveTask, subAdd, subEdDot, subRm, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
+import { dtClear, dtDay, dtDone, dtDow, dtInput, dtMon, dtToggle, formTask, saveTask, subAdd, subEdDot, subRm, taskStep, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
 import { addLoanMove, ckMode, ckSync, finMode, finOn, intSync, formLoanMove, loanInfo, loanKindPick, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
@@ -227,6 +227,9 @@ function render() {
   if (state.screen === 'shtarot' && S.lastViewKey === 'shtarot' && shtRefresh()) return;
   // הלוואות — כמו בשטרות: מסך שכבר מצויר מתעדכן בחלקיו, וטופס שפתוח בחלון ההלוואה אינו נדרס
   if (state.screen === 'loans' && S.lastViewKey === 'loans' && loansPartial()) return;
+  // הערת הכרטיס — שדה שמקלידים בו אינו נדרס; הציור הבא, אחרי היציאה ממנו
+  var ae = document.activeElement;
+  if (ae && ae.dataset && ae.dataset.inp === 'card-note' && $('#view').contains(ae)) return;
   $('#view').innerHTML = (VIEWS[state.screen] || viewDash)();
   if (state.screen === 'loans') loansAfter();
   // קופצים לראש רק במעבר מסך — render נקראת גם מהבדיקה המחזורית, וגלילה ללא תנאי הייתה מקפיצה את המסך באמצע עבודה.
@@ -245,7 +248,7 @@ function go(screen) {
   if (screen === 'loans') { state.loansQ = ''; state.loansStatus = ''; state.loansSort = ''; state.loansOpen = null; state.lnWin = ''; }
   if (screen === 'budget') state.budgetOpen = null;
   if (screen === 'shtarot') { state.sht.q = ''; state.sht.f = 'queue'; state.sht.lim = 0; state.sht.nav = []; }
-  if (screen === 'tasks') { state.tasks_ui.stage = null; state.tasks_ui.q = ''; }
+  if (screen === 'tasks') { state.tasks_ui.extra = ''; state.tasks_ui.q = ''; }
   closeModal();
   render();
 }
@@ -357,6 +360,7 @@ var DOM_ACTIONS = {
   'donor-edit': function (el) { formDonor(donorById(el.dataset.id)); },
   'donor-save': saver(saveDonor, MSG_SAVED_OK),
   'dx-add': function () { datesAdd(); },
+  'dx-toggle': function (el) { datesToggle(el); },
   'dx-del': function (el) { datesDel(el.dataset.i); },
   'donor-del': function (el) {
     return delAsk(MSG_DEL_DONOR, 'g_donors', el.dataset.id, function () { state.cards.open = null; });
@@ -394,19 +398,15 @@ var DOM_ACTIONS = {
 
   // ── משימות ──
   'task-who': function (el) { state.tasks_ui.who = el.dataset.who; render(); },
-  'task-stage': function (el) {
-    state.tasks_ui.stage = state.tasks_ui.stage === el.dataset.stage ? null : el.dataset.stage;
+  // «הושלמו» · «לא רלוונטיות» — לחיצה פורשת, ונוספת סוגרת
+  'task-extra': function (el) {
+    state.tasks_ui.extra = state.tasks_ui.extra === el.dataset.stage ? '' : el.dataset.stage;
     render();
   },
   'task-new': function () { formTask(null); },
   'task-open': function (el) { var t = findIn(state.tasks, el.dataset.id); if (t) formTask(t); },
-  // העיגול שבשורת המשימה — בעבודה ⟵ הושלם, ומהושלם או מלא רלוונטי — חזרה לעבודה.
-  'task-step': function (el) {
-    var t = findIn(state.tasks, el.dataset.id);
-    if (!t) return;
-    var next = t.stage === STAGES[0].id ? STAGES[1].id : STAGES[0].id;
-    return update('g_tasks', t.client_id, { stage: next }).then(function () { render(); }).catch(errToast);
-  },
+  // העיגול שבשורת המשימה — שואל: בעבודה ⟵ הושלמה, ומהושלמה או מלא רלוונטית — חזרה לעבודה
+  'task-step': function (el) { return taskStep(el.dataset.id).then(function (ch) { if (ch) render(); }).catch(errToast); },
   'task-star': function (el) {
     var t = findIn(state.tasks, el.dataset.id);
     if (!t) return;
@@ -415,6 +415,13 @@ var DOM_ACTIONS = {
   // תת-משימה — העיגול בשורה מסמן «הושלם» בלי לפתוח; בעורך — הוספה, הסרה וסימון שנשמרים עם המשימה
   'task-sub': function (el) { var p = taskSubToggle(el); return p && p.then(function () { render(); }).catch(errToast); },
   'sub-add': function () { subAdd(); },
+  // בורר התאריך, השעה והחזרה שבטופס המשימה
+  'dtp-open': function () { dtToggle(); },
+  'dtp-day': function (el) { dtDay(el); },
+  'dtp-mon': function (el) { dtMon(el); },
+  'dtp-dow': function (el) { dtDow(el); },
+  'dtp-clear': function () { dtClear(); },
+  'dtp-done': function () { dtDone(); },
   'sub-rm': function (el) { subRm(el); },
   'sub-ed-dot': function (el) { subEdDot(el); },
   'task-save': saver(saveTask, MSG_TASK_SAVED),
@@ -556,6 +563,7 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'cards-q') { state.cards.q = el.value; cardsRefresh(); }
   if (el.dataset.inp === 'loans-q') { state.loansQ = el.value; loansRefresh(); }
   if (el.dataset.inp === 'tasks-q') { state.tasks_ui.q = el.value; tasksRefresh(); }
+  if (el.dataset.inp === 'dtp-time') dtInput(el);
   if (el.dataset.inp === 'sht-q') { state.sht.q = el.value; state.sht.lim = 0; shtListRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
   if (el.dataset.inp === 'ck-sync') { ckSync(); intSync('p'); }
@@ -572,6 +580,8 @@ document.addEventListener('note-close', function () { DOM_ACTIONS['note-close'](
 document.addEventListener('change', function (e) {
   var el = e.target;
   if (!el.dataset) return;
+  if (el.dataset.inp === 'dtp-rep' || el.dataset.inp === 'dtp-c') { dtInput(el); return; }
+  if (el.dataset.inp === 'card-note') { var pn = cardNoteSave(el); if (pn) pn.then(function () { render(); }).catch(errToast); return; }
   if (el.dataset.chg === 'cards-aff') { state.cards.aff = el.value; cardsRefresh(); return; }
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
   if (el.dataset.chg === 'loans-sort') { state.loansSort = el.value; loansRefresh(); return; }

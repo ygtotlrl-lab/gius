@@ -38,8 +38,6 @@ var LISTS = [
 ];
 
 // ── המשימות ──
-// שלושת האחראים קבועים — אין להם רשימה בהגדרות.
-var ASSIGNEES = ['הרב יוסי', 'אלישע', 'מענדי פרידמן'];
 
 var STAGES = [
   { id: 'בעבודה', cls: 'run' },
@@ -118,6 +116,14 @@ var MSG_SET_AMT = 'נא להזין סכום לחודש לדמי ההתפשרות
 var MSG_NEED_LENDER = 'נא למלא את שם המלווה';
 var MSG_CK_SUM_PRE = 'סך התשלומים פחות מסכום ההלוואה: ';
 var MSG_NEED_TITLE = 'נא למלא כותרת';
+// מסך המשימות — החלקים של «בעבודה», בסדרם, והשאלות שבעיגול
+var TASK_SECTIONS = [['soon', 'החודש הקרוב'], ['late', 'עבר זמנן'], ['none', 'ללא תאריך'], ['later', 'מאוחר יותר']];
+var TASK_SOON_DAYS = 30;
+var MSG_TASK_DONE_Q = 'להעביר את המשימה להושלמה?';
+var MSG_TASK_DONE_ACT = 'הושלמה';
+var MSG_TASK_BACK_Q = 'להחזיר את המשימה לעבודה?';
+var MSG_TASK_BACK_ACT = 'חזרה לעבודה';
+var MSG_TASK_NEXT = 'המשימה החוזרת נקבעה ל-';
 var MSG_NEED_ITEM = 'נא למלא את פרטי ההוצאה';
 var MSG_NEED_VALUE = 'נא להזין ערך';
 var MSG_VALUE_EXISTS = 'הערך כבר קיים ברשימה';
@@ -243,7 +249,7 @@ var MSG_GOAL_SAVED = 'היעד נשמר';
 var MSG_GOAL_RESET = 'החודש חזר ליעד הקבוע';
 var MSG_GOAL_DEFAULT_SAVED = 'היעד הקבוע נשמר';
 
-export { ASSIGNEES, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LK_AFFIL, LK_AMBASSADOR,
+export { TASK_SECTIONS, TASK_SOON_DAYS, MSG_TASK_DONE_Q, MSG_TASK_DONE_ACT, MSG_TASK_BACK_Q, MSG_TASK_BACK_ACT, MSG_TASK_NEXT, DONOR_NEW_LABEL, DONOR_NO_PHONE, EPS, KV_TABLE, LISTS, LK_AFFIL, LK_AMBASSADOR,
          LK_DOMAIN, LK_METHOD, LK_PTYPE, LK_SECTION, LOAN_STATUSES, MORE, MSG_DEL_SHT, MSG_DEL_SHT_CALL, MSG_SHT_AMB, MSG_SHT_DUP,
          MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_STAR_B, MSG_SHT_STAR_T, MSG_SHT_PICK, MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_PAGE_URL, SHT_RETRY_MS, SHT_STATUS,
          METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_SO_COUNT, MSG_SO_FIRST, MSG_SO_FIRST_OVER, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_DONOR, MSG_DEL_EVENT, MSG_NEED_EVENT_NAME, MSG_DEL_LOAN, MSG_DEL_LOAN_MOVE, MSG_NEED_MOVE_AMOUNT,

@@ -662,6 +662,18 @@ function targetOwn(m) {
   return null;
 }
 
+// ערך JSON מטבלת ההגדרות — מפתח אחד, ובלעדיו (או בערך פגום) — ברירת המחדל
+function settingJson(key, dflt) {
+  var r = findRow(liveRows(KV_TABLE), 'key', key);
+  try { return r ? JSON.parse(r.value) : dflt; } catch (e) { return dflt; }
+}
+// האחראים למשימות — מטבלת ההגדרות (`assignees`: [{name, login}]), מקור אחד לאפליקציה ולשער ההתראות, שמתריע לכל אחראי על המשימות שלו.
+function assigneeList() {
+  var v = settingJson('assignees', []);
+  return Array.isArray(v) ? v.filter(function (x) { return x && x.name; }) : [];
+}
+function assigneeNames() { return assigneeList().map(function (x) { return x.name; }); }
+
 function targetFor(m) { var t = targetOwn(m); return t ? num(t.amount) : targetDefault(); }
 
 // «בפועל» בשורת תכנית — התשלומים של הכרטיס בחודש התכנית; נגזר ואינו מוקלד.
@@ -794,7 +806,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,
