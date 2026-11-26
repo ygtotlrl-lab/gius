@@ -98,6 +98,26 @@ function pledgeFilterHTML(v) {
     grp('סוגי התחייבויות', 'סוג', 't:', lookupLabels(LK_PTYPE), 'pledge_type') + '</select>';
 }
 
+// ── סיכום הכרטיסים — עיגולים כמו במסך ההלוואות: כמה כרטיסים · התחייבו · נגבה · נותר לגבות, בכל הכרטיסים ──
+function cKShort(v) { var a = Math.abs(v); return a >= 1e6 ? (Math.round(v / 1e5) / 10) + 'M' : a >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
+function cardsSumHTML() {
+  var ds = state.donors, tot = 0, paid = 0, left = 0, open = 0;
+  ds.forEach(function (d) {
+    var l = donorLeft(d.client_id);
+    tot += donorTotal(d.client_id); paid += donorPaid(d.client_id); left += l;
+    if (l > 0) open++;
+  });
+  return '<div class="ln-dots cs-dots">' + [
+    { t: 'כרטיסים', v: String(ds.length), title: ds.length + ' כרטיסים', tone: '', sub: open + ' עם יתרה לגבות' },
+    { t: 'התחייבו', v: cKShort(tot), title: ils(tot), tone: '', sub: 'סך ההתחייבויות' },
+    { t: 'נגבה', v: cKShort(paid), title: ils(paid), tone: 'ok', sub: tot > 0 ? Math.round(paid / tot * 100) + '% מההתחייבויות' : '' },
+    { t: 'נותר לגבות', v: cKShort(left), title: ils(left), tone: 'gold', sub: 'בכל הכרטיסים' }
+  ].map(function (o) {
+    return '<div class="ln-dot ' + o.tone + '" title="' + esc(o.t + ' ' + o.title) + '"><span class="ln-dot-c"><b>' + esc(o.v) + '</b></span>' +
+      '<span class="ln-dot-t">' + esc(o.t) + '</span>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+
 function viewCards() {
   var c = state.cards, affs = lookupLabels(LK_AFFIL);
   return '<section class="card list-tools">' +
@@ -112,6 +132,7 @@ function viewCards() {
           }).join('') +
         '</div>' +
       '</div>' +
+      cardsSumHTML() +
     '</section>' +
     '<section class="card"><div id="cards-list">' + cardRowsHTML() + '</div></section>';
 }
@@ -133,7 +154,7 @@ function cardOpenHTML(d) {
         // חיוג ו-וואטסאפ מתחת לשם — המספר עצמו בטופס הכרטיס בלבד; בלי מספר — הכפתורים נשארים, והלחיצה אומרת שאין
         '<div class="cp-dial">' +
           '<button class="cp-btn sm" data-act="card-call" data-id="' + id + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</button>' +
-          '<button class="cp-btn sm" data-act="card-wa" data-id="' + id + '" aria-label="וואטסאפ" title="וואטסאפ">' + icon('chat') + '</button></div>' +
+          '<button class="cp-btn sm" data-act="card-wa" data-id="' + id + '" aria-label="וואטסאפ" title="וואטסאפ">' + icon('whatsapp') + '</button></div>' +
         '<div class="cp-more" hidden>' +
         (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
         '</div>' +

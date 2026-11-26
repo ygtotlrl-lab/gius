@@ -238,7 +238,7 @@ function shtCardHTML(p) {
         (p.donor_client_id ? '<div class="cp-chips"><span>כרטיס בגיוס</span></div>' : '') + '</div>' +
       '<div class="sht-side"><div class="cp-acts">' +
         '<a class="cp-btn" href="tel:' + esc(p.phone) + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</a>' +
-        '<a class="cp-btn" href="' + esc(waLink(p.phone)) + '" target="_blank" rel="noopener noreferrer" aria-label="וואטסאפ" title="וואטסאפ">' + icon('chat') + '</a>' +
+        '<a class="cp-btn" href="' + esc(waLink(p.phone)) + '" target="_blank" rel="noopener noreferrer" aria-label="וואטסאפ" title="וואטסאפ">' + icon('whatsapp') + '</a>' +
         '<button class="cp-btn" data-act="sht-edit" data-id="' + id + '" aria-label="עריכת הפרטים" title="עריכת הפרטים">' + icon('edit') + '</button>' +
         '<button class="cp-btn" data-act="sht-close" aria-label="סגירה">' + icon('close') + '</button>' +
       '</div><span class="sht-phone" dir="ltr">' + esc(phoneShow(p.phone)) + '</span></div>' +
