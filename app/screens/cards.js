@@ -112,17 +112,16 @@ function cardsSumHTML() {
     tot += donorTotal(d.client_id); paid += donorPaid(d.client_id); left += donorLeft(d.client_id);
     if (d.starred) vip++;
   });
-  var nTx = state.txns.length, curM = dayToday().slice(0, 7);
-  var nTxM = state.txns.filter(function (t) { return t.txn_month === curM; }).length;
+  var nTx = state.txns.length;
   return '<div class="ln-dots cs-dots">' + [
-    { t: 'התחייבו', v: cKShort(tot), title: ils(tot), tone: '', sub: '' },
-    { t: 'נגבה', v: cKShort(paid), title: ils(paid), tone: 'ok', sub: tot > 0 ? Math.round(paid / tot * 100) + '%' : '' },
-    { t: 'נותר לגבות', v: cKShort(left), title: ils(left), tone: 'gold', sub: '' },
-    { t: 'תשלומים', v: String(nTx), title: nTx + ' תשלומים', tone: '', sub: nTxM + ' החודש' },
-    { t: 'VIP', v: String(vip), title: vip + ' כרטיסים בכוכב', tone: 'vip', sub: 'בכוכב' }
+    { t: 'התחייבו', v: cKShort(tot), title: ils(tot), tone: '' },
+    { t: 'נגבה', v: cKShort(paid), title: ils(paid), tone: 'ok' },
+    { t: 'נותר לגבות', v: cKShort(left), title: ils(left), tone: 'gold' },
+    { t: 'תשלומים', v: String(nTx), title: nTx + ' תשלומים', tone: '' },
+    { t: 'VIP', v: String(vip), title: vip + ' כרטיסים בכוכב', tone: 'vip' }
   ].map(function (o) {
     return '<div class="ln-dot ' + o.tone + '" title="' + esc(o.t + ' ' + o.title) + '"><span class="ln-dot-c"><b>' + esc(o.v) + '</b></span>' +
-      '<span class="ln-dot-t">' + esc(o.t) + '</span>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</div>';
+      '<span class="ln-dot-t">' + esc(o.t) + '</span>' + '</div>';
   }).join('') + '</div>';
 }
 
