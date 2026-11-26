@@ -63,7 +63,6 @@ body{
   margin:0; background:var(--bg); color:var(--text);
   font-family:Heebo,sans-serif;
   font-size:var(--fs-4); line-height:var(--lh-4); -webkit-text-size-adjust:100%;
-  overflow-wrap:anywhere;
 }
 h1,h2,h3{margin:0; font-weight:700; line-height:var(--lh-2)}
 button{font:inherit; color:inherit}
@@ -349,7 +348,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .brk{display:grid;grid-template-columns:fit-content(46%) minmax(56px,1fr) auto auto;column-gap:var(--sp-4);row-gap:var(--sp-5)}
 .brk-row{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:center}
 .brk-lab{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
-.brk-lab b{font-size:var(--fs-3);font-weight:700;line-height:1.25;min-width:0;overflow-wrap:anywhere}
+.brk-lab b{font-size:var(--fs-3);font-weight:700;line-height:1.25;min-width:0}
 .brk-ic{width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink);display:grid;place-items:center;flex:none}
 .brk-ic svg{width:15px;height:15px;display:block}
 .brk-val{font-size:var(--fs-3);font-weight:800;color:var(--brand-ink);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:end}
@@ -417,7 +416,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .ct-av.tone-none{background:var(--border-2);color:var(--text-2)}
 .ct-av.tone-gen{border-radius:var(--r-4);background:var(--accent-2-soft);color:var(--warn)}
 .ct-name{display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
-.ct-name b{font-size:var(--fs-4);font-weight:750;line-height:1.25;overflow-wrap:anywhere}
+.ct-name b{font-size:var(--fs-4);font-weight:750;line-height:1.25}
 .ct-name small{font-size:var(--fs-2);color:var(--text-3)}
 .ct-amt{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-4)}
 .ct-amt small{font-size:var(--fs-2);color:var(--text-3)}
@@ -451,7 +450,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .cp-band{display:flex;align-items:center;gap:var(--sp-5);background:var(--brand-fill);color:var(--on-brand);padding:var(--sp-6) var(--sp-7)}
 .cp-av{width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;background:#fff;color:var(--brand-ink);font-weight:800;font-size:var(--fs-5)}
 .cp-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--sp-3)}
-.cp-who h3{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1);overflow-wrap:anywhere}
+.cp-who h3{font-size:var(--fs-6);font-weight:800;line-height:var(--lh-1)}
 .cp-chips{display:flex;flex-wrap:wrap;gap:var(--sp-3)}
 .cp-chips span{background:rgba(255,255,255,.16);border-radius:var(--r-7);padding:var(--sp-1) var(--sp-5);font-size:var(--fs-2)}
 .cp-btn{width:40px;height:40px;flex:none;border:0;border-radius:var(--r-4);background:rgba(255,255,255,.16);color:inherit;font-size:var(--fs-4);cursor:pointer;display:grid;place-items:center}
@@ -462,7 +461,7 @@ button.cp-av[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 .cp-who h3{margin:0}
 .cp-more:not([hidden]){display:grid;gap:var(--sp-3);margin-top:var(--sp-3)}
 .cp-band{flex-wrap:wrap}
-.cp-note{font-size:var(--fs-2);opacity:.85;overflow-wrap:anywhere}
+.cp-note{font-size:var(--fs-2);opacity:.85}
 /* התחייב · נגבה · נותר — בשורת הפס, קטנים; הנותר בולט */
 .cp-sum{display:flex;gap:var(--sp-2);flex:none;background:rgba(255,255,255,.1);border-radius:var(--r-5);padding:var(--sp-2)}
 .cp-sum span{display:flex;flex-direction:column;align-items:center;padding:var(--sp-2) var(--sp-4);border-radius:var(--r-4);min-width:0}
