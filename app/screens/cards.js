@@ -22,8 +22,14 @@ import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, don
 // כרטיס אחד פתוח בכל פעם.
 // כרטיס כללי (`is_general`) — מגבית, פרויקט או «תורמים לא מזוהים» — תמיד בנפרד, בתחתית הרשימה.
 // במיון לפי שגריר — כותרת לכל שגריר.
+// הרשימה — מעליה «כרטיסים» ומספר הכרטיסים שבסינון, כמו «הלוואות» במסך ההלוואות; והאריחים בכרטיס מתחתיה
 function cardRowsHTML() {
-  var c = state.cards, list = donorMatches(c.q, c.aff, c.sort, c.pf);
+  var list = donorMatches(state.cards.q, state.cards.aff, state.cards.sort, state.cards.pf);
+  return '<div class="ln-list-h"><h2>כרטיסים<span class="cnt">' + list.length + '</span></h2></div>' +
+    '<section class="card">' + cardTilesHTML(list) + '</section>';
+}
+function cardTilesHTML(list) {
+  var c = state.cards;
   if (c.open && !list.some(function (d) { return d.client_id === c.open; })) c.open = null;
   if (!list.length) return emptyBox('cards', state.donors.length ? 'אין כרטיס התואם את החיפוש' : 'עדיין אין כרטיסים');
   var people = list.filter(function (d) { return !d.is_general; }), general = list.filter(function (d) { return d.is_general; });
@@ -98,20 +104,22 @@ function pledgeFilterHTML(v) {
     grp('סוגי התחייבויות', 'סוג', 't:', lookupLabels(LK_PTYPE), 'pledge_type') + '</select>';
 }
 
-// ── סיכום הכרטיסים — עיגולים כמו במסך ההלוואות: כמה כרטיסים · התחייבו · נגבה · נותר לגבות, בכל הכרטיסים ──
+// ── סיכום הכרטיסים — עיגולים כמו במסך ההלוואות: התחייבו · נגבה · נותר לגבות · תשלומים · VIP (בכוכב), בכל הכרטיסים ──
 function cKShort(v) { var a = Math.abs(v); return a >= 1e6 ? (Math.round(v / 1e5) / 10) + 'M' : a >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
 function cardsSumHTML() {
-  var ds = state.donors, tot = 0, paid = 0, left = 0, open = 0;
+  var ds = state.donors, tot = 0, paid = 0, left = 0, vip = 0;
   ds.forEach(function (d) {
-    var l = donorLeft(d.client_id);
-    tot += donorTotal(d.client_id); paid += donorPaid(d.client_id); left += l;
-    if (l > 0) open++;
+    tot += donorTotal(d.client_id); paid += donorPaid(d.client_id); left += donorLeft(d.client_id);
+    if (d.starred) vip++;
   });
+  var nTx = state.txns.length, curM = dayToday().slice(0, 7);
+  var nTxM = state.txns.filter(function (t) { return t.txn_month === curM; }).length;
   return '<div class="ln-dots cs-dots">' + [
-    { t: 'כרטיסים', v: String(ds.length), title: ds.length + ' כרטיסים', tone: '', sub: open + ' עם יתרה לגבות' },
-    { t: 'התחייבו', v: cKShort(tot), title: ils(tot), tone: '', sub: 'סך ההתחייבויות' },
-    { t: 'נגבה', v: cKShort(paid), title: ils(paid), tone: 'ok', sub: tot > 0 ? Math.round(paid / tot * 100) + '% מההתחייבויות' : '' },
-    { t: 'נותר לגבות', v: cKShort(left), title: ils(left), tone: 'gold', sub: 'בכל הכרטיסים' }
+    { t: 'התחייבו', v: cKShort(tot), title: ils(tot), tone: '', sub: '' },
+    { t: 'נגבה', v: cKShort(paid), title: ils(paid), tone: 'ok', sub: tot > 0 ? Math.round(paid / tot * 100) + '%' : '' },
+    { t: 'נותר לגבות', v: cKShort(left), title: ils(left), tone: 'gold', sub: '' },
+    { t: 'תשלומים', v: String(nTx), title: nTx + ' תשלומים', tone: '', sub: nTxM + ' החודש' },
+    { t: 'VIP', v: String(vip), title: vip + ' כרטיסים בכוכב', tone: 'vip', sub: 'בכוכב' }
   ].map(function (o) {
     return '<div class="ln-dot ' + o.tone + '" title="' + esc(o.t + ' ' + o.title) + '"><span class="ln-dot-c"><b>' + esc(o.v) + '</b></span>' +
       '<span class="ln-dot-t">' + esc(o.t) + '</span>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</div>';
@@ -134,7 +142,7 @@ function viewCards() {
       '</div>' +
       cardsSumHTML() +
     '</section>' +
-    '<section class="card"><div id="cards-list">' + cardRowsHTML() + '</div></section>';
+    '<div id="cards-list">' + cardRowsHTML() + '</div>';
 }
 
 // ── הכרטיס הפתוח ──

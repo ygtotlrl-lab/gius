@@ -583,7 +583,10 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 /* האות בעיגול — במרכז לפי הגליף עצמו ולא לפי מידות השורה של הגופן (שונות בין מכשירים): השורה נחתכת לגובה האות */
 .ln-letter span{display:inline-grid;place-items:center;line-height:1}
 .ln-letter span b{display:block;font-weight:900;line-height:1}
-/* בכרטיסים — ארבעה עיגולים בשורה אחת, מתחת לכלים, בקו מקווקו */
-.cs-dots{grid-template-columns:repeat(4,1fr);margin-top:var(--sp-6);padding-top:var(--sp-6);border-top:1px dashed var(--border)}
-.cs-dots .ln-dot-c{width:68px;height:68px}
-.cs-dots .ln-dot-c b{font-size:var(--fs-4)}
+/* בכרטיסים — חמישה עיגולים בשורה אחת, מתחת לכלים, בקו מקווקו; VIP — בזהב הכוכב */
+.cs-dots{grid-template-columns:repeat(5,1fr);gap:var(--sp-4) var(--sp-2);margin-top:var(--sp-6);padding-top:var(--sp-6);border-top:1px dashed var(--border)}
+.cs-dots .ln-dot-c{width:60px;height:60px}
+.cs-dots .ln-dot-c b{font-size:var(--fs-3)}
+.cs-dots .ln-dot-t{font-size:var(--fs-1)}
+.cs-dots small{font-size:11px}
+.cs-dots .ln-dot.vip .ln-dot-c{background:var(--gold-soft,var(--warn-soft));box-shadow:inset 0 0 0 3px var(--gold,var(--warn))} .cs-dots .ln-dot.vip b{color:var(--gold,var(--warn))}
