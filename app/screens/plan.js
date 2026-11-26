@@ -102,7 +102,7 @@ function formPlan(r) {
       '<label class="fld"><span>צפי</span><input class="inp" data-amt id="pl-exp" inputmode="decimal" value="' + esc(r && r.expected != null ? r.expected : '') + '"></label>' +
     '</div>' +
     '<div class="f2">' +
-      '<label class="fld"><span>איש קשר</span>' + selectHTML('pl-amb', lookupLabels(LK_AMBASSADOR), r ? r.ambassador : (d && d.ambassador) || '', '— ללא —') + '</label>' +
+      '<label class="fld"><span>שגריר</span>' + selectHTML('pl-amb', lookupLabels(LK_AMBASSADOR), r ? r.ambassador : (d && d.ambassador) || '', '— ללא —') + '</label>' +
       '<label class="fld"><span>תאריך טיפול</span><input class="inp" type="date" id="pl-care" value="' + esc(r && r.care_date ? r.care_date : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערות</span><input class="inp" id="pl-note" value="' + esc(r ? r.note || '' : '') + '"></label>',
