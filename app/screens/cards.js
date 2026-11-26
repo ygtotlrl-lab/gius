@@ -2,7 +2,7 @@
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { amtSet, cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
-import { MSG_BAD_PHONE, MSG_NO_PHONE, MSG_PHONE_LEN, MSG_PHONE_PRE } from '../constants.js';
+import { MSG_NO_PHONE, MSG_PHONE_IL, MSG_PHONE_NUM, MSG_PHONE_PRE } from '../constants.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
          MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_DATE, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
          MSG_SO_FIRST_OVER, TTL_DONOR_EDIT, TTL_DONOR_NEW, TTL_PAY_EDIT, TTL_PAY_NEW, TTL_PLEDGE_EDIT, TTL_PLEDGE_NEW } from '../constants.js';
@@ -11,7 +11,7 @@ import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
 import { snapShare } from '../../core/snap.js';
 import { datePairHTML, dpSet, hebFull } from '../../core/datepair.js';
-import { PHONE_PREFIXES, phoneShow, phoneSplit, phoneTel, phoneValid, phoneWa } from '../domain.js';
+import { phoneDigits, phoneIntl, phoneJoin, phoneSplit, phoneTel, phoneWa } from '../domain.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
@@ -130,8 +130,8 @@ function cardOpenHTML(d) {
       (chips.length ? '<button class="cp-av" data-act="card-who" aria-expanded="false" aria-label="פרטי הכרטיס" title="פרטי הכרטיס">' + esc(initials(d.name)) + '</button>'
                                  : '<span class="cp-av">' + esc(initials(d.name)) + '</span>') +
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
-        // הטלפון — המספר, וחיוג ו-וואטסאפ לצדו; בלי מספר — הכפתורים נשארים, והלחיצה אומרת שאין
-        '<div class="cp-dial">' + (d.phone ? '<span dir="ltr">' + esc(phoneShow(d.phone)) + '</span>' : '') +
+        // חיוג ו-וואטסאפ מתחת לשם — המספר עצמו בטופס הכרטיס בלבד; בלי מספר — הכפתורים נשארים, והלחיצה אומרת שאין
+        '<div class="cp-dial">' +
           '<button class="cp-btn sm" data-act="card-call" data-id="' + id + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</button>' +
           '<button class="cp-btn sm" data-act="card-wa" data-id="' + id + '" aria-label="וואטסאפ" title="וואטסאפ">' + icon('chat') + '</button></div>' +
         '<div class="cp-more" hidden>' +
@@ -334,7 +334,7 @@ function formDonor(d) {
     '<label class="fld"><span>שגריר</span>' + selectHTML('d-amb', amb, d ? d.ambassador : '', '— ללא —') + '</label>' +
     '<div class="f2 f2-tight dp-pair">' + datePairHTML('d-birth', d && d.birth_date ? d.birth_date : '', { empty: true, clear: true, start: '1980-01-01',
       labels: ['יום הולדת — לועזי', 'יום הולדת — עברי'] }) + '</div>' +
-    '<div class="f2 f2-tight ph-row">' +
+    '<div class="f2 f2-tight">' +
       phoneFieldHTML(d ? d.phone : '') +
       '<label class="fld"><span>תפקיד</span><input class="inp" id="d-role" value="' + esc(d ? d.role || '' : '') + '"></label>' +
     '</div>' +
@@ -355,26 +355,26 @@ function formDonor(d) {
   var n = $('#d-name'); if (n && !d) n.focus();
 }
 
-// ── הטלפון — קידומת ומספר בשדה אחד, משמאל לימין; מספר שלא נקרא (חו״ל) — כולו בשדה המספר ──
+// ── הטלפון — קידומת צרה ומספר, ספרות בלבד, משמאל לימין; קידומת בלי 0 — קידומת מדינה ──
 function phoneFieldHTML(ph) {
   var x = phoneSplit(ph);
   return '<div class="fld"><span>טלפון</span><div class="ph-pair" dir="ltr">' +
-    '<select class="inp ph-pre" id="d-ph-pre" aria-label="קידומת"><option value="">קידומת</option>' +
-    PHONE_PREFIXES.map(function (p) { return '<option' + (p === x.pre ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
-    '<input class="inp ph-num" id="d-ph-num" inputmode="numeric" dir="ltr" aria-label="מספר" placeholder="1234567" value="' + esc(x.num) + '"></div></div>';
+    '<input class="inp ph-pre" id="d-ph-pre" inputmode="numeric" maxlength="4" aria-label="קידומת" value="' + esc(x.pre) + '">' +
+    '<input class="inp ph-num" id="d-ph-num" inputmode="numeric" aria-label="מספר" value="' + esc(x.num) + '"></div></div>';
 }
+// הבדיקה — רק בשמירה: קידומת ומספר שניהם או אף אחד, ובמספר ישראלי — 9 או 10 ספרות
 function phoneRead() {
-  var pre = val('d-ph-pre'), num = String(val('d-ph-num') || '').replace(/[\s-]/g, '');
-  if (!num) return { phone: null };
-  if (!pre) return num.charAt(0) === '+' ? { phone: num } : { err: MSG_PHONE_PRE };
-  if (!/^\d{7}$/.test(num)) return { err: MSG_PHONE_LEN };
-  return { phone: pre + '-' + num };
+  var pre = phoneDigits(val('d-ph-pre')), num = phoneDigits(val('d-ph-num'));
+  if (!pre && !num) return { phone: null };
+  if (!pre) return { err: MSG_PHONE_PRE };
+  if (!num) return { err: MSG_PHONE_NUM };
+  if (!phoneIntl({ pre: pre }) && !/^\d{9,10}$/.test(pre + num)) return { err: MSG_PHONE_IL };
+  return { phone: phoneJoin(pre, num) };
 }
-// חיוג ו-וואטסאפ מהפס — בלי מספר: טוסט; מספר שאינו ישראלי תקין: טוסט
+// חיוג ו-וואטסאפ מהפס — בלי מספר: טוסט
 function cardDial(id, kind) {
   var d = donorById(id), ph = d && d.phone;
-  if (!ph) { toast(MSG_NO_PHONE, null, 'warn'); return; }
-  if (!phoneValid(ph)) { toast(MSG_BAD_PHONE, null, 'warn'); return; }
+  if (!ph || !phoneDigits(ph)) { toast(MSG_NO_PHONE, null, 'warn'); return; }
   var a = document.createElement('a');
   a.href = kind === 'wa' ? phoneWa(ph) : phoneTel(ph);
   if (kind === 'wa') { a.target = '_blank'; a.rel = 'noopener noreferrer'; }

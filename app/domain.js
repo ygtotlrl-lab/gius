@@ -720,22 +720,30 @@ function checked(id) { var el = $('#' + id); return !!(el && el.checked); }
 
 function nullable(v) { return v === '' ? null : v; }
 
-// ── טלפון — קידומת ומספר; נשמר «קידומת-מספר» (050-1234567), ונקרא בכל צורה שנרשמה (מקפים, רווחים, 972+) ──
-var PHONE_PREFIXES = ['050', '051', '052', '053', '054', '055', '056', '058', '059', '02', '03', '04', '08', '09',
-                      '072', '073', '074', '076', '077', '078', '079'];
+// ── טלפון — קידומת ומספר, ספרות בלבד: קידומת שמתחילה ב-0 — מספר ישראלי, ואחרת — קידומת מדינה (ה-+ נוסף לבד) ──
+// נשמר «קידומת-מספר» (054-8121040 · +1-2125551234), ונקרא בכל צורה שנרשמה (מקפים, רווחים, 972+, 00)
+var PHONE_IL = ['050', '051', '052', '053', '054', '055', '056', '058', '059', '072', '073', '074', '076', '077', '078', '079',
+                '02', '03', '04', '08', '09'];
 function phoneDigits(s) { return String(s || '').replace(/\D/g, ''); }
-function phoneLocal(s) { var d = phoneDigits(s); return d.indexOf('972') === 0 && d.length >= 11 ? '0' + d.slice(3) : d; }
 function phoneSplit(s) {
-  var d = phoneLocal(s), pre = '';
-  PHONE_PREFIXES.forEach(function (p) { if (d.indexOf(p) === 0 && p.length > pre.length) pre = p; });
-  return pre ? { pre: pre, num: d.slice(pre.length) } : { pre: '', num: String(s || '').trim() };
+  var raw = String(s || '').trim(), d = phoneDigits(raw);
+  if (!d) return { pre: '', num: '' };
+  var intl = /^(\+|00)/.test(raw), groups = raw.replace(/^(\+|00)/, '').split(/[\s-]+/).filter(Boolean);
+  if (intl && d.replace(/^00/, '').indexOf('972') === 0) { d = '0' + d.replace(/^00/, '').slice(3); intl = false; groups = []; }
+  else if (intl) { d = d.replace(/^00/, ''); return groups.length > 1 ? { pre: phoneDigits(groups[0]), num: phoneDigits(groups.slice(1).join('')) } : { pre: d, num: '' }; }
+  if (groups.length > 1 && /^0\d{1,2}$/.test(groups[0])) return { pre: groups[0], num: phoneDigits(groups.slice(1).join('')) };
+  var pre = '';
+  PHONE_IL.forEach(function (p) { if (d.indexOf(p) === 0 && p.length > pre.length) pre = p; });
+  if (!pre) pre = d.slice(0, 3);
+  return { pre: pre, num: d.slice(pre.length) };
 }
-// תקין — קידומת מהרשימה ושבע ספרות אחריה
-function phoneValid(s) { var x = phoneSplit(s); return !!x.pre && /^\d{7}$/.test(x.num); }
-// לתצוגה — «קידומת-מספר»; מספר שלא נקרא — כמו שנרשם
-function phoneShow(s) { var x = phoneSplit(s); return x.pre ? x.pre + '-' + x.num : String(s || ''); }
-function phoneTel(s) { return 'tel:' + phoneLocal(s); }
-function phoneWa(s) { return 'https://wa.me/972' + phoneLocal(s).slice(1); }
+function phoneIntl(x) { return !!x.pre && x.pre.charAt(0) !== '0'; }
+// לשמירה — מהקידומת והמספר שבטופס, ספרות בלבד
+function phoneJoin(pre, num) { var x = { pre: phoneDigits(pre), num: phoneDigits(num) }; return (phoneIntl(x) ? '+' : '') + x.pre + '-' + x.num; }
+// המספר הבינלאומי בספרות — לוואטסאפ ולחיוג
+function phoneE164(s) { var x = phoneSplit(s); return phoneIntl(x) ? x.pre + x.num : '972' + (x.pre + x.num).slice(1); }
+function phoneTel(s) { var x = phoneSplit(s); return 'tel:' + (phoneIntl(x) ? '+' + x.pre + x.num : x.pre + x.num); }
+function phoneWa(s) { return 'https://wa.me/' + phoneE164(s); }
 
 // ic — שם אייקון מהסט (מסך ריק נושא את אייקון המסך שלו).
 function emptyBox(ic, text) {
@@ -823,7 +831,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { PHONE_PREFIXES, phoneShow, phoneSplit, phoneTel, phoneValid, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { phoneDigits, phoneIntl, phoneJoin, phoneSplit, phoneTel, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

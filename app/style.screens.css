@@ -416,14 +416,13 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .dx-toggle .cnt{font-size:var(--fs-1);font-weight:800;background:var(--brand-soft);color:var(--brand-ink);border-radius:var(--r-6);padding:0 var(--sp-3)}
 .dx-toggle .chev{margin-inline-start:auto;display:inline-flex;width:20px;height:20px;color:var(--text-3)}
 .dx-body:not([hidden]){display:block;margin-top:var(--sp-4)}
-/* הטלפון — קידומת צרה ומספר, משמאל לימין */
+/* הטלפון — קידומת צרה (שלוש ספרות) ומספר בשאר הרוחב, משמאל לימין */
 .ph-pair{display:flex;gap:var(--sp-3)}
-.f2-tight.ph-row{grid-template-columns:3fr 2fr}
-.ph-pair .ph-pre{flex:none;width:84px;padding-left:28px;text-align:left}
-.ph-pair .ph-num{flex:1;min-width:0;text-align:left;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.ph-pair .ph-pre{flex:none;width:4.2em;text-align:center;padding-inline:var(--sp-2)}
+.ph-pair .ph-num{flex:1;min-width:0;text-align:left}
+.ph-pair .inp{font-variant-numeric:tabular-nums}
 /* שורת הטלפון בפס הכרטיס — המספר, וחיוג ו-וואטסאפ קטנים לצדו */
 .cp-dial{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-variant-numeric:tabular-nums}
-.cp-dial span{opacity:.9;margin-inline-end:var(--sp-2)}
 .cp-btn.sm{width:30px;height:30px}
 .cp-btn.sm .ico{width:17px;height:17px}
 /* הערת הכרטיס — מתחת לציר התשלומים */
