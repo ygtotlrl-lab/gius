@@ -328,7 +328,8 @@ create table if not exists public.g_events (
   created_at timestamp with time zone not null default now(),
   updated_at bigint not null,
   deleted_by text,
-  constraint g_events_pkey PRIMARY KEY (client_id)
+  constraint g_events_pkey PRIMARY KEY (client_id),
+  constraint g_events_name_req CHECK ((deleted OR (name <> ''::text)))
 );
 
 create table if not exists public.g_budget_items (
@@ -345,7 +346,8 @@ create table if not exists public.g_budget_items (
   deleted_by text,
   event_client_id text not null,
   constraint g_budget_items_pkey PRIMARY KEY (client_id),
-  constraint g_budget_items_event_fk FOREIGN KEY (event_client_id) REFERENCES g_events(client_id) ON DELETE RESTRICT
+  constraint g_budget_items_event_fk FOREIGN KEY (event_client_id) REFERENCES g_events(client_id) ON DELETE RESTRICT,
+  constraint g_budget_items_item_req CHECK ((deleted OR (item <> ''::text)))
 );
 
 create table if not exists public.g_donors (
@@ -365,7 +367,8 @@ create table if not exists public.g_donors (
   starred boolean not null default false,
   is_general boolean not null default false,
   dates jsonb not null default '[]'::jsonb,
-  constraint g_donors_pkey PRIMARY KEY (client_id)
+  constraint g_donors_pkey PRIMARY KEY (client_id),
+  constraint g_donors_name_req CHECK ((deleted OR (name <> ''::text)))
 );
 
 create table if not exists public.g_loans (
@@ -403,7 +406,8 @@ create table if not exists public.g_loans (
   constraint g_loans_settle_count_check CHECK (((settle_count IS NULL) OR (settle_count > 0))),
   constraint g_loans_status_check CHECK (((status IS NULL) OR (status = ANY (ARRAY['נמסר'::text, 'לטיפול'::text, 'להגשה'::text, 'בהתראה'::text])))),
   constraint g_loans_taken_month_check CHECK (((taken_month IS NULL) OR (taken_month ~ '^\d{4}-(0[1-9]|1[0-2])$'::text))),
-  constraint g_loans_taken_one_check CHECK (((taken_date IS NULL) OR (taken_month IS NULL)))
+  constraint g_loans_taken_one_check CHECK (((taken_date IS NULL) OR (taken_month IS NULL))),
+  constraint g_loans_lender_req CHECK ((deleted OR (lender <> ''::text)))
 );
 
 -- תנועה בהלוואה — סכום והערה; היתרה = סכום ההלוואה − Σ התנועות, ואינה נשמרת.
@@ -420,7 +424,8 @@ create table if not exists public.g_loan_moves (
   deleted_by text,
   move_date date,
   constraint g_loan_moves_pkey PRIMARY KEY (client_id),
-  constraint g_loan_moves_loan_fk FOREIGN KEY (loan_client_id) REFERENCES g_loans(client_id) ON DELETE RESTRICT
+  constraint g_loan_moves_loan_fk FOREIGN KEY (loan_client_id) REFERENCES g_loans(client_id) ON DELETE RESTRICT,
+  constraint g_loan_moves_amount_check CHECK ((amount > (0)::numeric))
 );
 
 create table if not exists public.g_lookups (
@@ -433,7 +438,8 @@ create table if not exists public.g_lookups (
   deleted boolean default false,
   deleted_at timestamp with time zone,
   deleted_by text,
-  constraint g_lookups_pkey PRIMARY KEY (client_id)
+  constraint g_lookups_pkey PRIMARY KEY (client_id),
+  constraint g_lookups_label_req CHECK ((COALESCE(deleted, false) OR (label <> ''::text)))
 );
 
 create table if not exists public.g_notes (
@@ -524,7 +530,8 @@ create table if not exists public.g_shtar_people (
   updated_at bigint not null,
   deleted_by text,
   constraint g_shtar_people_pkey PRIMARY KEY (client_id),
-  constraint g_shtar_people_donor_fk FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT
+  constraint g_shtar_people_donor_fk FOREIGN KEY (donor_client_id) REFERENCES g_donors(client_id) ON DELETE RESTRICT,
+  constraint g_shtar_people_phone_req CHECK ((deleted OR (phone <> ''::text)))
 );
 
 -- שיחה — שורה לכל שיחה; התוצאה, השגריר המטלפן, סכום ואופן כשתרם, ומועד כשצריך לחזור.
@@ -612,7 +619,8 @@ create table if not exists public.g_tasks (
   starred boolean not null default false,
   subtasks jsonb not null default '[]'::jsonb,
   constraint g_tasks_pkey PRIMARY KEY (client_id),
-  constraint g_tasks_stage_check CHECK ((stage = ANY (ARRAY['בעבודה'::text, 'הושלם'::text, 'לא רלוונטי'::text])))
+  constraint g_tasks_stage_check CHECK ((stage = ANY (ARRAY['בעבודה'::text, 'הושלם'::text, 'לא רלוונטי'::text]))),
+  constraint g_tasks_title_req CHECK ((deleted OR (title <> ''::text)))
 );
 
 create table if not exists public.g_txns (
