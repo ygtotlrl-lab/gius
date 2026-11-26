@@ -193,10 +193,23 @@ function loanCheckList(l) {
                                          a: per ? +per[i] || 0 : +l.check_amount || 0 });
   return out;
 }
-// הסכום להחזר — הקרן ועוד היתר העסקה: בתשלומים — סך התשלומים, ולטווח ארוך — `repay_total`; ולא פחות מהקרן.
+// אופן ההחזר בהסדר או תאריך — `repay_via`; הלוואה ישנה בלי אופן — «בתאריך» כשיש לה מועד, ואחרת «ללא תאריך».
+function loanVia(l) { return loanIsChecks(l) ? '' : (l.repay_via || (loanDueMonth(l) ? 'date' : 'nodate')); }
+// התשלומים בהסדר או תאריך — `pay_plan`: סכום ותאריך (רשות) לכל אחד; «ללא תאריך» — בלי תשלומים. תכנון בלבד:
+// מה ששולם — מהתנועות, והן מכסות את התשלומים לפי הסדר; `left` — מה שנשאר מכל תשלום.
+function loanPlan(l) {
+  if (loanIsChecks(l) || loanVia(l) === 'nodate' || !Array.isArray(l.pay_plan) || !l.pay_plan.length) return [];
+  var n = l.pay_plan.length, paid = sum(loanMovesOf(l.client_id), function (mv) { return mv.amount; });
+  return l.pay_plan.map(function (p, i) {
+    var a = +(p && p.a) || 0, d = p && p.d || '', c = Math.max(0, Math.min(a, paid));
+    paid -= c;
+    return { i: i + 1, n: n, a: a, d: d, m: d ? monthKeyOf(d) : '', left: a - c };
+  });
+}
+// הסכום להחזר — הקרן ועוד היתר העסקה: בצ׳קים — סך הצ׳קים; בהסדר או תאריך — סך התשלומים, ובלעדיהם `repay_total`; ולא פחות מהקרן.
 function loanTotal(l) {
-  var a = +l.amount || 0;
-  return Math.max(a, loanIsChecks(l) ? sum(loanCheckList(l), function (c) { return c.a; }) : +l.repay_total || 0);
+  var a = +l.amount || 0, plan = loanPlan(l);
+  return Math.max(a, loanIsChecks(l) ? sum(loanCheckList(l), function (c) { return c.a; }) : plan.length ? sum(plan, function (p) { return p.a; }) : +l.repay_total || 0);
 }
 function loanInterest(l) { return loanTotal(l) - (+l.amount || 0); }
 // שולם עד סוף חודש mk — כל מה שהוחזר, קרן והיתר עסקה: התנועות שנרשמו עד אז (ותנועה בלי תאריך — תמיד);
@@ -206,6 +219,9 @@ function loanPaidGross(l, mk) {
   var cur = loanCurMonth();
   var moves = sum(loanMovesOf(l.client_id).filter(function (mv) { var m = loanMoveMonth(mv); return !m || m <= mk; }), function (mv) { return mv.amount; });
   if (loanIsChecks(l)) return Math.max(moves, sum(loanCheckList(l).filter(function (c) { return c.m && c.m <= mk; }), function (c) { return c.a; }));
+  // בתשלומים — בחודש עתידי, מה שנשאר מכל תשלום שחודשו מהיום ועד אז (תכנון); תשלום שעבר מועדו — באיחור, ואינו בתכנון
+  var plan = loanPlan(l);
+  if (plan.length) return mk > cur ? moves + sum(plan.filter(function (p) { return p.m && p.m >= cur && p.m <= mk; }), function (p) { return p.left; }) : moves;
   var due = loanDueMonth(l);
   if (mk > cur && due && due >= cur && due <= mk) return Math.max(moves, loanTotal(l));
   return moves;
@@ -841,7 +857,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { canSettings, isManagerAmb, shtManagers, phoneDigits, phoneIntl, phoneJoin, phoneSplit, phoneTel, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { canSettings, isManagerAmb, shtManagers, phoneDigits, phoneIntl, phoneJoin, phoneSplit, phoneTel, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanPlan, loanVia, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

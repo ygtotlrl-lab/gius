@@ -28,7 +28,7 @@ import { cardDial, cardNoteSave, datesToggle, datesAdd, datesDel, cardRowsHTML, 
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { dtClear, dtDay, dtDone, dtDow, dtInput, dtMon, dtToggle, formTask, saveTask, subAdd, subEdDot, subRm, taskStep, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
 import { closeNoteFull, formNote, noteColorPick, viewNotes } from './screens/notes.js';
-import { addLoanMove, ckMode, ckSync, finMode, finOn, intSync, formLoanMove, loanInfo, loanKindPick, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans } from './screens/loans.js';
+import { addLoanMove, ckMode, ckSync, finMode, finOn, intSync, formLoanMove, loanInfo, loanKindPick, loanViaPick, planDlg, planGo, planMode, planOn, planSync, loansAfter, loansPartial, saveLoanMove, loansBodyHTML, saveLoan, setCount, viewLoans } from './screens/loans.js';
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
@@ -451,6 +451,10 @@ var DOM_ACTIONS = {
     return delAsk(MSG_DEL_LOAN, 'g_loans', el.dataset.id, function () { if (state.loansOpen === el.dataset.id) state.loansOpen = null; });
   },
   'loan-kind': loanKindPick,
+  'loan-via': loanViaPick,
+  'plan-dlg': planDlg,
+  'plan-mode': planMode,
+  'plan-go': planGo,
   'ck-mode': ckMode,
   'fin-mode': finMode,
   'set-count': setCount,
@@ -577,7 +581,8 @@ document.addEventListener('input', function (e) {
   if (el.dataset.inp === 'dtp-time') dtInput(el);
   if (el.dataset.inp === 'sht-q') { state.sht.q = el.value; state.sht.lim = 0; shtListRefresh(); }
   if (el.dataset.inp === 'pay-so') soSync();
-  if (el.dataset.inp === 'ck-sync') { ckSync(); intSync('p'); }
+  if (el.dataset.inp === 'ck-sync') { ckSync(); intSync('p'); planSync(); }
+  if (el.dataset.inp === 'plan-sync') planSync();
   if (el.dataset.inp === 'int-p') intSync('p');
   if (el.dataset.inp === 'int-t') intSync('t');
   if (el.dataset.inp === 'p-so' || el.id === 'p-amount') pSoSync();
@@ -597,6 +602,7 @@ document.addEventListener('change', function (e) {
   if (el.dataset.chg === 'loans-status') { state.loansStatus = el.value; loansRefresh(); return; }
   if (el.dataset.chg === 'loans-sort') { state.loansSort = el.value; loansRefresh(); return; }
   if (el.dataset.chg === 'fin-on') { finOn(el); return; }
+  if (el.dataset.chg === 'plan-on') { planOn(el); return; }
   if (el.dataset.chg === 'sc-status') { callStatusPick(el.value); return; }
   if (el.dataset.chg === 'sht-res') { state.sht.f = el.value || 'queue'; state.sht.lim = 0; render(); return; }
   if (el.dataset.chg === 'sht-amb-f') { state.sht.amb_f = el.value; state.sht.lim = 0; render(); return; }

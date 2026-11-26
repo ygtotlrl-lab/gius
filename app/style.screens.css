@@ -604,3 +604,28 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .look-admin{flex:none;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:none;color:var(--text-3);opacity:.45;cursor:pointer}
 .look-admin.on{color:var(--gold);opacity:1;background:var(--gold-soft,transparent)}
 .look-admin .ico{width:19px;height:19px}
+
+/* הסדר או תאריך — ארבעה אריחים עם אייקון (שניים בשורה בטלפון), ובתשלומים — שורה לכל תשלום: סכום · תאריך פירעון */
+.ln-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3);margin-bottom:var(--sp-5)}
+.ln-tiles button{display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);padding:var(--sp-4) var(--sp-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--card);color:var(--text);font:inherit;font-weight:700;cursor:pointer;text-align:center}
+.ln-tiles button.on{border-color:var(--brand-fill);background:var(--brand-soft);color:var(--brand-ink)}
+.ln-tile-ic{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--brand-soft);color:var(--brand-ink)}
+.ln-tiles button.on .ln-tile-ic{background:var(--card)}
+.ln-tile-ic .ico{width:22px;height:22px}
+.ln-choice.no-int button[data-v="int"]{display:none}
+.ln-choice.no-int{grid-template-columns:1fr}
+.ln-plan{margin-top:var(--sp-2)}
+.ln-plan-h{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.ln-plan-list{display:grid;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.ln-plan-row{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);align-items:center;gap:var(--sp-3)}
+.ln-plan-row:not(:has([data-pa])){grid-template-columns:auto minmax(0,1fr)}
+.ln-plan-row .inp{min-width:0;width:100%;box-sizing:border-box}
+.ln-plan-i{font-weight:700;color:var(--text-2);min-width:64px}
+.ln-ck.late small{color:var(--bad);font-weight:700}
+.ln-cks.via .ln-ck{border-top-color:var(--ln-a)}
+.ln-cks.via{margin-bottom:var(--sp-6)}
+.ln-wbody .rc.ln-late .rc-amt{color:var(--bad)} .ln-wbody .rc.ln-late{border-color:var(--bad)}
+@media not all and (min-width:640px){ .ln-tiles{grid-template-columns:1fr 1fr} }
+@media (min-width:900px){ .ln-plan-list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))} }
+@media not all and (min-width:640px){ .ln-plan-row:has([data-pa]){grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);row-gap:var(--sp-1)} .ln-plan-row:has([data-pa]) .ln-plan-i{grid-column:1 / -1} }

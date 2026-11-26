@@ -94,7 +94,7 @@ function tasksHTML() {
 
 // ── הכנסות והלוואות ──
 // הכנסה — מה שנספר בחודש (monthAmount של התשלומים היזומים); הלוואות — משני הסוגים (loanFlow · loanDebt ב-domain.js):
-// חדשות לפי חודש הלקיחה, והחזרים — לטווח ארוך לפי תאריך התנועה, ובתשלומים לפי התשלומים שהוגדרו; נטו = חדשות פחות החזרים.
+// חדשות לפי חודש הלקיחה, והחזרים — בהסדר או תאריך לפי תאריך התנועה, ובהחזר צ׳קים לפי הצ׳קים שהוגדרו; נטו = חדשות פחות החזרים.
 function flowOf(m) {
   var f = loanFlow(m);
   f.inc = sum(monthTxnsInit(m), monthAmount);
@@ -174,17 +174,17 @@ function lg(items) {
   return '<div class="fl-legend"><div class="fl-lg">' + items.map(function (x) { return '<span><i class="' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
 }
 // שלושה מדדים: הכללי — הכנסות · הלוואות · היתר עסקה · החזרים, וקו החוב כולו; ובתוכו, בסופו, שני כפתורים זה מעל זה —
-// לטווח ארוך ובתשלומים: סגורים, ולחיצה פותחת את המדד של הסוג מתחת לכפתור (`state.ixOpen`).
+// הסדר או תאריך והחזר צ׳קים: סגורים, ולחיצה פותחת את המדד של הסוג מתחת לכפתור (`state.ixOpen`).
 function indicesHTML(all) {
   var tone = function (key, kind) { return chgTxt(all, key, kind).indexOf('עלה') === 0 ? 'up' : 'down'; };
-  var sub = '<span class="' + tone('debtLong', 'long') + '">לטווח ארוך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
-    '<span class="' + tone('debtInst', 'inst') + '">בתשלומים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
+  var sub = '<span class="' + tone('debtLong', 'long') + '">הסדר או תאריך ' + esc(chgTxt(all, 'debtLong', 'long')) + '</span> · ' +
+    '<span class="' + tone('debtInst', 'inst') + '">החזר צ׳קים ' + esc(chgTxt(all, 'debtInst', 'inst')) + '</span>' +
     ' · <span class="int">עלויות מימון ' + esc(kShort(sum(all, function (f) { return f.finance; }))) + '</span>';
   var debtLine = ['debt', 'החוב בסוף החודש'];
   var kinds = [
-    { k: 'long', key: 'debtLong', title: 'הלוואות לטווח ארוך',
+    { k: 'long', key: 'debtLong', title: 'הלוואות בהסדר או תאריך',
       bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'הלוואות' }, fin(f.intLong, f.finLong), { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
-    { k: 'inst', key: 'debtInst', title: 'הלוואות בתשלומים',
+    { k: 'inst', key: 'debtInst', title: 'הלוואות בהחזר צ׳קים',
       bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'הלוואות' }, fin(f.intInst, f.finInst), { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
   var open = state.ixOpen || {};
   var subs = '<div class="ix-subs">' + kinds.map(function (x) {
