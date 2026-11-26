@@ -2,6 +2,7 @@
 import { dayToday, readNum } from '../../core/util.js';
 import { pendTag } from '../../core/sync.js';
 import { amtSet, cardWinHTML, esc, methodGridHTML, methodIcon, methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
+import { MSG_BAD_PHONE, MSG_NO_PHONE, MSG_PHONE_LEN, MSG_PHONE_PRE } from '../constants.js';
 import { LK_AFFIL, LK_AMBASSADOR, LK_METHOD, LK_PTYPE, LK_SECTION, METHOD_SO, MSG_AMOUNT_POSITIVE, MSG_PICK_AMB,
          MSG_PLEDGE_NO_AMB, MSG_NEED_NAME, MSG_PICK_DATE, MSG_PICK_TYPE, MSG_PICK_VALID_MONTH, MSG_SO_COUNT, MSG_SO_FIRST,
          MSG_SO_FIRST_OVER, TTL_DONOR_EDIT, TTL_DONOR_NEW, TTL_PAY_EDIT, TTL_PAY_NEW, TTL_PLEDGE_EDIT, TTL_PLEDGE_NEW } from '../constants.js';
@@ -10,6 +11,7 @@ import { icon } from '../icons.js';
 import { bar } from '../../core/chart.js';
 import { snapShare } from '../../core/snap.js';
 import { datePairHTML, dpSet, hebFull } from '../../core/datepair.js';
+import { PHONE_PREFIXES, phoneShow, phoneSplit, phoneTel, phoneValid, phoneWa } from '../domain.js';
 import { $, checked, collectedForPledge, donorById, donorLeft, donorMatches, donorPaid,
          donorTotal, emptyBox, gSortPledges, gSortTxns, ils, initials, insert, leftForPledge,
          lookupLabels, monthAmount, nullable, pendRowKey, pledgeById, pledgeStatus, pledgesOfDonor, selectHTML,
@@ -121,13 +123,17 @@ function cardOpenHTML(d) {
   var id = esc(d.client_id);
   var pl = gSortPledges(pledgesOfDonor(d.client_id));
   var total = donorTotal(d.client_id), paid = donorPaid(d.client_id), left = donorLeft(d.client_id);
-  var chips = [d.ambassador ? 'שגריר: ' + d.ambassador : '', d.role, d.phone].concat(d.affiliations || []).filter(Boolean);
+  var chips = [d.ambassador ? 'שגריר: ' + d.ambassador : '', d.role].concat(d.affiliations || []).filter(Boolean);
   var h = '<div class="copen cw-card">' +
     '<div class="cp-band cw-band">' +
       // בפס — העיגול והשם בלבד; השגריר, התפקיד, הטלפון, השייכויות וההערות — בלחיצה על העיגול
       (chips.length ? '<button class="cp-av" data-act="card-who" aria-expanded="false" aria-label="פרטי הכרטיס" title="פרטי הכרטיס">' + esc(initials(d.name)) + '</button>'
                                  : '<span class="cp-av">' + esc(initials(d.name)) + '</span>') +
       '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
+        // הטלפון — המספר, וחיוג ו-וואטסאפ לצדו; בלי מספר — הכפתורים נשארים, והלחיצה אומרת שאין
+        '<div class="cp-dial">' + (d.phone ? '<span dir="ltr">' + esc(phoneShow(d.phone)) + '</span>' : '') +
+          '<button class="cp-btn sm" data-act="card-call" data-id="' + id + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</button>' +
+          '<button class="cp-btn sm" data-act="card-wa" data-id="' + id + '" aria-label="וואטסאפ" title="וואטסאפ">' + icon('chat') + '</button></div>' +
         '<div class="cp-more" hidden>' +
         (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
         '</div>' +
@@ -328,8 +334,8 @@ function formDonor(d) {
     '<label class="fld"><span>שגריר</span>' + selectHTML('d-amb', amb, d ? d.ambassador : '', '— ללא —') + '</label>' +
     '<div class="f2 f2-tight dp-pair">' + datePairHTML('d-birth', d && d.birth_date ? d.birth_date : '', { empty: true, clear: true, start: '1980-01-01',
       labels: ['יום הולדת — לועזי', 'יום הולדת — עברי'] }) + '</div>' +
-    '<div class="f2 f2-tight">' +
-      '<label class="fld"><span>טלפון</span><input class="inp" id="d-phone" inputmode="tel" value="' + esc(d ? d.phone || '' : '') + '"></label>' +
+    '<div class="f2 f2-tight ph-row">' +
+      phoneFieldHTML(d ? d.phone : '') +
       '<label class="fld"><span>תפקיד</span><input class="inp" id="d-role" value="' + esc(d ? d.role || '' : '') + '"></label>' +
     '</div>' +
     '<label class="fld"><span>הערות</span><textarea class="inp" id="d-notes">' + esc(d ? d.notes || '' : '') + '</textarea></label>' +
@@ -349,11 +355,39 @@ function formDonor(d) {
   var n = $('#d-name'); if (n && !d) n.focus();
 }
 
+// ── הטלפון — קידומת ומספר בשדה אחד, משמאל לימין; מספר שלא נקרא (חו״ל) — כולו בשדה המספר ──
+function phoneFieldHTML(ph) {
+  var x = phoneSplit(ph);
+  return '<div class="fld"><span>טלפון</span><div class="ph-pair" dir="ltr">' +
+    '<select class="inp ph-pre" id="d-ph-pre" aria-label="קידומת"><option value="">קידומת</option>' +
+    PHONE_PREFIXES.map(function (p) { return '<option' + (p === x.pre ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
+    '<input class="inp ph-num" id="d-ph-num" inputmode="numeric" dir="ltr" aria-label="מספר" placeholder="1234567" value="' + esc(x.num) + '"></div></div>';
+}
+function phoneRead() {
+  var pre = val('d-ph-pre'), num = String(val('d-ph-num') || '').replace(/[\s-]/g, '');
+  if (!num) return { phone: null };
+  if (!pre) return num.charAt(0) === '+' ? { phone: num } : { err: MSG_PHONE_PRE };
+  if (!/^\d{7}$/.test(num)) return { err: MSG_PHONE_LEN };
+  return { phone: pre + '-' + num };
+}
+// חיוג ו-וואטסאפ מהפס — בלי מספר: טוסט; מספר שאינו ישראלי תקין: טוסט
+function cardDial(id, kind) {
+  var d = donorById(id), ph = d && d.phone;
+  if (!ph) { toast(MSG_NO_PHONE, null, 'warn'); return; }
+  if (!phoneValid(ph)) { toast(MSG_BAD_PHONE, null, 'warn'); return; }
+  var a = document.createElement('a');
+  a.href = kind === 'wa' ? phoneWa(ph) : phoneTel(ph);
+  if (kind === 'wa') { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
 function saveDonor(id) {
   var name = val('d-name');
   if (!name) { toast(MSG_NEED_NAME, null, 'warn'); return; }
+  var ph = phoneRead();
+  if (ph.err) { toast(ph.err, null, 'warn'); return; }
   var row = { name: name, ambassador: nullable(val('d-amb')), birth_date: nullable(val('d-birth-date')),
-              role: nullable(val('d-role')), phone: nullable(val('d-phone')), notes: nullable(val('d-notes')),
+              role: nullable(val('d-role')), phone: ph.phone, notes: nullable(val('d-notes')),
               is_general: checked('d-general'), affiliations: affRead(), dates: _dates.slice() };
   if (id) return update('g_donors', id, row);
   return insert('g_donors', Object.assign(row, { starred: false })).then(function (d) {
@@ -603,5 +637,5 @@ function savePay(id, pledgeId) {
   return insert('g_txns', Object.assign(row, { donor_client_id: p.donor_client_id, pledge_client_id: p.client_id }));
 }
 
-export { cardNoteSave, datesAdd, datesDel, datesToggle, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
+export { cardDial, cardNoteSave, datesAdd, datesDel, datesToggle, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync, soUneqToggle, viewCards };
 

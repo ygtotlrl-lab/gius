@@ -720,6 +720,23 @@ function checked(id) { var el = $('#' + id); return !!(el && el.checked); }
 
 function nullable(v) { return v === '' ? null : v; }
 
+// ── טלפון — קידומת ומספר; נשמר «קידומת-מספר» (050-1234567), ונקרא בכל צורה שנרשמה (מקפים, רווחים, 972+) ──
+var PHONE_PREFIXES = ['050', '051', '052', '053', '054', '055', '056', '058', '059', '02', '03', '04', '08', '09',
+                      '072', '073', '074', '076', '077', '078', '079'];
+function phoneDigits(s) { return String(s || '').replace(/\D/g, ''); }
+function phoneLocal(s) { var d = phoneDigits(s); return d.indexOf('972') === 0 && d.length >= 11 ? '0' + d.slice(3) : d; }
+function phoneSplit(s) {
+  var d = phoneLocal(s), pre = '';
+  PHONE_PREFIXES.forEach(function (p) { if (d.indexOf(p) === 0 && p.length > pre.length) pre = p; });
+  return pre ? { pre: pre, num: d.slice(pre.length) } : { pre: '', num: String(s || '').trim() };
+}
+// תקין — קידומת מהרשימה ושבע ספרות אחריה
+function phoneValid(s) { var x = phoneSplit(s); return !!x.pre && /^\d{7}$/.test(x.num); }
+// לתצוגה — «קידומת-מספר»; מספר שלא נקרא — כמו שנרשם
+function phoneShow(s) { var x = phoneSplit(s); return x.pre ? x.pre + '-' + x.num : String(s || ''); }
+function phoneTel(s) { return 'tel:' + phoneLocal(s); }
+function phoneWa(s) { return 'https://wa.me/972' + phoneLocal(s).slice(1); }
+
 // ic — שם אייקון מהסט (מסך ריק נושא את אייקון המסך שלו).
 function emptyBox(ic, text) {
   return '<div class="empty"><span class="big">' + icon(ic) + '</span>' + esc(text) + '</div>';
@@ -806,7 +823,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { PHONE_PREFIXES, phoneShow, phoneSplit, phoneTel, phoneValid, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

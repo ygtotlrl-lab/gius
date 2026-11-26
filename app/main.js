@@ -23,7 +23,7 @@ import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
 import { DATEPAIR_ACTIONS } from '../core/datepair.js';
-import { cardNoteSave, datesToggle, datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync,
+import { cardDial, cardNoteSave, datesToggle, datesAdd, datesDel, cardRowsHTML, cardShare, formDonor, methodPick, payPledgePick, formPay, formPledge, pSoSync, saveDonor, savePay, savePledge, soSync,
          soUneqToggle, viewCards } from './screens/cards.js';
 import { formPlan, planShare, savePlan, viewPlan } from './screens/plan.js';
 import { dtClear, dtDay, dtDone, dtDow, dtInput, dtMon, dtToggle, formTask, saveTask, subAdd, subEdDot, subRm, taskStep, taskSubToggle, tasksBodyHTML, tasksShare, viewTasks } from './screens/tasks.js';
@@ -361,6 +361,8 @@ var DOM_ACTIONS = {
   'donor-save': saver(saveDonor, MSG_SAVED_OK),
   'dx-add': function () { datesAdd(); },
   'dx-toggle': function (el) { datesToggle(el); },
+  'card-call': function (el) { cardDial(el.dataset.id, 'tel'); },
+  'card-wa': function (el) { cardDial(el.dataset.id, 'wa'); },
   'dx-del': function (el) { datesDel(el.dataset.i); },
   'donor-del': function (el) {
     return delAsk(MSG_DEL_DONOR, 'g_donors', el.dataset.id, function () { state.cards.open = null; });
