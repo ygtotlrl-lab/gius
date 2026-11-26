@@ -111,25 +111,9 @@ var BK_CFG = {
   user: function () { var u = gauthUser(); return u ? (u.full_name || u.login) : null; },
   // secrets ריק — אין היום סוד, והמנגנון נשאר דרוך לסוד עתידי.
   secrets: [],
+  // המקורות — הטבלאות שהאפליקציה דוחפת (PUSH_TABLES), ולא רשימה שמוקלדת שנית: טבלה שנוספה לסנכרון נכנסת לגיבוי מעצמה.
   sources: function () {
-    return [
-      { name: 'g_donors',       order: 'client_id', ts: 'updated_at' },
-      { name: 'g_pledges',      order: 'client_id', ts: 'updated_at' },
-      { name: 'g_txns',         order: 'client_id', ts: 'updated_at' },
-      { name: 'g_plan_items',   order: 'client_id', ts: 'updated_at' },
-      { name: 'g_tasks',        order: 'client_id', ts: 'updated_at' },
-      { name: 'g_targets',      order: 'client_id', ts: 'updated_at' },
-      { name: 'g_notes',        order: 'client_id', ts: 'updated_at' },
-      { name: 'g_loans',        order: 'client_id', ts: 'updated_at' },
-      { name: 'g_loan_moves',   order: 'client_id', ts: 'updated_at' },
-      { name: 'g_events',       order: 'client_id', ts: 'updated_at' },
-      { name: 'g_budget_items', order: 'client_id', ts: 'updated_at' },
-      { name: 'g_shtar_people', order: 'client_id', ts: 'updated_at' },
-      { name: 'g_shtar_calls',  order: 'client_id', ts: 'updated_at' },
-      { name: KV_TABLE,         order: 'key',       ts: 'updated_at' },
-      { name: 'g_lookups',      order: 'client_id', ts: 'updated_at' },
-      { name: 'g_shtar_links',  order: 'client_id', ts: 'updated_at' }
-    ];
+    return PUSH_TABLES.map(function (t) { return { name: t, order: t === KV_TABLE ? 'key' : 'client_id', ts: 'updated_at' }; });
   }
 };
 
