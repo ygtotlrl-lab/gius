@@ -352,8 +352,8 @@ function loanWinHTML(l) {
   // חלק א — פרטי ההלוואה
   var p1 = '<section class="ln-p1"><h3>פרטי ההלוואה</h3>' +
     '<div class="ln-p1-row">' +
-      '<div class="fld ln-f-lender"><span>מלווה *</span>' +
-        comboHTML('loan-donor', { id: 'o-donor', label: 'מלווה — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
+      '<div class="fld ln-f-lender"><span>שם *</span>' +
+        comboHTML('loan-donor', { id: 'o-donor', label: 'שם — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
                                  picked: l ? { value: ld ? ld.client_id : '', label: lenderOf(l) } : null }) + '</div>' +
       '<label class="fld ln-f-amt"><span>סכום *</span><input class="inp" data-amt id="o-amount" inputmode="decimal" data-inp="ck-sync" value="' + esc(l && l.amount != null ? l.amount : '') + '"></label>' +
       '<div class="fld ln-f-kind"><span>סוג ההחזר *</span><input type="hidden" id="o-kind" value="' + esc(kind) + '">' +

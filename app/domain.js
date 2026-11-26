@@ -778,7 +778,7 @@ comboDef('donor-plan', Object.assign({}, DONOR_COMBO, { pick: function (it) {
 
 function donorFieldHTML(id, kind, donorId) {
   var d = donorId ? donorById(donorId) : null;
-  return comboHTML(kind, { id: id, label: 'חיפוש כרטיס לפי שם או טלפון', placeholder: 'חיפוש כרטיס לפי שם או טלפון…',
+  return comboHTML(kind, { id: id, label: 'שם — חיפוש כרטיס או שם חופשי', placeholder: 'חיפוש כרטיס או שם חופשי…',
                            picked: d ? { value: d.client_id, label: d.name } : null }) +
     '<div class="new-donor" data-new-donor="' + esc(id) + '"></div>';
 }

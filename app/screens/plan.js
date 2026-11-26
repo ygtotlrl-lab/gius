@@ -94,7 +94,7 @@ function planShare(amb) {
 function formPlan(r) {
   var d = r ? donorById(r.donor_client_id) : null;
   openModal(r ? TTL_PLAN_EDIT : TTL_PLAN_NEW + monthLabel(state.planMonth),
-    '<div class="fld"><span>כרטיס *</span>' + donorFieldHTML('pl-donor', 'donor-plan', r ? r.donor_client_id : null) + '</div>' +
+    '<div class="fld"><span>שם *</span>' + donorFieldHTML('pl-donor', 'donor-plan', r ? r.donor_client_id : null) + '</div>' +
     '<div class="f2">' +
       '<label class="fld"><span>סוג</span><select class="inp" id="pl-kind">' + PLAN_KINDS.map(function (k) {
         return '<option' + ((r ? r.kind : PLAN_KINDS[0]) === k ? ' selected' : '') + '>' + esc(k) + '</option>';
