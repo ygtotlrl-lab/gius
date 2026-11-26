@@ -130,7 +130,7 @@ function taskRowHTML(t) {
   '</div>';
 }
 
-// גוף המסך — הכל מלבד שדה החיפוש: לשונית לכל אחראי ⟵ «בעבודה» בחלקים ⟵ שני הכפתורים, והחלק שנפתח מהם
+// גוף המסך — הכל מלבד שדה החיפוש: לשונית לכל אחראי ⟵ שני הכפתורים, והחלק שנפתח מהם ⟵ «בעבודה» בחלקים
 function tasksBodyHTML() {
   var ui = state.tasks_ui, who = curWho(), names = assigneeNames(), q = String(ui.q || '').trim();
   var h = '<div class="seg seg-wide" role="tablist" aria-label="אחראי">' + names.map(function (w) {
@@ -139,16 +139,7 @@ function tasksBodyHTML() {
   }).join('') + '</div>';
   if (!who) return h + emptyBox('tasks', 'אין אחראים למשימות');
 
-  var run = tasksOf(who, RUN), any = false;
-  TASK_SECTIONS.forEach(function (s) {
-    var list = run.filter(function (t) { return sectionOf(t) === s[0]; });
-    if (!list.length) return;
-    any = true;
-    h += '<section class="card tk-sec tk-' + s[0] + '"><h2>' + esc(s[1]) + '<span class="cnt">' + list.length + '</span></h2>' + groupsHTML(list) + '</section>';
-  });
-  if (!any) h += '<section class="card">' + emptyBox('tasks', q ? 'לא נמצאו משימות בעבודה' : 'אין משימות בעבודה') + '</section>';
-
-  // «הושלמו» ו«לא רלוונטי» — כפתור לכל אחד, ולחיצה פורשת אותן באותה צורה; לחיצה נוספת סוגרת
+  // «הושלמו» ו«לא רלוונטי» — למעלה, מתחת ללשוניות: כפתור לכל אחד, ולחיצה פורשת אותן כאן באותה צורה; לחיצה נוספת סוגרת
   h += '<div class="tk-more">' + [[DONE, 'הושלמו', 'done'], [OFF, 'לא רלוונטי', 'off']].map(function (x) {
     var n = tasksOf(who, x[0]).length, on = ui.extra === x[0];
     return '<button class="tk-more-btn ' + x[2] + (on ? ' on' : '') + '" data-act="task-extra" data-stage="' + esc(x[0]) + '" aria-expanded="' + on + '">' +
@@ -159,6 +150,15 @@ function tasksBodyHTML() {
     h += '<section class="card tk-sec"><h2>' + esc(ui.extra === DONE ? 'הושלמו' : 'לא רלוונטי') + '<span class="cnt">' + ex.length + '</span></h2>' +
       (ex.length ? groupsHTML(ex) : emptyBox('tasks', 'אין משימות כאן')) + '</section>';
   }
+
+  var run = tasksOf(who, RUN), any = false;
+  TASK_SECTIONS.forEach(function (s) {
+    var list = run.filter(function (t) { return sectionOf(t) === s[0]; });
+    if (!list.length) return;
+    any = true;
+    h += '<section class="card tk-sec tk-' + s[0] + '"><h2>' + esc(s[1]) + '<span class="cnt">' + list.length + '</span></h2>' + groupsHTML(list) + '</section>';
+  });
+  if (!any) h += '<section class="card">' + emptyBox('tasks', q ? 'לא נמצאו משימות בעבודה' : 'אין משימות בעבודה') + '</section>';
   return h;
 }
 
