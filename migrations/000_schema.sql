@@ -109,9 +109,7 @@ CREATE OR REPLACE FUNCTION public.bk_retention_keys()
 AS $function$
   select coalesce(array_agg(distinct b.key), '{}'::text[])
     from (select distinct key from public.sh_backup) b
-   where exists (select 1 from pg_tables t
-                  where t.schemaname = 'public' and t.tablename not like 'sh\_%'
-                    and b.key ~ ('^(ANCHOR|DIFF):([a-z]+_)?' || t.tablename || '$'))
+   where b.key like 'ANCHOR:%' or b.key like 'DIFF:%'
 $function$;
 revoke all on function public.bk_retention_keys() from public, anon, authenticated, service_role;
 grant execute on function public.bk_retention_keys() to service_role;
@@ -757,7 +755,7 @@ revoke all on table public.g_txns from anon, authenticated;
 grant select, insert, update on table public.g_txns to anon, authenticated;
 grant all on table public.g_txns to service_role;
 revoke all on table public.g_users from anon, authenticated;
-grant select, insert, update on table public.g_users to anon, authenticated;
+grant select on table public.g_users to authenticated;
 grant all on table public.g_users to service_role;
 
 alter table public.g_events enable row level security;
