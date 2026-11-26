@@ -600,6 +600,7 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .cs-dots .ln-dot-t{font-size:var(--fs-1)}
 .cs-dots small{font-size:11px}
 .cs-dots .ln-dot.vip .ln-dot-c{background:var(--gold-soft,var(--warn-soft));box-shadow:inset 0 0 0 3px var(--gold,var(--warn))} .cs-dots .ln-dot.vip b{color:var(--gold,var(--warn))}
-/* מנהל — מגן קטן ליד שם השגריר שהוא מנהל */
-.look-admin{display:inline-flex;vertical-align:-3px;margin-inline-start:var(--sp-3);color:var(--gold)}
-.look-admin .ico{width:17px;height:17px}
+/* מנהל — מגן ליד השגריר: עמום כשכבוי, וזהב כשדולק; לחיצה מדליקה ומכבה */
+.look-admin{flex:none;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:50%;background:none;color:var(--text-3);opacity:.45;cursor:pointer}
+.look-admin.on{color:var(--gold);opacity:1;background:var(--gold-soft,transparent)}
+.look-admin .ico{width:19px;height:19px}

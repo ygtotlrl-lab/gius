@@ -5,10 +5,10 @@ import { ask, cardWinHTML, comboDef, comboHTML, comboValue, esc, methodGridHTML,
          methodPick as coreMethodPick, openModal, toast } from '../../core/ui.js';
 import { LK_AMBASSADOR, LK_METHOD, MSG_AMOUNT_POSITIVE, MSG_SHT_AMB, MSG_SHT_DUP, MSG_SHT_LOCKED, MSG_SHT_NO_NAME, MSG_SHT_PICK, MSG_SHT_STAR_B, MSG_SHT_STAR_T,
          MSG_SHT_PHONE, SHT_BEAT_MS, SHT_GIVE, SHT_LOCK_MS, SHT_NEXT, SHT_PAGE, SHT_RETRY_MS, SHT_STATUS, MSG_SAVE_ACT, MSG_SHT_CLEARED, MSG_SHT_CLEARED_OK, MSG_SHT_CLEARED_PRE, MSG_SHT_CLEARED_Q, MSG_SHT_DUP_Q, MSG_SHT_DUP_TITLE, TTL_CALL_EDIT, TTL_SHT_EDIT, TTL_SHT_NEW } from '../constants.js';
-import { gauthIsAdmin } from '../../core/gauth.js';
+import { gauthUser } from '../../core/gauth.js';
 import { S, state } from '../state.js';
 import { icon } from '../icons.js';
-import { $, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
+import { $, canSettings, donorById, emptyBox, gSortDonors, ils, initials, insert, lookupLabels, nowISO, nullable, num, pendRowKey,
          update, val } from '../domain.js';
 
 // ── האיש ──
@@ -135,10 +135,10 @@ function shtDashHTML() {
   }).join('');
 }
 
-// היום לפי שגריר — למנהלים: לכל שגריר כמה בתור אצלו (לפי השגריר של האיש), ומה עשה היום (לפי השגריר שבשיחה) —
+// היום לפי שגריר — למנהלים (מי שנכנס להגדרות — `canSettings`): לכל שגריר כמה בתור אצלו (לפי השגריר של האיש), ומה עשה היום (לפי השגריר שבשיחה) —
 // שיחות, תרומות וסכום, באותו חשבון כמו בלוח. שגריר בלי תור ובלי שיחה היום — אינו מוצג.
 function shtByAmbHTML() {
-  if (!gauthIsAdmin()) return '';
+  if (!canSettings(gauthUser())) return '';
   var t0 = new Date(); t0.setHours(0, 0, 0, 0); t0 = +t0;
   var rows = {}, row = function (a) { return rows[a] || (rows[a] = { q: 0, calls: 0, n: 0, sum: 0 }); };
   var g = function (c) { return !!c && isGive(c); }, amt = function (c) { return g(c) ? num(c.amount) : 0; };

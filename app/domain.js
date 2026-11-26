@@ -668,6 +668,16 @@ function settingJson(key, dflt) {
   try { return r ? JSON.parse(r.value) : dflt; } catch (e) { return dflt; }
 }
 // האחראים למשימות — מטבלת ההגדרות (`assignees`: [{name, login}]), מקור אחד לאפליקציה ולשער ההתראות, שמתריע לכל אחראי על המשימות שלו.
+// מנהלי השטרות — הגדרה פנימית באפליקציה (`sht_managers`: רשימת שגרירים), ולא התפקיד במשתמשי Google:
+// השגריר המנהל רואה בקישור את כולם, ו«היום לפי שגריר»; ומי שהמייל שלו (ambassador_logins) של שגריר מנהל — נכנס להגדרות, כמו מנהל.
+function shtManagers() { var v = settingJson('sht_managers', []); return Array.isArray(v) ? v : []; }
+function isManagerAmb(label) { return shtManagers().indexOf(label) >= 0; }
+function canSettings(user) {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  var map = settingJson('ambassador_logins', {}) || {}, me = String(user.login || '').toLowerCase();
+  return Object.keys(map).some(function (a) { return String(map[a] || '').toLowerCase() === me && isManagerAmb(a); });
+}
 function assigneeList() {
   var v = settingJson('assignees', []);
   return Array.isArray(v) ? v.filter(function (x) { return x && x.name; }) : [];
@@ -831,7 +841,7 @@ function donorMatches(q, aff, mode, pf) {
   return gSortDonors(list, mode);
 }
 
-export { phoneDigits, phoneIntl, phoneJoin, phoneSplit, phoneTel, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
+export { canSettings, isManagerAmb, shtManagers, phoneDigits, phoneIntl, phoneJoin, phoneSplit, phoneTel, phoneWa, assigneeList, assigneeNames, settingJson, donorNextDate, loanBalance, loanSettleBy, loanSettleMonths, loanInterest, loanLeft, loanTotal, loanCheckList, loanCurMonth, loanDueMonth, loanFlow, loanIsChecks, loanDebt, loanMovesOf, loanPaidBy, loanTakenMonth,
          $, applyMirrorToState, checked, collectedForPledge, datalistHTML, dmyDate, donorById,
          donorFieldHTML, donorLeft, donorMatches, donorName, donorNewCancel, donorNewSave, donorPaid,
          donorTotal, emptyBox, gSortBudget, gSortDonors, gSortEvents, gSortGroups, gSortLoanMoves, gSortLoans, gSortNotes, gSortPlan, gSortPledges,

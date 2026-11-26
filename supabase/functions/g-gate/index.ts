@@ -3,7 +3,7 @@
 // העריכה כמו באפליקציה: פרטי האיש (כרטיס בגיוס · שם · טלפון · הערה) ומחיקתו עם שיחותיו, וכל שיחה קודמת — תוצאה · שגריר · סכום ואמצעי או מועד · סיכום, ומחיקתה.
 // הכרטיסים יוצאים עם הכוכב (starred) — איש שמקושר לכרטיס בכוכב: מסגרת זהב, ופתיחה רק ב«יש אישור», כמו באפליקציה.
 // כל שגריר רואה רק את האנשים שלו — השגריר של האיש (ambassador), ובלעדיו השגריר שבכרטיס המקושר — ואת שיחותיהם, וכותב רק בהם;
-// ושגריר מנהל (המייל שלו ב-ambassador_logins שייך למשתמש מנהל פעיל) — את כולם, ויכול לשייך איש לשגריר.
+// ושגריר מנהל (`sht_managers` שבהגדרות) — את כולם, ויכול לשייך איש לשגריר.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ORIGINS = ["https://ygtotlrl-lab.github.io"];
@@ -46,15 +46,10 @@ async function ambOf(code: string) {
   const { data: a } = await sb.from("g_lookups").select("label").eq("client_id", l.ambassador_client_id).eq("kind", "ambassador").eq("deleted", false).maybeSingle();
   return a ? String(a.label) : null;
 }
-// שגריר מנהל — המייל שלו (ambassador_logins) שייך למשתמש מנהל פעיל.
+// שגריר מנהל — הגדרה פנימית באפליקציה (`sht_managers`, רשימת שגרירים), ולא התפקיד במשתמשי Google.
 async function isAdmin(amb: string) {
-  const { data: s } = await sb.from("g_settings").select("value").eq("key", "ambassador_logins").maybeSingle();
-  let map: Record<string, string> = {};
-  try { map = s ? JSON.parse(String(s.value)) || {} : {}; } catch { map = {}; }
-  const login = map[amb];
-  if (!login) return false;
-  const { data: u } = await sb.from("g_users").select("role,active").eq("login", String(login).toLowerCase()).maybeSingle();
-  return !!u && u.role === "admin" && u.active !== false;
+  const { data: s } = await sb.from("g_settings").select("value").eq("key", "sht_managers").maybeSingle();
+  try { const v = s ? JSON.parse(String(s.value)) : []; return Array.isArray(v) && v.includes(amb); } catch { return false; }
 }
 // השגריר של האיש — מה שנקבע לו, ובלעדיו השגריר שבכרטיס.
 function ambOfPerson(p: Record<string, unknown>, donorAmb: Record<string, string>) {

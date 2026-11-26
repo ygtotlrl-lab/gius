@@ -3,9 +3,9 @@ import { dragDef, esc, lookupDragApply, lookupSeed, openModal, toast } from '../
 import { readNum } from '../../core/util.js';
 import { KV_TABLE, LISTS, LK_AMBASSADOR, MSG_SHT_LINK_COPIED, MSG_SHT_LINK_FAIL, SHT_PAGE_URL, MSG_AMOUNT_POSITIVE, MSG_MONTH_GOAL, MSG_PICK_VALID_MONTH, TTL_ADD_PRE, TTL_EDIT_PRE, TTL_GOAL_DEFAULT } from '../constants.js';
 import { gauthCardHTML } from '../../core/gauth.js';
-import { S, shell, state } from '../state.js';
+import { state } from '../state.js';
 import { icon } from '../icons.js';
-import { $, settingJson, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
+import { $, isManagerAmb, shtManagers, TARGET_DEFAULT_KEY, emptyBox, ils, insert, listDef, lookupRows, monthAmount, monthLabel, monthTxnsInit, num, sum,
          targetDefault, targetOwn, upsertBy, val } from '../domain.js';
 
 // ── הרשימות ──
@@ -14,22 +14,6 @@ function lookupShown(l) {
   var rows = lookupRows(l.kind);
   if (rows.length) return rows;
   return l.dflt.map(function (label) { return { client_id: l.kind + ':' + label, label: label }; });
-}
-
-// השגרירים שהם מנהלים — מי שהמייל שלו (ambassador_logins) שייך למשתמש מנהל פעיל ב-g_users; נמשך פעם אחת, והמסך מצויר שוב כשהגיע.
-var _admins = null;
-function adminLogins() {
-  if (_admins) return _admins;
-  _admins = {};
-  if (S.sb) S.sb.from('g_users').select('login,role,active').then(function (r) {
-    (r.data || []).forEach(function (u) { if (u.role === 'admin' && u.active !== false) _admins[String(u.login).toLowerCase()] = 1; });
-    if (state.screen === 'settings' && shell.render) shell.render();
-  });
-  return _admins;
-}
-function isAdminAmb(label) {
-  var map = settingJson('ambassador_logins', {}), login = map && map[label];
-  return !!login && !!adminLogins()[String(login).toLowerCase()];
 }
 
 function lookupCardHTML(l) {
@@ -41,7 +25,10 @@ function lookupCardHTML(l) {
     return '<div class="list-item" data-act="look-edit" data-k="' + esc(l.kind) + '" data-drag="' + esc(l.kind) + '" data-id="' + esc(r.client_id) + '">' +
       '<span class="grip" data-grip aria-hidden="true">⣿</span>' +
       '<span class="list-val">' + esc(r.label) +
-        (l.kind === LK_AMBASSADOR && isAdminAmb(r.label) ? '<span class="look-admin" title="מנהל" aria-label="מנהל">' + icon('admin') + '</span>' : '') + '</span>' +
+'</span>' +
+      // מנהל — מגן שנדלק ונכבה בלחיצה (`sht_managers`): השגריר רואה בקישור את כולם, ומי שהמייל שלו של שגריר מנהל — נכנס להגדרות
+      (l.kind === LK_AMBASSADOR ? '<button class="look-admin' + (isManagerAmb(r.label) ? ' on' : '') + '" data-act="amb-mgr" data-v="' + esc(r.label) + '" aria-pressed="' + isManagerAmb(r.label) +
+        '" aria-label="מנהל" title="' + (isManagerAmb(r.label) ? 'מנהל — לחיצה מבטלת' : 'סימון כמנהל') + '">' + icon('admin') + '</button>' : '') +
       (l.kind === LK_AMBASSADOR ? '<button class="look-link" data-act="sht-link" data-id="' + esc(r.client_id) + '" aria-label="העתקת קישור אישי לשטרות" title="העתקת קישור אישי לשטרות">' +
         icon('link') + '<span>העתקת קישור</span></button>' : '') + '</div>';
   }).join('') + '</div></section>';
@@ -78,6 +65,13 @@ function shtLinkCopy(ambId) {
 LISTS.forEach(function (l) {
   dragDef(l.kind, function (list, kind) { lookupSeed(kind, l.dflt); lookupDragApply(list, kind); });
 });
+
+// מנהל בשטרות — נדלק ונכבה ליד השגריר, ונשמר בהגדרה `sht_managers`.
+function ambMgrToggle(label) {
+  var cur = shtManagers().slice(), i = cur.indexOf(label);
+  if (i >= 0) cur.splice(i, 1); else cur.push(label);
+  return upsertBy(KV_TABLE, { key: 'sht_managers', value: JSON.stringify(cur) });
+}
 
 function viewSettings() {
   var h = '<div class="grid2">' + LISTS.map(lookupCardHTML).join('') + '</div>';
@@ -148,4 +142,4 @@ function saveTargetDefault() {
   return upsertBy(KV_TABLE, { key: TARGET_DEFAULT_KEY, value: JSON.stringify(n) });
 }
 
-export { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault, viewSettings };
+export { ambMgrToggle, shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault, viewSettings };

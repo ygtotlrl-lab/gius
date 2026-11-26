@@ -8,7 +8,7 @@ import { lsOpen } from '../core/storage.js';
 import { MIRROR, mirrorKey, mirrorTables } from '../core/mirror.js';
 import { logAwait } from '../core/backup.js';
 import { bootRun } from '../core/boot-run.js';
-import { GAUTH_ACTIONS, gauthAccountOpen, gauthClientOpts, gauthGate, gauthHeaders, gauthIsAdmin, gauthUser } from '../core/gauth.js';
+import { GAUTH_ACTIONS, gauthAccountOpen, gauthClientOpts, gauthGate, gauthHeaders, gauthUser } from '../core/gauth.js';
 import { actWire, ask, closeAsk, closeModal, comboFocus, comboInput, comboMake, comboMore, comboPick,
          dragCancel, dragDown, dragMove, dragUp, esc, lookupSeed, modalDismiss, openModal, shellBare,
          swApply, swHideUpdate, toast, uiNoDialog } from '../core/ui.js';
@@ -19,7 +19,7 @@ import { KV_TABLE, MORE, MSG_DELETE_ACT, MSG_DEL_BUDGET, MSG_DEL_EVENT, MSG_DEL_
 import { S, shell, state } from './state.js';
 import { $, applyMirrorToState, donorById, donorNewCancel, donorNewSave, listDef, lookupById,
          lookupPut, lookupRows, mirrorHasData, monthKeyOf, pendRowKey, pledgeById, rowPendingKey,
-         shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare } from './domain.js';
+         shiftMonth, softDelete, stripRows, syncNow, tableMeta, update, viewBare, canSettings } from './domain.js';
 import { icon } from './icons.js';
 import { viewDash } from './screens/dash.js';
 import { DATEPAIR_ACTIONS } from '../core/datepair.js';
@@ -32,7 +32,7 @@ import { addLoanMove, ckMode, ckSync, finMode, finOn, intSync, formLoanMove, loa
 import { callById, callStatusPick, formCall, formShtar, personById, saveCall, saveShtar, shtCallSave, shtClose, formNext, saveNext, shtNextTo, shtListHTML, shtMethodPick, shtOpen, shtRefresh,
          shtStatusPick, shtStep, viewShtarot } from './screens/shtarot.js';
 import { formBudget, formEvent, saveBudget, saveEvent, viewBudget } from './screens/budget.js';
-import { shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
+import { ambMgrToggle, shtLinkCopy, formTarget, formTargetDefault, lookupForm, saveTarget, saveTargetDefault,
          viewSettings } from './screens/settings.js';
 
 // ── החיווט ──
@@ -189,9 +189,9 @@ var FAB_ACT = { cards: 'donor-new', plan: 'plan-new', tasks: 'task-new', notes: 
 var VIEWS = { dash: viewDash, cards: viewCards, plan: viewPlan, tasks: viewTasks, notes: viewNotes,
               loans: viewLoans, budget: viewBudget, shtarot: viewShtarot, settings: viewSettings };
 
-// ההגדרות — למנהלים בלבד: מי שאינו מנהל אינו רואה את המסך, ובמקומו — «חשבון» (התראות במכשיר ויציאה), בחלון.
+// ההגדרות — למנהלים בלבד (מנהל ב-Google, או שגריר מנהל בשטרות — `canSettings`): מי שאינו מנהל אינו רואה את המסך, ובמקומו — «חשבון» (התראות במכשיר ויציאה), בחלון.
 var ACCOUNT_TAB = { id: 'account', ic: 'user', label: 'חשבון' };
-function moreTabs() { return MORE.map(function (t) { return t.id === 'settings' && !gauthIsAdmin() ? ACCOUNT_TAB : t; }); }
+function moreTabs() { return MORE.map(function (t) { return t.id === 'settings' && !canSettings(gauthUser()) ? ACCOUNT_TAB : t; }); }
 
 function tabOf(id) {
   var all = TABS.concat(moreTabs());
@@ -243,7 +243,7 @@ function render() {
 // כניסה למסך — לוח הבקרה והתכנית בחודש של היום; הכרטיסים בלי סינון, לפי א״ב ובלי כרטיס פתוח.
 function go(screen) {
   if (screen === 'account') { gauthAccountOpen(); return; }
-  if (screen === 'settings' && !gauthIsAdmin()) screen = 'dash';
+  if (screen === 'settings' && !canSettings(gauthUser())) screen = 'dash';
   // איש שנשאר פתוח בשטרות — הנעילה שלו משתחררת ביציאה מהמסך.
   if (state.sht.open) shtClose();
   state.screen = screen;
@@ -500,6 +500,7 @@ var DOM_ACTIONS = {
 
   // בהגדרות, ליד כל שגריר — הקישור האישי שלו לדף השטרות.
   'sht-link': function (el) { return shtLinkCopy(el.dataset.id); },
+  'amb-mgr': function (el) { return ambMgrToggle(el.dataset.v); },
 
   // ── הגדרות: הרשימות ──
   // הזריעה קודמת לכל עריכה — רשימה שמוצגת מנקודת הפתיחה אינה נושאת שורות, ופריט אחד שנוסף היה מוחק את השאר.
