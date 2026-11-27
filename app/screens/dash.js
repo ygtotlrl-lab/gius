@@ -77,18 +77,14 @@ function breakdownHTML(rows, total, withIcon) {
   }).join('') + '</div>';
 }
 
-// מצב המשימות לכל אחראי — שלושת השלבים ומספריהם, והמספר הבולט — בעבודה; מנותב למסך המשימות.
+// המשימות בעבודה לכל אחראי — השם, ובצד השמאלי המספר בלבד; מנותב למסך המשימות.
 function tasksHTML() {
+  var st = STAGES[0].id;
   return '<div class="who-grid">' + assigneeNames().map(function (who) {
-    var mine = state.tasks.filter(function (t) { return t.assignee === who; });
-    var cnt = function (st) { return mine.filter(function (t) { return t.stage === st; }).length; };
+    var n = state.tasks.filter(function (t) { return t.assignee === who && t.stage === st; }).length;
     return '<button class="who-card" data-act="dash-who" data-who="' + esc(who) + '">' +
-      '<span class="who-main"><b>' + esc(who) + '</b>' +
-        '<span class="who-stages">' + STAGES.map(function (s) {
-          return '<span class="pill ' + s.cls + '">' + esc(s.id) + ' · ' + cnt(s.id) + '</span>';
-        }).join('') + '</span></span>' +
-      '<span class="who-total" aria-label="' + cnt(STAGES[0].id) + ' משימות ' + esc(STAGES[0].id) + '">' + cnt(STAGES[0].id) +
-        '<small>' + esc(STAGES[0].id) + '</small></span></button>';
+      '<span class="who-main"><b>' + esc(who) + '</b></span>' +
+      '<span class="who-total" aria-label="' + n + ' משימות ' + esc(st) + '">' + n + '</span></button>';
   }).join('') + '</div>';
 }
 
@@ -111,7 +107,6 @@ function flowMonths() {
 }
 function kShort(v) { return v >= 1e6 ? (Math.round(v / 1e5) / 10) + 'M' : v >= 1000 ? Math.round(v / 1000) + 'K' : String(Math.round(v)); }
 function hFr(v, max) { return Math.round(Math.min(1, (v || 0) / max) * 1000) / 1000; }
-function signed(v) { return (v < 0 ? '−' : '') + ils(Math.abs(v)); }
 // עמודה לכל חודש: bars — [{v, cls, lbl}]; התוויות מעל העמודה הגבוהה, ממורכזות לקבוצה,
 // הגבוה למעלה ובצבע העמודה — וכך גם בחודש המוצג (big: הסכום המלא, בלי תווית חודש); extra — נקודת המדד.
 function colHTML(m, bars, max, tgt, big, extra) {
@@ -203,37 +198,41 @@ function indicesHTML(all) {
       legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE });
 }
 
-// הלוואות נטו — העמודה בגובה כל ההלוואות החדשות של החודש וחיוורת (היתר העסקה — הוצאה, ואינו בה), והחלק המודגש — מה שנשאר אחרי ההחזרים;
-// ובחודש שהוחזר בו יותר משנלקח — עמודה ירוקה בגובה ההחזרים, והמודגש — «החזר נטו».
-function netBars(f) {
-  return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' },
-          f.netBack > 0 ? { v: f.netBack, full: f.repaid, cls: 'rep', lbl: 'החזר נטו' } : { v: f.netUp, full: f.added, cls: 'loan', lbl: 'הלוואות נטו' }];
+// ── החודש המוצג במדד החוב — ארבע העמודות של החודש (הכנסות · הלוואות · עלויות מימון · החזרים), כל אחת ושמה מתחתיה
+// והסכום מעליה; ומעליהן קו החוב, פרוס לכל הרוחב — מהחוב בתחילת החודש (ימין) עד החוב בסופו (שמאל), והשיפוע מראה אם עלה או ירד ──
+function monthIxHTML(m) {
+  var f = flowOf(m), start = loanDebt(shiftMonth(m, -1)), end = f.debt, ch = end - start;
+  var bars = [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' },
+              fin(f.interest, f.finance), { v: f.repaid, cls: 'rep', lbl: 'החזרים' }];
+  var maxB = 1;
+  bars.forEach(function (x) { maxB = Math.max(maxB, x.full > x.v ? x.full : x.v); });
+  maxB *= 2.2; // העמודות בחצי התחתון, והקו מעליהן
+  // הקו מראה כיוון: הנמוך מהשניים בגובה אחד והגבוה מעליו, כך שהשיפוע נראה גם בשינוי קטן; הסכומים עצמם — בתוויות
+  var dv = function (v) { return start === end ? 0.78 : v === Math.max(start, end) ? 0.9 : 0.66; };
+  var y = function (v) { return Math.round((1 - dv(v)) * 1000) / 10; };
+  var cols = bars.map(function (x) {
+    var tot = x.full > x.v ? x.full : x.v, h = hFr(tot, maxB);
+    var bar = x.full > x.v
+      ? '<span class="fl-bar ghost ' + x.cls + '" style="--v:' + h + '" title="' + esc('עלויות מימון ' + ils(x.full) + ' · היתר עסקה ' + ils(x.v)) + '"><span class="fl-solid" style="--s:' + hFr(x.v, x.full) + '"></span></span>'
+      : '<span class="fl-bar ' + x.cls + '" style="--v:' + h + '" title="' + esc(x.lbl + ' ' + ils(x.v)) + '"></span>';
+    return '<div class="ixm-c"><div class="ixm-p"><span class="fl-vals" style="--v:' + h + '"><b class="' + x.cls + '">' + esc(kShort(tot)) + '</b></span>' + bar + '</div>' +
+      '<span class="ixm-l">' + esc(x.cls === 'int' ? 'עלויות מימון' : x.lbl) + '</span></div>';
+  }).join('');
+  var dot = function (v, side, lab) {
+    return '<span class="ixm-dot ' + side + '" style="--v:' + dv(v) + '" title="' + esc(lab + ' ' + ils(v)) + '"><b>' + esc(kShort(v)) + '<small>' + esc(lab) + '</small></b></span>';
+  };
+  var head = '<div class="ix-head ' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '"><span class="ix-ic">' + icon(ch > 0 ? 'up' : 'down') + '</span><div><b>' +
+    esc(ch > 0 ? 'החוב עלה החודש ב־' + ils(ch) : ch < 0 ? 'החוב ירד החודש ב־' + ils(-ch) : 'החוב לא השתנה החודש') +
+    '</b><small>' + esc('מ־' + ils(start) + ' בתחילת החודש ל־' + ils(end) + ' בסופו') + '</small></div></div>';
+  return '<section class="card ix ixm"><h2>מדד החוב — ' + esc(monthLabel(m)) + '</h2>' + head +
+    '<div class="ixm-box"><div class="ixm-plot">' +
+      '<div class="ixm-ov"><svg class="ixm-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,' + y(end) + ' 100,' + y(start) + '"/></svg>' +
+      dot(start, 'r', 'תחילת החודש') + dot(end, 'l', 'סוף החודש') + '</div>' + cols + '</div></div>' +
+    lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], ['debt', 'החוב']]).replace('class="fl-legend"', 'class="fl-legend fl-legend-below"') + FIN_NOTE + '</section>';
 }
+// מדד החוב — החודש המוצג, ומתחתיו המדד לאורך התקופה
 function flowHTML(m) {
-  var all = flowMonths().map(flowOf), cur = flowOf(m);
-  var avg = all.length ? sum(all, function (f) { return f.inc; }) / all.length : 0;
-  var tot = { inc: sum(all, function (f) { return f.inc; }), net: sum(all, function (f) { return f.net; }) };
-  var max = 1;
-  all.concat([cur]).forEach(function (f) { max = Math.max(max, f.inc, f.added, f.repaid, f.tgt); });
-  max *= 1.35; // מקום לשלוש שורות תווית מעל העמודה הגבוהה
-  // מעל הגרף — הסיכום מתחילת התקופה; מתחתיו — המקרא ומשפט הסבר קצר
-  var total = '<div class="fl-total">מתחילת התקופה: הכנסות <b>' + esc(ils(tot.inc)) + '</b> · הלוואות נטו <b class="' + (tot.net > 0 ? 'loan' : 'rep') + '">' + esc(signed(tot.net)) + '</b></div>';
-  var legend = '<div class="fl-legend fl-legend-below"><div class="fl-lg"><span><i class="inc"></i>הכנסות</span><span><i class="loan"></i>הלוואות נטו</span><span><i class="rep"></i>החזר נטו</span>' +
-      '<span><i class="ghost"></i><i class="ghost-rep"></i>חיוור — התקזז</span></div>' +
-    '<div class="fl-lg"><span><i class="tgt"></i>יעד</span><span><i class="avg"></i>ממוצע הכנסה · ' + esc(ils(avg)) + '</span></div></div>' +
-    '<p class="fl-note">החלק המודגש — כמה החוב גדל (אדום) או קטן (ירוק). החלק החיוור — הלוואות והחזרים שקיזזו זה את זה.</p>';
-  var sumHTML = '<dl class="fl-sum"><div><dt><i class="inc"></i>הכנסות</dt><dd>' + esc(ils(cur.inc)) + '</dd></div>' +
-    '<div><dt><i class="' + (cur.net < 0 ? 'rep' : 'loan') + '"></i>הלוואות נטו</dt><dd>' + esc(signed(cur.net)) +
-      '<small>' + esc('הלוואות ' + kShort(cur.added) + ' − החזרים ' + kShort(cur.repaid)) + '</small></dd></div></dl>';
-  // החודש — רכיב משלו; ההיסטוריה — נגללת בתוכה, והחדש בימין (תחילת השורה ב-RTL), כך שבכניסה רואים את החודשים האחרונים
-  return indicesHTML(all) +
-    '<section class="card"><h2>הכנסות מול הלוואות נטו</h2>' + total +
-    '<div class="flow">' +
-      '<div class="fl-month"><div class="fl-title"><span>' + esc(monthLabel(m)) + '</span></div>' + colHTML(m, netBars(cur), max, cur.tgt, true) + sumHTML + '</div>' +
-      '<div class="fl-hist"><div class="fl-title"><span>לאורך הזמן</span></div><div class="fl-scroll" tabindex="0" aria-label="הכנסות והלוואות נטו לפי חודש">' +
-        '<div class="fl-track">' + (avg > 0 ? '<i class="fl-avg" style="--v:' + hFr(avg, max) + '"></i>' : '') +
-        all.slice().reverse().map(function (f) { return colHTML(f.m, netBars(f), max, f.tgt, false); }).join('') + '</div></div></div>' +
-    '</div>' + legend + '</section>';
+  return monthIxHTML(m) + indicesHTML(flowMonths().map(flowOf));
 }
 
 function viewDash() {
@@ -272,7 +271,7 @@ function viewDash() {
     '</section>' +
   '</div>';
 
-  h += '<section class="card"><h2>משימות</h2>' + tasksHTML() + '</section>';
+  h += '<section class="card"><h2>משימות בעבודה</h2>' + tasksHTML() + '</section>';
 
   // תשלום שלא סומן «סליקה בפועל» — שקוף מעט; הוא נספר בנגבה כמו כל תשלום.
   // שלושה אחרונים, והשאר בלחיצה — הרשימה המלאה ארוכה מדי לראש הלוח.

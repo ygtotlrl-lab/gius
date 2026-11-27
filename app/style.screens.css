@@ -629,3 +629,20 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 @media not all and (min-width:640px){ .ln-tiles{grid-template-columns:1fr 1fr} }
 @media (min-width:900px){ .ln-plan-list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))} }
 @media not all and (min-width:640px){ .ln-plan-row:has([data-pa]){grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);row-gap:var(--sp-1)} .ln-plan-row:has([data-pa]) .ln-plan-i{grid-column:1 / -1} }
+
+/* מדד החוב של החודש — ארבע עמודות רחבות, השם מתחת לכל אחת, וקו החוב פרוס מעליהן לכל הרוחב: ימין — תחילת החודש, שמאל — סופו */
+.ixm-box{background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-6) var(--sp-5) var(--sp-4)}
+.ixm-plot{position:relative;height:240px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--sp-3)}
+.ixm-c{display:flex;flex-direction:column;min-width:0}
+.ixm-p{position:relative;flex:1;display:flex;align-items:flex-end;justify-content:center;border-bottom:1px solid var(--border)}
+.ixm-p .fl-bar{width:min(48px,70%)}
+.ixm-p .fl-vals b{font-size:var(--fs-1)}
+.ixm-l{margin-top:var(--sp-2);text-align:center;font-size:var(--fs-1);font-weight:700;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ixm-ov{position:absolute;inset:0 0 calc(var(--fs-1) * 1.5 + var(--sp-2) + 1px);pointer-events:none;z-index:2}
+.ixm-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ixm-line polyline{fill:none;stroke:var(--text);stroke-width:2.5;vector-effect:non-scaling-stroke;stroke-linecap:round}
+.ixm-dot{position:absolute;bottom:calc(var(--v) * 100%);width:11px;height:11px;border-radius:50%;background:var(--text);border:2px solid var(--card-2);z-index:3}
+.ixm-dot.r{right:0;transform:translate(50%,50%)} .ixm-dot.l{left:0;transform:translate(-50%,50%)}
+.ixm-dot b{position:absolute;bottom:13px;font-size:var(--fs-2);font-weight:800;white-space:nowrap;color:var(--text);text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2);text-align:center}
+.ixm-dot.r b{right:0} .ixm-dot.l b{left:0}
+.ixm-dot b small{display:block;font-size:10px;font-weight:700;color:var(--text-3)}
