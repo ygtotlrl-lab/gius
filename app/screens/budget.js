@@ -13,8 +13,7 @@ function itemsOf(evId) { return gSortBudget(state.budget.filter(function (b) { r
 // אירוע סגור — שם · תאריך · מספר ההוצאות · סה״כ; לחיצה פותחת את ההוצאות, אירוע אחד פתוח בכל פעם.
 function viewBudget() {
   var evs = gSortEvents(state.events);
-  var h = '<section class="card"><h2>אירועים<span class="cnt">' + evs.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="event-new">' + icon('plus') + 'אירוע</button></span></h2>';
+  var h = '<section class="card"><h2>אירועים<span class="cnt">' + evs.length + '</span></h2>';
   if (!evs.length) return h + emptyBox('budget', 'אין עדיין אירועים') + '</section>';
   h += '<div class="evs">' + evs.map(function (e) {
     var items = itemsOf(e.client_id), open = state.budgetOpen === e.client_id, id = esc(e.client_id);

@@ -28,8 +28,7 @@ function viewPlan() {
     '</div>' +
   '</section>';
 
-  h += '<section class="card"><h2>התכנית<span class="cnt">' + list.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="plan-new">' + icon('plus') + 'שורה</button></span></h2>';
+  h += '<section class="card"><h2>התכנית<span class="cnt">' + list.length + '</span></h2>';
   if (!list.length) h += emptyBox('plan', 'אין עדיין שורות בתכנית של החודש');
   else {
     // קבוצה לכל שגריר — שמו בכותרת, ולא בכל שורה; כל הקבוצות סגורות בכניסה, ונפתחות ונסגרות בלחיצה על הכותרת.

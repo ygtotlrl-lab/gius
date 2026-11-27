@@ -8,8 +8,7 @@ import { $, emptyBox, gSortNotes, insert, nextSort, pendRowKey, update, val } fr
 
 function viewNotes() {
   var list = gSortNotes(state.notes);
-  var h = '<section class="card"><h2>רשומות<span class="cnt">' + list.length + '</span>' +
-    '<span class="sp"><button class="btn sm" data-act="note-new">' + icon('plus') + 'פתק</button></span></h2>';
+  var h = '<section class="card"><h2>רשומות<span class="cnt">' + list.length + '</span></h2>';
   if (!list.length) return h + emptyBox('notes', 'אין עדיין רשומות') + '</section>';
   h += '<div class="notes">' + list.map(function (n) {
     return '<article class="note-card nc-' + esc(n.color || NOTE_COLORS[0]) + '" data-drag="note" data-id="' + esc(n.client_id) + '">' +

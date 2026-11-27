@@ -183,7 +183,7 @@ function shtResHTML() {
     FILTER_LIST.slice(2).forEach(function (o) { if (FILTERS[o[0]](st)) n[o[0]] = (n[o[0]] || 0) + 1; });
   });
   return '<select class="inp' + (FILTER_LIST.slice(2).some(function (o) { return o[0] === f; }) ? ' on' : '') + '" id="sht-res" aria-label="סינון לפי תוצאה" data-chg="sht-res">' +
-    '<option value="">לפי תוצאה</option>' + FILTER_LIST.slice(2).map(function (o) {
+    '<option value="">הכל</option>' + FILTER_LIST.slice(2).map(function (o) {
       return '<option value="' + o[0] + '"' + (f === o[0] ? ' selected' : '') + '>' + esc(o[1]) + ' · ' + (n[o[0]] || 0) + '</option>';
     }).join('') + '</select>';
 }
