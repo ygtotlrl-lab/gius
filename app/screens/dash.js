@@ -178,9 +178,9 @@ function indicesHTML(all) {
   var debtLine = ['debt', 'החוב בסוף החודש'];
   var kinds = [
     { k: 'long', key: 'debtLong', title: 'הלוואות בהסדר או תאריך',
-      bars: function (f) { return [{ v: f.long, cls: 'loan', lbl: 'הלוואות' }, fin(f.intLong, f.finLong), { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
+      bars: function (f) { return [fin(f.intLong, f.finLong), { v: f.long, cls: 'loan', lbl: 'הלוואות' }, { v: f.repLong, cls: 'rep', lbl: 'החזרים' }]; } },
     { k: 'inst', key: 'debtInst', title: 'הלוואות בהחזר צ׳קים',
-      bars: function (f) { return [{ v: f.inst, cls: 'loan', lbl: 'הלוואות' }, fin(f.intInst, f.finInst), { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
+      bars: function (f) { return [fin(f.intInst, f.finInst), { v: f.inst, cls: 'loan', lbl: 'הלוואות' }, { v: f.repInst, cls: 'rep', lbl: 'החזרים' }]; } }];
   var open = state.ixOpen || {};
   var subs = '<div class="ix-subs">' + kinds.map(function (x) {
     var on = !!open[x.k];
@@ -189,13 +189,13 @@ function indicesHTML(all) {
         '<span class="ix-btn-t">' + esc(x.title) + '<small class="' + tone(x.key, x.k) + '">' + esc('החוב ' + chgTxt(all, x.key, x.k)) + '</small></span>' +
         '<span class="ix-btn-c" aria-hidden="true">' + icon(on ? 'up' : 'down') + '</span></button>' +
       (on ? indexHTML(all, { key: x.key, kind: x.k, title: x.title, name: 'החוב', nested: true, bars: x.bars,
-              legend: lg([['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE }) : '') +
+              legend: lg([['int', 'עלויות מימון'], ['loan', 'הלוואות'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE }) : '') +
     '</div>';
   }).join('') + '</div>';
   return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs,
-      bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' },
-                                   fin(f.interest, f.finance), { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
-      legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE });
+      bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, fin(f.interest, f.finance),
+                                   { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
+      legend: lg([['inc', 'הכנסות'], ['int', 'עלויות מימון'], ['loan', 'הלוואות'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE });
 }
 
 // ── החודש המוצג במדד החוב — ארבע העמודות של החודש (מימין: הכנסות · עלויות מימון · הלוואות · החזרים), כל אחת ושמה מתחתיה
