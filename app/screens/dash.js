@@ -207,8 +207,10 @@ function monthIxHTML(m) {
   var maxB = 1;
   bars.forEach(function (x) { maxB = Math.max(maxB, x.full > x.v ? x.full : x.v); });
   maxB *= 2.2; // העמודות בחצי התחתון, והקו מעליהן
-  // הקו מראה כיוון: הנמוך מהשניים בגובה אחד והגבוה מעליו, כך שהשיפוע נראה גם בשינוי קטן; הסכומים עצמם — בתוויות
-  var dv = function (v) { return start === end ? 0.78 : v === Math.max(start, end) ? 0.9 : 0.66; };
+  // הקו בסולם של המדד הכללי (החוב הגבוה בתקופה), כך שהשיפוע מראה את גודל השינוי — ושינוי קטן נראה קטן
+  var maxD = Math.max(1, start, end);
+  flowMonths().forEach(function (k) { maxD = Math.max(maxD, loanDebt(k)); });
+  var dv = function (v) { return Math.round((0.55 + 0.4 * Math.min(1, v / maxD)) * 1000) / 1000; };
   var y = function (v) { return Math.round((1 - dv(v)) * 1000) / 10; };
   var cols = bars.map(function (x) {
     var tot = x.full > x.v ? x.full : x.v, h = hFr(tot, maxB);
