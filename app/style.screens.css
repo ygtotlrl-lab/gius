@@ -646,3 +646,24 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .ixm-dot b{position:absolute;bottom:13px;font-size:var(--fs-2);font-weight:800;white-space:nowrap;color:var(--text);text-shadow:0 0 3px var(--card-2),0 0 3px var(--card-2);text-align:center}
 .ixm-dot.r b{right:0} .ixm-dot.l b{left:0}
 .ixm-dot b small{display:block;font-size:10px;font-weight:700;color:var(--text-3)}
+
+/* תמונת המצב שבראש מדד החוב הכללי — שלוש קוביות, ומתחתן פס «ממה מורכב החוב» */
+.ixs{display:grid;gap:var(--sp-4);margin-bottom:var(--sp-5)}
+.ixs-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3)}
+.ixs-t{background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-1);min-width:0}
+.ixs-t small{font-size:var(--fs-1);font-weight:700;color:var(--text-3)}
+.ixs-t b{font-size:var(--fs-5);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ixs-t span{font-size:10.5px;color:var(--text-3);line-height:1.3}
+.ixs-t.up{background:var(--bad-soft)} .ixs-t.up b{color:var(--bad)}
+.ixs-t.down{background:var(--ok-soft)} .ixs-t.down b{color:var(--ok)}
+.ixs-t.fin b{color:var(--warn)}
+.ixs-mix{background:var(--card-2);border-radius:var(--r-6);padding:var(--sp-4) var(--sp-5)}
+.ixs-mix-h{font-size:var(--fs-1);font-weight:700;color:var(--text-3);margin-bottom:var(--sp-3)}
+.ixs-bar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--border);margin-bottom:var(--sp-4)}
+.ixs-bar i{display:block;height:100%} .ixs-bar i+i{border-inline-start:2px solid var(--card-2)}
+.ixs .ka{background:var(--ln-a)} .ixs .kb{background:var(--ln-b)}
+.ixs-k{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-2) 0}
+.ixs-k>i{flex:none;width:12px;height:12px;border-radius:3px}
+.ixs-k span{flex:1;display:flex;flex-direction:column;min-width:0} .ixs-k span b{font-size:var(--fs-3)} .ixs-k span small{font-size:var(--fs-1);color:var(--text-3)}
+.ixs-k em{font-style:normal;font-weight:800;font-size:var(--fs-2);white-space:nowrap} .ixs-k em.up{color:var(--bad)} .ixs-k em.down{color:var(--ok)}
+@media not all and (min-width:640px){ .ixs-t b{font-size:var(--fs-4)} .ixs-t{padding:var(--sp-3)} }

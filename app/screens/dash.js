@@ -144,7 +144,7 @@ function indexHTML(all, o) {
   var fp = APP_FIRST_MONTH.split('-');
   var startCol = '<div class="fl-col ix-start"><div class="fl-plot"><span class="ix-dot" style="--v:' + dv(start) + '" title="' + esc('החוב בתחילת התקופה ' + ils(start)) + '"><b>' + esc(kShort(start)) + '</b></span></div>' +
     '<span class="fl-lab">' + esc('תחילת ' + MONTH_SHORT[+fp[1] - 1] + ' ' + fp[0].slice(2)) + '</span></div>';
-  var head = '<div class="ix-head ' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' +
+  var head = o.summary ? o.summary : '<div class="ix-head ' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' +
     '<span class="ix-ic">' + icon(ch > 0 ? 'up' : 'down') + '</span><div><b>' +
     esc(ch > 0 ? o.name + ' עלה ב־' + ils(ch) : ch < 0 ? o.name + ' ירד ב־' + ils(-ch) : o.name + ' לא השתנה') +
     '</b><small>' + esc('מתחילת התקופה · היום ' + ils(now)) + '</small>' + (o.sub ? '<small class="ix-sub">' + o.sub + '</small>' : '') + '</div></div>';
@@ -167,6 +167,33 @@ function fin(interest, total) { return { v: interest, full: total, cls: 'int', l
 var FIN_NOTE = '<p class="fl-note"><span class="fl-sw int"></span>עלויות מימון — הכהה: היתר עסקה · החיוור: דמי התפשרות</p>';
 function lg(items) {
   return '<div class="fl-legend"><div class="fl-lg">' + items.map(function (x) { return '<span><i class="' + x[0] + '"></i>' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
+}
+// תמונת המצב שבראש המדד הכללי — שלוש קוביות: החוב היום · השינוי מתחילת התקופה (חץ ובצבע) · עלויות המימון;
+// ומתחתן «ממה מורכב החוב»: פס אחד בשני צבעים — הסדר או תאריך והחזר צ׳קים, ולכל אחד הסכום והשינוי שלו.
+function ixSumHTML(all) {
+  var s0 = shiftMonth(APP_FIRST_MONTH, -1), last = all.length ? all[all.length - 1] : { debt: 0, debtLong: 0, debtInst: 0 };
+  var ch = last.debt - loanDebt(s0), fp = APP_FIRST_MONTH.split('-'), since = MONTH_SHORT[+fp[1] - 1] + ' ' + fp[0];
+  var finT = sum(all, function (f) { return f.finance; });
+  var tile = function (cls, lab, val, sub) {
+    return '<div class="ixs-t ' + cls + '"><small>' + esc(lab) + '</small><b>' + val + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</div>';
+  };
+  var arrow = ch > 0 ? '▲' : ch < 0 ? '▼' : '';
+  var kinds = [['long', 'debtLong', 'הסדר או תאריך', 'ka'], ['inst', 'debtInst', 'החזר צ׳קים', 'kb']];
+  var tot = Math.max(1, last.debtLong + last.debtInst);
+  var seg = kinds.map(function (k) { var v = last[k[1]]; return v > 0 ? '<i class="' + k[3] + '" style="flex:' + v + '"></i>' : ''; }).join('');
+  var parts = kinds.map(function (k) {
+    var v = last[k[1]], c = v - loanDebt(s0, k[0]);
+    return '<div class="ixs-k"><i class="' + k[3] + '"></i><span><b>' + esc(k[2]) + '</b><small>' + esc(ils(v)) + ' · ' + Math.round(v / tot * 100) + '%</small></span>' +
+      '<em class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '">' + (c ? (c > 0 ? '▲ ' : '▼ ') + esc(kShort(Math.abs(c))) : 'ללא שינוי') + '</em></div>';
+  }).join('');
+  return '<div class="ixs">' +
+    '<div class="ixs-row">' +
+      tile('now', 'החוב היום', esc(ils(last.debt))) +
+      tile(ch > 0 ? 'up' : ch < 0 ? 'down' : '', ch > 0 ? 'עלה מאז ' + since : ch < 0 ? 'ירד מאז ' + since : 'מאז ' + since, (arrow ? arrow + ' ' : '') + esc(ils(Math.abs(ch)))) +
+      tile('fin', 'עלויות מימון', esc(ils(finT)), 'מאז ' + since + ' · הוצאה, לא חוב') +
+    '</div>' +
+    '<div class="ixs-mix"><div class="ixs-mix-h">ממה מורכב החוב היום</div><div class="ixs-bar">' + seg + '</div>' + parts + '</div>' +
+  '</div>';
 }
 // שלושה מדדים: הכללי — הכנסות · הלוואות · היתר עסקה · החזרים, וקו החוב כולו; ובתוכו, בסופו, שני כפתורים זה מעל זה —
 // הסדר או תאריך והחזר צ׳קים: סגורים, ולחיצה פותחת את המדד של הסוג מתחת לכפתור (`state.ixOpen`).
@@ -192,7 +219,7 @@ function indicesHTML(all) {
               legend: lg([['int', 'עלויות מימון'], ['loan', 'הלוואות'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE }) : '') +
     '</div>';
   }).join('') + '</div>';
-  return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs,
+  return indexHTML(all, { key: 'debt', title: 'מדד החוב הכללי', name: 'החוב הכללי', sub: sub, after: subs, summary: ixSumHTML(all),
       bars: function (f) { return [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, fin(f.interest, f.finance),
                                    { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }]; },
       legend: lg([['inc', 'הכנסות'], ['int', 'עלויות מימון'], ['loan', 'הלוואות'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE });
