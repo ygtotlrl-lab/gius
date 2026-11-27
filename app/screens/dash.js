@@ -198,12 +198,12 @@ function indicesHTML(all) {
       legend: lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], debtLine]) + FIN_NOTE });
 }
 
-// ── החודש המוצג במדד החוב — ארבע העמודות של החודש (הכנסות · הלוואות · עלויות מימון · החזרים), כל אחת ושמה מתחתיה
-// והסכום מעליה; ומעליהן קו החוב, פרוס לכל הרוחב — מהחוב בתחילת החודש (ימין) עד החוב בסופו (שמאל), והשיפוע מראה אם עלה או ירד ──
+// ── החודש המוצג במדד החוב — ארבע העמודות של החודש (מימין: הכנסות · עלויות מימון · הלוואות · החזרים), כל אחת ושמה מתחתיה
+// והסכום מעליה; ומעליהן קו החוב, פרוס לכל הרוחב — מהחוב בתחילת החודש (שמאל) עד החוב בסופו (ימין), כמו הזמן במדד הכללי ──
 function monthIxHTML(m) {
   var f = flowOf(m), start = loanDebt(shiftMonth(m, -1)), end = f.debt, ch = end - start;
-  var bars = [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' },
-              fin(f.interest, f.finance), { v: f.repaid, cls: 'rep', lbl: 'החזרים' }];
+  var bars = [{ v: f.inc, cls: 'inc', lbl: 'הכנסות' }, fin(f.interest, f.finance),
+              { v: f.long + f.inst, cls: 'loan', lbl: 'הלוואות' }, { v: f.repaid, cls: 'rep', lbl: 'החזרים' }];
   var maxB = 1;
   bars.forEach(function (x) { maxB = Math.max(maxB, x.full > x.v ? x.full : x.v); });
   maxB *= 2.2; // העמודות בחצי התחתון, והקו מעליהן
@@ -228,9 +228,9 @@ function monthIxHTML(m) {
     '</b><small>' + esc('מ־' + ils(start) + ' בתחילת החודש ל־' + ils(end) + ' בסופו') + '</small></div></div>';
   return '<section class="card ix ixm"><h2>מדד החוב — ' + esc(monthLabel(m)) + '</h2>' + head +
     '<div class="ixm-box"><div class="ixm-plot">' +
-      '<div class="ixm-ov"><svg class="ixm-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,' + y(end) + ' 100,' + y(start) + '"/></svg>' +
-      dot(start, 'r', 'תחילת החודש') + dot(end, 'l', 'סוף החודש') + '</div>' + cols + '</div></div>' +
-    lg([['inc', 'הכנסות'], ['loan', 'הלוואות'], ['int', 'עלויות מימון'], ['rep', 'החזרים'], ['debt', 'החוב']]).replace('class="fl-legend"', 'class="fl-legend fl-legend-below"') + FIN_NOTE + '</section>';
+      '<div class="ixm-ov"><svg class="ixm-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,' + y(start) + ' 100,' + y(end) + '"/></svg>' +
+      dot(start, 'l', 'תחילת החודש') + dot(end, 'r', 'סוף החודש') + '</div>' + cols + '</div></div>' +
+    lg([['inc', 'הכנסות'], ['int', 'עלויות מימון'], ['loan', 'הלוואות'], ['rep', 'החזרים'], ['debt', 'החוב']]).replace('class="fl-legend"', 'class="fl-legend fl-legend-below"') + FIN_NOTE + '</section>';
 }
 // מדד החוב — החודש המוצג, ומתחתיו המדד לאורך התקופה
 function flowHTML(m) {
