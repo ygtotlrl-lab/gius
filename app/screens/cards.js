@@ -157,11 +157,11 @@ function cardOpenHTML(d) {
       // בפס — העיגול והשם בלבד; השגריר, התפקיד, הטלפון, השייכויות וההערות — בלחיצה על העיגול
       (chips.length ? '<button class="cp-av" data-act="card-who" aria-expanded="false" aria-label="פרטי הכרטיס" title="פרטי הכרטיס">' + esc(initials(d.name)) + '</button>'
                                  : '<span class="cp-av">' + esc(initials(d.name)) + '</span>') +
-      '<div class="cp-who"><h3>' + esc(d.name) + '</h3>' +
+      '<div class="cp-who has-dial"><h3>' + esc(d.name) + '</h3>' +
         // חיוג ו-וואטסאפ מתחת לשם — המספר עצמו בטופס הכרטיס בלבד; בלי מספר — הכפתורים נשארים, והלחיצה אומרת שאין
         '<div class="cp-dial">' +
-          '<button class="cp-btn sm" data-act="card-call" data-id="' + id + '" aria-label="חיוג" title="חיוג">' + icon('call') + '</button>' +
-          '<button class="cp-btn sm" data-act="card-wa" data-id="' + id + '" aria-label="וואטסאפ" title="וואטסאפ">' + icon('whatsapp') + '</button></div>' +
+          '<button class="cp-btn sm" data-act="card-call" data-id="' + id + '" aria-label="חיוג" title="חיוג">' + icon('call') + '<span class="lbl">חיוג</span></button>' +
+          '<button class="cp-btn sm" data-act="card-wa" data-id="' + id + '" aria-label="וואטסאפ" title="וואטסאפ">' + icon('whatsapp') + '<span class="lbl">וואטסאפ</span></button></div>' +
         '<div class="cp-more" hidden>' +
         (chips.length ? '<div class="cp-chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
         '</div>' +

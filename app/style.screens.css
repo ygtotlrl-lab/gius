@@ -439,6 +439,16 @@ main #sht-give > .card{margin-bottom:var(--sp-6)}
 .cp-dial{display:flex;align-items:center;gap:var(--sp-3);font-size:var(--fs-2);font-variant-numeric:tabular-nums}
 .cp-btn.sm{width:30px;height:30px}
 .cp-btn.sm .ico{width:17px;height:17px}
+.cp-dial .lbl{display:none}
+/* בטלפון — חיוג ו-וואטסאפ בשורה משלהם, בין השם לסיכום: שני כפתורים עם תווית, חצי שורה כל אחד */
+@media not all and (min-width:640px){
+  .cp-band .cp-who.has-dial{display:contents}
+  .cp-band .has-dial h3{flex:1;min-width:0}
+  .cp-band .has-dial .cp-more{order:3;width:100%;margin-top:0}
+  .cp-band .cp-dial{order:4;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3)}
+  .cp-dial .cp-btn.sm{width:auto;height:36px;display:flex;align-items:center;justify-content:center;gap:var(--sp-3);font:inherit;font-weight:700;font-size:var(--fs-3);border-radius:var(--r-5)}
+  .cp-dial .lbl{display:inline}
+}
 /* הערת הכרטיס — מתחת לציר התשלומים */
 .cp-notes{display:block;border-top:1px solid var(--border-2);padding:var(--sp-5) var(--sp-7) var(--sp-6)}
 .cp-notes>span{display:block;font-weight:800;color:var(--brand-ink);font-size:var(--fs-3);margin-bottom:var(--sp-3)}
